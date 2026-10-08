@@ -1,6 +1,5 @@
 /* Actions de l'écran principal et démarrage. */
 
-action('selectTask', id => { if (taskById(id)) Editor.open(id); });
 
 action('toggleCollapse', id => {
   // Replier ne modifie pas les données au sens d'EF-53 : pas d'historique, pas d'indicateur.
@@ -27,27 +26,6 @@ action('addTask', type => {
   Editor.open(id);
   const nameIn = $('f-name');
   if (nameIn) nameIn.select();
-});
-
-action('deleteTask', async () => {
-  const id = App.selected;
-  const task = taskById(id);
-  if (!task) return;
-  const desc = descendants(id);
-  const gone = new Set([id, ...desc.map(x => x.id)]);
-  const losing = App.project.tasks.filter(x => !gone.has(x.id) && x.deps.some(d => gone.has(d.id))).length;
-  const ok = await Dialog.confirm(t('dlg.deleteTask', { id, name: task.name }),
-    [desc.length ? t('dlg.deleteSummary', { count: desc.length }) : '', losing ? t('dlg.deleteTaskDeps', { count: losing }) : ''], t('edit.delete'));
-  if (!ok) return;
-  commit(p => {
-    p.tasks = p.tasks.filter(x => !gone.has(x.id));
-    for (const x of p.tasks) x.deps = x.deps.filter(d => !gone.has(d.id));
-  });
-  App.selected = null;
-  Editor.close();
-  render();
-  announce(t('deleted', { id }));
-  $('main').focus();
 });
 
 action('moveTask', dir => {
@@ -105,6 +83,8 @@ action('toggleLang', () => {
 });
 
 action('editProject', () => editProjectWindow());
+// EF-65 : un lien cliqué s'édite dans le panneau de son successeur.
+action('editLink', id => { if (!taskById(id)) return; Editor.open(id); const box = $('deps-box'); if (box) { box.scrollIntoView({ block: 'nearest' }); const sel = box.querySelector('select'); if (sel) sel.focus(); } });
 action('openResolve', () => resolveWindow());
 action('openBaselines', () => baselinesWindow());
 action('openDashboard', () => dashboardWindow());
@@ -158,6 +138,10 @@ function init() {
   Tooltip.init();
   initViewbar();
   initShortcuts();
+  initColumns();
+  initRowDrag();
+  initListKeys();
+  initGestures();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

@@ -105,7 +105,10 @@ function alertMessages() {
   }
   for (const w of s.warnings) {
     const r = s.tasks.get(w.task);
-    if (w.kind === 'deadline') out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, count: w.days }) });
+    if (w.kind === 'deadline') {
+      const task = taskById(w.task);
+      out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, end: I18n.shortDate(r.endDn), deadline: I18n.shortDate(Dates.parse(task.deadline)) }) });
+    }
     else if (w.kind === 'smooth') { const res = resById(w.res); out.push({ kind: 'warning', text: t('alert.smooth', { task: w.task, res: res ? res.name : '' }) }); }
     else {
       const p = s.tasks.get(w.pred);
@@ -162,6 +165,8 @@ function renderList(items, fl) {
     if (fl.conflict.has(task.id)) marks.push(t('list.conflict'));
     if (fl.warn.has(task.id)) marks.push(t('list.warning'));
     if (r && r.shift) marks.push(shiftText(r));
+    const late = task.deadline && fl.warn.has(task.id) && App.sched && App.sched.warnings.some(w => w.kind === 'deadline' && w.task === task.id);
+    if (late) marks.push(t('list.deadlineLate'));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
     if (task.type === 'summary' && !it.flat) {
@@ -169,10 +174,14 @@ function renderList(items, fl) {
         aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
     }
     nameCell.append(h('button', { type: 'button', class: 'select', data: { click: 'selectTask', arg: task.id },
-      aria: { current: App.selected === task.id ? 'true' : undefined } },
-      task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
+      aria: { current: App.selected === task.id ? 'true' : undefined } }, App.multi.has(task.id) ? h('span', { class: 'sr-only', text: t('sel.mark') + ' ' }) : null,
+      task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : '', task.notBefore && !task.forcedStart ? ' ⏳' : ''));
+    if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
+      '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
+    if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
+    if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
+    frag.append(h('tr', { draggable: App.view.groupBy ? undefined : 'true', class: [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
       h('td', { text: durText(task, r) }),
@@ -216,10 +225,11 @@ function renderGantt(items, fl) {
   const width = Math.max(1, Math.round(days * dayW));
   inner.style.setProperty('--grid-w', width + 'px');
   const x = dn => (dn - from) * dayW;
+  App.grid = { from, dayW };
 
   // En-tête sur deux lignes : les mois, puis le lundi de chaque semaine (vue semaine) ;
   // sous 60 % de zoom, les mois seuls (RG-21). Les jours fériés sont signalés par semaine (EF-16).
-  const head = h('div', { class: 'g-head', aria: { hidden: 'true' } });
+  const head = h('div', { class: 'g-head' });
   const monthView = App.zoom < 60;
   const cell = (cls, a, b, text, title) => {
     const c = h('div', { class: cls, text, title: title || undefined });
@@ -229,14 +239,23 @@ function renderGantt(items, fl) {
   };
   for (const p of Metrics.periods(from, to, 'month')) {
     const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    head.append(cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : ''));
+    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : '');
+    mc.setAttribute('aria-hidden', 'true');
+    head.append(mc);
   }
   if (!monthView) {
     for (const p of Metrics.periods(from, to, 'week')) {
       const names = [];
       for (let dn = p.start; dn <= p.end; dn++) { const info = s.cal.dayInfo(dn); if (info && info.kind === 'holiday') names.push(t(info.key)); }
-      head.append(cell(['g-col', 'week', names.length && 'has-holiday'].filter(Boolean).join(' '), p.start, p.end,
-        String(Dates.ymd(p.start).d).padStart(2, '0'), names.join(', ')));
+      const c = cell(['g-col', 'week', names.length && 'has-holiday'].filter(Boolean).join(' '), p.start, p.end,
+        String(Dates.ymd(p.start).d).padStart(2, '0'), names.join(', '));
+      if (!names.length) c.setAttribute('aria-hidden', 'true');
+      if (names.length) {
+        // EF-16 : le nom du jour férié se lit au survol (title) et au focus clavier.
+        c.setAttribute('tabindex', '0'); c.setAttribute('role', 'note');
+        c.setAttribute('aria-label', `${t('gantt.week', { date: I18n.shortDate(p.start) })} : ${names.join(', ')}`);
+      }
+      head.append(c);
     }
   }
   inner.append(head);
@@ -278,11 +297,12 @@ function renderGantt(items, fl) {
     const color = safeColor(cat && cat.color);
     const pct = Metrics.pctOf(task, s);
     const common = { role: 'button', tabindex: '0', data: { click: 'selectTask', arg: task.id } };
-    let el;
+    let el, realBand = null;
     if (task.type === 'milestone') {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
+      el.append(h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -290,15 +310,30 @@ function renderGantt(items, fl) {
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
     } else {
       const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced'), shiftText(r)].filter(Boolean);
-      el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', App.selected === task.id && 'selected'],
+      el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', isSelected(task.id) && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),
-        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : '') }));
+        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
+      // Poignées des gestes (EF-74 à EF-77) : décoratives, le clavier a ses équivalents (EF-78).
+      const hp = h('span', { class: 'h-pct', aria: { hidden: 'true' } });
+      hp.style.setProperty('left', pct + '%');
+      el.append(h('span', { class: 'h-end', aria: { hidden: 'true' } }), hp,
+        h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      // Bande des dates réelles, couleur de la première ressource (EF-21).
+      const rs = Dates.parse(task.realStart);
+      if (rs != null) {
+        const re = Dates.parse(task.realEnd) ?? Math.max(rs, today());
+        const res0 = task.assign[0] && resById(task.assign[0].res);
+        realBand = h('div', { class: 'real-band', aria: { hidden: 'true' } });
+        realBand.style.setProperty('left', x(rs) + 'px');
+        realBand.style.setProperty('width', Math.max(3, (re - rs + 1) * dayW) + 'px');
+        realBand.style.setProperty('background', safeColor(res0 && res0.color, '#8a94a6'));
+      }
     }
     const blText = baselineTexts(task.id);
     if (blText.length) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', ' + blText.join(', '));
@@ -310,12 +345,12 @@ function renderGantt(items, fl) {
       const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
       m.style.setProperty('left', x(a) + 'px');
       m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
-      m.style.setProperty('top', (25 + k * 3) + 'px');
+      m.style.setProperty('top', (28 + k * 2) + 'px');
       m.style.setProperty('background', safeColor(b.color));
       return m;
     });
     if (it.dim) el.classList.add('dim');
-    body.append(row(el, minis));
+    body.append(row(el, realBand, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
   if (App.showLinks && !App.view.groupBy) body.append(linkArrows(rows, rowOf, x, dayW, items.length));
@@ -357,7 +392,10 @@ function linkArrows(rows, rowOf, x, dayW, count) {
       const out = fromEnd ? 6 : -6, inn = toEnd ? 6 : -6;
       const crit = rp.critical && rs.critical;
       const path = `M${x1},${y1} h${out} V${(y1 + y2) / 2} H${x2 + inn} V${y2} H${x2}`;
-      layer.append(svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` }));
+      layer.append(svg('g', { 'data-click': 'editLink', 'data-arg': task.id },
+        svg('path', { d: path, class: 'link-hit' }),
+        svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` },
+          svg('title', { text: `${d.id} → ${task.id} (${t('link.' + d.type)}${d.lag ? ', ' + (d.lag > 0 ? '+' : '') + d.lag + ' j' : ''})` }))));
     }
   }
   return layer;
@@ -369,7 +407,7 @@ function renderLegend() {
   const items = [
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
     h('li', {}, h('span', { class: 'swatch critical', aria: { hidden: 'true' } }), t('legend.critical')),
-    h('li', {}, t('legend.forced')), h('li', {}, t('legend.milestone')),
+    h('li', {}, t('legend.forced')), h('li', {}, t('legend.notBefore')), h('li', {}, t('legend.deadline')), h('li', {}, t('legend.milestone')),
     App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
   ];
@@ -387,6 +425,8 @@ function render() {
   const fl = flags();
   const items = viewItems();
   renderViewbar(items);
+  renderSelbar();
+  renderListToggle();
   renderList(items, fl);
   renderGantt(items, fl);
   renderLegend();

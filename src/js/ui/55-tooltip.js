@@ -17,6 +17,8 @@ const Tooltip = (() => {
     if (r.shift) out.push(shiftText(r));
     if (task.type !== 'summary') out.push(`${t('tip.slack')} : ${r.slack}${r.critical ? ' — ' + t('list.critical') : ''}`);
     for (const b of baselineTexts(task.id)) out.push(b);
+    if (task.notes) out.push(`${t('f.notes')} : ${task.notes.length > 120 ? task.notes.slice(0, 120) + '…' : task.notes}`);
+    if (task.tags.length) out.push(`${t('view.f.tag')} : ${task.tags.join(', ')}`);
     return out;
   }
 
@@ -36,6 +38,16 @@ const Tooltip = (() => {
     el.setAttribute('aria-describedby', 'tooltip');
     current = el;
   }
+  function showText(el, list) {
+    const tip = $('tooltip');
+    clear(tip);
+    for (const l of list) tip.append(h('div', { text: l }));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    tip.style.setProperty('left', Math.max(8, Math.min(window.innerWidth - tip.offsetWidth - 8, r.left)) + 'px');
+    tip.style.setProperty('top', (r.bottom + 6) + 'px');
+    current = el;
+  }
   function hide() {
     $('tooltip').hidden = true;
     if (current) current.removeAttribute('aria-describedby');
@@ -45,7 +57,13 @@ const Tooltip = (() => {
 
   function init() {
     document.addEventListener('mouseover', ev => { const el = target(ev); if (el && el !== current) show(el); else if (!el && current && !current.contains(document.activeElement)) hide(); });
-    document.addEventListener('focusin', ev => { const el = target(ev); if (el) show(el); else hide(); });
+    document.addEventListener('focusin', ev => {
+      const el = target(ev);
+      if (el) { show(el); return; }
+      const hol = ev.target.closest && ev.target.closest('.g-col.has-holiday');
+      if (hol) { showText(hol, [hol.getAttribute('aria-label')]); return; }
+      hide();
+    });
     document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && current) { hide(); ev.stopPropagation(); } }, true);
   }
   return { init, hide };

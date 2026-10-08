@@ -204,6 +204,7 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
 .bl { position: absolute; height: 2px; border-radius: 1px; z-index: 1; }
 .swatch.thin { height: 4px; background: var(--muted); }
 .g-links { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
+.g-links .link-hit { fill: none; stroke: transparent; stroke-width: 9; pointer-events: stroke; cursor: pointer; }
 .g-links .link { fill: none; stroke: var(--muted); stroke-width: 1.5; }
 .g-links .link.critical { stroke: var(--critical); }
 .g-links .head-n { fill: var(--muted); }
@@ -287,3 +288,45 @@ table.month td.out { border: 0; }
 .tasks tr.group-row button.toggle { background: transparent; border: 0; padding: 0 .2rem; text-align: left; }
 .g-row.g-group { background: var(--panel-2); }
 .kpis .whole { margin: .3rem 0 0; }
+
+.flag { font-size: .85rem; }
+.flag.late { outline: 2px solid var(--critical); border-radius: 3px; }
+.tag-pill { display: inline-block; font-size: .72rem; padding: 0 .4rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); margin-left: .2rem; }
+.suggest { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
+input[type="range"] { accent-color: var(--accent); }
+ul.comments li { align-items: flex-start; }
+#f-comment { flex: 1 1 12rem; }
+
+/* Sélection multiple, colonnes, liste repliée */
+.selbar { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; padding: .4rem 1rem; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); border-bottom: 1px solid var(--accent); }
+.tasks thead th { position: sticky; }
+.tasks th { position: relative; }
+.col-resize { position: absolute; right: 0; top: 4px; bottom: 4px; width: 8px; cursor: col-resize; border-right: 2px solid var(--line); }
+.col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
+table.tasks.fixed { table-layout: fixed; }
+table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
+.planner.list-collapsed { grid-template-columns: 1fr; }
+.tasks tr[draggable="true"] td.id { cursor: grab; }
+
+/* Gestes (EF-74 à EF-77) */
+.bar { overflow: visible; }
+.bar .done { border-radius: 3px 0 0 3px; }
+.h-end { position: absolute; right: -3px; top: 0; bottom: 0; width: 8px; cursor: ew-resize; }
+.h-pct { position: absolute; bottom: -5px; width: 0; height: 0; margin-left: -5px; border: 5px solid transparent; border-bottom-color: var(--text); cursor: ew-resize; opacity: 0; }
+.lk { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); cursor: crosshair; opacity: 0; z-index: 3; }
+.lk-s { left: -12px; } .lk-e { right: -12px; }
+.ms .lk { transform: rotate(-45deg); }
+.ms .lk-s { left: -14px; top: 4px; } .ms .lk-e { right: -14px; left: auto; top: 4px; }
+.bar:hover .lk, .bar:focus-visible .lk, .bar:hover .h-pct, .bar:focus-visible .h-pct, .ms:hover .lk, .ms:focus-visible .lk, .lk.target { opacity: 1; }
+.lk.target { border-color: var(--ok); width: 14px; height: 14px; margin-top: -7px; }
+@media (pointer: coarse) { .lk, .h-pct { opacity: 1; } .h-end { width: 16px; right: -8px; } .lk { width: 18px; height: 18px; margin-top: -9px; } }
+.ghost { position: absolute; top: 7px; height: 20px; border: 2px dashed var(--accent); border-radius: 4px; background: color-mix(in srgb, var(--accent) 15%, transparent); pointer-events: none; z-index: 4; }
+.ghost.pct { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent) var(--pct), transparent var(--pct)); }
+.g-drag { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
+.g-drag line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+body.dragging { user-select: none; cursor: grabbing; }
+.real-band { position: absolute; top: 27px; height: 3px; border-radius: 2px; z-index: 1; }
+.g-body.with-bl .real-band { top: 24px; }
+.toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 30; display: flex; gap: .8rem; align-items: center; padding: .5rem .8rem; border-radius: 8px; background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.toast button { background: var(--bg); color: var(--text); }
+@media print { .toast, .tooltip { display: none !important; } }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xcoBMg5QGOt4DZHDraB1G6Kvo6xbKwhcpFEAZYusYKk='; style-src 'sha256-UDfvjW93/USFJlIycNN2/2wzcE7jyOMwkrR7X/R7e/E='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-G4UGtKeLSjdrcu4arclUn339CiqNdnMxYzuza6oLsaE='; style-src 'sha256-lpZSVWvJjEfR4SdiOEJfA5y3i24wvQCrgik3LGSeTjQ='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -218,6 +218,7 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
 .bl { position: absolute; height: 2px; border-radius: 1px; z-index: 1; }
 .swatch.thin { height: 4px; background: var(--muted); }
 .g-links { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
+.g-links .link-hit { fill: none; stroke: transparent; stroke-width: 9; pointer-events: stroke; cursor: pointer; }
 .g-links .link { fill: none; stroke: var(--muted); stroke-width: 1.5; }
 .g-links .link.critical { stroke: var(--critical); }
 .g-links .head-n { fill: var(--muted); }
@@ -302,6 +303,48 @@ table.month td.out { border: 0; }
 .g-row.g-group { background: var(--panel-2); }
 .kpis .whole { margin: .3rem 0 0; }
 
+.flag { font-size: .85rem; }
+.flag.late { outline: 2px solid var(--critical); border-radius: 3px; }
+.tag-pill { display: inline-block; font-size: .72rem; padding: 0 .4rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); margin-left: .2rem; }
+.suggest { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
+input[type="range"] { accent-color: var(--accent); }
+ul.comments li { align-items: flex-start; }
+#f-comment { flex: 1 1 12rem; }
+
+/* Sélection multiple, colonnes, liste repliée */
+.selbar { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; padding: .4rem 1rem; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); border-bottom: 1px solid var(--accent); }
+.tasks thead th { position: sticky; }
+.tasks th { position: relative; }
+.col-resize { position: absolute; right: 0; top: 4px; bottom: 4px; width: 8px; cursor: col-resize; border-right: 2px solid var(--line); }
+.col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
+table.tasks.fixed { table-layout: fixed; }
+table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
+.planner.list-collapsed { grid-template-columns: 1fr; }
+.tasks tr[draggable="true"] td.id { cursor: grab; }
+
+/* Gestes (EF-74 à EF-77) */
+.bar { overflow: visible; }
+.bar .done { border-radius: 3px 0 0 3px; }
+.h-end { position: absolute; right: -3px; top: 0; bottom: 0; width: 8px; cursor: ew-resize; }
+.h-pct { position: absolute; bottom: -5px; width: 0; height: 0; margin-left: -5px; border: 5px solid transparent; border-bottom-color: var(--text); cursor: ew-resize; opacity: 0; }
+.lk { position: absolute; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); cursor: crosshair; opacity: 0; z-index: 3; }
+.lk-s { left: -12px; } .lk-e { right: -12px; }
+.ms .lk { transform: rotate(-45deg); }
+.ms .lk-s { left: -14px; top: 4px; } .ms .lk-e { right: -14px; left: auto; top: 4px; }
+.bar:hover .lk, .bar:focus-visible .lk, .bar:hover .h-pct, .bar:focus-visible .h-pct, .ms:hover .lk, .ms:focus-visible .lk, .lk.target { opacity: 1; }
+.lk.target { border-color: var(--ok); width: 14px; height: 14px; margin-top: -7px; }
+@media (pointer: coarse) { .lk, .h-pct { opacity: 1; } .h-end { width: 16px; right: -8px; } .lk { width: 18px; height: 18px; margin-top: -9px; } }
+.ghost { position: absolute; top: 7px; height: 20px; border: 2px dashed var(--accent); border-radius: 4px; background: color-mix(in srgb, var(--accent) 15%, transparent); pointer-events: none; z-index: 4; }
+.ghost.pct { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent) var(--pct), transparent var(--pct)); }
+.g-drag { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
+.g-drag line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+body.dragging { user-select: none; cursor: grabbing; }
+.real-band { position: absolute; top: 27px; height: 3px; border-radius: 2px; z-index: 1; }
+.g-body.with-bl .real-band { top: 24px; }
+.toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 30; display: flex; gap: .8rem; align-items: center; padding: .5rem .8rem; border-radius: 8px; background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.toast button { background: var(--bg); color: var(--text); }
+@media print { .toast, .tooltip { display: none !important; } }
+
 </style>
 </head>
 <body>
@@ -322,6 +365,7 @@ table.month td.out { border: 0; }
     <div class="group">
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
+      <button type="button" data-click="openTags" data-i18n="tags.title"></button>
       <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
@@ -382,17 +426,24 @@ table.month td.out { border: 0; }
         <option value="cat" data-i18n="view.group.cat"></option>
         <option value="status" data-i18n="view.group.status"></option>
       </select>
+      <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
+      <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
+      <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
+      <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
+      <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>
     <div id="view-chips" class="chips"></div>
     <div id="filters-panel" class="filters-panel" hidden></div>
   </section>
+  <section class="selbar" id="selbar" hidden data-i18n-label="sel.label" aria-label="Sélection"></section>
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
-      <table class="tasks">
+      <table class="tasks" id="tasks-table">
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
         <thead><tr>
-          <th scope="col" data-i18n="col.id"></th><th scope="col" data-i18n="col.name"></th><th scope="col" data-i18n="col.dur"></th>
-          <th scope="col" data-i18n="col.deps"></th><th scope="col" data-i18n="col.res"></th><th scope="col" data-i18n="col.status"></th>
+          <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -421,6 +472,7 @@ table.month td.out { border: 0; }
 
 <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
 <script>
 (() => {
 'use strict';
@@ -1803,7 +1855,7 @@ const I18n = (() => {
     'alert.link.SS': '{task} commence le {date} avant le début de {pred} ({predDate})',
     'alert.link.FF': '{task} finit le {date} avant la fin de {pred} ({predDate})',
     'alert.link.SF': '{task} finit le {date} avant le début de {pred} ({predDate})',
-    'alert.deadline': { one: '{task} dépasse son échéance de {count} jour', other: '{task} dépasse son échéance de {count} jours' },
+    'alert.deadline': '{task} finit le {end}, après son échéance du {deadline}',
     // Édition
     'edit.title': 'Modifier {id}', 'edit.save': 'Enregistrer', 'edit.cancel': 'Annuler', 'edit.delete': 'Supprimer',
     'edit.up': 'Monter', 'edit.down': 'Descendre', 'edit.duplicate': 'Dupliquer',
@@ -1952,6 +2004,33 @@ const I18n = (() => {
     'view.f.status': 'Statut', 'view.f.res': 'Ressource', 'view.f.cat': 'Catégorie', 'view.f.tag': 'Étiquette', 'view.f.type': 'Type',
     'view.f.critical': 'Critiques seulement', 'view.f.alerts': 'En conflit ou avec avertissement', 'view.f.period': 'Période', 'view.f.from': 'Du', 'view.f.to': 'Au',
     'view.clear': 'Effacer les filtres', 'view.chip': '{what} : {value}', 'view.chipRemove': 'Retirer le filtre {what} : {value}', 'view.on': 'oui',
+    'edit.summaryComputed': 'Calculé : du {start} au {end}, {dur} jours ouvrés, avancement {pct} %.', 'edit.summaryEmpty': 'Calculé : aucune tâche enfant, donc ni date ni barre.',
+    'f.pctSlider': 'Avancement, curseur', 'f.tagSuggest': 'Étiquettes du projet', 'f.tagAdd': "Ajouter l'étiquette {tag}",
+    'f.comments': 'Commentaires', 'f.commentNew': 'Nouveau commentaire', 'f.commentAdd': 'Ajouter le commentaire', 'f.commentRemove': 'Supprimer le commentaire du {date}',
+    'list.notes': 'notes ou commentaires', 'list.deadline': 'échéance le {date}', 'list.deadlineLate': 'échéance dépassée', 'list.notBefore': 'pas avant le {date}',
+    'legend.notBefore': 'Ne pas commencer avant (⏳)', 'legend.deadline': 'Échéance (🚩)',
+    'sel.label': 'Sélection', 'sel.count': { one: '{count} tâche sélectionnée', other: '{count} tâches sélectionnées' }, 'sel.mark': '(sélectionnée)',
+    'sel.bulk': 'Modifier en masse', 'sel.indent': 'Mettre en retrait', 'sel.outdent': "Remonter d'un niveau", 'sel.group': 'Regrouper sous une récapitulative', 'sel.clear': 'Effacer la sélection',
+    'sel.deleteN': { one: 'Supprimer {count} élément ?', other: 'Supprimer {count} éléments ?' }, 'sel.deleted': { one: '{count} élément supprimé.', other: '{count} éléments supprimés.' },
+    'sel.keepChildren': 'Conserver les tâches (elles remontent d\'un niveau)', 'sel.deleteAll': { one: 'Supprimer aussi sa tâche', other: 'Supprimer aussi ses {count} tâches' },
+    'sel.hierarchy': 'Hiérarchie', 'sel.needSummary': 'Placez d\'abord une récapitulative au-dessus, au même niveau.', 'sel.topLevel': 'Cette tâche est déjà au premier niveau.',
+    'sel.sameLevel': 'Les tâches à regrouper doivent être au même niveau.', 'sel.intoSelf': 'Une récapitulative ne peut pas être déposée dans sa propre descendance.',
+    'sel.linkHierarchy': 'Le lien entre {a} et {b} relierait une tâche à sa propre récapitulative : supprimez-le d\'abord.',
+    'sel.indented': { one: '{count} élément mis en retrait.', other: '{count} éléments mis en retrait.' }, 'sel.outdented': { one: '{count} élément remonté.', other: '{count} éléments remontés.' },
+    'sel.grouped': { one: 'Récapitulative {id} créée avec {count} élément.', other: 'Récapitulative {id} créée avec {count} éléments.' }, 'sel.moved': '{id} placée avant {target}.',
+    'view.showTags': 'Étiquettes', 'view.collapseAll': 'Tout replier', 'view.expandAll': 'Tout déplier', 'view.sort': 'Trier', 'view.listHide': 'Replier la liste', 'view.listShow': 'Afficher la liste',
+    'sort.warn': "Les tâches seront rangées pour que chaque prédécesseur soit avant ses successeurs. L'ordre de la liste fixe la priorité du nivellement : le planning peut changer.", 'sort.done': 'Liste triée selon les dépendances.',
+    'col.resize': 'Largeur de la colonne {col} (flèches gauche et droite)',
+    'bulk.intro': { one: '{count} tâche ou jalon. Seuls les champs remplis sont appliqués.', other: '{count} tâches ou jalons. Seuls les champs remplis sont appliqués.' },
+    'bulk.keep': '— ne pas changer —', 'bulk.keepShort': 'inchangé', 'bulk.resMode': 'Ressource', 'bulk.resAdd': 'Ajouter', 'bulk.resReplace': 'Remplacer toutes les ressources par', 'bulk.resRemove': 'Retirer',
+    'bulk.tagAdd': 'Ajouter l\'étiquette', 'bulk.tagRemove': 'Retirer l\'étiquette', 'bulk.shift': 'Décaler les dates imposées de (jours ouvrés)', 'bulk.apply': 'Appliquer',
+    'bulk.refused': 'Rien n\'a été appliqué. Tâches en cause : {list}.', 'bulk.done': { one: '{count} élément modifié.', other: '{count} éléments modifiés.' },
+    'gst.cancelled': 'Geste annulé.', 'gst.moveTo': 'Date imposée : {date}', 'gst.dur': 'Durée : {count} j (fin le {date})', 'gst.pct': 'Avancement : {pct} %',
+    'gst.linkHint': 'Relâchez sur une poignée d\'une autre barre', 'gst.linkTo': '{type} : {pred} → {succ}',
+    'gst.moved': '{id} : date imposée au {date}.', 'gst.resized': { one: '{id} : durée {count} jour.', other: '{id} : durée {count} jours.' }, 'gst.pctDone': '{id} : avancement {pct} %.',
+    'gst.linked': 'Lien {type} créé : {pred} → {succ}.', 'gst.monthView': 'Zoomez au-delà de 60 % pour déplacer ou allonger une barre.',
+    'gst.linkSelf': 'Choisissez une autre tâche.', 'gst.linkSummary': 'Une récapitulative ne peut pas être liée.', 'gst.linkDup': '{succ} dépend déjà de {pred}.',
+    'tags.title': 'Étiquettes', 'tags.none': 'Aucune étiquette dans le projet.', 'tags.uses': 'Usages', 'tags.renamed': 'Étiquette {old} renommée en {name} partout.', 'tags.delete': 'Supprimer l\'étiquette {name} de toutes les tâches ?',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -1984,7 +2063,7 @@ const I18n = (() => {
     'alert.link.SS': '{task} starts on {date} before {pred} starts ({predDate})',
     'alert.link.FF': '{task} finishes on {date} before {pred} finishes ({predDate})',
     'alert.link.SF': '{task} finishes on {date} before {pred} starts ({predDate})',
-    'alert.deadline': { one: '{task} misses its deadline by {count} day', other: '{task} misses its deadline by {count} days' },
+    'alert.deadline': '{task} finishes on {end}, after its deadline of {deadline}',
     'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down', 'edit.duplicate': 'Duplicate',
     'dup.suffix': ' (copy)', 'dup.done': { one: '{count} task duplicated: {ids}.', other: '{count} tasks duplicated: {ids}.' },
     'kb.forced': 'Fixed date set to {date}.', 'kb.dur': 'Duration: {count} d.', 'kb.notTask': 'This shortcut applies to tasks and milestones only.',
@@ -2084,6 +2163,33 @@ const I18n = (() => {
     'view.f.status': 'Status', 'view.f.res': 'Resource', 'view.f.cat': 'Category', 'view.f.tag': 'Tag', 'view.f.type': 'Type',
     'view.f.critical': 'Critical only', 'view.f.alerts': 'In conflict or with a warning', 'view.f.period': 'Period', 'view.f.from': 'From', 'view.f.to': 'To',
     'view.clear': 'Clear filters', 'view.chip': '{what}: {value}', 'view.chipRemove': 'Remove filter {what}: {value}', 'view.on': 'yes',
+    'edit.summaryComputed': 'Computed: {start} to {end}, {dur} working days, progress {pct}%.', 'edit.summaryEmpty': 'Computed: no child task, so no dates and no bar.',
+    'f.pctSlider': 'Progress, slider', 'f.tagSuggest': 'Project tags', 'f.tagAdd': 'Add tag {tag}',
+    'f.comments': 'Comments', 'f.commentNew': 'New comment', 'f.commentAdd': 'Add comment', 'f.commentRemove': 'Delete comment of {date}',
+    'list.notes': 'notes or comments', 'list.deadline': 'deadline {date}', 'list.deadlineLate': 'deadline missed', 'list.notBefore': 'not before {date}',
+    'legend.notBefore': 'Start no earlier than (⏳)', 'legend.deadline': 'Deadline (🚩)',
+    'sel.label': 'Selection', 'sel.count': { one: '{count} task selected', other: '{count} tasks selected' }, 'sel.mark': '(selected)',
+    'sel.bulk': 'Bulk edit', 'sel.indent': 'Indent', 'sel.outdent': 'Outdent', 'sel.group': 'Group under a summary task', 'sel.clear': 'Clear selection',
+    'sel.deleteN': { one: 'Delete {count} item?', other: 'Delete {count} items?' }, 'sel.deleted': { one: '{count} item deleted.', other: '{count} items deleted.' },
+    'sel.keepChildren': 'Keep the tasks (they move up one level)', 'sel.deleteAll': { one: 'Also delete its task', other: 'Also delete its {count} tasks' },
+    'sel.hierarchy': 'Hierarchy', 'sel.needSummary': 'First place a summary task above, at the same level.', 'sel.topLevel': 'This task is already at the top level.',
+    'sel.sameLevel': 'The tasks to group must be at the same level.', 'sel.intoSelf': 'A summary task cannot be dropped into its own descendants.',
+    'sel.linkHierarchy': 'The link between {a} and {b} would connect a task to its own summary task: remove it first.',
+    'sel.indented': { one: '{count} item indented.', other: '{count} items indented.' }, 'sel.outdented': { one: '{count} item outdented.', other: '{count} items outdented.' },
+    'sel.grouped': { one: 'Summary task {id} created with {count} item.', other: 'Summary task {id} created with {count} items.' }, 'sel.moved': '{id} moved before {target}.',
+    'view.showTags': 'Tags', 'view.collapseAll': 'Collapse all', 'view.expandAll': 'Expand all', 'view.sort': 'Sort', 'view.listHide': 'Hide the list', 'view.listShow': 'Show the list',
+    'sort.warn': 'Tasks will be ordered so that each predecessor comes before its successors. The list order sets the levelling priority: the schedule may change.', 'sort.done': 'List sorted by dependencies.',
+    'col.resize': 'Width of column {col} (left and right arrows)',
+    'bulk.intro': { one: '{count} task or milestone. Only filled fields are applied.', other: '{count} tasks or milestones. Only filled fields are applied.' },
+    'bulk.keep': '— no change —', 'bulk.keepShort': 'unchanged', 'bulk.resMode': 'Resource', 'bulk.resAdd': 'Add', 'bulk.resReplace': 'Replace all resources with', 'bulk.resRemove': 'Remove',
+    'bulk.tagAdd': 'Add tag', 'bulk.tagRemove': 'Remove tag', 'bulk.shift': 'Shift fixed dates by (working days)', 'bulk.apply': 'Apply',
+    'bulk.refused': 'Nothing was applied. Tasks concerned: {list}.', 'bulk.done': { one: '{count} item changed.', other: '{count} items changed.' },
+    'gst.cancelled': 'Gesture cancelled.', 'gst.moveTo': 'Fixed date: {date}', 'gst.dur': 'Duration: {count} d (finish {date})', 'gst.pct': 'Progress: {pct}%',
+    'gst.linkHint': 'Release on a handle of another bar', 'gst.linkTo': '{type}: {pred} → {succ}',
+    'gst.moved': '{id}: fixed date set to {date}.', 'gst.resized': { one: '{id}: duration {count} day.', other: '{id}: duration {count} days.' }, 'gst.pctDone': '{id}: progress {pct}%.',
+    'gst.linked': '{type} link created: {pred} → {succ}.', 'gst.monthView': 'Zoom above 60% to move or resize a bar.',
+    'gst.linkSelf': 'Choose another task.', 'gst.linkSummary': 'A summary task cannot be linked.', 'gst.linkDup': '{succ} already depends on {pred}.',
+    'tags.title': 'Tags', 'tags.none': 'No tags in the project.', 'tags.uses': 'Uses', 'tags.renamed': 'Tag {old} renamed to {name} everywhere.', 'tags.delete': 'Remove tag {name} from all tasks?',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -2155,6 +2261,12 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
+  function dateTime(ts) {
+    const d = new Date(ts);
+    const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
@@ -2163,7 +2275,7 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
 })();
 
 // ── js/ui/00-dom.js ──
@@ -2583,7 +2695,10 @@ function alertMessages() {
   }
   for (const w of s.warnings) {
     const r = s.tasks.get(w.task);
-    if (w.kind === 'deadline') out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, count: w.days }) });
+    if (w.kind === 'deadline') {
+      const task = taskById(w.task);
+      out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, end: I18n.shortDate(r.endDn), deadline: I18n.shortDate(Dates.parse(task.deadline)) }) });
+    }
     else if (w.kind === 'smooth') { const res = resById(w.res); out.push({ kind: 'warning', text: t('alert.smooth', { task: w.task, res: res ? res.name : '' }) }); }
     else {
       const p = s.tasks.get(w.pred);
@@ -2640,6 +2755,8 @@ function renderList(items, fl) {
     if (fl.conflict.has(task.id)) marks.push(t('list.conflict'));
     if (fl.warn.has(task.id)) marks.push(t('list.warning'));
     if (r && r.shift) marks.push(shiftText(r));
+    const late = task.deadline && fl.warn.has(task.id) && App.sched && App.sched.warnings.some(w => w.kind === 'deadline' && w.task === task.id);
+    if (late) marks.push(t('list.deadlineLate'));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
     if (task.type === 'summary' && !it.flat) {
@@ -2647,10 +2764,14 @@ function renderList(items, fl) {
         aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
     }
     nameCell.append(h('button', { type: 'button', class: 'select', data: { click: 'selectTask', arg: task.id },
-      aria: { current: App.selected === task.id ? 'true' : undefined } },
-      task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
+      aria: { current: App.selected === task.id ? 'true' : undefined } }, App.multi.has(task.id) ? h('span', { class: 'sr-only', text: t('sel.mark') + ' ' }) : null,
+      task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : '', task.notBefore && !task.forcedStart ? ' ⏳' : ''));
+    if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
+      '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
+    if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
+    if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
+    frag.append(h('tr', { draggable: App.view.groupBy ? undefined : 'true', class: [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
       h('td', { text: durText(task, r) }),
@@ -2694,10 +2815,11 @@ function renderGantt(items, fl) {
   const width = Math.max(1, Math.round(days * dayW));
   inner.style.setProperty('--grid-w', width + 'px');
   const x = dn => (dn - from) * dayW;
+  App.grid = { from, dayW };
 
   // En-tête sur deux lignes : les mois, puis le lundi de chaque semaine (vue semaine) ;
   // sous 60 % de zoom, les mois seuls (RG-21). Les jours fériés sont signalés par semaine (EF-16).
-  const head = h('div', { class: 'g-head', aria: { hidden: 'true' } });
+  const head = h('div', { class: 'g-head' });
   const monthView = App.zoom < 60;
   const cell = (cls, a, b, text, title) => {
     const c = h('div', { class: cls, text, title: title || undefined });
@@ -2707,14 +2829,23 @@ function renderGantt(items, fl) {
   };
   for (const p of Metrics.periods(from, to, 'month')) {
     const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    head.append(cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : ''));
+    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : '');
+    mc.setAttribute('aria-hidden', 'true');
+    head.append(mc);
   }
   if (!monthView) {
     for (const p of Metrics.periods(from, to, 'week')) {
       const names = [];
       for (let dn = p.start; dn <= p.end; dn++) { const info = s.cal.dayInfo(dn); if (info && info.kind === 'holiday') names.push(t(info.key)); }
-      head.append(cell(['g-col', 'week', names.length && 'has-holiday'].filter(Boolean).join(' '), p.start, p.end,
-        String(Dates.ymd(p.start).d).padStart(2, '0'), names.join(', ')));
+      const c = cell(['g-col', 'week', names.length && 'has-holiday'].filter(Boolean).join(' '), p.start, p.end,
+        String(Dates.ymd(p.start).d).padStart(2, '0'), names.join(', '));
+      if (!names.length) c.setAttribute('aria-hidden', 'true');
+      if (names.length) {
+        // EF-16 : le nom du jour férié se lit au survol (title) et au focus clavier.
+        c.setAttribute('tabindex', '0'); c.setAttribute('role', 'note');
+        c.setAttribute('aria-label', `${t('gantt.week', { date: I18n.shortDate(p.start) })} : ${names.join(', ')}`);
+      }
+      head.append(c);
     }
   }
   inner.append(head);
@@ -2756,11 +2887,12 @@ function renderGantt(items, fl) {
     const color = safeColor(cat && cat.color);
     const pct = Metrics.pctOf(task, s);
     const common = { role: 'button', tabindex: '0', data: { click: 'selectTask', arg: task.id } };
-    let el;
+    let el, realBand = null;
     if (task.type === 'milestone') {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
+      el.append(h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -2768,15 +2900,30 @@ function renderGantt(items, fl) {
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
     } else {
       const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced'), shiftText(r)].filter(Boolean);
-      el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', App.selected === task.id && 'selected'],
+      el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', isSelected(task.id) && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),
-        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : '') }));
+        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
+      // Poignées des gestes (EF-74 à EF-77) : décoratives, le clavier a ses équivalents (EF-78).
+      const hp = h('span', { class: 'h-pct', aria: { hidden: 'true' } });
+      hp.style.setProperty('left', pct + '%');
+      el.append(h('span', { class: 'h-end', aria: { hidden: 'true' } }), hp,
+        h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      // Bande des dates réelles, couleur de la première ressource (EF-21).
+      const rs = Dates.parse(task.realStart);
+      if (rs != null) {
+        const re = Dates.parse(task.realEnd) ?? Math.max(rs, today());
+        const res0 = task.assign[0] && resById(task.assign[0].res);
+        realBand = h('div', { class: 'real-band', aria: { hidden: 'true' } });
+        realBand.style.setProperty('left', x(rs) + 'px');
+        realBand.style.setProperty('width', Math.max(3, (re - rs + 1) * dayW) + 'px');
+        realBand.style.setProperty('background', safeColor(res0 && res0.color, '#8a94a6'));
+      }
     }
     const blText = baselineTexts(task.id);
     if (blText.length) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', ' + blText.join(', '));
@@ -2788,12 +2935,12 @@ function renderGantt(items, fl) {
       const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
       m.style.setProperty('left', x(a) + 'px');
       m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
-      m.style.setProperty('top', (25 + k * 3) + 'px');
+      m.style.setProperty('top', (28 + k * 2) + 'px');
       m.style.setProperty('background', safeColor(b.color));
       return m;
     });
     if (it.dim) el.classList.add('dim');
-    body.append(row(el, minis));
+    body.append(row(el, realBand, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
   if (App.showLinks && !App.view.groupBy) body.append(linkArrows(rows, rowOf, x, dayW, items.length));
@@ -2835,7 +2982,10 @@ function linkArrows(rows, rowOf, x, dayW, count) {
       const out = fromEnd ? 6 : -6, inn = toEnd ? 6 : -6;
       const crit = rp.critical && rs.critical;
       const path = `M${x1},${y1} h${out} V${(y1 + y2) / 2} H${x2 + inn} V${y2} H${x2}`;
-      layer.append(svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` }));
+      layer.append(svg('g', { 'data-click': 'editLink', 'data-arg': task.id },
+        svg('path', { d: path, class: 'link-hit' }),
+        svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` },
+          svg('title', { text: `${d.id} → ${task.id} (${t('link.' + d.type)}${d.lag ? ', ' + (d.lag > 0 ? '+' : '') + d.lag + ' j' : ''})` }))));
     }
   }
   return layer;
@@ -2847,7 +2997,7 @@ function renderLegend() {
   const items = [
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
     h('li', {}, h('span', { class: 'swatch critical', aria: { hidden: 'true' } }), t('legend.critical')),
-    h('li', {}, t('legend.forced')), h('li', {}, t('legend.milestone')),
+    h('li', {}, t('legend.forced')), h('li', {}, t('legend.notBefore')), h('li', {}, t('legend.deadline')), h('li', {}, t('legend.milestone')),
     App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
   ];
@@ -2865,6 +3015,8 @@ function render() {
   const fl = flags();
   const items = viewItems();
   renderViewbar(items);
+  renderSelbar();
+  renderListToggle();
   renderList(items, fl);
   renderGantt(items, fl);
   renderLegend();
@@ -3047,6 +3199,8 @@ const Tooltip = (() => {
     if (r.shift) out.push(shiftText(r));
     if (task.type !== 'summary') out.push(`${t('tip.slack')} : ${r.slack}${r.critical ? ' — ' + t('list.critical') : ''}`);
     for (const b of baselineTexts(task.id)) out.push(b);
+    if (task.notes) out.push(`${t('f.notes')} : ${task.notes.length > 120 ? task.notes.slice(0, 120) + '…' : task.notes}`);
+    if (task.tags.length) out.push(`${t('view.f.tag')} : ${task.tags.join(', ')}`);
     return out;
   }
 
@@ -3066,6 +3220,16 @@ const Tooltip = (() => {
     el.setAttribute('aria-describedby', 'tooltip');
     current = el;
   }
+  function showText(el, list) {
+    const tip = $('tooltip');
+    clear(tip);
+    for (const l of list) tip.append(h('div', { text: l }));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    tip.style.setProperty('left', Math.max(8, Math.min(window.innerWidth - tip.offsetWidth - 8, r.left)) + 'px');
+    tip.style.setProperty('top', (r.bottom + 6) + 'px');
+    current = el;
+  }
   function hide() {
     $('tooltip').hidden = true;
     if (current) current.removeAttribute('aria-describedby');
@@ -3075,7 +3239,13 @@ const Tooltip = (() => {
 
   function init() {
     document.addEventListener('mouseover', ev => { const el = target(ev); if (el && el !== current) show(el); else if (!el && current && !current.contains(document.activeElement)) hide(); });
-    document.addEventListener('focusin', ev => { const el = target(ev); if (el) show(el); else hide(); });
+    document.addEventListener('focusin', ev => {
+      const el = target(ev);
+      if (el) { show(el); return; }
+      const hol = ev.target.closest && ev.target.closest('.g-col.has-holiday');
+      if (hol) { showText(hol, [hol.getAttribute('aria-label')]); return; }
+      hide();
+    });
     document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && current) { hide(); ev.stopPropagation(); } }, true);
   }
   return { init, hide };
@@ -3165,6 +3335,11 @@ const Editor = (() => {
     idIn.dataset.input = 'upperCase';
     box.append(field('id', t('f.id'), idIn));
     box.append(field('name', t('f.name'), input('text', d.name, { maxlength: 200, required: true })));
+    if (d.type === 'summary' && r) {
+      // EF-62 : dates, durée et avancement calculés, affichés mais non modifiables.
+      box.append(h('p', { class: 'note', id: 'edit-computed', text: r.empty ? t('edit.summaryEmpty')
+        : t('edit.summaryComputed', { start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: r.d, pct: r.pct }) }));
+    }
     if (d.type !== 'summary') {
       const typeSel = select([['task', t('type.task')], ['milestone', t('type.milestone')]], d.type);
       typeSel.dataset.change = 'draftType';
@@ -3180,7 +3355,13 @@ const Editor = (() => {
       box.append(field('cat', t('f.cat'), select([['', t('f.none')], ...App.project.categories.map(c => [c.id, c.name])], d.cat)));
     }
     if (d.type === 'task') {
-      box.append(field('pct', t('f.pct'), input('number', d.pctRaw ?? d.pct, { min: 0, max: 100, step: 1, inputmode: 'numeric' })));
+      // EF-19 : curseur et champ numérique liés.
+      const num = input('number', d.pctRaw ?? d.pct, { min: 0, max: 100, step: 1, inputmode: 'numeric' });
+      num.dataset.input = 'pctSync';
+      const fld = field('pct', t('f.pct'), num);
+      const range = h('input', { type: 'range', id: 'f-pct-range', min: 0, max: 100, step: 5, value: Number(d.pctRaw ?? d.pct) || 0, aria: { label: t('f.pctSlider') }, data: { input: 'pctSync' } });
+      fld.insertBefore(range, num);
+      box.append(fld);
     } else if (d.type === 'milestone') {
       const cb = input('checkbox', '', { checked: d.pct >= 100 });
       box.append(h('div', { class: 'field check' }, cb, h('label', { for: 'f-reached', text: t('f.reached') })));
@@ -3195,8 +3376,23 @@ const Editor = (() => {
       box.append(field('realStart', t('f.realStart'), input('date', d.realStart, { min: '1970-01-01', max: '2199-12-31' })));
       box.append(field('realEnd', t('f.realEnd'), input('date', d.realEnd, { min: '1970-01-01', max: '2199-12-31' })));
     }
-    box.append(field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 })));
+    // EF-91 : étiquettes avec suggestions tirées du projet.
+    const tagField = field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 }));
+    const current = new Set((d.tagsRaw ?? d.tags.join(',')).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+    const known = [...new Set(App.project.tasks.flatMap(x => x.tags))].filter(x => !current.has(x.toLowerCase())).sort((a, b) => a.localeCompare(b, 'fr')).slice(0, 12);
+    if (known.length) tagField.append(h('div', { class: 'suggest', role: 'group', aria: { label: t('f.tagSuggest') } },
+      known.map(tg => h('button', { type: 'button', class: 'chip', data: { click: 'draftAddTag', arg: tg }, aria: { label: t('f.tagAdd', { tag: tg }) } }, '+ ' + tg))));
+    box.append(tagField);
     box.append(field('notes', t('f.notes'), h('textarea', { rows: 3, maxlength: 2000, text: d.notes })));
+    // EF-90 : journal de commentaires horodatés.
+    const com = h('fieldset', { class: 'sub', id: 'comments-box' }, h('legend', { text: t('f.comments') }));
+    com.append(h('ul', { class: 'rows comments' }, d.comments.map((c, i) => h('li', {},
+      h('span', { class: 'who' }, h('span', { class: 'hint', text: I18n.dateTime(c.ts) + ' — ' }), c.text),
+      h('button', { type: 'button', class: 'icon', data: { click: 'draftRemoveComment', arg: String(i) }, aria: { label: t('f.commentRemove', { date: I18n.dateTime(c.ts) }) } }, '✕')))));
+    if (d.comments.length < Model.LIMITS.comments) com.append(h('div', { class: 'add-row' },
+      h('textarea', { id: 'f-comment', rows: 2, maxlength: 500, aria: { label: t('f.commentNew') } }),
+      h('button', { type: 'button', data: { click: 'draftAddComment' } }, t('f.commentAdd'))));
+    box.append(com);
   }
 
   /** Relit les champs simples du formulaire dans le brouillon (sans valider). */
@@ -3374,6 +3570,21 @@ const Editor = (() => {
     build();
     const again = $('res-pick'); if (again) again.focus();
   });
+  action('pctSync', (arg, el) => {
+    const v = el.value;
+    const num = $('f-pct'), range = $('f-pct-range');
+    if (el === range) num.value = v; else if (range && v !== '' && Number(v) >= 0 && Number(v) <= 100) range.value = v;
+  });
+  action('draftAddTag', tg => { readForm(); draft.tagsRaw = [draft.tagsRaw, tg].filter(x => x && x.trim()).join(', '); build(); $('f-tags').focus(); });
+  action('draftAddComment', () => {
+    readForm();
+    const text = $('f-comment').value.trim().slice(0, 500);
+    if (!text) { $('f-comment').focus(); return; }
+    draft.comments.push({ ts: Date.now(), text });
+    build();
+    $('f-comment').focus();
+  });
+  action('draftRemoveComment', i => { readForm(); draft.comments.splice(Number(i), 1); build(); const c = $('f-comment'); if (c) c.focus(); });
   action('saveTask', () => save());
   action('closeEditor', () => close());
 
@@ -3403,6 +3614,7 @@ function duplicateBlock(p, id) {
 }
 
 action('duplicateTask', () => {
+  if (App.multi.size > 1) { ACTIONS.duplicateSelection(); return; }
   const id = App.selected;
   if (!taskById(id)) return;
   let ids = null;
@@ -3451,6 +3663,618 @@ function initShortcuts() {
       nudge(ev.key === 'ArrowRight' ? 1 : -1, ev.shiftKey);
     }
   });
+}
+
+// ── js/ui/63-selection.js ──
+/* Sélection simple et multiple (EF-03, EF-81), actions groupées (EF-82), hiérarchie (EF-59, EF-60,
+ * EF-61, EF-63), suppression (EF-06), tri (EF-09), réordonnancement par glisser-déposer (EF-10),
+ * repli de la liste (EF-43), largeur des colonnes (EF-44), raccourcis de liste (EF-58). */
+App.multi = new Set();
+let selAnchor = null;
+
+/** Identifiants sélectionnés, dans l'ordre de la liste. */
+function selectedIds() {
+  if (App.multi.size) return App.project.tasks.filter(x => App.multi.has(x.id)).map(x => x.id);
+  return App.selected && taskById(App.selected) ? [App.selected] : [];
+}
+/** Sélection sans les éléments dont un ancêtre est aussi sélectionné (ils suivent leur parent). */
+function topSelected() {
+  const ids = new Set(selectedIds());
+  return [...ids].filter(id => !ancestorsOf(id).some(a => ids.has(a)));
+}
+const visibleOrder = () => [...document.querySelectorAll('#task-rows tr[data-id]')].map(tr => tr.dataset.id).filter((v, i, a) => a.indexOf(v) === i);
+const isSelected = id => App.multi.has(id) || App.selected === id;
+
+function clearSelection(keepPrimary = false) {
+  App.multi.clear();
+  if (!keepPrimary) App.selected = null;
+}
+
+action('selectTask', (id, el, ev) => {
+  if (!taskById(id)) return;
+  const mod = ev && (ev.ctrlKey || ev.metaKey), range = ev && ev.shiftKey;
+  if (mod || range) {
+    ev.preventDefault();
+    if (!App.multi.size && App.selected) App.multi.add(App.selected);
+    if (range && selAnchor) {
+      const order = visibleOrder();
+      const a = order.indexOf(selAnchor), b = order.indexOf(id);
+      if (a >= 0 && b >= 0) for (let i = Math.min(a, b); i <= Math.max(a, b); i++) App.multi.add(order[i]);
+    } else if (App.multi.has(id)) App.multi.delete(id); else App.multi.add(id);
+    if (!range) selAnchor = id;
+    App.selected = App.multi.has(id) ? id : [...App.multi][0] || null;
+    if (Editor.isOpen()) Editor.close();
+    render();
+    announce(t('sel.count', { count: App.multi.size }));
+    const btn = document.querySelector(`button.select[data-arg="${CSS.escape(id)}"]`);
+    if (btn) btn.focus();
+    return;
+  }
+  App.multi.clear();
+  selAnchor = id;
+  Editor.open(id);
+});
+
+function renderSelbar() {
+  const bar = $('selbar');
+  const n = App.multi.size;
+  bar.hidden = n < 2;
+  if (n < 2) return;
+  clear(bar);
+  const grouped = !!App.view.groupBy;
+  bar.append(h('strong', { text: t('sel.count', { count: n }) }),
+    h('button', { type: 'button', data: { click: 'bulkEdit' } }, t('sel.bulk')),
+    h('button', { type: 'button', data: { click: 'duplicateSelection' } }, t('edit.duplicate')),
+    h('button', { type: 'button', data: { click: 'indent' }, disabled: grouped, aria: { keyshortcuts: 'Control+Shift+ArrowRight' } }, t('sel.indent')),
+    h('button', { type: 'button', data: { click: 'outdent' }, disabled: grouped, aria: { keyshortcuts: 'Control+Shift+ArrowLeft' } }, t('sel.outdent')),
+    h('button', { type: 'button', data: { click: 'groupUnder' }, disabled: grouped }, t('sel.group')),
+    h('button', { type: 'button', class: 'danger', data: { click: 'deleteTask' } }, t('edit.delete')),
+    h('button', { type: 'button', class: 'link-btn', data: { click: 'clearSelection' } }, t('sel.clear')));
+}
+action('clearSelection', () => { clearSelection(); render(); $('main').focus(); });
+
+/* ── Suppression (EF-06, EF-63) ─────────────────────────────────────────────────────────── */
+action('deleteTask', async () => {
+  const ids = topSelected();
+  if (!ids.length) return;
+  const all = new Set(ids.flatMap(id => [id, ...descendants(id).map(x => x.id)]));
+  const summaries = ids.filter(id => taskById(id).type === 'summary');
+  const desc = [...all].filter(id => !ids.includes(id)).length;
+  const losing = App.project.tasks.filter(x => !all.has(x.id) && x.deps.some(d => all.has(d.id))).length;
+  const first = taskById(ids[0]);
+  const title = ids.length === 1 ? t('dlg.deleteTask', { id: first.id, name: first.name }) : t('sel.deleteN', { count: ids.length });
+  const lines = [losing ? t('dlg.deleteTaskDeps', { count: losing }) : ''];
+  let keep = false;
+  if (summaries.length && desc) {
+    lines.unshift(t('dlg.deleteSummary', { count: desc }));
+    const v = await Dialog.open({ title, body: lines.filter(Boolean).map(x => h('p', { text: x })), actions: [
+      { label: t('dlg.cancel'), value: 'cancel', focus: true },
+      { label: t('sel.keepChildren'), value: 'keep' },
+      { label: t('sel.deleteAll', { count: desc }), value: 'all', kind: 'danger' }] });
+    if (v === 'cancel') return;
+    keep = v === 'keep';
+  } else if (!(await Dialog.confirm(title, lines, t('edit.delete')))) return;
+  const gone = keep ? new Set(ids) : all;
+  commit(p => {
+    if (keep) for (const x of p.tasks) if (gone.has(x.parent)) { let up = p.tasks.find(y => y.id === x.parent); while (up && gone.has(up.id)) up = p.tasks.find(y => y.id === up.parent); x.parent = up ? up.id : ''; }
+    p.tasks = p.tasks.filter(x => !gone.has(x.id));
+    for (const x of p.tasks) x.deps = x.deps.filter(d => !gone.has(d.id));
+  });
+  clearSelection();
+  Editor.close();
+  render();
+  announce(ids.length === 1 ? t('deleted', { id: ids[0] }) : t('sel.deleted', { count: gone.size }));
+  $('main').focus();
+});
+
+/* ── Hiérarchie (EF-59, EF-60) ──────────────────────────────────────────────────────────── */
+/** Hauteur d'un sous-arbre (0 pour une feuille). */
+function heightOf(id, tasks) { const kids = tasks.filter(x => x.parent === id); return kids.length ? 1 + Math.max(...kids.map(k => heightOf(k.id, tasks))) : 0; }
+function depthOk(p) { return p.tasks.every(x => ancestorsOf(x.id, p.tasks).length <= Model.LIMITS.depth); }
+
+function hierarchyChange(mutate, okMsg) {
+  const trial = clone(App.project);
+  const err = mutate(trial);
+  if (err) { announce(err); Dialog.message(t('sel.hierarchy'), err); return false; }
+  normalizeOrder(trial);
+  if (!depthOk(trial)) { Dialog.message(t('sel.hierarchy'), t('err.depth', { max: Model.LIMITS.depth })); return false; }
+  const cycle = Model.findCycle(trial.tasks);
+  if (cycle) { Dialog.message(t('sel.hierarchy'), t('err.cycle', { path: cycle.join(' → ') })); return false; }
+  // Un lien entre une tâche et sa propre récapitulative est interdit (RG-09).
+  for (const x of trial.tasks) for (const d of x.deps) if (ancestorsOf(x.id, trial.tasks).includes(d.id) || ancestorsOf(d.id, trial.tasks).includes(x.id)) {
+    Dialog.message(t('sel.hierarchy'), t('sel.linkHierarchy', { a: d.id, b: x.id })); return false;
+  }
+  commit(p => { mutate(p); });
+  announce(okMsg);
+  return true;
+}
+
+action('indent', () => {
+  const ids = topSelected();
+  if (!ids.length || App.view.groupBy) return;
+  hierarchyChange(p => {
+    for (const id of ids) {
+      const x = p.tasks.find(y => y.id === id);
+      const sibs = p.tasks.filter(y => y.parent === x.parent);
+      const prev = sibs.slice(0, sibs.indexOf(x)).reverse().find(y => !ids.includes(y.id));
+      if (!prev || prev.type !== 'summary') return t('sel.needSummary');
+      x.parent = prev.id;
+      // Devient le dernier enfant de cette récapitulative : on le place après sa descendance.
+      const block = [x, ...descendants(x.id, p.tasks)];
+      p.tasks = p.tasks.filter(y => !block.includes(y));
+      const d = descendants(prev.id, p.tasks);
+      p.tasks.splice(p.tasks.indexOf(d.length ? d[d.length - 1] : prev) + 1, 0, ...block);
+    }
+    return null;
+  }, t('sel.indented', { count: ids.length }));
+});
+
+action('outdent', () => {
+  const ids = topSelected();
+  if (!ids.length || App.view.groupBy) return;
+  hierarchyChange(p => {
+    for (const id of [...ids].reverse()) {
+      const x = p.tasks.find(y => y.id === id);
+      if (!x.parent) return t('sel.topLevel');
+      const parent = p.tasks.find(y => y.id === x.parent);
+      const block = [x, ...descendants(x.id, p.tasks)];
+      p.tasks = p.tasks.filter(y => !block.includes(y));
+      x.parent = parent.parent;
+      const d = descendants(parent.id, p.tasks);
+      p.tasks.splice(p.tasks.indexOf(d.length ? d[d.length - 1] : parent) + 1, 0, ...block);
+    }
+    return null;
+  }, t('sel.outdented', { count: ids.length }));
+});
+
+action('groupUnder', () => {
+  const ids = topSelected();
+  if (!ids.length || App.view.groupBy) return;
+  const parents = new Set(ids.map(id => taskById(id).parent));
+  if (parents.size > 1) { Dialog.message(t('sel.hierarchy'), t('sel.sameLevel')); return; }
+  if (App.project.tasks.length >= Model.LIMITS.tasks) { Dialog.message(t('sel.hierarchy'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
+  const sid = Model.nextTaskId(App.project.tasks.map(x => x.id));
+  const ok = hierarchyChange(p => {
+    const first = p.tasks.find(y => y.id === ids[0]);
+    const summary = { id: sid, name: t('newSummary'), type: 'summary', parent: first.parent, dur: 0, deps: [], assign: [], cat: '', pct: 0,
+      forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false };
+    p.tasks.splice(p.tasks.indexOf(first), 0, summary);
+    for (const id of ids) p.tasks.find(y => y.id === id).parent = sid;
+    return null;
+  }, t('sel.grouped', { id: sid, count: ids.length }));
+  if (ok) { clearSelection(); Editor.open(sid); }
+});
+
+/* ── Replier tout (EF-61), tri (EF-09), liste repliée (EF-43) ─────────────────────────────── */
+action('collapseAll', v => { for (const x of App.project.tasks) if (x.type === 'summary') x.collapsed = v === '1'; render(); });
+
+/** Tri topologique stable : chaque prédécesseur avant ses successeurs, ordre actuel sinon (EF-09). */
+function sortedOrder(tasks) {
+  const index = new Map(tasks.map((x, i) => [x.id, i]));
+  const indeg = new Map(tasks.map(x => [x.id, 0]));
+  const succ = new Map(tasks.map(x => [x.id, []]));
+  for (const x of tasks) for (const d of x.deps) if (succ.has(d.id)) { succ.get(d.id).push(x.id); indeg.set(x.id, indeg.get(x.id) + 1); }
+  const ready = tasks.filter(x => !indeg.get(x.id)).map(x => x.id);
+  const rank = new Map();
+  while (ready.length) {
+    ready.sort((a, b) => index.get(a) - index.get(b));
+    const id = ready.shift();
+    rank.set(id, rank.size);
+    for (const s of succ.get(id)) { indeg.set(s, indeg.get(s) - 1); if (!indeg.get(s)) ready.push(s); }
+  }
+  // Une récapitulative prend le rang de son premier descendant.
+  const rankOf = x => (x.type === 'summary' ? Math.min(Infinity, ...descendants(x.id, tasks).map(rankOf)) : rank.get(x.id) ?? index.get(x.id));
+  return [...tasks].sort((a, b) => rankOf(a) - rankOf(b) || index.get(a.id) - index.get(b.id));
+}
+action('sortTasks', async () => {
+  if (!(await Dialog.confirm(t('view.sort'), [t('sort.warn')], t('view.sort'), false))) return;
+  commit(p => { p.tasks = sortedOrder(p.tasks); });
+  announce(t('sort.done'));
+});
+
+App.listCollapsed = false;
+action('toggleList', () => {
+  App.listCollapsed = !App.listCollapsed;
+  $('planner').classList.toggle('list-collapsed', App.listCollapsed);
+  $('list').hidden = App.listCollapsed;
+  renderListToggle();
+  $('btn-list').focus();
+});
+function renderListToggle() {
+  const b = $('btn-list');
+  b.textContent = t(App.listCollapsed ? 'view.listShow' : 'view.listHide');
+  b.setAttribute('aria-expanded', String(!App.listCollapsed));
+}
+action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
+
+/* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
+const COL_LIMITS = { id: [36, 120], name: [120, 400], dur: [50, 140], deps: [60, 300], res: [80, 300], status: [70, 200] };
+App.colWidths = {};
+function applyColWidths() {
+  const table = $('tasks-table');
+  const any = Object.keys(App.colWidths).length > 0;
+  table.classList.toggle('fixed', any);
+  for (const col of table.querySelectorAll('col')) {
+    const w = App.colWidths[col.dataset.col];
+    if (w) col.style.setProperty('width', w + 'px'); else col.style.removeProperty('width');
+  }
+  for (const sep of table.querySelectorAll('.col-resize')) {
+    const k = sep.dataset.col;
+    const th = sep.closest('th');
+    const w = Math.round(App.colWidths[k] || th.getBoundingClientRect().width);
+    sep.setAttribute('aria-valuenow', String(Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], w))));
+  }
+}
+function initColumns() {
+  const ths = $('tasks-table').querySelectorAll('thead th');
+  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status'];
+  ths.forEach((th, i) => {
+    const k = keys[i];
+    const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
+      aria: { orientation: 'vertical', valuemin: COL_LIMITS[k][0], valuemax: COL_LIMITS[k][1], label: t('col.resize', { col: th.textContent }),
+        valuenow: Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width) || COL_LIMITS[k][0])) } });
+    th.append(sep);
+    const set = w => { App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
+    sep.addEventListener('keydown', ev => {
+      if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+      ev.preventDefault();
+      set((App.colWidths[k] || th.getBoundingClientRect().width) + (ev.key === 'ArrowRight' ? 10 : -10));
+    });
+    sep.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      sep.setPointerCapture(ev.pointerId);
+      const x0 = ev.clientX, w0 = th.getBoundingClientRect().width;
+      const move = e => set(w0 + e.clientX - x0);
+      const up = () => { sep.removeEventListener('pointermove', move); sep.removeEventListener('pointerup', up); };
+      sep.addEventListener('pointermove', move);
+      sep.addEventListener('pointerup', up);
+    });
+  });
+}
+
+/* ── Glisser-déposer dans la liste (EF-10, EF-64) ────────────────────────────────────────── */
+function initRowDrag() {
+  const body = $('task-rows');
+  let dragId = null;
+  body.addEventListener('dragstart', ev => {
+    const tr = ev.target.closest('tr[data-id]');
+    if (!tr || App.view.groupBy) { ev.preventDefault(); return; }
+    dragId = tr.dataset.id;
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', dragId);
+  });
+  body.addEventListener('dragover', ev => { if (dragId && ev.target.closest('tr[data-id]')) ev.preventDefault(); });
+  body.addEventListener('drop', ev => {
+    const tr = ev.target.closest('tr[data-id]');
+    if (!dragId || !tr) return;
+    ev.preventDefault();
+    const target = tr.dataset.id, id = dragId;
+    dragId = null;
+    if (target === id) return;
+    if (descendants(id).some(x => x.id === target)) { Dialog.message(t('sel.hierarchy'), t('sel.intoSelf')); return; }
+    hierarchyChange(p => {
+      const x = p.tasks.find(y => y.id === id), tg = p.tasks.find(y => y.id === target);
+      const block = [x, ...descendants(id, p.tasks)];
+      p.tasks = p.tasks.filter(y => !block.includes(y));
+      x.parent = tg.parent;
+      p.tasks.splice(p.tasks.indexOf(tg), 0, ...block);
+      return null;
+    }, t('sel.moved', { id, target }));
+  });
+  body.addEventListener('dragend', () => { dragId = null; });
+}
+
+/* ── Raccourcis de liste (EF-58, EF-60, EF-81) ───────────────────────────────────────────── */
+function initListKeys() {
+  document.addEventListener('keydown', ev => {
+    if (document.querySelector('dialog[open]')) return;
+    const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
+    if (inField) return;
+    const inList = ev.target.closest && ev.target.closest('#task-rows');
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && inList && !ev.altKey) {
+      ev.preventDefault();
+      const order = visibleOrder();
+      const cur = ev.target.closest('tr[data-id]');
+      const i = cur ? order.indexOf(cur.dataset.id) : -1;
+      const next = order[Math.max(0, Math.min(order.length - 1, i + (ev.key === 'ArrowDown' ? 1 : -1)))];
+      if (!next) return;
+      if (ev.shiftKey) {
+        if (!App.multi.size && App.selected) App.multi.add(App.selected);
+        App.multi.add(next);
+      } else App.multi.clear();
+      App.selected = next;
+      render();
+      const b = document.querySelector(`button.select[data-arg="${CSS.escape(next)}"]`);
+      if (b) { b.focus(); b.scrollIntoView({ block: 'nearest' }); }
+      return;
+    }
+    if ((ev.key === 'Delete' || ev.key === 'Suppr') && selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a' && !ev.altKey) {
+      ev.preventDefault();
+      App.multi = new Set(visibleOrder());
+      App.selected = [...App.multi][0] || null;
+      render();
+      announce(t('sel.count', { count: App.multi.size }));
+      return;
+    }
+    if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft')) {
+      ev.preventDefault();
+      ACTIONS[ev.key === 'ArrowRight' ? 'indent' : 'outdent']();
+      return;
+    }
+    if (ev.key === '?' && typeof ACTIONS.openHelp === 'function') { ev.preventDefault(); ACTIONS.openHelp(); return; }
+    if (ev.key === 'Escape' && App.multi.size) { clearSelection(true); render(); }
+  });
+}
+
+// ── js/ui/64-bulk.js ──
+/* Actions groupées : dupliquer la sélection et modifier en masse (EF-82). Tout ou rien :
+ * si une tâche refuse une valeur, rien n'est appliqué et le message liste les tâches en cause. */
+
+action('duplicateSelection', () => {
+  const ids = topSelected();
+  if (!ids.length) return;
+  const trial = clone(App.project);
+  const created = [];
+  for (const id of ids) { const c = duplicateBlock(trial, id); if (!c) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; } created.push(...c); }
+  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  commit(p => { for (const id of ids) duplicateBlock(p, id); });
+  App.multi = new Set(created.filter(id => ids.some(o => taskById(o) && created.includes(id))));
+  render();
+  announce(t('dup.done', { count: created.length, ids: created.join(', ') }));
+});
+
+function bulkWindow() {
+  const ids = selectedIds().filter(id => taskById(id).type !== 'summary');
+  if (!ids.length) return;
+  const p = App.project;
+  const opt = (v, label) => h('option', { value: v }, label);
+  const fld = (id, label, control) => { control.id = id; return h('div', { class: 'field' }, h('label', { for: id, text: label }), control); };
+  const body = h('div', { id: 'bulk-win' },
+    h('p', { class: 'hint', text: t('bulk.intro', { count: ids.length }) }),
+    h('p', { class: 'field-error', id: 'bulk-err', role: 'alert', hidden: true }),
+    fld('bk-cat', t('f.cat'), h('select', {}, opt('-', t('bulk.keep')), opt('', t('f.none')), p.categories.map(c => opt(c.id, c.name)))),
+    h('fieldset', { class: 'sub' }, h('legend', { text: t('f.assign') }),
+      fld('bk-res-mode', t('bulk.resMode'), h('select', {}, opt('', t('bulk.keep')), opt('add', t('bulk.resAdd')), opt('replace', t('bulk.resReplace')), opt('remove', t('bulk.resRemove')))),
+      fld('bk-res', t('col.res'), h('select', {}, p.resources.map(r => opt(r.id, r.name)))),
+      fld('bk-units', t('rs.units') + ' (%)', h('input', { type: 'number', min: 1, max: 100, step: 1, value: 100, inputmode: 'numeric' }))),
+    fld('bk-pct', t('f.pct'), h('input', { type: 'number', min: 0, max: 100, step: 1, inputmode: 'numeric', placeholder: t('bulk.keepShort') })),
+    fld('bk-tag-add', t('bulk.tagAdd'), h('input', { type: 'text', maxlength: 30 })),
+    fld('bk-tag-remove', t('bulk.tagRemove'), h('input', { type: 'text', maxlength: 30 })),
+    fld('bk-shift', t('bulk.shift'), h('input', { type: 'number', min: -365, max: 365, step: 1, inputmode: 'numeric', placeholder: '0' })),
+    fld('bk-nb', t('f.notBefore'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })),
+    fld('bk-dl', t('f.deadline'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })));
+  return Dialog.open({
+    title: t('sel.bulk'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
+    onAction: v => {
+      if (v !== 'ok') return true;
+      const err = msg => { const e = $('bulk-err'); e.textContent = msg; e.hidden = false; announce(msg); return false; };
+      const val = id => $(id).value;
+      const cat = val('bk-cat'), mode = val('bk-res-mode'), res = val('bk-res'), units = Number(val('bk-units'));
+      const pctRaw = val('bk-pct'), tagAdd = val('bk-tag-add').trim(), tagRm = val('bk-tag-remove').trim(), shiftRaw = val('bk-shift'), nb = val('bk-nb'), dl = val('bk-dl');
+      if (pctRaw !== '' && !(Number.isInteger(Number(pctRaw)) && Number(pctRaw) >= 0 && Number(pctRaw) <= 100)) return err(t('err.int', { field: t('f.pct'), min: 0, max: 100 }));
+      if (shiftRaw !== '' && !(Number.isInteger(Number(shiftRaw)) && Math.abs(Number(shiftRaw)) <= 365)) return err(t('err.int', { field: t('bulk.shift'), min: -365, max: 365 }));
+      if (mode && mode !== 'remove' && !(Number.isInteger(units) && units >= 1 && units <= 100)) return err(t('err.int', { field: t('rs.units'), min: 1, max: 100 }));
+      const refused = [];
+      const apply = pr => {
+        const r = pr.resources.find(x => x.id === res);
+        for (const id of ids) {
+          const x = pr.tasks.find(y => y.id === id);
+          if (cat !== '-') x.cat = cat;
+          if (mode && x.type === 'task' && r) {
+            if (mode === 'remove') x.assign = x.assign.filter(a => a.res !== res);
+            else {
+              if (units > r.capacity) { refused.push(`${id} (${t('err.capacity', { field: r.name, name: r.name, cap: r.capacity })})`); continue; }
+              if (mode === 'replace') x.assign = [{ res, units }];
+              else if (!x.assign.some(a => a.res === res)) {
+                if (x.assign.length >= Model.LIMITS.assign) { refused.push(`${id} (${t('err.limit', { max: Model.LIMITS.assign, what: t('f.assign').toLowerCase() })})`); continue; }
+                x.assign.push({ res, units });
+              }
+            }
+          }
+          if (pctRaw !== '') {
+            const n = Number(pctRaw);
+            if (x.type === 'milestone') x.pct = n >= 100 ? 100 : 0; else { x.pct = n; if (n < 100) x.realEnd = ''; }
+          }
+          if (tagAdd && !x.tags.some(g => g.toLowerCase() === tagAdd.toLowerCase())) {
+            if (x.tags.length >= Model.LIMITS.tags) { refused.push(`${id} (${t('err.limit', { max: Model.LIMITS.tags, what: t('view.f.tag').toLowerCase() })})`); continue; }
+            x.tags.push(tagAdd);
+          }
+          if (tagRm) x.tags = x.tags.filter(g => g.toLowerCase() !== tagRm.toLowerCase());
+          if (shiftRaw !== '' && Number(shiftRaw) && x.forcedStart) {
+            const cal = App.sched.cal;
+            x.forcedStart = Dates.toISO(cal.dnOf(cal.ceil(Dates.parse(x.forcedStart)) + Number(shiftRaw)));
+          }
+          if (nb) x.notBefore = nb;
+          if (dl) x.deadline = dl;
+        }
+      };
+      const trial = clone(App.project);
+      apply(trial);
+      if (refused.length) return err(t('bulk.refused', { list: refused.join(' ; ') }));
+      try { Schedule.compute(trial); } catch { return err(t('calc.error')); }
+      commit(apply);
+      announce(t('bulk.done', { count: ids.length }));
+      return true;
+    },
+  });
+}
+action('bulkEdit', () => bulkWindow());
+
+// ── js/ui/65-gestures.js ──
+/* Gestes sur la grille (EF-74 à EF-77, EF-79, RG-29) : déplacer une barre (date imposée), tirer son
+ * bord droit (durée), tirer d'une poignée de lien à une autre (lien typé), tirer l'avancement.
+ * Souris : le geste démarre après 3 px ; doigt : appui long de 0,3 s. Échap annule. Un geste = un
+ * pas d'annulation. Aucun geste n'est indispensable : édition et Alt + flèches font de même (EX-01). */
+const Gesture = { g: null, suppressClick: false };
+
+function toast(text, undoable) {
+  const box = $('toast');
+  clear(box);
+  box.append(h('span', { text }));
+  if (undoable) box.append(h('button', { type: 'button', data: { click: 'toastUndo' } }, t('top.undo')));
+  box.hidden = false;
+  announce(text);
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { box.hidden = true; }, 8000);
+}
+action('toastUndo', () => { $('toast').hidden = true; ACTIONS.undo(); });
+
+function gestureTip(text, x, y) {
+  const tip = $('tooltip');
+  clear(tip); tip.append(h('div', { text })); tip.hidden = false;
+  tip.style.setProperty('left', Math.min(window.innerWidth - 220, x + 12) + 'px');
+  tip.style.setProperty('top', (y + 16) + 'px');
+}
+
+function endGesture(cancelled) {
+  const g = Gesture.g;
+  if (!g) return;
+  Gesture.g = null;
+  clearTimeout(g.timer);
+  if (g.ghost) g.ghost.remove();
+  if (g.line) g.line.remove();
+  document.querySelectorAll('.lk.target').forEach(el => el.classList.remove('target'));
+  document.body.classList.remove('dragging');
+  $('tooltip').hidden = true;
+  if (g.active) { Gesture.suppressClick = true; setTimeout(() => { Gesture.suppressClick = false; }, 0); }
+  if (cancelled && g.active) announce(t('gst.cancelled'));
+}
+
+function linkType(fromEnd, toEnd) { return fromEnd ? (toEnd ? 'FF' : 'FS') : (toEnd ? 'SF' : 'SS'); }
+
+/** Contrôle d'un nouveau lien pred → succ (EF-76) ; renvoie un message d'erreur ou null. */
+function linkError(predId, succId) {
+  const pred = taskById(predId), succ = taskById(succId);
+  if (!pred || !succ || predId === succId) return t('gst.linkSelf');
+  if (pred.type === 'summary' || succ.type === 'summary') return t('gst.linkSummary');
+  if (succ.deps.some(d => d.id === predId)) return t('gst.linkDup', { pred: predId, succ: succId });
+  if (ancestorsOf(succId).includes(predId) || ancestorsOf(predId).includes(succId)) return t('sel.linkHierarchy', { a: predId, b: succId });
+  const trial = App.project.tasks.map(x => (x.id === succId ? { ...x, deps: [...x.deps, { id: predId, type: 'FS', lag: 0 }] } : x));
+  const cycle = Model.findCycle(trial);
+  return cycle ? t('err.cycle', { path: cycle.join(' → ') }) : null;
+}
+
+function startGesture(g, ev) {
+  g.active = true;
+  document.body.classList.add('dragging');
+  if (g.kind === 'link') {
+    const layer = document.querySelector('.g-body');
+    g.line = svg('svg', { class: 'g-drag', 'aria-hidden': 'true' }, svg('line', { x1: g.ox, y1: g.oy, x2: g.ox, y2: g.oy }));
+    layer.append(g.line);
+    for (const el of document.querySelectorAll('#gantt .lk')) if (el.closest('[data-arg]').dataset.arg !== g.id) el.classList.add('target');
+  } else {
+    g.ghost = g.el.cloneNode(false);
+    g.ghost.className = 'ghost';
+    g.ghost.removeAttribute('role'); g.ghost.removeAttribute('tabindex'); g.ghost.removeAttribute('aria-label');
+    for (const k of Object.keys(g.ghost.dataset)) delete g.ghost.dataset[k];
+    g.ghost.setAttribute('aria-hidden', 'true');
+    g.el.parentNode.append(g.ghost);
+  }
+  moveGesture(ev);
+}
+
+function moveGesture(ev) {
+  const g = Gesture.g;
+  if (!g || !g.active) return;
+  const s = App.sched, cal = s.cal, dayW = App.grid.dayW;
+  const dx = ev.clientX - g.x0, days = Math.round(dx / dayW);
+  if (g.kind === 'move') {
+    let dn = g.r.startDn + days;
+    dn = cal.dnOf(cal.ceil(dn));
+    g.value = Dates.toISO(dn);
+    g.ghost.style.setProperty('left', ((dn - App.grid.from) * dayW + (g.task.type === 'milestone' ? dayW / 2 : 0)) + 'px');
+    gestureTip(t('gst.moveTo', { date: I18n.date(dn) }), ev.clientX, ev.clientY);
+  } else if (g.kind === 'resize') {
+    const target = Math.max(g.r.startDn, g.r.endDn + days);
+    const d = Math.min(Model.LIMITS.dur, Math.max(1, cal.count(g.r.startDn, target)));
+    g.value = d;
+    const endDn = cal.dnOf(g.r.s + d - 1);
+    g.ghost.style.setProperty('width', Math.max(4, (endDn - g.r.startDn + 1) * dayW) + 'px');
+    gestureTip(t('gst.dur', { count: d, date: I18n.date(endDn) }), ev.clientX, ev.clientY);
+  } else if (g.kind === 'pct') {
+    const rect = g.el.getBoundingClientRect();
+    const raw = ((ev.clientX - rect.left) / rect.width) * 100;
+    const step = ev.shiftKey ? 1 : 5;
+    g.value = Math.max(0, Math.min(100, Math.round(raw / step) * step));
+    g.ghost.classList.add('pct');
+    g.ghost.style.setProperty('width', rect.width + 'px');
+    g.ghost.style.setProperty('--pct', g.value + '%');
+    gestureTip(t('gst.pct', { pct: g.value }), ev.clientX, ev.clientY);
+  } else if (g.kind === 'link') {
+    const layer = document.querySelector('.g-body').getBoundingClientRect();
+    const line = g.line.firstChild;
+    line.setAttribute('x2', ev.clientX - layer.left);
+    line.setAttribute('y2', ev.clientY - layer.top);
+    const over = document.elementFromPoint(ev.clientX, ev.clientY);
+    const lk = over && over.closest && over.closest('.lk.target');
+    g.drop = lk ? { id: lk.closest('[data-arg]').dataset.arg, end: lk.classList.contains('lk-e') } : null;
+    gestureTip(g.drop ? t('gst.linkTo', { type: t('link.' + linkType(g.fromEnd, g.drop.end)), pred: g.id, succ: g.drop.id }) : t('gst.linkHint'), ev.clientX, ev.clientY);
+  }
+}
+
+function finishGesture() {
+  const g = Gesture.g;
+  if (!g || !g.active || g.value === undefined && g.kind !== 'link') { endGesture(false); return; }
+  const id = g.id;
+  endGesture(false);
+  if (g.kind === 'move') {
+    const trial = clone(App.project); trial.tasks.find(x => x.id === id).forcedStart = g.value;
+    try { Schedule.compute(trial); } catch { toast(t('calc.error')); return; }
+    commit(p => { p.tasks.find(x => x.id === id).forcedStart = g.value; });
+    toast(t('gst.moved', { id, date: I18n.shortDate(Dates.parse(g.value)) }), true);
+  } else if (g.kind === 'resize') {
+    if (g.value === g.task.dur) return;
+    commit(p => { p.tasks.find(x => x.id === id).dur = g.value; });
+    toast(t('gst.resized', { id, count: g.value }), true);
+  } else if (g.kind === 'pct') {
+    commit(p => { const x = p.tasks.find(y => y.id === id); x.pct = g.value; if (g.value < 100) x.realEnd = ''; });
+    toast(t('gst.pctDone', { id, pct: g.value }), true);
+  } else if (g.kind === 'link') {
+    if (!g.drop) return;
+    const err = linkError(id, g.drop.id);
+    if (err) { toast(err); return; }
+    const type = linkType(g.fromEnd, g.drop.end);
+    commit(p => { p.tasks.find(x => x.id === g.drop.id).deps.push({ id, type, lag: 0 }); });
+    toast(t('gst.linked', { type: t('link.' + type), pred: id, succ: g.drop.id }), true);
+  }
+}
+
+function initGestures() {
+  const grid = $('gantt');
+  grid.addEventListener('pointerdown', ev => {
+    if (ev.button !== 0 && ev.pointerType === 'mouse') return;
+    const el = ev.target.closest('.bar, .ms[data-arg]');
+    if (!el || !App.sched) return;
+    const task = taskById(el.dataset.arg);
+    if (!task || task.type === 'summary') return;
+    const part = ev.target.closest('.h-end, .lk, .h-pct');
+    const kind = !part ? 'move' : part.classList.contains('h-end') ? 'resize' : part.classList.contains('h-pct') ? 'pct' : 'link';
+    if (App.zoom < 60 && kind !== 'link') { toast(t('gst.monthView')); return; }
+    const body = document.querySelector('.g-body').getBoundingClientRect();
+    const pr = (part || el).getBoundingClientRect();
+    Gesture.g = { el, id: task.id, task, kind, r: App.sched.tasks.get(task.id), x0: ev.clientX, y0: ev.clientY, active: false,
+      fromEnd: part ? part.classList.contains('lk-e') : false, ox: pr.left + pr.width / 2 - body.left, oy: pr.top + pr.height / 2 - body.top, pointerId: ev.pointerId };
+    if (part) ev.preventDefault();
+    if (ev.pointerType === 'touch') Gesture.g.timer = setTimeout(() => { if (Gesture.g) { el.setPointerCapture(ev.pointerId); startGesture(Gesture.g, ev); } }, 300);
+  });
+  document.addEventListener('pointermove', ev => {
+    const g = Gesture.g;
+    if (!g) return;
+    if (!g.active) {
+      const dist = Math.hypot(ev.clientX - g.x0, ev.clientY - g.y0);
+      if (ev.pointerType === 'touch') { if (dist > 8) endGesture(true); return; }
+      if (dist >= 3) { try { g.el.setPointerCapture(g.pointerId); } catch { /* déjà relâché */ } startGesture(g, ev); }
+      return;
+    }
+    ev.preventDefault();
+    moveGesture(ev);
+  });
+  document.addEventListener('pointerup', () => { if (Gesture.g) finishGesture(); });
+  document.addEventListener('pointercancel', () => endGesture(true));
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && Gesture.g) { ev.preventDefault(); ev.stopPropagation(); endGesture(true); } }, true);
+  // Un clic qui termine un geste ne sélectionne pas la tâche.
+  document.addEventListener('click', ev => { if (Gesture.suppressClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
 }
 
 // ── js/ui/70-windows.js ──
@@ -3702,6 +4526,50 @@ action('applyResolve', arg => {
     const next = resolveWindow.body.querySelector('button');
     if (next) next.focus(); else resolveWindow.body.closest('dialog').querySelector('.actions button').focus();
   }
+});
+
+/* Étiquettes du projet (EF-91) : nombre d'usages, renommer ou supprimer partout. */
+function tagsWindow() {
+  const body = h('div', { id: 'tags-win' });
+  const paint = focusSel => {
+    clear(body);
+    const counts = new Map();
+    for (const x of App.project.tasks) for (const tg of x.tags) { const k = tg.toLowerCase(); const e = counts.get(k) || { name: tg, n: 0 }; e.n++; counts.set(k, e); }
+    const list = [...counts.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    body.append(h('p', { class: 'field-error', id: 'tags-err', role: 'alert', hidden: true }));
+    if (!list.length) { body.append(h('p', { class: 'hint', text: t('tags.none') })); return; }
+    body.append(h('table', { class: 'manage' },
+      h('thead', {}, h('tr', {}, [t('res.name'), t('tags.uses'), ''].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, list.map((e, i) => h('tr', {},
+        h('td', {}, h('input', { type: 'text', id: 'tag-' + i, value: e.name, maxlength: 30, aria: { label: `${t('res.name')} (${e.name})` }, data: { change: 'tagRename', arg: e.name } })),
+        h('td', { text: String(e.n) }),
+        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'tagDelete', arg: e.name } }, `${t('edit.delete')} ${e.name}`)))))));
+    const el = focusSel && body.querySelector(focusSel);
+    if (el) el.focus();
+  };
+  tagsWindow.paint = paint;
+  paint();
+  return Dialog.open({ title: t('tags.title'), body: [body], actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] }).then(() => { tagsWindow.paint = null; });
+}
+action('openTags', () => tagsWindow());
+action('tagRename', (old, el) => {
+  const v = el.value.trim();
+  const err = $('tags-err');
+  if (!v || v.length > 30) { err.textContent = t('err.text', { field: t('view.f.tag'), min: 1, max: 30 }); err.hidden = false; el.focus(); return; }
+  commit(p => {
+    for (const x of p.tasks) {
+      if (!x.tags.some(g => g.toLowerCase() === old.toLowerCase())) continue;
+      x.tags = x.tags.filter(g => g.toLowerCase() !== old.toLowerCase() && g.toLowerCase() !== v.toLowerCase());
+      x.tags.push(v);
+    }
+  });
+  announce(t('tags.renamed', { old, name: v }));
+  tagsWindow.paint && tagsWindow.paint();
+});
+action('tagDelete', async name => {
+  if (!(await Dialog.confirm(t('tags.delete', { name }), [], t('edit.delete')))) return;
+  commit(p => { for (const x of p.tasks) x.tags = x.tags.filter(g => g.toLowerCase() !== name.toLowerCase()); });
+  tagsWindow.paint && tagsWindow.paint();
 });
 
 // ── js/ui/71-resource-sheet.js ──
@@ -4284,7 +5152,6 @@ async function newProjectAction() {
 // ── js/ui/99-main.js ──
 /* Actions de l'écran principal et démarrage. */
 
-action('selectTask', id => { if (taskById(id)) Editor.open(id); });
 
 action('toggleCollapse', id => {
   // Replier ne modifie pas les données au sens d'EF-53 : pas d'historique, pas d'indicateur.
@@ -4311,27 +5178,6 @@ action('addTask', type => {
   Editor.open(id);
   const nameIn = $('f-name');
   if (nameIn) nameIn.select();
-});
-
-action('deleteTask', async () => {
-  const id = App.selected;
-  const task = taskById(id);
-  if (!task) return;
-  const desc = descendants(id);
-  const gone = new Set([id, ...desc.map(x => x.id)]);
-  const losing = App.project.tasks.filter(x => !gone.has(x.id) && x.deps.some(d => gone.has(d.id))).length;
-  const ok = await Dialog.confirm(t('dlg.deleteTask', { id, name: task.name }),
-    [desc.length ? t('dlg.deleteSummary', { count: desc.length }) : '', losing ? t('dlg.deleteTaskDeps', { count: losing }) : ''], t('edit.delete'));
-  if (!ok) return;
-  commit(p => {
-    p.tasks = p.tasks.filter(x => !gone.has(x.id));
-    for (const x of p.tasks) x.deps = x.deps.filter(d => !gone.has(d.id));
-  });
-  App.selected = null;
-  Editor.close();
-  render();
-  announce(t('deleted', { id }));
-  $('main').focus();
 });
 
 action('moveTask', dir => {
@@ -4389,6 +5235,8 @@ action('toggleLang', () => {
 });
 
 action('editProject', () => editProjectWindow());
+// EF-65 : un lien cliqué s'édite dans le panneau de son successeur.
+action('editLink', id => { if (!taskById(id)) return; Editor.open(id); const box = $('deps-box'); if (box) { box.scrollIntoView({ block: 'nearest' }); const sel = box.querySelector('select'); if (sel) sel.focus(); } });
 action('openResolve', () => resolveWindow());
 action('openBaselines', () => baselinesWindow());
 action('openDashboard', () => dashboardWindow());
@@ -4442,6 +5290,10 @@ function init() {
   Tooltip.init();
   initViewbar();
   initShortcuts();
+  initColumns();
+  initRowDrag();
+  initListKeys();
+  initGestures();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

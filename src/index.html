@@ -27,6 +27,7 @@
     <div class="group">
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
+      <button type="button" data-click="openTags" data-i18n="tags.title"></button>
       <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
@@ -87,17 +88,24 @@
         <option value="cat" data-i18n="view.group.cat"></option>
         <option value="status" data-i18n="view.group.status"></option>
       </select>
+      <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
+      <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
+      <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
+      <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
+      <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>
     <div id="view-chips" class="chips"></div>
     <div id="filters-panel" class="filters-panel" hidden></div>
   </section>
+  <section class="selbar" id="selbar" hidden data-i18n-label="sel.label" aria-label="Sélection"></section>
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
-      <table class="tasks">
+      <table class="tasks" id="tasks-table">
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
         <thead><tr>
-          <th scope="col" data-i18n="col.id"></th><th scope="col" data-i18n="col.name"></th><th scope="col" data-i18n="col.dur"></th>
-          <th scope="col" data-i18n="col.deps"></th><th scope="col" data-i18n="col.res"></th><th scope="col" data-i18n="col.status"></th>
+          <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -126,6 +134,7 @@
 
 <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
 <script>//@SCRIPT@</script>
 </body>
 </html>

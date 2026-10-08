@@ -47,7 +47,7 @@ const I18n = (() => {
     'alert.link.SS': '{task} commence le {date} avant le début de {pred} ({predDate})',
     'alert.link.FF': '{task} finit le {date} avant la fin de {pred} ({predDate})',
     'alert.link.SF': '{task} finit le {date} avant le début de {pred} ({predDate})',
-    'alert.deadline': { one: '{task} dépasse son échéance de {count} jour', other: '{task} dépasse son échéance de {count} jours' },
+    'alert.deadline': '{task} finit le {end}, après son échéance du {deadline}',
     // Édition
     'edit.title': 'Modifier {id}', 'edit.save': 'Enregistrer', 'edit.cancel': 'Annuler', 'edit.delete': 'Supprimer',
     'edit.up': 'Monter', 'edit.down': 'Descendre', 'edit.duplicate': 'Dupliquer',
@@ -196,6 +196,33 @@ const I18n = (() => {
     'view.f.status': 'Statut', 'view.f.res': 'Ressource', 'view.f.cat': 'Catégorie', 'view.f.tag': 'Étiquette', 'view.f.type': 'Type',
     'view.f.critical': 'Critiques seulement', 'view.f.alerts': 'En conflit ou avec avertissement', 'view.f.period': 'Période', 'view.f.from': 'Du', 'view.f.to': 'Au',
     'view.clear': 'Effacer les filtres', 'view.chip': '{what} : {value}', 'view.chipRemove': 'Retirer le filtre {what} : {value}', 'view.on': 'oui',
+    'edit.summaryComputed': 'Calculé : du {start} au {end}, {dur} jours ouvrés, avancement {pct} %.', 'edit.summaryEmpty': 'Calculé : aucune tâche enfant, donc ni date ni barre.',
+    'f.pctSlider': 'Avancement, curseur', 'f.tagSuggest': 'Étiquettes du projet', 'f.tagAdd': "Ajouter l'étiquette {tag}",
+    'f.comments': 'Commentaires', 'f.commentNew': 'Nouveau commentaire', 'f.commentAdd': 'Ajouter le commentaire', 'f.commentRemove': 'Supprimer le commentaire du {date}',
+    'list.notes': 'notes ou commentaires', 'list.deadline': 'échéance le {date}', 'list.deadlineLate': 'échéance dépassée', 'list.notBefore': 'pas avant le {date}',
+    'legend.notBefore': 'Ne pas commencer avant (⏳)', 'legend.deadline': 'Échéance (🚩)',
+    'sel.label': 'Sélection', 'sel.count': { one: '{count} tâche sélectionnée', other: '{count} tâches sélectionnées' }, 'sel.mark': '(sélectionnée)',
+    'sel.bulk': 'Modifier en masse', 'sel.indent': 'Mettre en retrait', 'sel.outdent': "Remonter d'un niveau", 'sel.group': 'Regrouper sous une récapitulative', 'sel.clear': 'Effacer la sélection',
+    'sel.deleteN': { one: 'Supprimer {count} élément ?', other: 'Supprimer {count} éléments ?' }, 'sel.deleted': { one: '{count} élément supprimé.', other: '{count} éléments supprimés.' },
+    'sel.keepChildren': 'Conserver les tâches (elles remontent d\'un niveau)', 'sel.deleteAll': { one: 'Supprimer aussi sa tâche', other: 'Supprimer aussi ses {count} tâches' },
+    'sel.hierarchy': 'Hiérarchie', 'sel.needSummary': 'Placez d\'abord une récapitulative au-dessus, au même niveau.', 'sel.topLevel': 'Cette tâche est déjà au premier niveau.',
+    'sel.sameLevel': 'Les tâches à regrouper doivent être au même niveau.', 'sel.intoSelf': 'Une récapitulative ne peut pas être déposée dans sa propre descendance.',
+    'sel.linkHierarchy': 'Le lien entre {a} et {b} relierait une tâche à sa propre récapitulative : supprimez-le d\'abord.',
+    'sel.indented': { one: '{count} élément mis en retrait.', other: '{count} éléments mis en retrait.' }, 'sel.outdented': { one: '{count} élément remonté.', other: '{count} éléments remontés.' },
+    'sel.grouped': { one: 'Récapitulative {id} créée avec {count} élément.', other: 'Récapitulative {id} créée avec {count} éléments.' }, 'sel.moved': '{id} placée avant {target}.',
+    'view.showTags': 'Étiquettes', 'view.collapseAll': 'Tout replier', 'view.expandAll': 'Tout déplier', 'view.sort': 'Trier', 'view.listHide': 'Replier la liste', 'view.listShow': 'Afficher la liste',
+    'sort.warn': "Les tâches seront rangées pour que chaque prédécesseur soit avant ses successeurs. L'ordre de la liste fixe la priorité du nivellement : le planning peut changer.", 'sort.done': 'Liste triée selon les dépendances.',
+    'col.resize': 'Largeur de la colonne {col} (flèches gauche et droite)',
+    'bulk.intro': { one: '{count} tâche ou jalon. Seuls les champs remplis sont appliqués.', other: '{count} tâches ou jalons. Seuls les champs remplis sont appliqués.' },
+    'bulk.keep': '— ne pas changer —', 'bulk.keepShort': 'inchangé', 'bulk.resMode': 'Ressource', 'bulk.resAdd': 'Ajouter', 'bulk.resReplace': 'Remplacer toutes les ressources par', 'bulk.resRemove': 'Retirer',
+    'bulk.tagAdd': 'Ajouter l\'étiquette', 'bulk.tagRemove': 'Retirer l\'étiquette', 'bulk.shift': 'Décaler les dates imposées de (jours ouvrés)', 'bulk.apply': 'Appliquer',
+    'bulk.refused': 'Rien n\'a été appliqué. Tâches en cause : {list}.', 'bulk.done': { one: '{count} élément modifié.', other: '{count} éléments modifiés.' },
+    'gst.cancelled': 'Geste annulé.', 'gst.moveTo': 'Date imposée : {date}', 'gst.dur': 'Durée : {count} j (fin le {date})', 'gst.pct': 'Avancement : {pct} %',
+    'gst.linkHint': 'Relâchez sur une poignée d\'une autre barre', 'gst.linkTo': '{type} : {pred} → {succ}',
+    'gst.moved': '{id} : date imposée au {date}.', 'gst.resized': { one: '{id} : durée {count} jour.', other: '{id} : durée {count} jours.' }, 'gst.pctDone': '{id} : avancement {pct} %.',
+    'gst.linked': 'Lien {type} créé : {pred} → {succ}.', 'gst.monthView': 'Zoomez au-delà de 60 % pour déplacer ou allonger une barre.',
+    'gst.linkSelf': 'Choisissez une autre tâche.', 'gst.linkSummary': 'Une récapitulative ne peut pas être liée.', 'gst.linkDup': '{succ} dépend déjà de {pred}.',
+    'tags.title': 'Étiquettes', 'tags.none': 'Aucune étiquette dans le projet.', 'tags.uses': 'Usages', 'tags.renamed': 'Étiquette {old} renommée en {name} partout.', 'tags.delete': 'Supprimer l\'étiquette {name} de toutes les tâches ?',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -228,7 +255,7 @@ const I18n = (() => {
     'alert.link.SS': '{task} starts on {date} before {pred} starts ({predDate})',
     'alert.link.FF': '{task} finishes on {date} before {pred} finishes ({predDate})',
     'alert.link.SF': '{task} finishes on {date} before {pred} starts ({predDate})',
-    'alert.deadline': { one: '{task} misses its deadline by {count} day', other: '{task} misses its deadline by {count} days' },
+    'alert.deadline': '{task} finishes on {end}, after its deadline of {deadline}',
     'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down', 'edit.duplicate': 'Duplicate',
     'dup.suffix': ' (copy)', 'dup.done': { one: '{count} task duplicated: {ids}.', other: '{count} tasks duplicated: {ids}.' },
     'kb.forced': 'Fixed date set to {date}.', 'kb.dur': 'Duration: {count} d.', 'kb.notTask': 'This shortcut applies to tasks and milestones only.',
@@ -328,6 +355,33 @@ const I18n = (() => {
     'view.f.status': 'Status', 'view.f.res': 'Resource', 'view.f.cat': 'Category', 'view.f.tag': 'Tag', 'view.f.type': 'Type',
     'view.f.critical': 'Critical only', 'view.f.alerts': 'In conflict or with a warning', 'view.f.period': 'Period', 'view.f.from': 'From', 'view.f.to': 'To',
     'view.clear': 'Clear filters', 'view.chip': '{what}: {value}', 'view.chipRemove': 'Remove filter {what}: {value}', 'view.on': 'yes',
+    'edit.summaryComputed': 'Computed: {start} to {end}, {dur} working days, progress {pct}%.', 'edit.summaryEmpty': 'Computed: no child task, so no dates and no bar.',
+    'f.pctSlider': 'Progress, slider', 'f.tagSuggest': 'Project tags', 'f.tagAdd': 'Add tag {tag}',
+    'f.comments': 'Comments', 'f.commentNew': 'New comment', 'f.commentAdd': 'Add comment', 'f.commentRemove': 'Delete comment of {date}',
+    'list.notes': 'notes or comments', 'list.deadline': 'deadline {date}', 'list.deadlineLate': 'deadline missed', 'list.notBefore': 'not before {date}',
+    'legend.notBefore': 'Start no earlier than (⏳)', 'legend.deadline': 'Deadline (🚩)',
+    'sel.label': 'Selection', 'sel.count': { one: '{count} task selected', other: '{count} tasks selected' }, 'sel.mark': '(selected)',
+    'sel.bulk': 'Bulk edit', 'sel.indent': 'Indent', 'sel.outdent': 'Outdent', 'sel.group': 'Group under a summary task', 'sel.clear': 'Clear selection',
+    'sel.deleteN': { one: 'Delete {count} item?', other: 'Delete {count} items?' }, 'sel.deleted': { one: '{count} item deleted.', other: '{count} items deleted.' },
+    'sel.keepChildren': 'Keep the tasks (they move up one level)', 'sel.deleteAll': { one: 'Also delete its task', other: 'Also delete its {count} tasks' },
+    'sel.hierarchy': 'Hierarchy', 'sel.needSummary': 'First place a summary task above, at the same level.', 'sel.topLevel': 'This task is already at the top level.',
+    'sel.sameLevel': 'The tasks to group must be at the same level.', 'sel.intoSelf': 'A summary task cannot be dropped into its own descendants.',
+    'sel.linkHierarchy': 'The link between {a} and {b} would connect a task to its own summary task: remove it first.',
+    'sel.indented': { one: '{count} item indented.', other: '{count} items indented.' }, 'sel.outdented': { one: '{count} item outdented.', other: '{count} items outdented.' },
+    'sel.grouped': { one: 'Summary task {id} created with {count} item.', other: 'Summary task {id} created with {count} items.' }, 'sel.moved': '{id} moved before {target}.',
+    'view.showTags': 'Tags', 'view.collapseAll': 'Collapse all', 'view.expandAll': 'Expand all', 'view.sort': 'Sort', 'view.listHide': 'Hide the list', 'view.listShow': 'Show the list',
+    'sort.warn': 'Tasks will be ordered so that each predecessor comes before its successors. The list order sets the levelling priority: the schedule may change.', 'sort.done': 'List sorted by dependencies.',
+    'col.resize': 'Width of column {col} (left and right arrows)',
+    'bulk.intro': { one: '{count} task or milestone. Only filled fields are applied.', other: '{count} tasks or milestones. Only filled fields are applied.' },
+    'bulk.keep': '— no change —', 'bulk.keepShort': 'unchanged', 'bulk.resMode': 'Resource', 'bulk.resAdd': 'Add', 'bulk.resReplace': 'Replace all resources with', 'bulk.resRemove': 'Remove',
+    'bulk.tagAdd': 'Add tag', 'bulk.tagRemove': 'Remove tag', 'bulk.shift': 'Shift fixed dates by (working days)', 'bulk.apply': 'Apply',
+    'bulk.refused': 'Nothing was applied. Tasks concerned: {list}.', 'bulk.done': { one: '{count} item changed.', other: '{count} items changed.' },
+    'gst.cancelled': 'Gesture cancelled.', 'gst.moveTo': 'Fixed date: {date}', 'gst.dur': 'Duration: {count} d (finish {date})', 'gst.pct': 'Progress: {pct}%',
+    'gst.linkHint': 'Release on a handle of another bar', 'gst.linkTo': '{type}: {pred} → {succ}',
+    'gst.moved': '{id}: fixed date set to {date}.', 'gst.resized': { one: '{id}: duration {count} day.', other: '{id}: duration {count} days.' }, 'gst.pctDone': '{id}: progress {pct}%.',
+    'gst.linked': '{type} link created: {pred} → {succ}.', 'gst.monthView': 'Zoom above 60% to move or resize a bar.',
+    'gst.linkSelf': 'Choose another task.', 'gst.linkSummary': 'A summary task cannot be linked.', 'gst.linkDup': '{succ} already depends on {pred}.',
+    'tags.title': 'Tags', 'tags.none': 'No tags in the project.', 'tags.uses': 'Uses', 'tags.renamed': 'Tag {old} renamed to {name} everywhere.', 'tags.delete': 'Remove tag {name} from all tasks?',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -399,6 +453,12 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
+  function dateTime(ts) {
+    const d = new Date(ts);
+    const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
@@ -407,5 +467,5 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
 })();

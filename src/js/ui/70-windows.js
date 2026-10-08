@@ -247,3 +247,47 @@ action('applyResolve', arg => {
     if (next) next.focus(); else resolveWindow.body.closest('dialog').querySelector('.actions button').focus();
   }
 });
+
+/* Étiquettes du projet (EF-91) : nombre d'usages, renommer ou supprimer partout. */
+function tagsWindow() {
+  const body = h('div', { id: 'tags-win' });
+  const paint = focusSel => {
+    clear(body);
+    const counts = new Map();
+    for (const x of App.project.tasks) for (const tg of x.tags) { const k = tg.toLowerCase(); const e = counts.get(k) || { name: tg, n: 0 }; e.n++; counts.set(k, e); }
+    const list = [...counts.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    body.append(h('p', { class: 'field-error', id: 'tags-err', role: 'alert', hidden: true }));
+    if (!list.length) { body.append(h('p', { class: 'hint', text: t('tags.none') })); return; }
+    body.append(h('table', { class: 'manage' },
+      h('thead', {}, h('tr', {}, [t('res.name'), t('tags.uses'), ''].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, list.map((e, i) => h('tr', {},
+        h('td', {}, h('input', { type: 'text', id: 'tag-' + i, value: e.name, maxlength: 30, aria: { label: `${t('res.name')} (${e.name})` }, data: { change: 'tagRename', arg: e.name } })),
+        h('td', { text: String(e.n) }),
+        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'tagDelete', arg: e.name } }, `${t('edit.delete')} ${e.name}`)))))));
+    const el = focusSel && body.querySelector(focusSel);
+    if (el) el.focus();
+  };
+  tagsWindow.paint = paint;
+  paint();
+  return Dialog.open({ title: t('tags.title'), body: [body], actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] }).then(() => { tagsWindow.paint = null; });
+}
+action('openTags', () => tagsWindow());
+action('tagRename', (old, el) => {
+  const v = el.value.trim();
+  const err = $('tags-err');
+  if (!v || v.length > 30) { err.textContent = t('err.text', { field: t('view.f.tag'), min: 1, max: 30 }); err.hidden = false; el.focus(); return; }
+  commit(p => {
+    for (const x of p.tasks) {
+      if (!x.tags.some(g => g.toLowerCase() === old.toLowerCase())) continue;
+      x.tags = x.tags.filter(g => g.toLowerCase() !== old.toLowerCase() && g.toLowerCase() !== v.toLowerCase());
+      x.tags.push(v);
+    }
+  });
+  announce(t('tags.renamed', { old, name: v }));
+  tagsWindow.paint && tagsWindow.paint();
+});
+action('tagDelete', async name => {
+  if (!(await Dialog.confirm(t('tags.delete', { name }), [], t('edit.delete')))) return;
+  commit(p => { for (const x of p.tasks) x.tags = x.tags.filter(g => g.toLowerCase() !== name.toLowerCase()); });
+  tagsWindow.paint && tagsWindow.paint();
+});

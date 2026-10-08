@@ -81,6 +81,11 @@ const Editor = (() => {
     idIn.dataset.input = 'upperCase';
     box.append(field('id', t('f.id'), idIn));
     box.append(field('name', t('f.name'), input('text', d.name, { maxlength: 200, required: true })));
+    if (d.type === 'summary' && r) {
+      // EF-62 : dates, durée et avancement calculés, affichés mais non modifiables.
+      box.append(h('p', { class: 'note', id: 'edit-computed', text: r.empty ? t('edit.summaryEmpty')
+        : t('edit.summaryComputed', { start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: r.d, pct: r.pct }) }));
+    }
     if (d.type !== 'summary') {
       const typeSel = select([['task', t('type.task')], ['milestone', t('type.milestone')]], d.type);
       typeSel.dataset.change = 'draftType';
@@ -96,7 +101,13 @@ const Editor = (() => {
       box.append(field('cat', t('f.cat'), select([['', t('f.none')], ...App.project.categories.map(c => [c.id, c.name])], d.cat)));
     }
     if (d.type === 'task') {
-      box.append(field('pct', t('f.pct'), input('number', d.pctRaw ?? d.pct, { min: 0, max: 100, step: 1, inputmode: 'numeric' })));
+      // EF-19 : curseur et champ numérique liés.
+      const num = input('number', d.pctRaw ?? d.pct, { min: 0, max: 100, step: 1, inputmode: 'numeric' });
+      num.dataset.input = 'pctSync';
+      const fld = field('pct', t('f.pct'), num);
+      const range = h('input', { type: 'range', id: 'f-pct-range', min: 0, max: 100, step: 5, value: Number(d.pctRaw ?? d.pct) || 0, aria: { label: t('f.pctSlider') }, data: { input: 'pctSync' } });
+      fld.insertBefore(range, num);
+      box.append(fld);
     } else if (d.type === 'milestone') {
       const cb = input('checkbox', '', { checked: d.pct >= 100 });
       box.append(h('div', { class: 'field check' }, cb, h('label', { for: 'f-reached', text: t('f.reached') })));
@@ -111,8 +122,23 @@ const Editor = (() => {
       box.append(field('realStart', t('f.realStart'), input('date', d.realStart, { min: '1970-01-01', max: '2199-12-31' })));
       box.append(field('realEnd', t('f.realEnd'), input('date', d.realEnd, { min: '1970-01-01', max: '2199-12-31' })));
     }
-    box.append(field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 })));
+    // EF-91 : étiquettes avec suggestions tirées du projet.
+    const tagField = field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 }));
+    const current = new Set((d.tagsRaw ?? d.tags.join(',')).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+    const known = [...new Set(App.project.tasks.flatMap(x => x.tags))].filter(x => !current.has(x.toLowerCase())).sort((a, b) => a.localeCompare(b, 'fr')).slice(0, 12);
+    if (known.length) tagField.append(h('div', { class: 'suggest', role: 'group', aria: { label: t('f.tagSuggest') } },
+      known.map(tg => h('button', { type: 'button', class: 'chip', data: { click: 'draftAddTag', arg: tg }, aria: { label: t('f.tagAdd', { tag: tg }) } }, '+ ' + tg))));
+    box.append(tagField);
     box.append(field('notes', t('f.notes'), h('textarea', { rows: 3, maxlength: 2000, text: d.notes })));
+    // EF-90 : journal de commentaires horodatés.
+    const com = h('fieldset', { class: 'sub', id: 'comments-box' }, h('legend', { text: t('f.comments') }));
+    com.append(h('ul', { class: 'rows comments' }, d.comments.map((c, i) => h('li', {},
+      h('span', { class: 'who' }, h('span', { class: 'hint', text: I18n.dateTime(c.ts) + ' — ' }), c.text),
+      h('button', { type: 'button', class: 'icon', data: { click: 'draftRemoveComment', arg: String(i) }, aria: { label: t('f.commentRemove', { date: I18n.dateTime(c.ts) }) } }, '✕')))));
+    if (d.comments.length < Model.LIMITS.comments) com.append(h('div', { class: 'add-row' },
+      h('textarea', { id: 'f-comment', rows: 2, maxlength: 500, aria: { label: t('f.commentNew') } }),
+      h('button', { type: 'button', data: { click: 'draftAddComment' } }, t('f.commentAdd'))));
+    box.append(com);
   }
 
   /** Relit les champs simples du formulaire dans le brouillon (sans valider). */
@@ -290,6 +316,21 @@ const Editor = (() => {
     build();
     const again = $('res-pick'); if (again) again.focus();
   });
+  action('pctSync', (arg, el) => {
+    const v = el.value;
+    const num = $('f-pct'), range = $('f-pct-range');
+    if (el === range) num.value = v; else if (range && v !== '' && Number(v) >= 0 && Number(v) <= 100) range.value = v;
+  });
+  action('draftAddTag', tg => { readForm(); draft.tagsRaw = [draft.tagsRaw, tg].filter(x => x && x.trim()).join(', '); build(); $('f-tags').focus(); });
+  action('draftAddComment', () => {
+    readForm();
+    const text = $('f-comment').value.trim().slice(0, 500);
+    if (!text) { $('f-comment').focus(); return; }
+    draft.comments.push({ ts: Date.now(), text });
+    build();
+    $('f-comment').focus();
+  });
+  action('draftRemoveComment', i => { readForm(); draft.comments.splice(Number(i), 1); build(); const c = $('f-comment'); if (c) c.focus(); });
   action('saveTask', () => save());
   action('closeEditor', () => close());
 

@@ -20,6 +20,7 @@ function duplicateBlock(p, id) {
 }
 
 action('duplicateTask', () => {
+  if (App.multi.size > 1) { ACTIONS.duplicateSelection(); return; }
   const id = App.selected;
   if (!taskById(id)) return;
   let ids = null;
