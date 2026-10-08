@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wu4rQuwz7725+rZl0JihYmYLB9QUzIOd22xylISxIlg='; style-src 'sha256-5PXm2iD6dXa7C4cMo27CZU2Yji1M4RUBr/cxmBmZmVU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5TKHx+xhKO8Hc46r26PK+JsRgEegrLy+ZYlBCTKMwNo='; style-src 'sha256-GVcIx1EvHn7dx7I7HC4NzDBEI4CTFYsoOXnL77ns63w='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -212,6 +212,57 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
   .planner { max-height: none; overflow: visible; }
 }
 
+/* Baselines, flèches, infobulle (EF-23, EF-34, EF-45) */
+.g-body.with-bl .bar { top: 3px; height: 20px; }
+.g-body.with-bl .ms { top: 4px; }
+.bl { position: absolute; height: 2px; border-radius: 1px; z-index: 1; }
+.swatch.thin { height: 4px; background: var(--muted); }
+.g-links { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 1; overflow: visible; }
+.g-links .link { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.g-links .link.critical { stroke: var(--critical); }
+.g-links .head-n { fill: var(--muted); }
+.g-links .head-c { fill: var(--critical); }
+.tooltip { position: fixed; z-index: 20; max-width: 360px; padding: .5rem .7rem; border-radius: 8px; background: var(--text); color: var(--bg); font-size: .82rem; line-height: 1.4; pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.tooltip div:first-child { font-weight: 700; }
+
+/* Tableau de bord (EF-37 à EF-40) — couleurs de séries validées (outil dataviz, clair et sombre) */
+:root { --series-planned: #2a78d6; --series-real: #eb6834; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; } }
+:root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; }
+.tile dt { color: var(--muted); font-size: .85rem; }
+.tile dd { margin: .2rem 0 0; font-size: 1.6rem; font-weight: 700; }
+.dash-section { margin: 1rem 0; }
+.dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.dash-section .row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: .5rem; }
+fieldset.inline { border: 0; padding: 0; margin: 0; display: flex; gap: .8rem; align-items: center; }
+fieldset.inline legend { float: left; margin-right: .6rem; color: var(--muted); }
+.chart-box { position: relative; }
+.chart-box:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+svg.scurve { width: 100%; height: auto; display: block; }
+.scurve .grid { stroke: var(--line); stroke-width: 1; }
+.scurve .axis { fill: var(--muted); font-size: 11px; }
+.scurve .label { fill: var(--text); font-size: 12px; font-weight: 600; }
+.scurve .series { stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.scurve .series.planned { stroke: var(--series-planned); }
+.scurve .series.real { stroke: var(--series-real); }
+.scurve .series.baseline { stroke-dasharray: 6 4; }
+.scurve .today { stroke: var(--today); stroke-dasharray: 3 3; }
+.scurve .cross { stroke: var(--text); stroke-width: 1; }
+.scurve .hit { fill: transparent; }
+.chart-tip { margin-top: .3rem; font-size: .85rem; color: var(--text); }
+.chart-legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; list-style: none; padding: 0; margin: 0 0 .4rem; color: var(--text); }
+.chart-legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.chart-legend .key { display: inline-block; width: 22px; border-top: 2px solid var(--muted); }
+.chart-legend .key.planned { border-top-color: var(--series-planned); }
+.chart-legend .key.real { border-top-color: var(--series-real); }
+.chart-legend .key.baseline { border-top-style: dashed; }
+.table-scroll { overflow-x: auto; max-height: 360px; overflow-y: auto; }
+table.tracking th { position: sticky; top: 0; background: var(--panel); }
+button.sort { background: transparent; border: 0; padding: 0; min-height: 24px; font-weight: 600; }
+table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
+
 </style>
 </head>
 <body>
@@ -232,6 +283,9 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
     <div class="group">
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
+      <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
+      <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
+      <button type="button" id="btn-links" data-click="toggleLinks"></button>
     </div>
     <div class="group">
       <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
@@ -1694,7 +1748,22 @@ const I18n = (() => {
     'list.shift': '{count} j de décalage ({res} : {why})', 'why.overload': 'surcharge', 'why.absence': 'absence',
     'edit.shift': { one: 'Décalée de {count} jour ouvré par le nivellement ({res} : {why}). Sans ce décalage, elle commencerait le {date}.', other: 'Décalée de {count} jours ouvrés par le nivellement ({res} : {why}). Sans ce décalage, elle commencerait le {date}.' },
     'alert.smooth': '{task} ne tient pas dans sa marge : la surcharge de {res} n\'est pas lissée',
-    'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.today': "Aujourd'hui",
+    'top.baselines': 'Baselines', 'top.dashboard': 'Tableau de bord',
+    'tip.planned': 'Prévu', 'tip.real': 'Réel', 'tip.slack': 'Marge (jours ouvrés)',
+    'gantt.baseline': 'baseline {name} : du {start} au {end}',
+    'bl.none': "Aucune baseline : capturez l'état actuel du planning pour pouvoir le comparer plus tard.",
+    'bl.capture': 'Capturer une baseline', 'bl.onGantt': 'Sur le Gantt', 'bl.onScurve': 'Sur la courbe en S', 'bl.content': 'Contenu',
+    'bl.captured': { one: 'Capturée le {date}, {count} tâche', other: 'Capturée le {date}, {count} tâches' },
+    'bl.limit': 'Trois baselines au plus ({max}) : supprimez-en une pour en capturer une nouvelle.',
+    'bl.done': 'Baseline « {name} » capturée.', 'bl.delete': 'Supprimer la baseline {name} ?',
+    'dash.curve': 'Courbe en S', 'dash.curveDesc': 'Cumul prévu {planned} à la fin du planning ; cumul réel {real} à ce jour.',
+    'dash.planned': 'Prévu', 'dash.real': 'Réel', 'dash.dashed': 'pointillé', 'dash.unit': 'Période', 'dash.week': 'Semaines', 'dash.month': 'Mois',
+    'dash.showValues': 'Afficher les valeurs', 'dash.hideValues': 'Masquer les valeurs', 'dash.valuesCaption': 'Valeurs de la courbe en S (cumul en pourcentage)',
+    'dash.period': 'Période', 'dash.explore': 'Courbe en S : flèches gauche et droite pour parcourir les périodes',
+    'dash.done': 'Tâches terminées', 'dash.ongoingN': 'En cours', 'dash.late': 'En retard',
+    'dash.tracking': 'Tableau de suivi', 'dash.pStart': 'Début prévu', 'dash.pEnd': 'Fin prévue', 'dash.dev': 'Écart', 'dash.ongoing': '(en cours)',
+    'dash.vsBl': 'Écart vs baseline', 'dash.vsBlPick': 'Colonne « Écart vs baseline » :', 'dash.noBl': '— aucune —',
+    'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
   const EN = {
@@ -1790,6 +1859,21 @@ const I18n = (() => {
     'hol.victory': 'Victory in Europe Day', 'hol.ascension': 'Ascension Day', 'hol.whitMonday': 'Whit Monday', 'hol.bastille': 'Bastille Day',
     'hol.belgium': 'Belgian National Day', 'hol.assumption': 'Assumption Day', 'hol.allSaints': "All Saints' Day", 'hol.armistice': 'Armistice Day',
     'hol.germanUnity': 'German Unity Day', 'hol.christmas': 'Christmas Day', 'hol.stStephen': "St Stephen's Day",
+    'top.baselines': 'Baselines', 'top.dashboard': 'Dashboard',
+    'tip.planned': 'Planned', 'tip.real': 'Actual', 'tip.slack': 'Slack (working days)',
+    'gantt.baseline': 'baseline {name}: {start} to {end}',
+    'bl.none': 'No baseline: capture the current schedule to compare it later.',
+    'bl.capture': 'Capture a baseline', 'bl.onGantt': 'On the Gantt', 'bl.onScurve': 'On the S-curve', 'bl.content': 'Content',
+    'bl.captured': { one: 'Captured on {date}, {count} task', other: 'Captured on {date}, {count} tasks' },
+    'bl.limit': 'At most three baselines ({max}): delete one to capture a new one.',
+    'bl.done': 'Baseline “{name}” captured.', 'bl.delete': 'Delete baseline {name}?',
+    'dash.curve': 'S-curve', 'dash.curveDesc': 'Planned cumulative {planned} at the end of the schedule; actual {real} to date.',
+    'dash.planned': 'Planned', 'dash.real': 'Actual', 'dash.dashed': 'dashed', 'dash.unit': 'Period', 'dash.week': 'Weeks', 'dash.month': 'Months',
+    'dash.showValues': 'Show values', 'dash.hideValues': 'Hide values', 'dash.valuesCaption': 'S-curve values (cumulative percentage)',
+    'dash.period': 'Period', 'dash.explore': 'S-curve: left and right arrows to browse the periods',
+    'dash.done': 'Tasks done', 'dash.ongoingN': 'In progress', 'dash.late': 'Late',
+    'dash.tracking': 'Tracking table', 'dash.pStart': 'Planned start', 'dash.pEnd': 'Planned finish', 'dash.dev': 'Variance', 'dash.ongoing': '(ongoing)',
+    'dash.vsBl': 'Variance vs baseline', 'dash.vsBlPick': '“Variance vs baseline” column:', 'dash.noBl': '— none —',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -1807,7 +1891,7 @@ const I18n = (() => {
     'edit.shift': { one: 'Shifted by {count} working day by levelling ({res}: {why}). Without it, it would start on {date}.', other: 'Shifted by {count} working days by levelling ({res}: {why}). Without it, it would start on {date}.' },
     'alert.smooth': '{task} does not fit in its slack: the overload of {res} is not smoothed',
     'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.category': 'General',
-    'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.today': 'Today',
+    'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.baseline': 'Baseline (thin bar)', 'legend.today': 'Today',
   };
 
   const CATALOGS = { fr: FR, en: EN };
@@ -2083,6 +2167,7 @@ const App = {
   selected: null,
   zoom: 100,
   showAlerts: true,
+  showLinks: true,
   undo: [],
   redo: [],
   dirty: false,
@@ -2233,6 +2318,9 @@ function renderTopbar() {
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const links = $('btn-links');
+  links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
+  links.setAttribute('aria-pressed', String(App.showLinks));
   const lvl = $('leveling-mode');
   if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
 }
@@ -2351,7 +2439,18 @@ function gridRange() {
   lo = Math.min(lo, Dates.parse(App.project.projectStart));
   for (const r of s.tasks.values()) if (!r.empty) { lo = Math.min(lo, r.startDn); hi = Math.max(hi, r.endDn); }
   for (const task of App.project.tasks) for (const k of ['realStart', 'realEnd']) { const d = Dates.parse(task[k]); if (d != null) { lo = Math.min(lo, d); hi = Math.max(hi, d); } }
+  for (const b of shownBaselines()) for (const bt of b.tasks) { lo = Math.min(lo, Dates.parse(bt.start)); hi = Math.max(hi, Dates.parse(bt.end)); }
   return { from: Dates.mondayOf(lo), to: Dates.mondayOf(hi) + 13 };
+}
+
+const shownBaselines = () => App.project.baselines.filter(b => b.shownOnGantt);
+
+/** Texte d'une barre de baseline pour le nom accessible et l'infobulle (EF-34). */
+function baselineTexts(taskId) {
+  return shownBaselines().map(b => {
+    const bt = b.tasks.find(x => x.id === taskId);
+    return bt ? t('gantt.baseline', { name: b.name, start: I18n.date(Dates.parse(bt.start)), end: I18n.date(Dates.parse(bt.end)) }) : null;
+  }).filter(Boolean);
 }
 
 function renderGantt(rows, fl) {
@@ -2409,7 +2508,11 @@ function renderGantt(rows, fl) {
     body.append(line);
   }
 
+  const bls = shownBaselines();
+  body.classList.toggle('with-bl', bls.length > 0);
   const row = (...children) => h('div', { class: 'g-row' }, children);
+  const rowOf = new Map(); // id → index de ligne visible, pour les flèches
+  rows.forEach((task, i) => rowOf.set(task.id, i + 1));
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
   for (const task of rows) {
@@ -2442,10 +2545,66 @@ function renderGantt(rows, fl) {
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
     }
-    body.append(row(el));
+    const blText = baselineTexts(task.id);
+    if (blText.length) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', ' + blText.join(', '));
+    // Fines barres de baseline, empilées sous la barre (EF-34).
+    const minis = bls.map((b, k) => {
+      const bt = b.tasks.find(x => x.id === task.id);
+      if (!bt) return null;
+      const a = Dates.parse(bt.start), z = Dates.parse(bt.end);
+      const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
+      m.style.setProperty('left', x(a) + 'px');
+      m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
+      m.style.setProperty('top', (25 + k * 3) + 'px');
+      m.style.setProperty('background', safeColor(b.color));
+      return m;
+    });
+    body.append(row(el, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
+  if (App.showLinks) body.append(linkArrows(rows, rowOf, x, dayW));
   inner.append(body);
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+/** Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style). */
+function svg(tag, attrs = {}, ...children) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === undefined || v === null) continue;
+    if (FORBIDDEN_ATTR.test(k)) throw new Error('attribut interdit : ' + k);
+    if (k === 'text') el.textContent = String(v); else el.setAttribute(k, String(v));
+  }
+  for (const c of children.flat(Infinity)) if (c) el.append(c);
+  return el;
+}
+
+/** Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type. */
+function linkArrows(rows, rowOf, x, dayW) {
+  const s = App.sched;
+  const rowH = 34, mid = i => i * rowH + rowH / 2;
+  const height = (rows.length + 2) * rowH;
+  const layer = svg('svg', { class: 'g-links', 'aria-hidden': 'true', height, width: '100%' },
+    svg('defs', {}, ['n', 'c'].map(k => svg('marker', { id: 'arrow-' + k, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
+      svg('path', { d: 'M0,0 L8,4 L0,8 z', class: 'head-' + k })))));
+  for (const task of rows) {
+    const rs = s.tasks.get(task.id);
+    if (!rs || rs.empty) continue;
+    for (const d of task.deps) {
+      const rp = s.tasks.get(d.id);
+      if (!rowOf.has(d.id) || !rp) continue;
+      const predMs = taskById(d.id).type === 'milestone', succMs = task.type === 'milestone';
+      const edge = (r, ms, atEnd) => (ms ? x(r.startDn + 0.5) : atEnd ? x(r.endDn + 1) : x(r.startDn));
+      const fromEnd = d.type === 'FS' || d.type === 'FF', toEnd = d.type === 'FF' || d.type === 'SF';
+      const x1 = edge(rp, predMs, fromEnd), y1 = mid(rowOf.get(d.id));
+      const x2 = edge(rs, succMs, toEnd), y2 = mid(rowOf.get(task.id));
+      const out = fromEnd ? 6 : -6, inn = toEnd ? 6 : -6;
+      const crit = rp.critical && rs.critical;
+      const path = `M${x1},${y1} h${out} V${(y1 + y2) / 2} H${x2 + inn} V${y2} H${x2}`;
+      layer.append(svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` }));
+    }
+  }
+  return layer;
 }
 
 function renderLegend() {
@@ -2455,12 +2614,14 @@ function renderLegend() {
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
     h('li', {}, h('span', { class: 'swatch critical', aria: { hidden: 'true' } }), t('legend.critical')),
     h('li', {}, t('legend.forced')), h('li', {}, t('legend.milestone')),
+    App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
   ];
   box.append(h('ul', {}, items));
 }
 
 function render() {
+  Tooltip.hide();
   applyStaticTexts();
   renderTopbar();
   renderKpis();
@@ -2471,6 +2632,60 @@ function render() {
   renderGantt(rows, fl);
   renderLegend();
 }
+
+// ── js/ui/55-tooltip.js ──
+/* Infobulle des barres (EF-23) : au survol ET au focus clavier ; Échap la ferme.
+ * Contenu en texte seul (textContent) ; position par le CSSOM. Les mêmes informations sont dans
+ * le nom accessible de la barre et dans le panneau d'édition. */
+const Tooltip = (() => {
+  let current = null;
+
+  function lines(task) {
+    const s = App.sched, r = s && s.tasks.get(task.id);
+    if (!r || r.empty) return [];
+    const out = [`${task.id} — ${task.name}`];
+    out.push(`${t('tip.planned')} : ${I18n.date(r.startDn)} → ${I18n.date(r.endDn)} (${durText(task, r)})`);
+    if (task.realStart || task.realEnd) out.push(`${t('tip.real')} : ${task.realStart ? I18n.date(Dates.parse(task.realStart)) : '…'} → ${task.realEnd ? I18n.date(Dates.parse(task.realEnd)) : '…'}`);
+    const st = Metrics.status(task, s, Dates.todayDn());
+    out.push(`${t('f.pct')} : ${Metrics.pctOf(task, s)} % — ${st ? t('status.' + st) : ''}`);
+    if (task.deps.length) out.push(`${t('f.deps')} : ${depsText(task)}`);
+    if (task.type === 'task') out.push(`${t('col.res')} : ${resText(task) || t('list.noRes')}`);
+    if (r.shift) out.push(shiftText(r));
+    if (task.type !== 'summary') out.push(`${t('tip.slack')} : ${r.slack}${r.critical ? ' — ' + t('list.critical') : ''}`);
+    for (const b of baselineTexts(task.id)) out.push(b);
+    return out;
+  }
+
+  function show(el) {
+    const task = taskById(el.dataset.arg);
+    if (!task) return;
+    const tip = $('tooltip');
+    clear(tip);
+    for (const l of lines(task)) tip.append(h('div', { text: l }));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = tip.offsetWidth, hgt = tip.offsetHeight;
+    const left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left));
+    const top = r.bottom + 8 + hgt > window.innerHeight ? r.top - hgt - 8 : r.bottom + 8;
+    tip.style.setProperty('left', left + 'px');
+    tip.style.setProperty('top', Math.max(8, top) + 'px');
+    el.setAttribute('aria-describedby', 'tooltip');
+    current = el;
+  }
+  function hide() {
+    $('tooltip').hidden = true;
+    if (current) current.removeAttribute('aria-describedby');
+    current = null;
+  }
+  const target = ev => ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg], #gantt .sbar');
+
+  function init() {
+    document.addEventListener('mouseover', ev => { const el = target(ev); if (el && el !== current) show(el); else if (!el && current && !current.contains(document.activeElement)) hide(); });
+    document.addEventListener('focusin', ev => { const el = target(ev); if (el) show(el); else hide(); });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && current) { hide(); ev.stopPropagation(); } }, true);
+  }
+  return { init, hide };
+})();
 
 // ── js/ui/60-editor.js ──
 /* Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
@@ -3021,6 +3236,297 @@ action('applyResolve', arg => {
   }
 });
 
+// ── js/ui/72-baselines.js ──
+/* Baselines (EF-33 à EF-36, RG-22) : copies figées des dates calculées, trois au plus. */
+
+function captureBaseline(p, sched, name, color) {
+  const catName = id => (p.categories.find(c => c.id === id) || { name: '' }).name;
+  let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
+  return {
+    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
+      const r = sched.tasks.get(x.id);
+      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn) };
+    }),
+  };
+}
+
+function baselinesWindow() {
+  const body = h('div', { id: 'bl-win' });
+  const paint = () => {
+    clear(body);
+    const list = App.project.baselines;
+    if (!list.length) body.append(h('p', { class: 'hint', text: t('bl.none') }));
+    else {
+      const tb = h('tbody');
+      for (const b of list) {
+        const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(b.color));
+        tb.append(h('tr', {},
+          h('td', {}, h('input', { type: 'text', value: b.name, maxlength: 100, aria: { label: `${t('res.name')} (${b.name})`, describedby: 'blerr-' + b.id }, data: { change: 'blField', arg: b.id + ':name' } }),
+            h('p', { class: 'field-error', id: 'blerr-' + b.id, hidden: true })),
+          h('td', {}, sw, h('select', { aria: { label: `${t('res.color')} (${b.name})` }, data: { change: 'blField', arg: b.id + ':color' } },
+            Model.BASELINE_COLORS.map((c, i) => h('option', { value: c, selected: c === b.color }, t('color.pick', { n: i + 1 }))))),
+          h('td', {}, h('input', { type: 'checkbox', id: 'blg-' + b.id, checked: b.shownOnGantt, data: { change: 'blField', arg: b.id + ':gantt' } }),
+            h('label', { for: 'blg-' + b.id, text: ' ' + t('bl.onGantt') })),
+          h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
+            h('label', { for: 'bls-' + b.id, text: ' ' + t('bl.onScurve') })),
+          h('td', { text: t('bl.captured', { date: I18n.date(Dates.todayDn(new Date(b.createdAt || 0))), count: b.tasks.length }) }),
+          h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
+      }
+      body.append(h('table', { class: 'manage' },
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+    }
+    body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
+  };
+  baselinesWindow.paint = paint;
+  paint();
+  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] })
+    .then(() => { baselinesWindow.paint = null; });
+}
+
+action('blCapture', () => {
+  const p = App.project;
+  if (p.baselines.length >= Model.LIMITS.baselines) { Dialog.message(t('top.baselines'), t('bl.limit', { max: Model.LIMITS.baselines })); return; }
+  if (!App.sched) return;
+  let n = p.baselines.length + 1;
+  while (p.baselines.some(b => b.name === `Baseline ${n}`)) n++;
+  const used = new Set(p.baselines.map(b => b.color));
+  const color = Model.BASELINE_COLORS.find(c => !used.has(c)) || Model.BASELINE_COLORS[0];
+  const b = captureBaseline(p, App.sched, `Baseline ${n}`, color);
+  commit(pr => pr.baselines.push(b));
+  announce(t('bl.done', { name: b.name }));
+  if (baselinesWindow.paint) { baselinesWindow.paint(); const inp = document.querySelector('#bl-win tbody tr:last-child input'); if (inp) inp.focus(); }
+});
+
+action('blField', (arg, el) => {
+  const [id, k] = arg.split(':');
+  const b = App.project.baselines.find(x => x.id === id);
+  if (!b) return;
+  if (k === 'name') {
+    const v = el.value.trim();
+    const err = $('blerr-' + id);
+    if (!v || v.length > 100) { err.textContent = t('err.text', { field: t('res.name'), min: 1, max: 100 }); err.hidden = false; el.setAttribute('aria-invalid', 'true'); el.focus(); return; }
+    err.hidden = true; el.removeAttribute('aria-invalid');
+    commit(() => { b.name = v; });
+  } else if (k === 'color') {
+    if (!Model.BASELINE_COLORS.includes(el.value)) return;
+    commit(() => { b.color = el.value; });
+  } else if (k === 'gantt' || k === 'scurve') {
+    // Afficher ou masquer n'est pas une modification de données (EF-53) : pas d'historique.
+    b[k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve'] = el.checked;
+    render();
+  }
+});
+
+action('blDelete', async id => {
+  const b = App.project.baselines.find(x => x.id === id);
+  if (!b) return;
+  if (!(await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete')))) return;
+  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); });
+  if (baselinesWindow.paint) baselinesWindow.paint();
+});
+
+// ── js/ui/75-dashboard.js ──
+/* Tableau de bord (EF-37 à EF-40) : indicateurs, courbe en S, tableau de suivi.
+ * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
+ * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
+ * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
+const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '' };
+
+function fmtPct(v) { return `${I18n.number(v)} %`; }
+
+function sCurveChart(curve) {
+  const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
+  const n = curve.periods.length;
+  const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
+  const py = v => m.t + (1 - v / 100) * (H - m.t - m.b);
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
+  const last = a => (a.length ? a[a.length - 1] : 0);
+  chart.append(svg('title', { id: 'sc-title', text: t('dash.curve') }),
+    svg('desc', { id: 'sc-desc', text: t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }) }));
+  for (const v of [0, 25, 50, 75, 100]) {
+    chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: `${v} %` }));
+  }
+  const step = Math.max(1, Math.ceil(n / 8));
+  curve.periods.forEach((p, i) => {
+    if (i % step && i !== n - 1) return;
+    chart.append(svg('text', { x: px(i), y: H - m.b + 18, class: 'axis', 'text-anchor': 'middle',
+      text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) }));
+  });
+  const td = Dates.todayDn();
+  const ti = curve.periods.findIndex(p => p.start <= td && td <= p.end);
+  if (ti >= 0) chart.append(svg('line', { x1: px(ti), x2: px(ti), y1: m.t, y2: H - m.b, class: 'today' }),
+    svg('text', { x: px(ti) + 4, y: m.t + 10, class: 'axis', text: t('gantt.today') }));
+  const line = (vals, cls, color) => {
+    if (!vals.length) return;
+    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    chart.append(svg('polyline', { points: pts, class: 'series ' + cls, stroke: color || null, fill: 'none' }));
+  };
+  const labels = [];
+  for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
+    line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
+    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${fmtPct(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+  }
+  line(curve.planned, 'planned');
+  line(curve.real, 'real');
+  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${fmtPct(last(curve.planned))}`, i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${fmtPct(last(curve.real))}`, i: curve.real.length - 1 });
+  // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
+  labels.sort((a, b) => py(a.v) - py(b.v));
+  let prev = -Infinity;
+  for (const l of labels) {
+    const y = Math.max(py(l.v) + 4, prev + 14);
+    prev = y;
+    chart.append(svg('text', { x: px(l.i) + 6, y, class: 'label', text: l.text }));
+  }
+  // Réticule au survol et au clavier (flèches gauche/droite).
+  const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'cross', visibility: 'hidden' });
+  const zone = svg('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, class: 'hit' });
+  chart.append(cross, zone);
+  const tip = h('div', { class: 'chart-tip', hidden: true, role: 'status' });
+  let idx = -1;
+  const showAt = i => {
+    idx = Math.max(0, Math.min(n - 1, i));
+    cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
+    const p = curve.periods[idx];
+    const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
+      `${t('dash.planned')} ${fmtPct(curve.planned[idx])}`];
+    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${fmtPct(curve.real[idx])}`);
+    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${fmtPct((curve.baselines[b.id] || [])[idx] || 0)}`);
+    tip.textContent = parts.join(' · ');
+    tip.hidden = false;
+  };
+  zone.addEventListener('mousemove', ev => {
+    const r = chart.getBoundingClientRect();
+    const xv = (ev.clientX - r.left) * W / r.width;
+    showAt(Math.round(((xv - m.l) * (n - 1)) / (W - m.l - m.r)));
+  });
+  // Exploration au clavier : le cadre du graphique reçoit le focus, les flèches parcourent les périodes.
+  const box = h('div', { class: 'chart-box', tabindex: '0', role: 'group', aria: { label: t('dash.explore') } }, chart, tip);
+  zone.addEventListener('mouseleave', () => { if (document.activeElement !== box) { cross.setAttribute('visibility', 'hidden'); tip.hidden = true; } });
+  box.addEventListener('focus', () => showAt(idx < 0 ? (ti >= 0 ? ti : n - 1) : idx));
+  box.addEventListener('blur', () => { cross.setAttribute('visibility', 'hidden'); tip.hidden = true; });
+  box.addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') { ev.preventDefault(); showAt(idx + (ev.key === 'ArrowLeft' ? -1 : 1)); }
+    if (ev.key === 'Home') { ev.preventDefault(); showAt(0); }
+    if (ev.key === 'End') { ev.preventDefault(); showAt(n - 1); }
+  });
+  return box;
+}
+
+function curveLegend() {
+  const item = (cls, label, color) => {
+    const sw = h('span', { class: 'key ' + cls, aria: { hidden: 'true' } });
+    if (color) sw.style.setProperty('border-top-color', safeColor(color));
+    return h('li', {}, sw, label);
+  };
+  return h('ul', { class: 'chart-legend' }, item('planned', t('dash.planned')), item('real', t('dash.real')),
+    App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
+}
+
+function curveTable(curve) {
+  const bls = App.project.baselines.filter(b => b.shownOnScurve);
+  return h('table', { class: 'manage values', id: 'sc-values' },
+    h('caption', { text: t('dash.valuesCaption') }),
+    h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
+    h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
+      h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
+      h('td', { text: fmtPct(curve.planned[i]) }), h('td', { text: i < curve.real.length ? fmtPct(curve.real[i]) : '—' }),
+      bls.map(b => h('td', { text: fmtPct((curve.baselines[b.id] || [])[i] || 0) }))))));
+}
+
+function trackingRows() {
+  const s = App.sched, today = Dates.todayDn();
+  const bl = App.project.baselines.find(b => b.id === Dash.baseline);
+  return App.project.tasks.filter(x => x.type !== 'summary').map((task, order) => {
+    const r = s.tasks.get(task.id);
+    const dev = Metrics.deviation(task, s, today);
+    let vsBl = null;
+    if (bl) { const bt = bl.tasks.find(x => x.id === task.id); if (bt) vsBl = r.e - s.cal.floor(Dates.parse(bt.end)); }
+    return { task, order, r, dev, vsBl, status: Metrics.status(task, s, today) };
+  });
+}
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + ' j';
+
+function trackingTable() {
+  const cols = [
+    ['order', t('col.id')], ['name', t('col.name')], ['pct', t('f.pct')], ['start', t('dash.pStart')], ['end', t('dash.pEnd')],
+    ['realStart', t('f.realStart')], ['realEnd', t('f.realEnd')], ['dev', t('dash.dev')], ['status', t('col.status')],
+  ];
+  if (Dash.baseline) cols.push(['vsBl', t('dash.vsBl')]);
+  const key = {
+    order: x => x.order, name: x => x.task.name.toLocaleLowerCase(), pct: x => x.task.pct, start: x => x.r.startDn, end: x => x.r.endDn,
+    realStart: x => x.task.realStart || '~', realEnd: x => x.task.realEnd || '~', dev: x => (x.dev ? x.dev.days : -1e9),
+    status: x => ['late', 'ongoing', 'notStarted', 'upcoming', 'done'].indexOf(x.status), vsBl: x => (x.vsBl == null ? -1e9 : x.vsBl),
+  }[Dash.sort.key] || (x => x.order);
+  const rows = trackingRows().sort((a, b) => { const ka = key(a), kb = key(b); return (ka < kb ? -1 : ka > kb ? 1 : 0) * Dash.sort.dir || a.order - b.order; });
+  const dateCell = v => (v ? I18n.shortDate(Dates.parse(v)) : '—');
+  return h('table', { class: 'manage tracking', id: 'tracking' },
+    h('caption', { class: 'sr-only', text: t('dash.tracking') }),
+    h('thead', {}, h('tr', {}, cols.map(([k, label]) => h('th', { scope: 'col', aria: { sort: Dash.sort.key === k ? (Dash.sort.dir > 0 ? 'ascending' : 'descending') : undefined } },
+      h('button', { type: 'button', class: 'sort', data: { click: 'dashSort', arg: k } }, label, Dash.sort.key === k ? (Dash.sort.dir > 0 ? ' ▲' : ' ▼') : ''))))),
+    h('tbody', {}, rows.map(x => h('tr', {},
+      h('td', { class: 'id', text: x.task.id }), h('td', { text: x.task.name }), h('td', { text: `${x.task.pct} %` }),
+      h('td', { text: I18n.shortDate(x.r.startDn) }), h('td', { text: I18n.shortDate(x.r.endDn) }),
+      h('td', { text: dateCell(x.task.realStart) }), h('td', { text: dateCell(x.task.realEnd) }),
+      h('td', { text: x.dev ? signed(x.dev.days) + (x.dev.ongoing ? ' ' + t('dash.ongoing') : '') : '' }),
+      h('td', { class: 'status ' + (x.status || ''), text: x.status ? t('status.' + x.status) : '' }),
+      Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
+}
+
+function paintDashboard(body) {
+  clear(body);
+  if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
+  const today = Dates.todayDn();
+  const c = Metrics.counters(App.project, App.sched, today);
+  const tile = (label, value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', { text: value }));
+  body.append(h('dl', { class: 'tiles' },
+    tile(t('kpi.progress'), fmtPct(Math.round(Metrics.globalProgress(App.project)))),
+    tile(t('dash.done'), String(c.done)), tile(t('dash.ongoingN'), String(c.ongoing)), tile(t('dash.late'), String(c.late))));
+
+  const curve = Metrics.sCurve(App.project, App.sched, today, Dash.unit);
+  const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+    ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
+      h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
+  const toggle = h('button', { type: 'button', data: { click: 'dashValues' }, aria: { expanded: String(Dash.showValues), controls: 'sc-values' } },
+    t(Dash.showValues ? 'dash.hideValues' : 'dash.showValues'));
+  body.append(h('section', { class: 'dash-section', aria: { labelledby: 'dash-curve-h' } },
+    h('h3', { id: 'dash-curve-h', text: t('dash.curve') }), h('div', { class: 'row' }, unit, toggle),
+    curveLegend(), sCurveChart(curve), Dash.showValues ? curveTable(curve) : null));
+
+  const blSel = h('select', { id: 'dash-bl', data: { change: 'dashBaseline' } },
+    h('option', { value: '', selected: !Dash.baseline }, t('dash.noBl')),
+    App.project.baselines.map(b => h('option', { value: b.id, selected: Dash.baseline === b.id }, b.name)));
+  body.append(h('section', { class: 'dash-section', aria: { labelledby: 'dash-track-h' } },
+    h('h3', { id: 'dash-track-h', text: t('dash.tracking') }),
+    h('div', { class: 'row' }, h('label', { for: 'dash-bl', text: t('dash.vsBlPick') }), blSel),
+    h('div', { class: 'table-scroll' }, trackingTable())));
+}
+
+function dashboardWindow() {
+  if (Dash.baseline && !App.project.baselines.some(b => b.id === Dash.baseline)) Dash.baseline = '';
+  const body = h('div', { id: 'dash-win' });
+  dashboardWindow.body = body;
+  paintDashboard(body);
+  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+    .then(() => { dashboardWindow.body = null; });
+}
+
+function repaintDashboard(focusSel) {
+  if (!dashboardWindow.body) return;
+  paintDashboard(dashboardWindow.body);
+  const el = focusSel && dashboardWindow.body.querySelector(focusSel);
+  if (el) el.focus();
+}
+action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
+action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
+action('dashSort', k => {
+  Dash.sort = Dash.sort.key === k ? { key: k, dir: -Dash.sort.dir } : { key: k, dir: 1 };
+  repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
+});
+
 // ── js/ui/80-files.js ──
 /* Fichiers : nouveau projet (EF-49), import (EF-52), export (EF-50, EF-51).
  * Un fichier importé est contrôlé en entier par Model.parseFile AVANT tout changement :
@@ -3213,6 +3719,9 @@ action('toggleLang', () => {
 
 action('editProject', () => editProjectWindow());
 action('openResolve', () => resolveWindow());
+action('openBaselines', () => baselinesWindow());
+action('openDashboard', () => dashboardWindow());
+action('toggleLinks', () => { App.showLinks = !App.showLinks; render(); $('btn-links').focus(); });
 action('setLeveling', (arg, el) => {
   if (!Schedule.MODES.includes(el.value)) return;
   commit(p => { p.leveling = el.value; });
@@ -3259,6 +3768,7 @@ function init() {
   applyTheme();
   initActions();
   initKeyboard();
+  Tooltip.init();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

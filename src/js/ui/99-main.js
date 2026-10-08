@@ -106,6 +106,9 @@ action('toggleLang', () => {
 
 action('editProject', () => editProjectWindow());
 action('openResolve', () => resolveWindow());
+action('openBaselines', () => baselinesWindow());
+action('openDashboard', () => dashboardWindow());
+action('toggleLinks', () => { App.showLinks = !App.showLinks; render(); $('btn-links').focus(); });
 action('setLeveling', (arg, el) => {
   if (!Schedule.MODES.includes(el.value)) return;
   commit(p => { p.leveling = el.value; });
@@ -152,6 +155,7 @@ function init() {
   applyTheme();
   initActions();
   initKeyboard();
+  Tooltip.init();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

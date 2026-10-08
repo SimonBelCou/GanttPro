@@ -54,6 +54,9 @@ function renderTopbar() {
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const links = $('btn-links');
+  links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
+  links.setAttribute('aria-pressed', String(App.showLinks));
   const lvl = $('leveling-mode');
   if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
 }
@@ -172,7 +175,18 @@ function gridRange() {
   lo = Math.min(lo, Dates.parse(App.project.projectStart));
   for (const r of s.tasks.values()) if (!r.empty) { lo = Math.min(lo, r.startDn); hi = Math.max(hi, r.endDn); }
   for (const task of App.project.tasks) for (const k of ['realStart', 'realEnd']) { const d = Dates.parse(task[k]); if (d != null) { lo = Math.min(lo, d); hi = Math.max(hi, d); } }
+  for (const b of shownBaselines()) for (const bt of b.tasks) { lo = Math.min(lo, Dates.parse(bt.start)); hi = Math.max(hi, Dates.parse(bt.end)); }
   return { from: Dates.mondayOf(lo), to: Dates.mondayOf(hi) + 13 };
+}
+
+const shownBaselines = () => App.project.baselines.filter(b => b.shownOnGantt);
+
+/** Texte d'une barre de baseline pour le nom accessible et l'infobulle (EF-34). */
+function baselineTexts(taskId) {
+  return shownBaselines().map(b => {
+    const bt = b.tasks.find(x => x.id === taskId);
+    return bt ? t('gantt.baseline', { name: b.name, start: I18n.date(Dates.parse(bt.start)), end: I18n.date(Dates.parse(bt.end)) }) : null;
+  }).filter(Boolean);
 }
 
 function renderGantt(rows, fl) {
@@ -230,7 +244,11 @@ function renderGantt(rows, fl) {
     body.append(line);
   }
 
+  const bls = shownBaselines();
+  body.classList.toggle('with-bl', bls.length > 0);
   const row = (...children) => h('div', { class: 'g-row' }, children);
+  const rowOf = new Map(); // id → index de ligne visible, pour les flèches
+  rows.forEach((task, i) => rowOf.set(task.id, i + 1));
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
   for (const task of rows) {
@@ -263,10 +281,66 @@ function renderGantt(rows, fl) {
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
     }
-    body.append(row(el));
+    const blText = baselineTexts(task.id);
+    if (blText.length) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', ' + blText.join(', '));
+    // Fines barres de baseline, empilées sous la barre (EF-34).
+    const minis = bls.map((b, k) => {
+      const bt = b.tasks.find(x => x.id === task.id);
+      if (!bt) return null;
+      const a = Dates.parse(bt.start), z = Dates.parse(bt.end);
+      const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
+      m.style.setProperty('left', x(a) + 'px');
+      m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
+      m.style.setProperty('top', (25 + k * 3) + 'px');
+      m.style.setProperty('background', safeColor(b.color));
+      return m;
+    });
+    body.append(row(el, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
+  if (App.showLinks) body.append(linkArrows(rows, rowOf, x, dayW));
   inner.append(body);
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+/** Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style). */
+function svg(tag, attrs = {}, ...children) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === undefined || v === null) continue;
+    if (FORBIDDEN_ATTR.test(k)) throw new Error('attribut interdit : ' + k);
+    if (k === 'text') el.textContent = String(v); else el.setAttribute(k, String(v));
+  }
+  for (const c of children.flat(Infinity)) if (c) el.append(c);
+  return el;
+}
+
+/** Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type. */
+function linkArrows(rows, rowOf, x, dayW) {
+  const s = App.sched;
+  const rowH = 34, mid = i => i * rowH + rowH / 2;
+  const height = (rows.length + 2) * rowH;
+  const layer = svg('svg', { class: 'g-links', 'aria-hidden': 'true', height, width: '100%' },
+    svg('defs', {}, ['n', 'c'].map(k => svg('marker', { id: 'arrow-' + k, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
+      svg('path', { d: 'M0,0 L8,4 L0,8 z', class: 'head-' + k })))));
+  for (const task of rows) {
+    const rs = s.tasks.get(task.id);
+    if (!rs || rs.empty) continue;
+    for (const d of task.deps) {
+      const rp = s.tasks.get(d.id);
+      if (!rowOf.has(d.id) || !rp) continue;
+      const predMs = taskById(d.id).type === 'milestone', succMs = task.type === 'milestone';
+      const edge = (r, ms, atEnd) => (ms ? x(r.startDn + 0.5) : atEnd ? x(r.endDn + 1) : x(r.startDn));
+      const fromEnd = d.type === 'FS' || d.type === 'FF', toEnd = d.type === 'FF' || d.type === 'SF';
+      const x1 = edge(rp, predMs, fromEnd), y1 = mid(rowOf.get(d.id));
+      const x2 = edge(rs, succMs, toEnd), y2 = mid(rowOf.get(task.id));
+      const out = fromEnd ? 6 : -6, inn = toEnd ? 6 : -6;
+      const crit = rp.critical && rs.critical;
+      const path = `M${x1},${y1} h${out} V${(y1 + y2) / 2} H${x2 + inn} V${y2} H${x2}`;
+      layer.append(svg('path', { d: path, class: crit ? 'link critical' : 'link', 'marker-end': `url(#arrow-${crit ? 'c' : 'n'})` }));
+    }
+  }
+  return layer;
 }
 
 function renderLegend() {
@@ -276,12 +350,14 @@ function renderLegend() {
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
     h('li', {}, h('span', { class: 'swatch critical', aria: { hidden: 'true' } }), t('legend.critical')),
     h('li', {}, t('legend.forced')), h('li', {}, t('legend.milestone')),
+    App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
   ];
   box.append(h('ul', {}, items));
 }
 
 function render() {
+  Tooltip.hide();
   applyStaticTexts();
   renderTopbar();
   renderKpis();

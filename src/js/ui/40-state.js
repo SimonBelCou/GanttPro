@@ -7,6 +7,7 @@ const App = {
   selected: null,
   zoom: 100,
   showAlerts: true,
+  showLinks: true,
   undo: [],
   redo: [],
   dirty: false,
