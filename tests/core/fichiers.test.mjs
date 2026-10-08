@@ -187,3 +187,11 @@ test('pluriels et messages d\'import traduits', () => {
   I18n.setLang('fr');
   assert.equal(I18n.date(Dates.parse('2026-01-05')), 'lun. 05 janv. 2026');
 });
+
+test('gestion de la charge : lissage par défaut, nivellement pour un fichier 2.3', () => {
+  assert.equal(imp({ format: 3, tasks: [] }).project.leveling, 'smooth');
+  assert.equal(imp({ tasks: [] }).project.leveling, 'level');
+  assert.equal(imp({ format: 3, leveling: 'off', tasks: [] }).project.leveling, 'off');
+  assert.equal(keyOf({ format: 3, leveling: 'auto', tasks: [] }), 'imp.field');
+  assert.equal(Model.newProject('2026-01-05').leveling, 'smooth');
+});

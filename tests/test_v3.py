@@ -75,7 +75,7 @@ def main():
     write('conflict.json', project(tasks=[
         {'id': 'A', 'name': 'Conception', 'dur': 5, 'res': 'Alice'},
         {'id': 'B', 'name': 'Revue', 'dur': 3, 'res': 'Alice', 'forcedStart': '2026-01-07'}]))
-    write('level.json', project(tasks=[
+    write('level.json', project(leveling='level', tasks=[
         {'id': 'A', 'name': 'Conception', 'dur': 3, 'res': 'Alice'}, {'id': 'B', 'name': 'Revue', 'dur': 2, 'res': 'Alice'}]))
 
     with sync_playwright() as p:
@@ -106,6 +106,7 @@ def main():
         check('CSP : aucune requête réseau', pg.evaluate("fetch('https://example.com').then(() => 'sortie').catch(() => 'bloquée')") == 'bloquée')
         pg.evaluate("document.getElementById('probe').remove(); document.getElementById('probe2').remove()")
         csp.clear()
+        check('nouveau projet en lissage par défaut', pg.input_value('#leveling-mode') == 'smooth')
         check('projet initial : tâche A de 10 jours', pg.inner_text('#task-rows tr[data-id="A"]').count('10 j') == 1)
         axe_check(pg, 'vue principale')
 
@@ -208,6 +209,7 @@ def main():
         pg.click('#btn-resolve')
         pg.wait_for_selector('#rsv-win')
         check('proposition globale : nivellement automatique', 'Passer le projet en nivellement automatique' in pg.inner_text('#rsv-win'))
+        check("arbitrage proposé : A avant B, avec son effet", 'Arbitrer : faire passer A avant B (lien fin-début A → B)' in pg.inner_text('#rsv-win'), pg.inner_text('#rsv-win'))
         pg.click('#rsv-win section:has-text("Pour tout le projet") button')
         check('nivellement rétabli : plus de conflit', pg.input_value('#leveling-mode') == 'level' and pg.is_hidden('#btn-alerts'))
         close_dialog('Fermer')

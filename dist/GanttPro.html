@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bGb2/KXNQRwW6JBiy5cSH5z3lTTs9aEeIXCFjuJFyzk='; style-src 'sha256-5PXm2iD6dXa7C4cMo27CZU2Yji1M4RUBr/cxmBmZmVU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wu4rQuwz7725+rZl0JihYmYLB9QUzIOd22xylISxIlg='; style-src 'sha256-5PXm2iD6dXa7C4cMo27CZU2Yji1M4RUBr/cxmBmZmVU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -946,10 +946,12 @@ const Metrics = (() => {
  *   moveForced  déplacer la date imposée d'une tâche au premier jour où ses ressources sont libres ;
  *   reassign    confier la tâche à une autre ressource libre sur toute sa période ;
  *   unforce     lever la date imposée (la tâche est alors placée par le nivellement) ;
+ *   sequence    arbitrer : faire passer X avant Y, par un lien fin-début X → Y visible et retirable ;
  *   level       passer le projet en nivellement automatique (si lissage ou désactivé).
  * Les propositions sont classées par conflits restants, puis par décalage de la fin. */
 const Resolve = (() => {
   const MAX_REASSIGN = 3;
+  const MAX_PAIRS = 6;
   const SEARCH_DAYS = 520; // environ deux ans ouvrés de recherche pour une date libre
 
   const copy = p => JSON.parse(JSON.stringify(p));
@@ -1004,7 +1006,7 @@ const Resolve = (() => {
     for (const c of sched.conflicts.slice(0, max)) {
       const options = [];
       const add = (o, mutate) => {
-        const key = JSON.stringify([o.kind, o.task, o.to, o.date]);
+        const key = JSON.stringify([o.kind, o.task, o.to, o.date, o.first]);
         const after = simulate(project, sched, mutate);
         if (!after) return;
         options.push({ ...o, mutate, after, key });
@@ -1032,6 +1034,21 @@ const Resolve = (() => {
           add({ kind: 'reassign', task: id, from: c.res, to: other.id }, p => {
             const pt = p.tasks.find(x => x.id === id);
             pt.assign = pt.assign.map(x => (x.res === c.res ? { res: other.id, units: x.units } : x));
+          });
+        }
+      }
+      // Arbitrage (RG-34) : « faire passer X avant Y » = lien fin-début X → Y, visible et retirable.
+      const tasksIn = c.tasks.map(id => byId.get(id)).filter(x => x && x.type === 'task');
+      let pairs = 0;
+      for (const x of tasksIn) {
+        for (const y of tasksIn) {
+          if (pairs >= MAX_PAIRS) break;
+          if (x === y || y.forcedStart || y.deps.some(d => d.id === x.id) || y.deps.length >= 50) continue;
+          const trial = project.tasks.map(t => (t.id === y.id ? { ...t, deps: [...t.deps, { id: x.id, type: 'FS', lag: 0 }] } : t));
+          if (Model.findCycle(trial)) continue;
+          pairs++;
+          add({ kind: 'sequence', first: x.id, task: y.id }, p => {
+            p.tasks.find(t => t.id === y.id).deps.push({ id: x.id, type: 'FS', lag: 0 });
           });
         }
       }
@@ -1233,7 +1250,9 @@ const Model = (() => {
       projectStart: P.date('projectStart', { def: Dates.toISO(Dates.todayDn()) }),
       reportNote: P.text('reportNote', { max: 2000 }),
       calendar: sanitizeCalendar(P.raw('calendar'), stats),
-      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], 'level'),
+      // Lissage par défaut : l'utilisateur arbitre lui-même les surcharges (A.3). Un fichier 2.3
+      // (sans champ format) garde le nivellement automatique pour retrouver ses dates d'origine.
+      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], has(raw, 'format') ? 'smooth' : 'level'),
     };
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -1500,7 +1519,7 @@ const Model = (() => {
     const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
-      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'level',
+      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
@@ -1664,7 +1683,8 @@ const I18n = (() => {
     'rsv.title': 'Résoudre les conflits', 'rsv.none': 'Aucun conflit : rien à résoudre.',
     'rsv.noOption': 'Aucune correction automatique : modifiez les dates, les durées ou les affectations de ces tâches.',
     'rsv.opt.moveForced': 'Déplacer la date imposée de {task} au {date}', 'rsv.opt.unforce': 'Lever la date imposée de {task}',
-    'rsv.opt.reassign': 'Confier {task} à {to} au lieu de {from}', 'rsv.opt.level': 'Passer le projet en nivellement automatique',
+    'rsv.opt.reassign': 'Confier {task} à {to} au lieu de {from}',
+    'rsv.opt.sequence': 'Arbitrer : faire passer {first} avant {task} (lien fin-début {first} → {task})', 'rsv.opt.level': 'Passer le projet en nivellement automatique',
     'rsv.left': { one: '{count} conflit restant', other: '{count} conflits restants' }, 'rsv.left0': 'aucun conflit restant',
     'rsv.endSame': 'fin inchangée', 'rsv.endLater': { one: 'fin repoussée de {count} jour', other: 'fin repoussée de {count} jours' },
     'rsv.endEarlier': { one: 'fin avancée de {count} jour', other: 'fin avancée de {count} jours' },
@@ -1775,7 +1795,8 @@ const I18n = (() => {
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
     'rsv.noOption': 'No automatic fix: change the dates, durations or assignments of these tasks.',
     'rsv.opt.moveForced': 'Move the fixed date of {task} to {date}', 'rsv.opt.unforce': 'Remove the fixed date of {task}',
-    'rsv.opt.reassign': 'Give {task} to {to} instead of {from}', 'rsv.opt.level': 'Switch the project to automatic levelling',
+    'rsv.opt.reassign': 'Give {task} to {to} instead of {from}',
+    'rsv.opt.sequence': 'Arbitrate: schedule {first} before {task} (finish-to-start link {first} → {task})', 'rsv.opt.level': 'Switch the project to automatic levelling',
     'rsv.left': { one: '{count} conflict left', other: '{count} conflicts left' }, 'rsv.left0': 'no conflict left',
     'rsv.endSame': 'finish unchanged', 'rsv.endLater': { one: 'finish delayed by {count} day', other: 'finish delayed by {count} days' },
     'rsv.endEarlier': { one: 'finish brought forward by {count} day', other: 'finish brought forward by {count} days' },
@@ -2947,6 +2968,7 @@ function optionLabel(o) {
     case 'moveForced': return t('rsv.opt.moveForced', { task: o.task, date: I18n.date(Dates.parse(o.date)) });
     case 'unforce': return t('rsv.opt.unforce', { task: o.task });
     case 'reassign': return t('rsv.opt.reassign', { task: o.task, from: res(o.from), to: res(o.to) });
+    case 'sequence': return t('rsv.opt.sequence', { first: o.first, task: o.task });
     default: return t('rsv.opt.level');
   }
 }

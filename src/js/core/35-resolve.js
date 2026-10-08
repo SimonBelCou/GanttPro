@@ -6,10 +6,12 @@
  *   moveForced  déplacer la date imposée d'une tâche au premier jour où ses ressources sont libres ;
  *   reassign    confier la tâche à une autre ressource libre sur toute sa période ;
  *   unforce     lever la date imposée (la tâche est alors placée par le nivellement) ;
+ *   sequence    arbitrer : faire passer X avant Y, par un lien fin-début X → Y visible et retirable ;
  *   level       passer le projet en nivellement automatique (si lissage ou désactivé).
  * Les propositions sont classées par conflits restants, puis par décalage de la fin. */
 const Resolve = (() => {
   const MAX_REASSIGN = 3;
+  const MAX_PAIRS = 6;
   const SEARCH_DAYS = 520; // environ deux ans ouvrés de recherche pour une date libre
 
   const copy = p => JSON.parse(JSON.stringify(p));
@@ -64,7 +66,7 @@ const Resolve = (() => {
     for (const c of sched.conflicts.slice(0, max)) {
       const options = [];
       const add = (o, mutate) => {
-        const key = JSON.stringify([o.kind, o.task, o.to, o.date]);
+        const key = JSON.stringify([o.kind, o.task, o.to, o.date, o.first]);
         const after = simulate(project, sched, mutate);
         if (!after) return;
         options.push({ ...o, mutate, after, key });
@@ -92,6 +94,21 @@ const Resolve = (() => {
           add({ kind: 'reassign', task: id, from: c.res, to: other.id }, p => {
             const pt = p.tasks.find(x => x.id === id);
             pt.assign = pt.assign.map(x => (x.res === c.res ? { res: other.id, units: x.units } : x));
+          });
+        }
+      }
+      // Arbitrage (RG-34) : « faire passer X avant Y » = lien fin-début X → Y, visible et retirable.
+      const tasksIn = c.tasks.map(id => byId.get(id)).filter(x => x && x.type === 'task');
+      let pairs = 0;
+      for (const x of tasksIn) {
+        for (const y of tasksIn) {
+          if (pairs >= MAX_PAIRS) break;
+          if (x === y || y.forcedStart || y.deps.some(d => d.id === x.id) || y.deps.length >= 50) continue;
+          const trial = project.tasks.map(t => (t.id === y.id ? { ...t, deps: [...t.deps, { id: x.id, type: 'FS', lag: 0 }] } : t));
+          if (Model.findCycle(trial)) continue;
+          pairs++;
+          add({ kind: 'sequence', first: x.id, task: y.id }, p => {
+            p.tasks.find(t => t.id === y.id).deps.push({ id: x.id, type: 'FS', lag: 0 });
           });
         }
       }

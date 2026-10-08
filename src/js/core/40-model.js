@@ -182,7 +182,9 @@ const Model = (() => {
       projectStart: P.date('projectStart', { def: Dates.toISO(Dates.todayDn()) }),
       reportNote: P.text('reportNote', { max: 2000 }),
       calendar: sanitizeCalendar(P.raw('calendar'), stats),
-      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], 'level'),
+      // Lissage par défaut : l'utilisateur arbitre lui-même les surcharges (A.3). Un fichier 2.3
+      // (sans champ format) garde le nivellement automatique pour retrouver ses dates d'origine.
+      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], has(raw, 'format') ? 'smooth' : 'level'),
     };
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -449,7 +451,7 @@ const Model = (() => {
     const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
-      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'level',
+      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],

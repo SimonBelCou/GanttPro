@@ -318,10 +318,26 @@ test('R-69 propositions de résolution simulées et classées', () => {
     ['reassign', 'B', 'r2', 0, 0],
     ['moveForced', 'B', '2026-01-12', 0, 3],
     ['unforce', 'B', '', 0, 3],
+    ['sequence', 'A', '', 0, 5], // arbitrage : B avant A
   ]);
   assert.deepEqual(plain(res.global), []);
   // Projet en lissage : la proposition globale « nivellement automatique » apparaît.
   const q = withMode(project({ resources: [alice], tasks: [{ id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 3, assign: ['r1'] }] }), 'smooth');
   const g = Resolve.suggest(q, run(q)).global;
   assert.deepEqual(plain(g.map(o => [o.kind, o.after.conflicts, o.after.endShift])), [['level', 0, 3]]);
+});
+
+test('R-70 arbitrage : faire passer une tâche avant l\'autre', () => {
+  const p = withMode(project({ resources: [alice], tasks: [{ id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 3, assign: ['r1'] }] }), 'smooth');
+  const s = run(p);
+  const opts = Resolve.suggest(p, s).conflicts[0].options;
+  const seq = opts.filter(o => o.kind === 'sequence').map(o => [o.first, o.task, o.after.conflicts, o.after.endShift]);
+  assert.deepEqual(plain(seq), [['A', 'B', 0, 3], ['B', 'A', 0, 3]]);
+  // Appliquer « A avant B » : un lien fin-début A → B, visible et retirable.
+  const q = JSON.parse(JSON.stringify(p));
+  opts.find(o => o.kind === 'sequence' && o.first === 'A').mutate(q);
+  assert.deepEqual(plain(q.tasks[1].deps), [{ id: 'A', type: 'FS', lag: 0 }]);
+  const after = run(q);
+  assert.equal(span(after, 'B'), '08/01-12/01');
+  assert.equal(after.conflicts.length, 0);
 });

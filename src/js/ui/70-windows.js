@@ -194,6 +194,7 @@ function optionLabel(o) {
     case 'moveForced': return t('rsv.opt.moveForced', { task: o.task, date: I18n.date(Dates.parse(o.date)) });
     case 'unforce': return t('rsv.opt.unforce', { task: o.task });
     case 'reassign': return t('rsv.opt.reassign', { task: o.task, from: res(o.from), to: res(o.to) });
+    case 'sequence': return t('rsv.opt.sequence', { first: o.first, task: o.task });
     default: return t('rsv.opt.level');
   }
 }
