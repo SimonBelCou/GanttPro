@@ -116,3 +116,35 @@ Un prompt guide la génération de code mais ne garantit rien seul. À coupler a
 - **Secret scanning** : gitleaks, truffleHog
 - **DAST** : OWASP ZAP
 - **Revue de code obligatoire** avant merge sur les branches protégées
+
+---
+
+# Spécificités du projet GanttPro
+
+Application en **un seul fichier** `GanttPro.html` (HTML + CSS + JS vanilla), ouverte en local, sans serveur.
+Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout code produit ou modifié.
+
+## Obligatoire à chaque modification du JavaScript
+1. Lancer `python3 tools/update-csp.py` : la CSP autorise le script par son empreinte SHA-256, elle devient
+   périmée à la moindre modification (la CI échoue sinon). Ne jamais ajouter `'unsafe-inline'` à `script-src`.
+2. Lancer `python3 tests/test_gantt.py` (import malveillant, CSP, parcours clavier/souris, accessibilité).
+
+## Règles de code (A03 – Injection)
+- **Aucun gestionnaire inline** (`onclick=`, `onchange=`, `oninput=`…, y compris dans les gabarits JS).
+  Utiliser `data-click` / `data-change` / `data-input` (+ `data-arg`) et déclarer l'action dans la table `ACTIONS`.
+- Toute donnée venant d'un fichier, du stockage ou d'un champ de saisie : `esc()` avant `innerHTML`
+  (ou `textContent`), `safeColor()` avant tout attribut `style`, jamais d'`eval`, `new Function`, `document.write`.
+- Tout import passe par `sanitizeProject()` (liste blanche de champs, types, longueurs, identifiants `[A-Z0-9._-]`).
+- Les identifiants de tâche sont des chaînes : ne jamais les convertir en nombres (`data-arg` brut pour `selectTask`).
+- `goHome()` ne suit que des URL de même origine en http(s)/file.
+
+## Accessibilité (WCAG 2.1 AA / RGAA)
+- Tout élément interactif non natif : `role="button"` + `tabindex="0"` ; Entrée/Espace sont gérés globalement.
+- Tout champ ou bouton-icône a un nom accessible ; le nom accessible d'un contrôle doit contenir son texte visible.
+- Texte ≥ 4,5:1 de contraste (`--muted` a été ajusté pour cela) ; pas de `outline:none` ; respecter `prefers-reduced-motion`.
+- Les modales sont gérées par `initDialogs()` (role=dialog, focus, Échap) : ajouter une modale = l'ajouter à `_DIALOG_CLOSERS`.
+
+## Vie privée (RGPD)
+- Aucun appel réseau (`connect-src 'none'`), aucune ressource externe (polices intégrées), aucun cookie/traceur.
+- Les noms de ressources sont des données personnelles potentielles : ne jamais les journaliser ni les envoyer.
+- Aucune donnée réelle (noms, projets, chemins, entreprise) dans les fichiers du dépôt, y compris dans les exemples.
