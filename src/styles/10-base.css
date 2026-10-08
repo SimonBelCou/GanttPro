@@ -248,3 +248,42 @@ svg.scurve { width: 100%; height: auto; display: block; }
 table.tracking th { position: sticky; top: 0; background: var(--panel); }
 button.sort { background: transparent; border: 0; padding: 0; min-height: 24px; font-weight: 600; }
 table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
+
+/* Calendrier (EF-69) */
+.cal-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 760px) { .cal-grid { grid-template-columns: 1fr; } }
+fieldset.week { margin-bottom: .8rem; flex-wrap: wrap; }
+.cal-preview .row { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; }
+table.month { border-collapse: collapse; width: 100%; }
+table.month th { font-size: .78rem; color: var(--muted); font-weight: 600; padding: .2rem; }
+table.month td { text-align: center; padding: .35rem 0; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+table.month td.off { background: var(--off); color: var(--muted); }
+table.month td.holiday { text-decoration: underline; text-decoration-thickness: 2px; color: var(--warning); font-weight: 700; }
+table.month td.worked { outline: 2px solid var(--accent); outline-offset: -3px; font-weight: 700; }
+table.month td.out { border: 0; }
+.add-row label { align-self: center; color: var(--muted); font-size: .85rem; }
+
+/* Fiche de ressource (EF-26, EF-71) */
+.res-head { display: flex; gap: .8rem; align-items: center; margin-bottom: .8rem; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* Recherche, filtres, regroupement (EF-84 à EF-86) */
+.viewbar { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.view-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.view-row input[type="search"] { min-width: 14rem; }
+.view-count { color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: .3rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
+.chip { min-height: 28px; padding: .1rem .6rem; border-radius: 999px; background: var(--panel-2); border-color: var(--accent); font-size: .85rem; }
+.link-btn { background: transparent; border: 0; color: var(--accent); text-decoration: underline; }
+#btn-filters.active { border-color: var(--accent); font-weight: 700; }
+.filters-panel { margin-top: .5rem; padding: .6rem; border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; gap: .5rem; }
+.filters-panel fieldset.inline, .filters-panel .inline { flex-wrap: wrap; display: flex; gap: .4rem 1rem; align-items: center; }
+.tasks tr.dim td { color: var(--muted); }
+.tasks tr.dim button.select { font-weight: 400; }
+.bar.dim, .ms.dim { filter: grayscale(1); }
+.tasks tr.hit td.name { background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.tasks tr.group-row td { background: var(--panel-2); font-weight: 600; }
+.tasks tr.group-row button.toggle { background: transparent; border: 0; padding: 0 .2rem; text-align: left; }
+.g-row.g-group { background: var(--panel-2); }
+.kpis .whole { margin: .3rem 0 0; }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5TKHx+xhKO8Hc46r26PK+JsRgEegrLy+ZYlBCTKMwNo='; style-src 'sha256-GVcIx1EvHn7dx7I7HC4NzDBEI4CTFYsoOXnL77ns63w='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xcoBMg5QGOt4DZHDraB1G6Kvo6xbKwhcpFEAZYusYKk='; style-src 'sha256-UDfvjW93/USFJlIycNN2/2wzcE7jyOMwkrR7X/R7e/E='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -263,6 +263,45 @@ table.tracking th { position: sticky; top: 0; background: var(--panel); }
 button.sort { background: transparent; border: 0; padding: 0; min-height: 24px; font-weight: 600; }
 table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
 
+/* Calendrier (EF-69) */
+.cal-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 760px) { .cal-grid { grid-template-columns: 1fr; } }
+fieldset.week { margin-bottom: .8rem; flex-wrap: wrap; }
+.cal-preview .row { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; }
+table.month { border-collapse: collapse; width: 100%; }
+table.month th { font-size: .78rem; color: var(--muted); font-weight: 600; padding: .2rem; }
+table.month td { text-align: center; padding: .35rem 0; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+table.month td.off { background: var(--off); color: var(--muted); }
+table.month td.holiday { text-decoration: underline; text-decoration-thickness: 2px; color: var(--warning); font-weight: 700; }
+table.month td.worked { outline: 2px solid var(--accent); outline-offset: -3px; font-weight: 700; }
+table.month td.out { border: 0; }
+.add-row label { align-self: center; color: var(--muted); font-size: .85rem; }
+
+/* Fiche de ressource (EF-26, EF-71) */
+.res-head { display: flex; gap: .8rem; align-items: center; margin-bottom: .8rem; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* Recherche, filtres, regroupement (EF-84 à EF-86) */
+.viewbar { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.view-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.view-row input[type="search"] { min-width: 14rem; }
+.view-count { color: var(--muted); }
+.check { display: inline-flex; align-items: center; gap: .3rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
+.chip { min-height: 28px; padding: .1rem .6rem; border-radius: 999px; background: var(--panel-2); border-color: var(--accent); font-size: .85rem; }
+.link-btn { background: transparent; border: 0; color: var(--accent); text-decoration: underline; }
+#btn-filters.active { border-color: var(--accent); font-weight: 700; }
+.filters-panel { margin-top: .5rem; padding: .6rem; border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; gap: .5rem; }
+.filters-panel fieldset.inline, .filters-panel .inline { flex-wrap: wrap; display: flex; gap: .4rem 1rem; align-items: center; }
+.tasks tr.dim td { color: var(--muted); }
+.tasks tr.dim button.select { font-weight: 400; }
+.bar.dim, .ms.dim { filter: grayscale(1); }
+.tasks tr.hit td.name { background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.tasks tr.group-row td { background: var(--panel-2); font-weight: 600; }
+.tasks tr.group-row button.toggle { background: transparent; border: 0; padding: 0 .2rem; text-align: left; }
+.g-row.g-group { background: var(--panel-2); }
+.kpis .whole { margin: .3rem 0 0; }
+
 </style>
 </head>
 <body>
@@ -283,6 +322,7 @@ table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
     <div class="group">
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
+      <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
@@ -329,6 +369,24 @@ table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
 </section>
 
 <main id="main" tabindex="-1">
+  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Recherche et filtres">
+    <div class="view-row">
+      <label for="search" data-i18n="view.search"></label>
+      <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
+      <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
+      <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
+      <label for="group-by" data-i18n="view.groupBy"></label>
+      <select id="group-by" data-change="groupBy">
+        <option value="" data-i18n="view.group.none"></option>
+        <option value="res" data-i18n="view.group.res"></option>
+        <option value="cat" data-i18n="view.group.cat"></option>
+        <option value="status" data-i18n="view.group.status"></option>
+      </select>
+      <span id="view-count" class="view-count" role="status"></span>
+    </div>
+    <div id="view-chips" class="chips"></div>
+    <div id="filters-panel" class="filters-panel" hidden></div>
+  </section>
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks">
@@ -353,6 +411,7 @@ table caption { text-align: left; color: var(--muted); padding: .2rem 0; }
     <div class="actions">
       <button type="submit" class="primary" data-i18n="edit.save"></button>
       <button type="button" data-click="closeEditor" data-i18n="edit.cancel"></button>
+      <button type="button" data-click="duplicateTask" data-i18n="edit.duplicate" aria-keyshortcuts="Control+D"></button>
       <button type="button" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
       <button type="button" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
       <button type="button" class="danger" data-click="deleteTask" data-i18n="edit.delete"></button>
@@ -1582,7 +1641,116 @@ const Model = (() => {
     };
   }
 
-  return { FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+  /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
+  const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
+
+  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+})();
+
+// ── js/core/45-view.js ──
+/* Recherche, filtres et regroupements (RG-27, EF-84 à EF-86).
+ * Affichage seulement : ces fonctions ne modifient jamais le projet ni le planning. */
+const View = (() => {
+  const EMPTY = Object.freeze({ status: [], res: [], cat: [], tag: [], type: [], critical: false, alerts: false, from: '', to: '' });
+
+  /** Minuscules sans accents, pour une recherche qui ignore casse et accents. */
+  const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const words = q => fold(q).split(/\s+/).filter(Boolean);
+
+  function haystack(project, task) {
+    const res = task.assign.map(a => (project.resources.find(r => r.id === a.res) || {}).name || '');
+    const cat = (project.categories.find(c => c.id === task.cat) || {}).name || '';
+    return fold([task.id, task.name, ...res, cat, ...task.tags, task.notes].join(' \u0001 '));
+  }
+
+  /** La tâche contient-elle tous les mots de la recherche ? */
+  function matches(project, task, query) {
+    const w = words(query);
+    if (!w.length) return true;
+    const hay = haystack(project, task);
+    return w.every(x => hay.includes(x));
+  }
+
+  function isActive(f) {
+    return !!(f && (f.status.length || f.res.length || f.cat.length || f.tag.length || f.type.length || f.critical || f.alerts || f.from || f.to));
+  }
+
+  /** Filtres : ET entre critères, OU à l'intérieur d'un critère (RG-27). */
+  function passes(project, sched, task, f, today, flagged) {
+    if (f.type.length && !f.type.includes(task.type)) return false;
+    if (task.type === 'summary') return !isActive({ ...f, type: [] }); // jugée par ses enfants
+    const r = sched && sched.tasks.get(task.id);
+    if (f.status.length && !f.status.includes(Metrics.status(task, sched, today))) return false;
+    if (f.res.length) {
+      const ids = task.assign.map(a => a.res);
+      if (!f.res.some(x => (x === '' ? ids.length === 0 : ids.includes(x)))) return false;
+    }
+    if (f.cat.length && !f.cat.includes(task.cat)) return false;
+    if (f.tag.length) { const tags = task.tags.map(fold); if (!f.tag.some(x => tags.includes(fold(x)))) return false; }
+    if (f.critical && !(r && r.critical)) return false;
+    if (f.alerts && !flagged.has(task.id)) return false;
+    if (f.from || f.to) {
+      if (!r || r.empty) return false;
+      const a = Dates.parse(f.from), b = Dates.parse(f.to);
+      if (a != null && r.endDn < a) return false;
+      if (b != null && r.startDn > b) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Identifiants retenus par la recherche ET les filtres. Une récapitulative dont un descendant est
+   * retenu reste visible, de même que les ancêtres d'une tâche retenue (RG-27).
+   * @returns {{ids:Set<string>, matched:Set<string>}} matched : retenus par eux-mêmes.
+   */
+  function select(project, sched, { query = '', filters = EMPTY } = {}, today = Dates.todayDn()) {
+    const flagged = new Set();
+    if (sched) { for (const c of sched.conflicts) c.tasks.forEach(id => flagged.add(id)); for (const w of sched.warnings) flagged.add(w.task); }
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    const matched = new Set();
+    for (const t of project.tasks) {
+      if (t.type === 'summary' && (words(query).length || isActive({ ...filters, type: [] }))) continue;
+      if (matches(project, t, query) && passes(project, sched, t, filters, today, flagged)) matched.add(t.id);
+    }
+    const ids = new Set(matched);
+    for (const id of matched) { let p = byId.get(id).parent; while (p && !ids.has(p)) { ids.add(p); p = byId.get(p) && byId.get(p).parent; } }
+    return { ids, matched };
+  }
+
+  /**
+   * Regroupement (RG-27) par 'res', 'cat' ou 'status' des tâches et jalons retenus (vue plate).
+   * Une tâche à plusieurs ressources figure dans chaque groupe. Groupes triés par ordre
+   * alphabétique, « Sans ressource » / « Sans catégorie » en dernier.
+   * @returns {{key, label, none:boolean, ids:string[], count, dur, pct}[]} label vide si none.
+   */
+  function group(project, sched, ids, by, today = Dates.todayDn()) {
+    const groups = new Map();
+    const add = (key, label, none, t) => {
+      if (!groups.has(key)) groups.set(key, { key, label, none, ids: [], count: 0, dur: 0, w: 0 });
+      const g = groups.get(key);
+      g.ids.push(t.id); g.count++;
+      if (t.type === 'task') { g.dur += t.dur; g.w += t.dur * t.pct; }
+    };
+    const STATUS_ORDER = ['late', 'ongoing', 'notStarted', 'upcoming', 'done'];
+    for (const t of project.tasks) {
+      if (t.type === 'summary' || !ids.has(t.id)) continue;
+      if (by === 'res') {
+        if (!t.assign.length) add('', '', true, t);
+        for (const a of t.assign) { const r = project.resources.find(x => x.id === a.res); if (r) add(r.id, r.name, false, t); }
+      } else if (by === 'cat') {
+        const c = project.categories.find(x => x.id === t.cat);
+        if (c) add(c.id, c.name, false, t); else add('', '', true, t);
+      } else {
+        const st = Metrics.status(t, sched, today) || 'upcoming';
+        add(st, st, false, t);
+      }
+    }
+    const list = [...groups.values()].map(g => ({ key: g.key, label: g.label, none: g.none, ids: g.ids, count: g.count, dur: g.dur, pct: g.dur ? Math.round(g.w / g.dur) : 0 }));
+    if (by === 'status') return list.sort((a, b) => STATUS_ORDER.indexOf(a.key) - STATUS_ORDER.indexOf(b.key));
+    return list.sort((a, b) => (a.none - b.none) || a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
+  }
+
+  return { EMPTY, fold, matches, isActive, select, group };
 })();
 
 // ── js/core/50-i18n.js ──
@@ -1638,7 +1806,9 @@ const I18n = (() => {
     'alert.deadline': { one: '{task} dépasse son échéance de {count} jour', other: '{task} dépasse son échéance de {count} jours' },
     // Édition
     'edit.title': 'Modifier {id}', 'edit.save': 'Enregistrer', 'edit.cancel': 'Annuler', 'edit.delete': 'Supprimer',
-    'edit.up': 'Monter', 'edit.down': 'Descendre',
+    'edit.up': 'Monter', 'edit.down': 'Descendre', 'edit.duplicate': 'Dupliquer',
+    'dup.suffix': ' (copie)', 'dup.done': { one: '{count} tâche dupliquée : {ids}.', other: '{count} tâches dupliquées : {ids}.' },
+    'kb.forced': 'Date imposée au {date}.', 'kb.dur': 'Durée : {count} j.', 'kb.notTask': 'Raccourci réservé aux tâches et aux jalons.',
     'f.id': 'Identifiant', 'f.name': 'Nom', 'f.type': 'Type', 'f.parent': 'Récapitulative parente', 'f.dur': 'Durée (jours ouvrés)',
     'f.cat': 'Catégorie', 'f.pct': 'Avancement (%)', 'f.reached': 'Atteint',
     'f.forced': 'Date imposée', 'f.notBefore': 'Ne pas commencer avant', 'f.deadline': 'Échéance',
@@ -1763,6 +1933,25 @@ const I18n = (() => {
     'dash.done': 'Tâches terminées', 'dash.ongoingN': 'En cours', 'dash.late': 'En retard',
     'dash.tracking': 'Tableau de suivi', 'dash.pStart': 'Début prévu', 'dash.pEnd': 'Fin prévue', 'dash.dev': 'Écart', 'dash.ongoing': '(en cours)',
     'dash.vsBl': 'Écart vs baseline', 'dash.vsBlPick': 'Colonne « Écart vs baseline » :', 'dash.noBl': '— aucune —',
+    'cal.title': 'Calendrier du projet', 'cal.week': 'Semaine de travail', 'cal.holidays': 'Jours fériés',
+    'cal.set.FR': 'France métropolitaine', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgique', 'cal.set.DE': 'Allemagne (jours nationaux)', 'cal.set.NONE': 'Aucun',
+    'cal.daysOff': 'Jours chômés ajoutés', 'cal.daysWorked': 'Jours travaillés exceptionnels', 'cal.from': 'Du', 'cal.to': 'Au (facultatif)', 'cal.label': 'Libellé',
+    'cal.add': 'Ajouter', 'cal.addOff': 'Ajouter le jour chômé', 'cal.addWorked': 'Ajouter le jour travaillé', 'cal.none': 'Aucun.',
+    'cal.range': 'du {from} au {to}', 'cal.preview': 'Aperçu', 'cal.prev': 'Mois précédent', 'cal.next': 'Mois suivant',
+    'cal.dayOff': 'non travaillé', 'cal.dayHoliday': 'férié : {name}', 'cal.dayAdded': 'chômé : {name}', 'cal.dayWorked': 'travaillé exceptionnellement', 'cal.saved': 'Calendrier enregistré ; planning recalculé.',
+    'cal.legend': 'Gris : non travaillé ; souligné : férié ou chômé ; encadré : travaillé exceptionnellement.',
+    'rs.title': 'Fiche de {name}', 'rs.open': 'Fiche', 'rs.absences': 'Absences', 'rs.addAbsence': "Ajouter l'absence",
+    'rs.tasks': { one: '{count} tâche', other: '{count} tâches' }, 'rs.units': 'Taux', 'rs.load': 'Charge totale : {load} jours-personne.',
+    'rs.capTooLow': 'Capacité : la tâche {task} est affectée à {units} % ; réduisez ce taux d\'abord.', 'rs.order': "La fin de l'absence précède son début.",
+    'rs.absAdded': 'Absence ajoutée pour {name} ; planning recalculé.',
+    'view.label': 'Recherche et filtres', 'view.search': 'Rechercher', 'view.highlight': 'Surligner', 'view.filters': 'Filtres',
+    'view.groupBy': 'Grouper par', 'view.group.none': 'Aucun', 'view.group.res': 'Ressource', 'view.group.cat': 'Catégorie', 'view.group.status': 'Statut',
+    'view.count': '{shown} sur {total}', 'view.results': { one: '{count} résultat', other: '{count} résultats' },
+    'view.groupTotals': '{count} élément(s), {dur} j, {pct} %', 'view.noRes': 'Sans ressource', 'view.noCat': 'Sans catégorie',
+    'view.flat': 'Vue regroupée : la hiérarchie est suspendue.', 'view.whole': 'Chiffres du projet entier (filtres actifs).',
+    'view.f.status': 'Statut', 'view.f.res': 'Ressource', 'view.f.cat': 'Catégorie', 'view.f.tag': 'Étiquette', 'view.f.type': 'Type',
+    'view.f.critical': 'Critiques seulement', 'view.f.alerts': 'En conflit ou avec avertissement', 'view.f.period': 'Période', 'view.f.from': 'Du', 'view.f.to': 'Au',
+    'view.clear': 'Effacer les filtres', 'view.chip': '{what} : {value}', 'view.chipRemove': 'Retirer le filtre {what} : {value}', 'view.on': 'oui',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -1796,7 +1985,9 @@ const I18n = (() => {
     'alert.link.FF': '{task} finishes on {date} before {pred} finishes ({predDate})',
     'alert.link.SF': '{task} finishes on {date} before {pred} starts ({predDate})',
     'alert.deadline': { one: '{task} misses its deadline by {count} day', other: '{task} misses its deadline by {count} days' },
-    'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down',
+    'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down', 'edit.duplicate': 'Duplicate',
+    'dup.suffix': ' (copy)', 'dup.done': { one: '{count} task duplicated: {ids}.', other: '{count} tasks duplicated: {ids}.' },
+    'kb.forced': 'Fixed date set to {date}.', 'kb.dur': 'Duration: {count} d.', 'kb.notTask': 'This shortcut applies to tasks and milestones only.',
     'f.id': 'ID', 'f.name': 'Name', 'f.type': 'Type', 'f.parent': 'Parent summary task', 'f.dur': 'Duration (working days)',
     'f.cat': 'Category', 'f.pct': 'Progress (%)', 'f.reached': 'Reached', 'f.forced': 'Fixed start date', 'f.notBefore': 'Start no earlier than',
     'f.deadline': 'Deadline', 'f.realStart': 'Actual start', 'f.realEnd': 'Actual finish', 'f.notes': 'Notes', 'f.tags': 'Tags (comma-separated)',
@@ -1874,6 +2065,25 @@ const I18n = (() => {
     'dash.done': 'Tasks done', 'dash.ongoingN': 'In progress', 'dash.late': 'Late',
     'dash.tracking': 'Tracking table', 'dash.pStart': 'Planned start', 'dash.pEnd': 'Planned finish', 'dash.dev': 'Variance', 'dash.ongoing': '(ongoing)',
     'dash.vsBl': 'Variance vs baseline', 'dash.vsBlPick': '“Variance vs baseline” column:', 'dash.noBl': '— none —',
+    'cal.title': 'Project calendar', 'cal.week': 'Working week', 'cal.holidays': 'Public holidays',
+    'cal.set.FR': 'Metropolitan France', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgium', 'cal.set.DE': 'Germany (national days)', 'cal.set.NONE': 'None',
+    'cal.daysOff': 'Additional days off', 'cal.daysWorked': 'Extra working days', 'cal.from': 'From', 'cal.to': 'To (optional)', 'cal.label': 'Label',
+    'cal.add': 'Add', 'cal.addOff': 'Add day off', 'cal.addWorked': 'Add working day', 'cal.none': 'None.',
+    'cal.range': 'from {from} to {to}', 'cal.preview': 'Preview', 'cal.prev': 'Previous month', 'cal.next': 'Next month',
+    'cal.dayOff': 'non-working', 'cal.dayHoliday': 'holiday: {name}', 'cal.dayAdded': 'day off: {name}', 'cal.dayWorked': 'extra working day', 'cal.saved': 'Calendar saved; schedule recalculated.',
+    'cal.legend': 'Grey: non-working; underlined: holiday or day off; framed: extra working day.',
+    'rs.title': '{name} — resource sheet', 'rs.open': 'Sheet', 'rs.absences': 'Absences', 'rs.addAbsence': 'Add absence',
+    'rs.tasks': { one: '{count} task', other: '{count} tasks' }, 'rs.units': 'Units', 'rs.load': 'Total workload: {load} person-days.',
+    'rs.capTooLow': 'Capacity: task {task} is assigned at {units}%; reduce that rate first.', 'rs.order': 'The absence ends before it starts.',
+    'rs.absAdded': 'Absence added for {name}; schedule recalculated.',
+    'view.label': 'Search and filters', 'view.search': 'Search', 'view.highlight': 'Highlight', 'view.filters': 'Filters',
+    'view.groupBy': 'Group by', 'view.group.none': 'None', 'view.group.res': 'Resource', 'view.group.cat': 'Category', 'view.group.status': 'Status',
+    'view.count': '{shown} of {total}', 'view.results': { one: '{count} result', other: '{count} results' },
+    'view.groupTotals': '{count} item(s), {dur} d, {pct}%', 'view.noRes': 'No resource', 'view.noCat': 'No category',
+    'view.flat': 'Grouped view: the hierarchy is suspended.', 'view.whole': 'Figures for the whole project (filters active).',
+    'view.f.status': 'Status', 'view.f.res': 'Resource', 'view.f.cat': 'Category', 'view.f.tag': 'Tag', 'view.f.type': 'Type',
+    'view.f.critical': 'Critical only', 'view.f.alerts': 'In conflict or with a warning', 'view.f.period': 'Period', 'view.f.from': 'From', 'view.f.to': 'To',
+    'view.clear': 'Clear filters', 'view.chip': '{what}: {value}', 'view.chipRemove': 'Remove filter {what}: {value}', 'view.on': 'yes',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -1951,7 +2161,9 @@ const I18n = (() => {
     return lang === 'fr' ? s.replace('.', ',') : s;
   }
 
-  return { t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  const dayName = i => DAYS[lang][i];
+  const monthName = m => MONTHS[lang][m - 1];
+  return { dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
 })();
 
 // ── js/ui/00-dom.js ──
@@ -2168,6 +2380,8 @@ const App = {
   zoom: 100,
   showAlerts: true,
   showLinks: true,
+  // Recherche, filtres et regroupement (EF-84 à EF-86) : affichage seulement, jamais enregistrés.
+  view: { query: '', highlight: false, filters: null, groupBy: '', collapsedGroups: new Set(), panel: false },
   undo: [],
   redo: [],
   dirty: false,
@@ -2354,6 +2568,7 @@ function renderKpis() {
     item(t('kpi.holidays'), String(offDays)),
     item(t('kpi.critical'), h('span', { class: 'critical-path', text: crit })),
     item(t('kpi.progress'), `${I18n.number(pct)} % `, h('progress', { max: 100, value: Math.round(pct), aria: { label: t('kpi.progress') } }))));
+  if (typeof viewActive === 'function' && viewActive()) box.append(h('p', { class: 'hint whole', text: t('view.whole') }));
 }
 
 function alertMessages() {
@@ -2393,16 +2608,31 @@ function statusOf(task) {
   return Metrics.status(task, App.sched, today());
 }
 
-function renderList(rows, fl) {
+/** Libellé et totaux d'un groupe (EF-86). */
+function groupLabel(g) {
+  const name = g.none ? t(App.view.groupBy === 'res' ? 'view.noRes' : 'view.noCat') : App.view.groupBy === 'status' ? t('status.' + g.key) : g.label;
+  return { name, totals: t('view.groupTotals', { count: g.count, dur: g.dur, pct: g.pct }) };
+}
+
+function renderList(items, fl) {
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
     h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
-  for (const task of rows) {
+  for (const it of items) {
+    if (it.group) {
+      const { name, totals } = groupLabel(it.group);
+      const open = !App.view.collapsedGroups.has(it.group.key);
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 6 },
+        h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
+          open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
+      continue;
+    }
+    const task = it.task;
     const r = s && s.tasks.get(task.id);
-    const depth = ancestorsOf(task.id).length;
+    const depth = it.flat ? 0 : ancestorsOf(task.id).length;
     const crit = r && r.critical && task.type !== 'summary';
     const st = statusOf(task);
     const marks = [];
@@ -2412,7 +2642,7 @@ function renderList(rows, fl) {
     if (r && r.shift) marks.push(shiftText(r));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
-    if (task.type === 'summary') {
+    if (task.type === 'summary' && !it.flat) {
       nameCell.append(h('button', { type: 'button', class: 'toggle icon', data: { click: 'toggleCollapse', arg: task.id },
         aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
     }
@@ -2420,7 +2650,7 @@ function renderList(rows, fl) {
       aria: { current: App.selected === task.id ? 'true' : undefined } },
       task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict'], data: { id: task.id } },
+    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
       h('td', { text: durText(task, r) }),
@@ -2453,7 +2683,8 @@ function baselineTexts(taskId) {
   }).filter(Boolean);
 }
 
-function renderGantt(rows, fl) {
+function renderGantt(items, fl) {
+  const rows = items.filter(it => it.task).map(it => it.task);
   const inner = clear($('gantt-inner'));
   const s = App.sched;
   if (!s) return;
@@ -2489,7 +2720,7 @@ function renderGantt(rows, fl) {
   inner.append(head);
 
   const body = h('div', { class: 'g-body' });
-  body.style.setProperty('--rows', String(rows.length + 2));
+  body.style.setProperty('--rows', String(items.length + 2));
   // Jours non travaillés en fond atténué.
   for (let dn = from; dn <= to; dn++) {
     if (s.cal.isWork(dn)) continue;
@@ -2512,10 +2743,12 @@ function renderGantt(rows, fl) {
   body.classList.toggle('with-bl', bls.length > 0);
   const row = (...children) => h('div', { class: 'g-row' }, children);
   const rowOf = new Map(); // id → index de ligne visible, pour les flèches
-  rows.forEach((task, i) => rowOf.set(task.id, i + 1));
+  items.forEach((it, i) => { if (it.task && !rowOf.has(it.task.id)) rowOf.set(it.task.id, i + 1); });
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
-  for (const task of rows) {
+  for (const it of items) {
+    if (it.group) { body.append(h('div', { class: 'g-row g-group', aria: { hidden: 'true' } })); continue; }
+    const task = it.task;
     const r = s.tasks.get(task.id);
     if (!r || r.empty) { body.append(row()); continue; }
     const st = statusOf(task);
@@ -2559,10 +2792,11 @@ function renderGantt(rows, fl) {
       m.style.setProperty('background', safeColor(b.color));
       return m;
     });
+    if (it.dim) el.classList.add('dim');
     body.append(row(el, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
-  if (App.showLinks) body.append(linkArrows(rows, rowOf, x, dayW));
+  if (App.showLinks && !App.view.groupBy) body.append(linkArrows(rows, rowOf, x, dayW, items.length));
   inner.append(body);
 }
 
@@ -2580,16 +2814,16 @@ function svg(tag, attrs = {}, ...children) {
 }
 
 /** Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type. */
-function linkArrows(rows, rowOf, x, dayW) {
+function linkArrows(rows, rowOf, x, dayW, count) {
   const s = App.sched;
   const rowH = 34, mid = i => i * rowH + rowH / 2;
-  const height = (rows.length + 2) * rowH;
+  const height = (count + 2) * rowH;
   const layer = svg('svg', { class: 'g-links', 'aria-hidden': 'true', height, width: '100%' },
     svg('defs', {}, ['n', 'c'].map(k => svg('marker', { id: 'arrow-' + k, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
       svg('path', { d: 'M0,0 L8,4 L0,8 z', class: 'head-' + k })))));
   for (const task of rows) {
     const rs = s.tasks.get(task.id);
-    if (!rs || rs.empty) continue;
+    if (!rs || rs.empty || !rowOf.has(task.id)) continue;
     for (const d of task.deps) {
       const rp = s.tasks.get(d.id);
       if (!rowOf.has(d.id) || !rp) continue;
@@ -2621,16 +2855,176 @@ function renderLegend() {
 }
 
 function render() {
+  // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
+  const focusId = document.activeElement && document.activeElement.id;
   Tooltip.hide();
   applyStaticTexts();
   renderTopbar();
   renderKpis();
   renderAlerts();
-  const rows = visibleTasks();
   const fl = flags();
-  renderList(rows, fl);
-  renderGantt(rows, fl);
+  const items = viewItems();
+  renderViewbar(items);
+  renderList(items, fl);
+  renderGantt(items, fl);
   renderLegend();
+  if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
+}
+
+// ── js/ui/52-viewbar.js ──
+/* Barre de recherche, filtres et regroupement (EF-84 à EF-86, RG-27). Affichage seulement :
+ * rien n'est enregistré dans le projet, rien ne compte comme une modification (EF-53). */
+const viewFilters = () => App.view.filters || (App.view.filters = clone(View.EMPTY));
+const viewActive = () => !!(App.view.query.trim() || View.isActive(viewFilters()));
+
+/** Lignes à afficher : {task, flat?, dim?, hit?} ou {group}. */
+function viewItems() {
+  const v = App.view;
+  App.viewMatched = null;
+  if (!App.sched) return visibleTasks().map(task => ({ task }));
+  const sel = viewActive() ? View.select(App.project, App.sched, { query: v.query, filters: viewFilters() }) : null;
+  App.viewMatched = sel ? sel.matched : null;
+  const hasQuery = !!v.query.trim();
+  if (v.groupBy) {
+    const ids = sel ? sel.matched : new Set(App.project.tasks.map(x => x.id));
+    const out = [];
+    for (const g of View.group(App.project, App.sched, ids, v.groupBy)) {
+      out.push({ group: g });
+      if (!v.collapsedGroups.has(g.key)) for (const id of g.ids) out.push({ task: taskById(id), flat: true, hit: hasQuery });
+    }
+    return out;
+  }
+  let base = visibleTasks();
+  if (sel && !v.highlight) base = base.filter(x => sel.ids.has(x.id));
+  return base.map(task => ({
+    task,
+    dim: !!(sel && v.highlight && task.type !== 'summary' && !sel.matched.has(task.id)),
+    hit: !!(sel && hasQuery && sel.matched.has(task.id)),
+  }));
+}
+
+/** Valeurs proposées par critère : [valeur, libellé]. */
+function filterOptions() {
+  const p = App.project;
+  const tags = [...new Map(p.tasks.flatMap(x => x.tags).map(tg => [View.fold(tg), tg])).values()].sort((a, b) => a.localeCompare(b, 'fr'));
+  return {
+    status: ['late', 'ongoing', 'notStarted', 'upcoming', 'done'].map(k => [k, t('status.' + k)]),
+    res: [['', t('view.noRes')], ...p.resources.map(r => [r.id, r.name])],
+    cat: p.categories.map(c => [c.id, c.name]),
+    tag: tags.map(tg => [tg, tg]),
+    type: ['task', 'milestone', 'summary'].map(k => [k, t('type.' + k)]),
+  };
+}
+
+function renderViewbar(items) {
+  const v = App.view, f = viewFilters();
+  const search = $('search');
+  if (document.activeElement !== search && search.value !== v.query) search.value = v.query;
+  $('search-hl').checked = v.highlight;
+  $('group-by').value = v.groupBy;
+  const btn = $('btn-filters');
+  btn.setAttribute('aria-expanded', String(v.panel));
+  btn.classList.toggle('active', View.isActive(f));
+  // Compteur « 12 sur 40 » (tâches et jalons).
+  const total = App.project.tasks.filter(x => x.type !== 'summary').length;
+  const count = $('view-count');
+  if (App.viewMatched) {
+    const shown = [...App.viewMatched].filter(id => { const x = taskById(id); return x && x.type !== 'summary'; }).length;
+    count.textContent = v.query.trim() && !View.isActive(f) ? t('view.results', { count: shown }) : t('view.count', { shown, total });
+  } else count.textContent = v.groupBy ? t('view.flat') : '';
+  // Pastilles des filtres actifs.
+  const chips = clear($('view-chips'));
+  const opts = filterOptions();
+  const chip = (what, value, arg) => h('button', { type: 'button', class: 'chip', data: { click: 'filterRemove', arg }, aria: { label: t('view.chipRemove', { what, value }) } },
+    t('view.chip', { what, value }), ' ✕');
+  for (const k of ['status', 'res', 'cat', 'tag', 'type']) {
+    for (const val of f[k]) {
+      const o = opts[k].find(x => x[0] === val);
+      chips.append(chip(t('view.f.' + k), o ? o[1] : val, `${k}:${val}`));
+    }
+  }
+  if (f.critical) chips.append(chip(t('view.f.critical'), t('view.on'), 'critical:'));
+  if (f.alerts) chips.append(chip(t('view.f.alerts'), t('view.on'), 'alerts:'));
+  if (f.from || f.to) chips.append(chip(t('view.f.period'), `${f.from ? I18n.shortDate(Dates.parse(f.from)) : '…'} → ${f.to ? I18n.shortDate(Dates.parse(f.to)) : '…'}`, 'period:'));
+  if (View.isActive(f)) chips.append(h('button', { type: 'button', class: 'link-btn', data: { click: 'filtersClear' } }, t('view.clear')));
+  chips.hidden = !chips.firstChild;
+  // Panneau des filtres.
+  const panel = $('filters-panel');
+  panel.hidden = !v.panel;
+  if (!v.panel) return;
+  clear(panel);
+  for (const k of ['status', 'res', 'cat', 'tag', 'type']) {
+    if (!opts[k].length) continue;
+    panel.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('view.f.' + k) }),
+      opts[k].map(([val, label], i) => h('span', { class: 'check' },
+        h('input', { type: 'checkbox', id: `flt-${k}-${i}`, checked: f[k].includes(val), data: { change: 'filterToggle', arg: `${k}:${val}` } }),
+        h('label', { for: `flt-${k}-${i}`, text: label })))));
+  }
+  panel.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('view.f.period') }),
+    h('label', { for: 'flt-from', text: t('view.f.from') }), h('input', { type: 'date', id: 'flt-from', value: f.from, data: { change: 'filterDate', arg: 'from' } }),
+    h('label', { for: 'flt-to', text: t('view.f.to') }), h('input', { type: 'date', id: 'flt-to', value: f.to, data: { change: 'filterDate', arg: 'to' } })));
+  panel.append(h('div', { class: 'inline' },
+    h('span', { class: 'check' }, h('input', { type: 'checkbox', id: 'flt-critical', checked: f.critical, data: { change: 'filterFlag', arg: 'critical' } }), h('label', { for: 'flt-critical', text: t('view.f.critical') })),
+    h('span', { class: 'check' }, h('input', { type: 'checkbox', id: 'flt-alerts', checked: f.alerts, data: { change: 'filterFlag', arg: 'alerts' } }), h('label', { for: 'flt-alerts', text: t('view.f.alerts') })),
+    h('button', { type: 'button', data: { click: 'filtersClear' } }, t('view.clear'))));
+}
+
+let searchTimer = 0;
+action('search', (arg, el) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { App.view.query = el.value.slice(0, 200); render(); }, 120);
+});
+action('searchHighlight', (arg, el) => { App.view.highlight = el.checked; render(); });
+action('toggleFilters', () => { App.view.panel = !App.view.panel; render(); });
+action('groupBy', (arg, el) => { App.view.groupBy = ['res', 'cat', 'status'].includes(el.value) ? el.value : ''; App.view.collapsedGroups = new Set(); render(); });
+action('toggleGroup', key => {
+  const c = App.view.collapsedGroups;
+  if (c.has(key)) c.delete(key); else c.add(key);
+  render();
+  const b = document.querySelector(`[data-click="toggleGroup"][data-arg="${CSS.escape(key)}"]`);
+  if (b) b.focus();
+});
+action('filterToggle', (arg, el) => {
+  const i = arg.indexOf(':'), k = arg.slice(0, i), val = arg.slice(i + 1);
+  const f = viewFilters();
+  f[k] = el.checked ? [...f[k], val] : f[k].filter(x => x !== val);
+  render();
+});
+action('filterFlag', (k, el) => { viewFilters()[k] = el.checked; render(); });
+action('filterDate', (k, el) => { viewFilters()[k] = Dates.parse(el.value) != null ? el.value : ''; render(); });
+action('filterRemove', arg => {
+  const i = arg.indexOf(':'), k = arg.slice(0, i), val = arg.slice(i + 1);
+  const f = viewFilters();
+  if (k === 'critical' || k === 'alerts') f[k] = false;
+  else if (k === 'period') { f.from = ''; f.to = ''; }
+  else f[k] = f[k].filter(x => x !== val);
+  render();
+  const next = document.querySelector('#view-chips button') || $('btn-filters');
+  next.focus();
+});
+action('filtersClear', () => { App.view.filters = clone(View.EMPTY); render(); $('btn-filters').focus(); });
+
+/** Entrée / Maj + Entrée : résultat suivant ou précédent, sélectionné et rendu visible (EF-84). */
+function searchStep(dir) {
+  const hits = [...document.querySelectorAll('#task-rows tr.hit')].map(tr => tr.dataset.id);
+  if (!hits.length) return;
+  const i = hits.indexOf(App.selected);
+  App.selected = hits[(i + dir + hits.length) % hits.length];
+  render();
+  const row = document.querySelector(`#task-rows tr[data-id="${CSS.escape(App.selected)}"]`);
+  if (row) row.scrollIntoView({ block: 'nearest' });
+  const task = taskById(App.selected);
+  announce(`${App.selected} ${task ? task.name : ''}`);
+}
+function initViewbar() {
+  $('search').addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); clearTimeout(searchTimer); App.view.query = ev.target.value; searchStep(ev.shiftKey ? -1 : 1); }
+    if (ev.key === 'Escape' && ev.target.value) { ev.preventDefault(); ev.stopPropagation(); ev.target.value = ''; App.view.query = ''; render(); }
+  });
+  document.addEventListener('keydown', ev => {
+    const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
+    if (ev.key === '/' && !inField && !document.querySelector('dialog[open]')) { ev.preventDefault(); $('search').focus(); }
+  });
 }
 
 // ── js/ui/55-tooltip.js ──
@@ -2986,6 +3380,79 @@ const Editor = (() => {
   return { open, close, isOpen: () => !!draft };
 })();
 
+// ── js/ui/62-shortcuts.js ──
+/* Dupliquer (EF-80) et équivalents clavier des gestes (EF-78). Chaque action = un pas d'annulation. */
+
+/** Copie d'une tâche (et de sa descendance) juste sous l'original ; liens internes rattachés aux copies. */
+function duplicateBlock(p, id) {
+  const src = p.tasks.find(x => x.id === id);
+  if (!src) return [];
+  const block = [src, ...descendants(id, p.tasks)];
+  if (p.tasks.length + block.length > Model.LIMITS.tasks) return null;
+  const used = p.tasks.map(x => x.id), map = new Map();
+  for (const x of block) { const nid = Model.nextTaskId(used); used.push(nid); map.set(x.id, nid); }
+  const suffix = t('dup.suffix');
+  const copies = block.map(x => ({
+    ...clone(x), id: map.get(x.id), name: (x.name.slice(0, 200 - suffix.length) + (x === src ? suffix : '')),
+    parent: x === src ? x.parent : map.get(x.parent), pct: 0, realStart: '', realEnd: '', comments: [],
+    deps: x.deps.map(d => ({ ...d, id: map.get(d.id) || d.id })),
+  }));
+  const last = block[block.length - 1];
+  p.tasks.splice(p.tasks.indexOf(last) + 1, 0, ...copies);
+  return copies.map(c => c.id);
+}
+
+action('duplicateTask', () => {
+  const id = App.selected;
+  if (!taskById(id)) return;
+  let ids = null;
+  const trial = clone(App.project);
+  ids = duplicateBlock(trial, id);
+  if (!ids) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
+  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  commit(p => { duplicateBlock(p, id); });
+  Editor.close();
+  App.selected = ids[0];
+  render();
+  announce(t('dup.done', { count: ids.length, ids: ids.join(', ') }));
+  const btn = document.querySelector(`button.select[data-arg="${CSS.escape(ids[0])}"]`);
+  if (btn) btn.focus();
+});
+
+/** Alt + ←/→ : date imposée d'un jour ouvré ; Alt + Maj + ←/→ : durée d'un jour (EF-78). */
+function nudge(dir, duration) {
+  const task = taskById(App.selected);
+  if (!task || !App.sched) return;
+  if (task.type === 'summary') { announce(t('kb.notTask')); return; }
+  const r = App.sched.tasks.get(task.id), cal = App.sched.cal;
+  if (duration) {
+    if (task.type !== 'task') { announce(t('kb.notTask')); return; }
+    const d = Math.min(Model.LIMITS.dur, Math.max(1, task.dur + dir));
+    if (d === task.dur) return;
+    commit(p => { p.tasks.find(x => x.id === task.id).dur = d; });
+    announce(t('kb.dur', { count: d }));
+  } else {
+    const iso = Dates.toISO(cal.dnOf(r.s + dir));
+    const trial = clone(App.project); trial.tasks.find(x => x.id === task.id).forcedStart = iso;
+    try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+    commit(p => { p.tasks.find(x => x.id === task.id).forcedStart = iso; });
+    announce(t('kb.forced', { date: I18n.date(Dates.parse(iso)) }));
+  }
+}
+
+function initShortcuts() {
+  document.addEventListener('keydown', ev => {
+    if (document.querySelector('dialog[open]')) return;
+    const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
+    if (inField) return;
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key.toLowerCase() === 'd' && App.selected) { ev.preventDefault(); ACTIONS.duplicateTask(); }
+    if (ev.altKey && !ev.ctrlKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && App.selected) {
+      ev.preventDefault();
+      nudge(ev.key === 'ArrowRight' ? 1 : -1, ev.shiftKey);
+    }
+  });
+}
+
 // ── js/ui/70-windows.js ──
 /* Fenêtres de gestion : projet (EF-48), ressources (EF-24, EF-25), catégories (EF-27, EF-28). */
 
@@ -3047,7 +3514,8 @@ function resourcesWindow() {
         h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
         h('td', { text: t('res.tasks', { count: used }) }),
-        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
+        h('td', {}, h('button', { type: 'button', data: { click: 'openResourceSheet', arg: r.id } }, `${t('rs.open')} ${r.name}`),
+          ' ', h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
     });
     table.append(tb);
     body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')));
@@ -3236,6 +3704,93 @@ action('applyResolve', arg => {
   }
 });
 
+// ── js/ui/71-resource-sheet.js ──
+/* Fiche de ressource (EF-26, EF-71) : avatar, rôle, capacité, absences, tâches et charge. */
+
+const initials = name => name.split(/[\s'-]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+
+function paintResourceSheet(body, id, focusSel) {
+  clear(body);
+  const r = resById(id);
+  if (!r) return;
+  const color = safeColor(r.color);
+  const av = h('span', { class: 'avatar', aria: { hidden: 'true' }, text: initials(r.name) });
+  av.style.setProperty('background', color); av.style.setProperty('color', inkOn(color));
+  body.append(h('div', { class: 'res-head' }, av, h('div', {}, h('strong', { text: r.name }), r.role ? h('div', { class: 'hint', text: r.role }) : null)));
+  body.append(h('p', { class: 'field-error', id: 'rs-err', role: 'alert', hidden: true }));
+  body.append(h('div', { class: 'field' }, h('label', { for: 'rs-cap', text: t('res.capacity') }),
+    h('input', { type: 'number', id: 'rs-cap', min: 1, max: 100, step: 1, inputmode: 'numeric', value: r.capacity, data: { change: 'rsCapacity', arg: id }, aria: { describedby: 'rs-err' } })));
+
+  const abs = [...r.absences].map((a, i) => ({ ...a, i })).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+  const absBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('rs.absences') }));
+  if (!abs.length) absBox.append(h('p', { class: 'hint', text: t('cal.none') }));
+  else absBox.append(h('ul', { class: 'rows' }, abs.map(a => {
+    const what = a.start === a.end ? I18n.date(Dates.parse(a.start)) : t('cal.range', { from: I18n.date(Dates.parse(a.start)), to: I18n.date(Dates.parse(a.end)) });
+    return h('li', {}, h('span', { class: 'who', text: what + (a.label ? ` — ${a.label}` : '') }),
+      h('button', { type: 'button', class: 'icon', data: { click: 'rsAbsRemove', arg: `${id}:${a.i}` }, aria: { label: t('f.remove', { name: what }) } }, '✕'));
+  })));
+  absBox.append(h('div', { class: 'add-row' },
+    h('label', { for: 'rs-from', text: t('cal.from') }), h('input', { type: 'date', id: 'rs-from', min: '1970-01-01', max: '2199-12-31' }),
+    h('label', { for: 'rs-to', text: t('cal.to') }), h('input', { type: 'date', id: 'rs-to', min: '1970-01-01', max: '2199-12-31' }),
+    h('label', { for: 'rs-label', text: t('cal.label') }), h('input', { type: 'text', id: 'rs-label', maxlength: 100 }),
+    h('button', { type: 'button', data: { click: 'rsAbsAdd', arg: id } }, t('rs.addAbsence'))));
+  body.append(absBox);
+
+  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
+  let load = 0;
+  const rows = tasks.map(x => {
+    const a = x.assign.find(z => z.res === id), sr = App.sched && App.sched.tasks.get(x.id);
+    load += x.dur * a.units / 100;
+    return h('tr', {}, h('td', { class: 'id', text: x.id }), h('td', { text: x.name }), h('td', { text: `${a.units} %` }),
+      h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }));
+  });
+  body.append(h('h3', { text: t('rs.tasks', { count: tasks.length }) }),
+    h('p', { text: t('rs.load', { load: I18n.number(load, load % 1 ? 1 : 0) }) }),
+    tasks.length ? h('table', { class: 'manage' }, h('thead', {}, h('tr', {}, [t('col.id'), t('col.name'), t('rs.units'), t('dash.pStart'), t('dash.pEnd')].map(x => h('th', { scope: 'col', text: x })))), h('tbody', {}, rows)) : null);
+  const el = focusSel && body.querySelector(focusSel);
+  if (el) el.focus();
+}
+
+function resourceSheet(id) {
+  const r = resById(id);
+  if (!r) return Promise.resolve();
+  const body = h('div', { id: 'rs-win' });
+  resourceSheet.body = body; resourceSheet.id = id;
+  paintResourceSheet(body, id);
+  return Dialog.open({ title: t('rs.title', { name: r.name }), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+    .then(() => { resourceSheet.body = null; if (resourcesWindow.paint) resourcesWindow.paint(); });
+}
+
+function rsError(msg, focusId) { const e = $('rs-err'); e.textContent = msg; e.hidden = false; announce(msg); if (focusId) $(focusId).focus(); }
+
+action('openResourceSheet', id => resourceSheet(id));
+action('rsCapacity', (id, el) => {
+  const n = Number(el.value);
+  if (!Number.isInteger(n) || n < 1 || n > 100) return rsError(t('err.int', { field: t('res.capacity'), min: 1, max: 100 }), 'rs-cap');
+  const over = App.project.tasks.find(x => x.assign.some(a => a.res === id && a.units > n));
+  if (over) return rsError(t('rs.capTooLow', { task: `${over.id} ${over.name}`, units: over.assign.find(a => a.res === id).units }), 'rs-cap');
+  commit(p => { p.resources.find(x => x.id === id).capacity = n; });
+  paintResourceSheet(resourceSheet.body, id, '#rs-cap');
+});
+action('rsAbsAdd', id => {
+  const from = $('rs-from').value, to = $('rs-to').value || from, label = $('rs-label').value.trim().slice(0, 100);
+  if (Dates.parse(from) == null || Dates.parse(to) == null) return rsError(t('err.date', { field: t('cal.from') }), 'rs-from');
+  if (to < from) return rsError(t('rs.order'), 'rs-to');
+  const r = resById(id);
+  if (r.absences.length >= Model.LIMITS.absences) return rsError(t('err.limit', { max: Model.LIMITS.absences, what: t('rs.absences').toLowerCase() }));
+  const trial = clone(App.project);
+  trial.resources.find(x => x.id === id).absences.push({ start: from, end: to, label });
+  try { Schedule.compute(trial); } catch { return rsError(t('calc.error')); }
+  commit(p => { p.resources.find(x => x.id === id).absences.push({ start: from, end: to, label }); });
+  announce(t('rs.absAdded', { name: r.name }));
+  paintResourceSheet(resourceSheet.body, id, '#rs-from');
+});
+action('rsAbsRemove', arg => {
+  const [id, i] = arg.split(':');
+  commit(p => { p.resources.find(x => x.id === id).absences.splice(Number(i), 1); });
+  paintResourceSheet(resourceSheet.body, id, '#rs-from');
+});
+
 // ── js/ui/72-baselines.js ──
 /* Baselines (EF-33 à EF-36, RG-22) : copies figées des dates calculées, trois au plus. */
 
@@ -3324,6 +3879,122 @@ action('blDelete', async id => {
   if (!(await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete')))) return;
   commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); });
   if (baselinesWindow.paint) baselinesWindow.paint();
+});
+
+// ── js/ui/73-calendar.js ──
+/* Calendrier du projet (EF-69, 3.9, RG-01, RG-02).
+ * La fenêtre travaille sur un brouillon ; « Enregistrer » le contrôle avec les mêmes règles
+ * qu'un import (Model.checkCalendar) puis l'applique en un seul pas d'annulation. */
+const CalWin = { draft: null, month: null };
+
+function calRangeList(kind) {
+  const list = CalWin.draft[kind];
+  const box = h('fieldset', { class: 'sub' }, h('legend', { text: t('cal.' + kind) }));
+  if (!list.length) box.append(h('p', { class: 'hint', text: t('cal.none') }));
+  else box.append(h('ul', { class: 'rows' }, list.map((r, i) => {
+    const what = r.start === r.end ? I18n.date(Dates.parse(r.start)) : t('cal.range', { from: I18n.date(Dates.parse(r.start)), to: I18n.date(Dates.parse(r.end)) });
+    return h('li', {}, h('span', { class: 'who', text: what + (r.label ? ` — ${r.label}` : '') }),
+      h('button', { type: 'button', class: 'icon', data: { click: 'calRemove', arg: `${kind}:${i}` }, aria: { label: t('f.remove', { name: what }) } }, '✕'));
+  })));
+  const p = kind === 'daysOff' ? 'off' : 'wk';
+  box.append(h('div', { class: 'add-row' },
+    h('label', { for: `cal-${p}-from`, text: t('cal.from') }), h('input', { type: 'date', id: `cal-${p}-from`, min: '1970-01-01', max: '2199-12-31' }),
+    h('label', { for: `cal-${p}-to`, text: t('cal.to') }), h('input', { type: 'date', id: `cal-${p}-to`, min: '1970-01-01', max: '2199-12-31' }),
+    h('label', { for: `cal-${p}-label`, text: t('cal.label') }), h('input', { type: 'text', id: `cal-${p}-label`, maxlength: 100 }),
+    h('button', { type: 'button', data: { click: 'calAdd', arg: kind } }, t(kind === 'daysOff' ? 'cal.addOff' : 'cal.addWorked'))));
+  return box;
+}
+
+function calPreview() {
+  let cal;
+  try { cal = Calendar.create(CalWin.draft, App.project.projectStart); } catch { return h('p', { class: 'field-error', text: t('imp.noWorkday') }); }
+  const first = CalWin.month, { y, m } = Dates.ymd(first);
+  const start = Dates.mondayOf(first), last = Dates.monthEnd(first);
+  const rows = [];
+  for (let wk = start; wk <= last; wk += 7) {
+    rows.push(h('tr', {}, [0, 1, 2, 3, 4, 5, 6].map(k => {
+      const dn = wk + k;
+      if (Dates.ymd(dn).m !== m) return h('td', { class: 'out' });
+      const info = cal.dayInfo(dn);
+      let cls = '', desc = '';
+      if (!cal.isWork(dn)) { cls = 'off'; desc = t('cal.dayOff'); }
+      if (info && info.kind === 'holiday') { cls = 'off holiday'; desc = t('cal.dayHoliday', { name: t(info.key) }); }
+      if (info && info.kind === 'off') { cls = 'off holiday'; desc = t('cal.dayAdded', { name: info.label || '' }); }
+      if (info && info.kind === 'weekend' && info.key) desc = t('cal.dayHoliday', { name: t(info.key) });
+      if (info && info.kind === 'worked') { cls = 'worked'; desc = t('cal.dayWorked') + (info.label ? ` : ${info.label}` : ''); }
+      return h('td', { class: cls, title: desc || undefined }, String(Dates.ymd(dn).d), desc ? h('span', { class: 'sr-only', text: ' ' + desc }) : null);
+    })));
+  }
+  return h('div', { class: 'cal-preview' },
+    h('div', { class: 'row' },
+      h('button', { type: 'button', class: 'icon', data: { click: 'calMonth', arg: '-1' }, aria: { label: t('cal.prev') } }, '‹'),
+      h('strong', { id: 'cal-month', text: `${I18n.monthName(m)} ${y}` }),
+      h('button', { type: 'button', class: 'icon', data: { click: 'calMonth', arg: '1' }, aria: { label: t('cal.next') } }, '›')),
+    h('table', { class: 'month', aria: { labelledby: 'cal-month' } },
+      h('thead', {}, h('tr', {}, [0, 1, 2, 3, 4, 5, 6].map(k => h('th', { scope: 'col', text: I18n.dayName(k) })))),
+      h('tbody', {}, rows)),
+    h('p', { class: 'hint', text: t('cal.legend') }));
+}
+
+function paintCalendar(body, focusSel) {
+  clear(body);
+  const d = CalWin.draft;
+  body.append(h('p', { class: 'field-error', id: 'cal-err', role: 'alert', hidden: true }));
+  body.append(h('fieldset', { class: 'inline week' }, h('legend', { text: t('cal.week') }),
+    [0, 1, 2, 3, 4, 5, 6].map(k => h('span', {},
+      h('input', { type: 'checkbox', id: 'cal-wd-' + k, checked: d.workDays[k] === 1, data: { change: 'calWeekday', arg: String(k) } }),
+      h('label', { for: 'cal-wd-' + k, text: ' ' + I18n.dayName(k) })))));
+  body.append(h('div', { class: 'field' }, h('label', { for: 'cal-set', text: t('cal.holidays') }),
+    h('select', { id: 'cal-set', data: { change: 'calSet' } }, Calendar.HOLIDAY_SETS.map(k => h('option', { value: k, selected: d.holidays === k }, t('cal.set.' + k))))));
+  body.append(h('div', { class: 'cal-grid' }, h('div', {}, calRangeList('daysOff'), calRangeList('daysWorked')),
+    h('section', { aria: { label: t('cal.preview') } }, h('h3', { text: t('cal.preview') }), calPreview())));
+  const el = focusSel && body.querySelector(focusSel);
+  if (el) el.focus();
+}
+
+function calError(msg) { const e = $('cal-err'); e.textContent = msg; e.hidden = false; announce(msg); }
+
+function calendarWindow() {
+  CalWin.draft = clone(App.project.calendar);
+  CalWin.month = Dates.monthStart(App.sched ? App.sched.startDn : Dates.parse(App.project.projectStart));
+  const body = h('div', { id: 'cal-win' });
+  calendarWindow.body = body;
+  paintCalendar(body);
+  return Dialog.open({
+    title: t('cal.title'), body: [body], size: 'wide',
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
+    onAction: v => {
+      if (v !== 'ok') return true;
+      let checked;
+      try { checked = Model.checkCalendar(CalWin.draft); } catch (e) { if (e instanceof Model.Invalid) { calError(I18n.error(e)); return false; } throw e; }
+      const trial = clone(App.project); trial.calendar = checked;
+      try { Schedule.compute(trial); } catch { calError(t('calc.error')); return false; }
+      commit(p => { p.calendar = checked; });
+      announce(t('cal.saved'));
+      return true;
+    },
+  }).then(() => { calendarWindow.body = null; CalWin.draft = null; });
+}
+
+const repaintCal = sel => calendarWindow.body && paintCalendar(calendarWindow.body, sel);
+action('openCalendar', () => calendarWindow());
+action('calWeekday', (arg, el) => { CalWin.draft.workDays[Number(arg)] = el.checked ? 1 : 0; repaintCal('#cal-wd-' + arg); });
+action('calSet', (arg, el) => { if (Calendar.HOLIDAY_SETS.includes(el.value)) CalWin.draft.holidays = el.value; repaintCal('#cal-set'); });
+action('calMonth', dir => {
+  const { y, m } = Dates.ymd(CalWin.month);
+  CalWin.month = Dates.fromYMD(y, m + Number(dir), 1);
+  repaintCal(`[data-click="calMonth"][data-arg="${dir}"]`);
+});
+action('calRemove', arg => { const [kind, i] = arg.split(':'); CalWin.draft[kind].splice(Number(i), 1); repaintCal(`[data-click="calAdd"][data-arg="${kind}"]`); });
+action('calAdd', kind => {
+  const p = kind === 'daysOff' ? 'off' : 'wk';
+  const from = $(`cal-${p}-from`).value, to = $(`cal-${p}-to`).value || from, label = $(`cal-${p}-label`).value.trim().slice(0, 100);
+  if (Dates.parse(from) == null || Dates.parse(to) == null) { calError(t('err.date', { field: t('cal.from') })); $(`cal-${p}-from`).focus(); return; }
+  if (to < from) { calError(t('imp.rangeOrder', { obj: t('cal.' + kind), n: CalWin.draft[kind].length + 1 })); $(`cal-${p}-to`).focus(); return; }
+  CalWin.draft[kind].push({ start: from, end: to, label });
+  CalWin.draft[kind].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+  CalWin.month = Dates.monthStart(Dates.parse(from));
+  repaintCal(`#cal-${p}-from`);
 });
 
 // ── js/ui/75-dashboard.js ──
@@ -3769,6 +4440,8 @@ function init() {
   initActions();
   initKeyboard();
   Tooltip.init();
+  initViewbar();
+  initShortcuts();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

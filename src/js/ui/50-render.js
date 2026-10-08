@@ -90,6 +90,7 @@ function renderKpis() {
     item(t('kpi.holidays'), String(offDays)),
     item(t('kpi.critical'), h('span', { class: 'critical-path', text: crit })),
     item(t('kpi.progress'), `${I18n.number(pct)} % `, h('progress', { max: 100, value: Math.round(pct), aria: { label: t('kpi.progress') } }))));
+  if (typeof viewActive === 'function' && viewActive()) box.append(h('p', { class: 'hint whole', text: t('view.whole') }));
 }
 
 function alertMessages() {
@@ -129,16 +130,31 @@ function statusOf(task) {
   return Metrics.status(task, App.sched, today());
 }
 
-function renderList(rows, fl) {
+/** Libellé et totaux d'un groupe (EF-86). */
+function groupLabel(g) {
+  const name = g.none ? t(App.view.groupBy === 'res' ? 'view.noRes' : 'view.noCat') : App.view.groupBy === 'status' ? t('status.' + g.key) : g.label;
+  return { name, totals: t('view.groupTotals', { count: g.count, dur: g.dur, pct: g.pct }) };
+}
+
+function renderList(items, fl) {
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
     h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
-  for (const task of rows) {
+  for (const it of items) {
+    if (it.group) {
+      const { name, totals } = groupLabel(it.group);
+      const open = !App.view.collapsedGroups.has(it.group.key);
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 6 },
+        h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
+          open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
+      continue;
+    }
+    const task = it.task;
     const r = s && s.tasks.get(task.id);
-    const depth = ancestorsOf(task.id).length;
+    const depth = it.flat ? 0 : ancestorsOf(task.id).length;
     const crit = r && r.critical && task.type !== 'summary';
     const st = statusOf(task);
     const marks = [];
@@ -148,7 +164,7 @@ function renderList(rows, fl) {
     if (r && r.shift) marks.push(shiftText(r));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
-    if (task.type === 'summary') {
+    if (task.type === 'summary' && !it.flat) {
       nameCell.append(h('button', { type: 'button', class: 'toggle icon', data: { click: 'toggleCollapse', arg: task.id },
         aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
     }
@@ -156,7 +172,7 @@ function renderList(rows, fl) {
       aria: { current: App.selected === task.id ? 'true' : undefined } },
       task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict'], data: { id: task.id } },
+    frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
       h('td', { text: durText(task, r) }),
@@ -189,7 +205,8 @@ function baselineTexts(taskId) {
   }).filter(Boolean);
 }
 
-function renderGantt(rows, fl) {
+function renderGantt(items, fl) {
+  const rows = items.filter(it => it.task).map(it => it.task);
   const inner = clear($('gantt-inner'));
   const s = App.sched;
   if (!s) return;
@@ -225,7 +242,7 @@ function renderGantt(rows, fl) {
   inner.append(head);
 
   const body = h('div', { class: 'g-body' });
-  body.style.setProperty('--rows', String(rows.length + 2));
+  body.style.setProperty('--rows', String(items.length + 2));
   // Jours non travaillés en fond atténué.
   for (let dn = from; dn <= to; dn++) {
     if (s.cal.isWork(dn)) continue;
@@ -248,10 +265,12 @@ function renderGantt(rows, fl) {
   body.classList.toggle('with-bl', bls.length > 0);
   const row = (...children) => h('div', { class: 'g-row' }, children);
   const rowOf = new Map(); // id → index de ligne visible, pour les flèches
-  rows.forEach((task, i) => rowOf.set(task.id, i + 1));
+  items.forEach((it, i) => { if (it.task && !rowOf.has(it.task.id)) rowOf.set(it.task.id, i + 1); });
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
-  for (const task of rows) {
+  for (const it of items) {
+    if (it.group) { body.append(h('div', { class: 'g-row g-group', aria: { hidden: 'true' } })); continue; }
+    const task = it.task;
     const r = s.tasks.get(task.id);
     if (!r || r.empty) { body.append(row()); continue; }
     const st = statusOf(task);
@@ -295,10 +314,11 @@ function renderGantt(rows, fl) {
       m.style.setProperty('background', safeColor(b.color));
       return m;
     });
+    if (it.dim) el.classList.add('dim');
     body.append(row(el, minis));
   }
   body.append(msAuto(s.projectEndDn, 'end'));
-  if (App.showLinks) body.append(linkArrows(rows, rowOf, x, dayW));
+  if (App.showLinks && !App.view.groupBy) body.append(linkArrows(rows, rowOf, x, dayW, items.length));
   inner.append(body);
 }
 
@@ -316,16 +336,16 @@ function svg(tag, attrs = {}, ...children) {
 }
 
 /** Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type. */
-function linkArrows(rows, rowOf, x, dayW) {
+function linkArrows(rows, rowOf, x, dayW, count) {
   const s = App.sched;
   const rowH = 34, mid = i => i * rowH + rowH / 2;
-  const height = (rows.length + 2) * rowH;
+  const height = (count + 2) * rowH;
   const layer = svg('svg', { class: 'g-links', 'aria-hidden': 'true', height, width: '100%' },
     svg('defs', {}, ['n', 'c'].map(k => svg('marker', { id: 'arrow-' + k, viewBox: '0 0 8 8', refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
       svg('path', { d: 'M0,0 L8,4 L0,8 z', class: 'head-' + k })))));
   for (const task of rows) {
     const rs = s.tasks.get(task.id);
-    if (!rs || rs.empty) continue;
+    if (!rs || rs.empty || !rowOf.has(task.id)) continue;
     for (const d of task.deps) {
       const rp = s.tasks.get(d.id);
       if (!rowOf.has(d.id) || !rp) continue;
@@ -357,14 +377,18 @@ function renderLegend() {
 }
 
 function render() {
+  // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
+  const focusId = document.activeElement && document.activeElement.id;
   Tooltip.hide();
   applyStaticTexts();
   renderTopbar();
   renderKpis();
   renderAlerts();
-  const rows = visibleTasks();
   const fl = flags();
-  renderList(rows, fl);
-  renderGantt(rows, fl);
+  const items = viewItems();
+  renderViewbar(items);
+  renderList(items, fl);
+  renderGantt(items, fl);
   renderLegend();
+  if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
 }

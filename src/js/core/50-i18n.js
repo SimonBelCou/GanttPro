@@ -50,7 +50,9 @@ const I18n = (() => {
     'alert.deadline': { one: '{task} dépasse son échéance de {count} jour', other: '{task} dépasse son échéance de {count} jours' },
     // Édition
     'edit.title': 'Modifier {id}', 'edit.save': 'Enregistrer', 'edit.cancel': 'Annuler', 'edit.delete': 'Supprimer',
-    'edit.up': 'Monter', 'edit.down': 'Descendre',
+    'edit.up': 'Monter', 'edit.down': 'Descendre', 'edit.duplicate': 'Dupliquer',
+    'dup.suffix': ' (copie)', 'dup.done': { one: '{count} tâche dupliquée : {ids}.', other: '{count} tâches dupliquées : {ids}.' },
+    'kb.forced': 'Date imposée au {date}.', 'kb.dur': 'Durée : {count} j.', 'kb.notTask': 'Raccourci réservé aux tâches et aux jalons.',
     'f.id': 'Identifiant', 'f.name': 'Nom', 'f.type': 'Type', 'f.parent': 'Récapitulative parente', 'f.dur': 'Durée (jours ouvrés)',
     'f.cat': 'Catégorie', 'f.pct': 'Avancement (%)', 'f.reached': 'Atteint',
     'f.forced': 'Date imposée', 'f.notBefore': 'Ne pas commencer avant', 'f.deadline': 'Échéance',
@@ -175,6 +177,25 @@ const I18n = (() => {
     'dash.done': 'Tâches terminées', 'dash.ongoingN': 'En cours', 'dash.late': 'En retard',
     'dash.tracking': 'Tableau de suivi', 'dash.pStart': 'Début prévu', 'dash.pEnd': 'Fin prévue', 'dash.dev': 'Écart', 'dash.ongoing': '(en cours)',
     'dash.vsBl': 'Écart vs baseline', 'dash.vsBlPick': 'Colonne « Écart vs baseline » :', 'dash.noBl': '— aucune —',
+    'cal.title': 'Calendrier du projet', 'cal.week': 'Semaine de travail', 'cal.holidays': 'Jours fériés',
+    'cal.set.FR': 'France métropolitaine', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgique', 'cal.set.DE': 'Allemagne (jours nationaux)', 'cal.set.NONE': 'Aucun',
+    'cal.daysOff': 'Jours chômés ajoutés', 'cal.daysWorked': 'Jours travaillés exceptionnels', 'cal.from': 'Du', 'cal.to': 'Au (facultatif)', 'cal.label': 'Libellé',
+    'cal.add': 'Ajouter', 'cal.addOff': 'Ajouter le jour chômé', 'cal.addWorked': 'Ajouter le jour travaillé', 'cal.none': 'Aucun.',
+    'cal.range': 'du {from} au {to}', 'cal.preview': 'Aperçu', 'cal.prev': 'Mois précédent', 'cal.next': 'Mois suivant',
+    'cal.dayOff': 'non travaillé', 'cal.dayHoliday': 'férié : {name}', 'cal.dayAdded': 'chômé : {name}', 'cal.dayWorked': 'travaillé exceptionnellement', 'cal.saved': 'Calendrier enregistré ; planning recalculé.',
+    'cal.legend': 'Gris : non travaillé ; souligné : férié ou chômé ; encadré : travaillé exceptionnellement.',
+    'rs.title': 'Fiche de {name}', 'rs.open': 'Fiche', 'rs.absences': 'Absences', 'rs.addAbsence': "Ajouter l'absence",
+    'rs.tasks': { one: '{count} tâche', other: '{count} tâches' }, 'rs.units': 'Taux', 'rs.load': 'Charge totale : {load} jours-personne.',
+    'rs.capTooLow': 'Capacité : la tâche {task} est affectée à {units} % ; réduisez ce taux d\'abord.', 'rs.order': "La fin de l'absence précède son début.",
+    'rs.absAdded': 'Absence ajoutée pour {name} ; planning recalculé.',
+    'view.label': 'Recherche et filtres', 'view.search': 'Rechercher', 'view.highlight': 'Surligner', 'view.filters': 'Filtres',
+    'view.groupBy': 'Grouper par', 'view.group.none': 'Aucun', 'view.group.res': 'Ressource', 'view.group.cat': 'Catégorie', 'view.group.status': 'Statut',
+    'view.count': '{shown} sur {total}', 'view.results': { one: '{count} résultat', other: '{count} résultats' },
+    'view.groupTotals': '{count} élément(s), {dur} j, {pct} %', 'view.noRes': 'Sans ressource', 'view.noCat': 'Sans catégorie',
+    'view.flat': 'Vue regroupée : la hiérarchie est suspendue.', 'view.whole': 'Chiffres du projet entier (filtres actifs).',
+    'view.f.status': 'Statut', 'view.f.res': 'Ressource', 'view.f.cat': 'Catégorie', 'view.f.tag': 'Étiquette', 'view.f.type': 'Type',
+    'view.f.critical': 'Critiques seulement', 'view.f.alerts': 'En conflit ou avec avertissement', 'view.f.period': 'Période', 'view.f.from': 'Du', 'view.f.to': 'Au',
+    'view.clear': 'Effacer les filtres', 'view.chip': '{what} : {value}', 'view.chipRemove': 'Retirer le filtre {what} : {value}', 'view.on': 'oui',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -208,7 +229,9 @@ const I18n = (() => {
     'alert.link.FF': '{task} finishes on {date} before {pred} finishes ({predDate})',
     'alert.link.SF': '{task} finishes on {date} before {pred} starts ({predDate})',
     'alert.deadline': { one: '{task} misses its deadline by {count} day', other: '{task} misses its deadline by {count} days' },
-    'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down',
+    'edit.title': 'Edit {id}', 'edit.save': 'Save', 'edit.cancel': 'Cancel', 'edit.delete': 'Delete', 'edit.up': 'Move up', 'edit.down': 'Move down', 'edit.duplicate': 'Duplicate',
+    'dup.suffix': ' (copy)', 'dup.done': { one: '{count} task duplicated: {ids}.', other: '{count} tasks duplicated: {ids}.' },
+    'kb.forced': 'Fixed date set to {date}.', 'kb.dur': 'Duration: {count} d.', 'kb.notTask': 'This shortcut applies to tasks and milestones only.',
     'f.id': 'ID', 'f.name': 'Name', 'f.type': 'Type', 'f.parent': 'Parent summary task', 'f.dur': 'Duration (working days)',
     'f.cat': 'Category', 'f.pct': 'Progress (%)', 'f.reached': 'Reached', 'f.forced': 'Fixed start date', 'f.notBefore': 'Start no earlier than',
     'f.deadline': 'Deadline', 'f.realStart': 'Actual start', 'f.realEnd': 'Actual finish', 'f.notes': 'Notes', 'f.tags': 'Tags (comma-separated)',
@@ -286,6 +309,25 @@ const I18n = (() => {
     'dash.done': 'Tasks done', 'dash.ongoingN': 'In progress', 'dash.late': 'Late',
     'dash.tracking': 'Tracking table', 'dash.pStart': 'Planned start', 'dash.pEnd': 'Planned finish', 'dash.dev': 'Variance', 'dash.ongoing': '(ongoing)',
     'dash.vsBl': 'Variance vs baseline', 'dash.vsBlPick': '“Variance vs baseline” column:', 'dash.noBl': '— none —',
+    'cal.title': 'Project calendar', 'cal.week': 'Working week', 'cal.holidays': 'Public holidays',
+    'cal.set.FR': 'Metropolitan France', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgium', 'cal.set.DE': 'Germany (national days)', 'cal.set.NONE': 'None',
+    'cal.daysOff': 'Additional days off', 'cal.daysWorked': 'Extra working days', 'cal.from': 'From', 'cal.to': 'To (optional)', 'cal.label': 'Label',
+    'cal.add': 'Add', 'cal.addOff': 'Add day off', 'cal.addWorked': 'Add working day', 'cal.none': 'None.',
+    'cal.range': 'from {from} to {to}', 'cal.preview': 'Preview', 'cal.prev': 'Previous month', 'cal.next': 'Next month',
+    'cal.dayOff': 'non-working', 'cal.dayHoliday': 'holiday: {name}', 'cal.dayAdded': 'day off: {name}', 'cal.dayWorked': 'extra working day', 'cal.saved': 'Calendar saved; schedule recalculated.',
+    'cal.legend': 'Grey: non-working; underlined: holiday or day off; framed: extra working day.',
+    'rs.title': '{name} — resource sheet', 'rs.open': 'Sheet', 'rs.absences': 'Absences', 'rs.addAbsence': 'Add absence',
+    'rs.tasks': { one: '{count} task', other: '{count} tasks' }, 'rs.units': 'Units', 'rs.load': 'Total workload: {load} person-days.',
+    'rs.capTooLow': 'Capacity: task {task} is assigned at {units}%; reduce that rate first.', 'rs.order': 'The absence ends before it starts.',
+    'rs.absAdded': 'Absence added for {name}; schedule recalculated.',
+    'view.label': 'Search and filters', 'view.search': 'Search', 'view.highlight': 'Highlight', 'view.filters': 'Filters',
+    'view.groupBy': 'Group by', 'view.group.none': 'None', 'view.group.res': 'Resource', 'view.group.cat': 'Category', 'view.group.status': 'Status',
+    'view.count': '{shown} of {total}', 'view.results': { one: '{count} result', other: '{count} results' },
+    'view.groupTotals': '{count} item(s), {dur} d, {pct}%', 'view.noRes': 'No resource', 'view.noCat': 'No category',
+    'view.flat': 'Grouped view: the hierarchy is suspended.', 'view.whole': 'Figures for the whole project (filters active).',
+    'view.f.status': 'Status', 'view.f.res': 'Resource', 'view.f.cat': 'Category', 'view.f.tag': 'Tag', 'view.f.type': 'Type',
+    'view.f.critical': 'Critical only', 'view.f.alerts': 'In conflict or with a warning', 'view.f.period': 'Period', 'view.f.from': 'From', 'view.f.to': 'To',
+    'view.clear': 'Clear filters', 'view.chip': '{what}: {value}', 'view.chipRemove': 'Remove filter {what}: {value}', 'view.on': 'yes',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -363,5 +405,7 @@ const I18n = (() => {
     return lang === 'fr' ? s.replace('.', ',') : s;
   }
 
-  return { t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  const dayName = i => DAYS[lang][i];
+  const monthName = m => MONTHS[lang][m - 1];
+  return { dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
 })();

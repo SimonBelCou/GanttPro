@@ -341,3 +341,38 @@ test('R-70 arbitrage : faire passer une tâche avant l\'autre', () => {
   assert.equal(span(after, 'B'), '08/01-12/01');
   assert.equal(after.conflicts.length, 0);
 });
+
+// ── Recherche, filtres et regroupements (RG-27, R-53) ─────────────────────────────────────────
+const { View } = loadCore();
+test('R-53 filtre par catégorie, regroupement par ressource, recherche', () => {
+  const p = project({ resources: [alice, bob], tasks: [
+    { id: 'P', type: 'summary', dur: 0 },
+    { id: 'A', parent: 'P', cat: 'C1', assign: ['r1'] }, { id: 'B', parent: 'P', cat: 'C1', assign: ['r1', 'r2'] },
+    { id: 'C', cat: 'C2', notes: 'Prévoir la réunion du comité' }, { id: 'D', cat: 'C2', assign: ['r2'] }, { id: 'E', cat: 'C2' }] });
+  p.categories = [{ id: 'C1', name: 'Dév', color: '#4d9fff' }, { id: 'C2', name: 'Études', color: '#36d9a0' }];
+  p.tasks.forEach(t => { t.tags = t.tags || []; t.notes = t.notes || ''; });
+  const s = run(p);
+  const f = { ...View.EMPTY, cat: ['C1'] };
+  const sel = View.select(p, s, { filters: f }, TODAY);
+  assert.deepEqual(plain([...sel.matched]), ['A', 'B']);
+  assert.ok(sel.ids.has('P'), 'la récapitulative parente reste visible');
+  const g = View.group(p, s, new Set(p.tasks.map(t => t.id)), 'res', TODAY);
+  assert.deepEqual(plain(g.map(x => [x.label || '(sans)', x.ids])), [['Alice', ['A', 'B']], ['Bob', ['B', 'D']], ['(sans)', ['C', 'E']]]);
+  assert.deepEqual(plain([g[0].count, g[0].dur]), [2, 10]);
+  const q = View.select(p, s, { query: 'REUNION comite' }, TODAY);
+  assert.deepEqual(plain([...q.matched]), ['C']);
+  // Aucun calcul n'est modifié par l'affichage.
+  assert.equal(iso(run(p).projectEndDn), iso(s.projectEndDn));
+});
+
+test('filtres combinés : ET entre critères, OU dans un critère, période, sans ressource', () => {
+  const p = project({ resources: [alice], tasks: [{ id: 'A', assign: ['r1'] }, { id: 'B', deps: ['A'] }, { id: 'C', dur: 2 }] });
+  p.tasks.forEach(t => { t.tags = []; t.notes = ''; t.cat = ''; });
+  const s = run(p);
+  const ids = f => plain([...View.select(p, s, { filters: { ...View.EMPTY, ...f } }, TODAY).matched]);
+  assert.deepEqual(ids({ res: [''] }), ['B', 'C']);
+  assert.deepEqual(ids({ res: ['', 'r1'] }), ['A', 'B', 'C']);
+  assert.deepEqual(ids({ res: [''], critical: true }), ['B']);
+  assert.deepEqual(ids({ from: '2026-01-12', to: '2026-01-12' }), ['B']);
+  assert.deepEqual(ids({ status: ['late'] }), ['A', 'C']);
+});

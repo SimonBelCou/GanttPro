@@ -58,7 +58,8 @@ function resourcesWindow() {
         h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
         h('td', { text: t('res.tasks', { count: used }) }),
-        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
+        h('td', {}, h('button', { type: 'button', data: { click: 'openResourceSheet', arg: r.id } }, `${t('rs.open')} ${r.name}`),
+          ' ', h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
     });
     table.append(tb);
     body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')));

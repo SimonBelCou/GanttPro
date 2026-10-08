@@ -460,5 +460,8 @@ const Model = (() => {
     };
   }
 
-  return { FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+  /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
+  const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
+
+  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
 })();

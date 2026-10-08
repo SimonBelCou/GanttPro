@@ -27,6 +27,7 @@
     <div class="group">
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
+      <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
@@ -73,6 +74,24 @@
 </section>
 
 <main id="main" tabindex="-1">
+  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Recherche et filtres">
+    <div class="view-row">
+      <label for="search" data-i18n="view.search"></label>
+      <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
+      <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
+      <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
+      <label for="group-by" data-i18n="view.groupBy"></label>
+      <select id="group-by" data-change="groupBy">
+        <option value="" data-i18n="view.group.none"></option>
+        <option value="res" data-i18n="view.group.res"></option>
+        <option value="cat" data-i18n="view.group.cat"></option>
+        <option value="status" data-i18n="view.group.status"></option>
+      </select>
+      <span id="view-count" class="view-count" role="status"></span>
+    </div>
+    <div id="view-chips" class="chips"></div>
+    <div id="filters-panel" class="filters-panel" hidden></div>
+  </section>
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks">
@@ -97,6 +116,7 @@
     <div class="actions">
       <button type="submit" class="primary" data-i18n="edit.save"></button>
       <button type="button" data-click="closeEditor" data-i18n="edit.cancel"></button>
+      <button type="button" data-click="duplicateTask" data-i18n="edit.duplicate" aria-keyshortcuts="Control+D"></button>
       <button type="button" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
       <button type="button" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
       <button type="button" class="danger" data-click="deleteTask" data-i18n="edit.delete"></button>

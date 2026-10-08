@@ -156,6 +156,8 @@ function init() {
   initActions();
   initKeyboard();
   Tooltip.init();
+  initViewbar();
+  initShortcuts();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });

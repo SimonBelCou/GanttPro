@@ -8,6 +8,8 @@ const App = {
   zoom: 100,
   showAlerts: true,
   showLinks: true,
+  // Recherche, filtres et regroupement (EF-84 à EF-86) : affichage seulement, jamais enregistrés.
+  view: { query: '', highlight: false, filters: null, groupBy: '', collapsedGroups: new Set(), panel: false },
   undo: [],
   redo: [],
   dirty: false,
