@@ -75,6 +75,8 @@ def main():
     write('conflict.json', project(tasks=[
         {'id': 'A', 'name': 'Conception', 'dur': 5, 'res': 'Alice'},
         {'id': 'B', 'name': 'Revue', 'dur': 3, 'res': 'Alice', 'forcedStart': '2026-01-07'}]))
+    write('level.json', project(tasks=[
+        {'id': 'A', 'name': 'Conception', 'dur': 3, 'res': 'Alice'}, {'id': 'B', 'name': 'Revue', 'dur': 2, 'res': 'Alice'}]))
 
     with sync_playwright() as p:
         browser = p.chromium.launch(args=['--no-sandbox'])
@@ -178,6 +180,39 @@ def main():
         check('badge « 1 conflit »', pg.inner_text('#btn-alerts') == '1 conflit')
         check('bandeau : Alice à 200 %', 'Alice est à 200 % du 07/01 au 09/01 (A, B)' in pg.inner_text('#alerts'), pg.inner_text('#alerts'))
         check('conflit signalé en texte sur la ligne', 'en conflit' in pg.inner_text('#task-rows tr[data-id="B"]'))
+
+        # ── Résolution des conflits (EF-31) ─────────────────────────────────────────────────
+        pg.click('#btn-resolve')
+        pg.wait_for_selector('#rsv-win')
+        txt = pg.inner_text('#rsv-win')
+        check('résoudre : propositions simulées', 'Déplacer la date imposée de B au lun. 12 janv. 2026' in txt and 'aucun conflit restant ; fin repoussée de 3 jours' in txt, txt)
+        axe_check(pg, 'fenêtre Résoudre les conflits')
+        pg.click('#rsv-win button:has-text("Appliquer") >> nth=0')
+        pg.wait_for_timeout(100)
+        check('résoudre : conflit corrigé', 'Aucun conflit' in pg.inner_text('#rsv-win') and pg.is_hidden('#btn-alerts'))
+        close_dialog('Fermer')
+        pg.click('#btn-undo')
+        check('résoudre : la correction s\'annule', pg.inner_text('#btn-alerts') == '1 conflit')
+
+        # ── Modes de gestion de la charge (RG-08, RG-33) ───────────────────────────────────
+        import_file('level.json')
+        close_dialog('Remplacer le projet ouvert')
+        check('nivellement : décalage affiché sur la ligne', '3 j de décalage (Alice : surcharge)' in pg.inner_text('#task-rows tr[data-id="B"]'), pg.inner_text('#task-rows tr[data-id="B"]'))
+        pg.click('#task-rows button.select:has-text("Revue")')
+        check("nivellement : expliqué dans l'édition", 'Sans ce décalage, elle commencerait le lun. 05 janv. 2026' in pg.inner_text('#edit-shift'))
+        pg.keyboard.press('Escape')
+        pg.select_option('#leveling-mode', 'off')
+        check('sans nivellement : le chevauchement devient un conflit', pg.inner_text('#btn-alerts') == '1 conflit')
+        pg.select_option('#leveling-mode', 'smooth')
+        check('lissage sans marge : conflit et alerte « non lissée »', pg.inner_text('#btn-alerts') == '1 conflit' and "n'est pas lissée" in pg.inner_text('#alerts'), pg.inner_text('#alerts'))
+        pg.click('#btn-resolve')
+        pg.wait_for_selector('#rsv-win')
+        check('proposition globale : nivellement automatique', 'Passer le projet en nivellement automatique' in pg.inner_text('#rsv-win'))
+        pg.click('#rsv-win section:has-text("Pour tout le projet") button')
+        check('nivellement rétabli : plus de conflit', pg.input_value('#leveling-mode') == 'level' and pg.is_hidden('#btn-alerts'))
+        close_dialog('Fermer')
+        import_file('conflict.json')
+        close_dialog('Remplacer le projet ouvert')
 
         # ── Ressources ───────────────────────────────────────────────────────────────────────
         pg.click('button:has-text("Ressources")')

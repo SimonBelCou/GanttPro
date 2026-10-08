@@ -265,3 +265,63 @@ test('R-56 voyant du rapport d\'état', () => {
   const lateCrit = project({ tasks: [{ id: 'A' }, { id: 'B', dur: 3, deps: ['A'] }] });
   assert.equal(Metrics.statusLight(lateCrit, run(lateCrit), Dates.parse('2026-01-13'), null).light, 'red');
 });
+
+// ── 9.6 Gestion de la charge et résolution des conflits (RG-08, RG-33, RG-34) ─────────────────
+const { Resolve } = loadCore();
+const withMode = (p, leveling) => ({ ...p, leveling });
+
+test('R-65 lissage : décalage dans la marge, fin du projet inchangée', () => {
+  const p = project({ resources: [alice], tasks: [
+    { id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 2, assign: ['r1'] }, { id: 'L', dur: 10 }] });
+  const s = run(withMode(p, 'smooth'));
+  assert.equal(span(s, 'B'), '08/01-09/01');
+  assert.equal(iso(s.projectEndDn), '2026-01-16');
+  assert.equal(s.conflicts.length, 0);
+});
+
+test('R-66 lissage impossible : le conflit reste, la fin ne bouge pas', () => {
+  const p = project({ resources: [alice], tasks: [{ id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 3, assign: ['r1'] }] });
+  const smooth = run(withMode(p, 'smooth'));
+  assert.equal(span(smooth, 'B'), '05/01-07/01');
+  assert.equal(smooth.conflicts.length, 1);
+  assert.deepEqual(plain(smooth.warnings.map(w => [w.kind, w.task])), [['smooth', 'B']]);
+  const level = run(withMode(p, 'level'));
+  assert.equal(span(level, 'B'), '08/01-12/01');
+  assert.equal(level.conflicts.length, 0);
+});
+
+test('R-67 nivellement désactivé : chaque chevauchement est un conflit', () => {
+  const s = run(withMode(project({ resources: [alice, bob], tasks: [
+    { id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 2, assign: ['r1'] }, { id: 'C', dur: 2, assign: ['r2'] }] }), 'off'));
+  assert.equal(span(s, 'B'), '05/01-06/01');
+  assert.equal(s.conflicts.length, 1);
+  assert.deepEqual(plain(s.conflicts[0].tasks), ['A', 'B']);
+});
+
+test('R-68 décalage dû au nivellement tracé', () => {
+  const s = run(project({ resources: [alice], tasks: [{ id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 2, assign: ['r1'] }] }));
+  assert.deepEqual(plain(s.tasks.get('B').shift), { days: 3, res: 'r1', kind: 'overload' });
+  assert.equal(iso(s.tasks.get('B').earliestDn), '2026-01-05');
+  assert.equal(s.tasks.get('A').shift, undefined);
+  const abs = run(project({ resources: [{ ...alice, absences: [{ start: '2026-01-05', end: '2026-01-06', label: '' }] }], tasks: [{ id: 'A', dur: 2, assign: ['r1'] }] }));
+  assert.deepEqual(plain(abs.tasks.get('A').shift), { days: 2, res: 'r1', kind: 'absence' });
+});
+
+test('R-69 propositions de résolution simulées et classées', () => {
+  const p = project({ resources: [alice, bob], tasks: [{ id: 'A', assign: ['r1'] }, { id: 'B', dur: 3, assign: ['r1'], forcedStart: '2026-01-07' }] });
+  const s = run(p);
+  const res = Resolve.suggest(p, s);
+  assert.equal(res.conflicts.length, 1);
+  const opts = res.conflicts[0].options.map(o => [o.kind, o.task, o.to || o.date || '', o.after.conflicts, o.after.endShift]);
+  assert.deepEqual(plain(opts), [
+    ['reassign', 'A', 'r2', 0, 0],
+    ['reassign', 'B', 'r2', 0, 0],
+    ['moveForced', 'B', '2026-01-12', 0, 3],
+    ['unforce', 'B', '', 0, 3],
+  ]);
+  assert.deepEqual(plain(res.global), []);
+  // Projet en lissage : la proposition globale « nivellement automatique » apparaît.
+  const q = withMode(project({ resources: [alice], tasks: [{ id: 'A', dur: 3, assign: ['r1'] }, { id: 'B', dur: 3, assign: ['r1'] }] }), 'smooth');
+  const g = Resolve.suggest(q, run(q)).global;
+  assert.deepEqual(plain(g.map(o => [o.kind, o.after.conflicts, o.after.endShift])), [['level', 0, 3]]);
+});

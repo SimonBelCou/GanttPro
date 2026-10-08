@@ -105,6 +105,13 @@ action('toggleLang', () => {
 });
 
 action('editProject', () => editProjectWindow());
+action('openResolve', () => resolveWindow());
+action('setLeveling', (arg, el) => {
+  if (!Schedule.MODES.includes(el.value)) return;
+  commit(p => { p.leveling = el.value; });
+  const n = App.sched ? App.sched.conflicts.length : 0;
+  announce(`${t('top.leveling')} : ${t('lvl.' + el.value)}. ${n ? t('top.conflicts', { count: n }) : t('rsv.left0')}`);
+});
 action('openResources', () => resourcesWindow());
 action('openCategories', () => categoriesWindow());
 action('newProject', () => newProjectAction());

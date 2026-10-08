@@ -162,7 +162,7 @@ const Model = (() => {
     if (has(raw, 'format') && !(Number.isInteger(raw.format) && raw.format >= 1)) fail('imp.field', { obj: 'project', field: 'format', rule: 'rule.int', min: 1, max: FORMAT });
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
-    const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar',
+    const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
@@ -182,6 +182,7 @@ const Model = (() => {
       projectStart: P.date('projectStart', { def: Dates.toISO(Dates.todayDn()) }),
       reportNote: P.text('reportNote', { max: 2000 }),
       calendar: sanitizeCalendar(P.raw('calendar'), stats),
+      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], 'level'),
     };
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -411,6 +412,7 @@ const Model = (() => {
       format: FORMAT, id: project.id, createdAt: project.createdAt,
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
+      leveling: project.leveling || 'level',
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -447,7 +449,7 @@ const Model = (() => {
     const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
-      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] },
+      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'level',
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],

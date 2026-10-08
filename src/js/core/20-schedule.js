@@ -1,4 +1,12 @@
-/* Ordonnancement (RG-04 à RG-12, RG-23 à RG-25).
+/* Ordonnancement (RG-04 à RG-12, RG-23 à RG-25, RG-33).
+ *
+ * Gestion de la charge des ressources, au choix du projet (project.leveling) :
+ *   'level'  nivellement automatique (défaut) : une tâche est décalée jusqu'à ce que ses ressources
+ *            soient libres, quitte à repousser la fin du projet (RG-08) ;
+ *   'smooth' lissage : une tâche n'est décalée que dans sa marge — jamais après sa date de début au
+ *            plus tard calculée SANS nivellement — donc la fin du projet et les échéances ne bougent
+ *            pas ; une surcharge qui ne tient pas dans la marge reste un conflit (RG-33) ;
+ *   'off'    aucun décalage : chaque chevauchement est un conflit.
  *
  * Calcul déterministe : mêmes données, même ordre de liste → mêmes dates. Tout se fait en
  * index de jours ouvrés (voir Calendar) ; les dates ne sont reconstituées qu'à la fin.
@@ -11,7 +19,12 @@ const Schedule = (() => {
   /** Décalage début → fin : une tâche de n jours finit n−1 jours ouvrés après son début (RG-05). */
   const spanOf = t => Math.max(durOf(t) - 1, 0);
 
-  function compute(project) {
+  const MODES = Object.freeze(['level', 'smooth', 'off']);
+
+  function compute(project, opts = {}) {
+    const mode = opts.mode || (MODES.includes(project.leveling) ? project.leveling : 'level');
+    // Lissage : dates de début au plus tard d'un calcul sans nivellement ni enchaînement de ressource.
+    const smoothCap = mode === 'smooth' ? lateStartsWithoutLeveling(project) : null;
     const cal = Calendar.create(project.calendar, project.projectStart);
     const tasks = project.tasks;
     const order = new Map(tasks.map((t, i) => [t.id, i]));
@@ -44,27 +57,35 @@ const Schedule = (() => {
       }
     }
 
-    /** Premier jour fautif (surcharge ou absence) de la période [s, s+d−1], ou −1. */
+    /** Premier jour fautif (surcharge ou absence) de la période [s, s+d−1] : {i, res, kind}, ou null. */
     function firstFault(assigns, s, d) {
       for (let i = s; i < s + d; i++) {
         for (const a of assigns) {
-          if (absent.get(a.res).has(i)) return i;
+          if (absent.get(a.res).has(i)) return { i, res: a.res, kind: 'absence' };
           const cap = resources.get(a.res).capacity;
           // Un taux supérieur à la capacité est refusé à la saisie ; par sûreté il n'est pas nivelé.
-          if (a.units <= cap && (load.get(a.res).get(i) || 0) + a.units > cap) return i;
+          if (a.units <= cap && (load.get(a.res).get(i) || 0) + a.units > cap) return { i, res: a.res, kind: 'overload' };
         }
       }
-      return -1;
+      return null;
     }
 
-    /** RG-08 : tant qu'un jour est fautif, la tâche commence le jour ouvré qui suit le premier jour fautif. */
-    function level(assigns, s, d) {
+    /**
+     * RG-08 : tant qu'un jour est fautif, la tâche commence le jour ouvré qui suit le premier jour fautif.
+     * cap (lissage, RG-33) : début à ne pas dépasser ; au-delà, la tâche reste à son début au plus tôt.
+     * Renvoie {s, cause} — cause : première ressource qui a imposé un décalage — ou {s, unresolved}.
+     */
+    function level(assigns, s, d, cap = Infinity) {
+      const start = s;
+      let cause = null;
       for (let guard = 0; guard < 1e6; guard++) {
         const f = firstFault(assigns, s, d);
-        if (f < 0) return s;
-        s = f + 1;
+        if (!f) return { s, cause };
+        if (!cause) cause = f;
+        if (f.i + 1 > cap) return { s: start, cause, unresolved: true };
+        s = f.i + 1;
       }
-      return s;
+      return { s, cause };
     }
 
     const state = new Map();
@@ -79,7 +100,7 @@ const Schedule = (() => {
       if (t.notBefore && !t.forcedStart) earliest = Math.max(earliest, cal.ceil(Dates.parse(t.notBefore)));
       for (const dep of t.deps) if (out.has(dep.id)) earliest = Math.max(earliest, linkBound(t, dep));
 
-      let s;
+      let s, shift = null;
       if (t.forcedStart) {
         s = cal.ceil(Dates.parse(t.forcedStart)); // RG-07 : l'emporte sur les liens et le nivellement
         for (const dep of t.deps) {
@@ -87,8 +108,13 @@ const Schedule = (() => {
           const bound = linkBound(t, dep);
           if (s < bound) warnings.push({ kind: 'link', task: t.id, pred: dep.id, type: dep.type, lag: dep.lag || 0, days: bound - s });
         }
-      } else if (assigns.length && d > 0) {
-        s = level(assigns, earliest, d);
+      } else if (assigns.length && d > 0 && mode !== 'off') {
+        const cap = smoothCap ? smoothCap.get(t.id) : Infinity;
+        const r = level(assigns, earliest, d, cap);
+        s = r.s;
+        if (r.unresolved) warnings.push({ kind: 'smooth', task: t.id, res: r.cause.res });
+        // Traçabilité (EF-106) : décalage dû aux ressources, en jours ouvrés, et sa cause.
+        else if (s > earliest) shift = { days: s - earliest, res: r.cause.res, kind: r.cause.kind };
       } else {
         s = earliest;
       }
@@ -97,7 +123,7 @@ const Schedule = (() => {
         const m = load.get(a.res);
         for (let i = s; i <= e; i++) m.set(i, (m.get(i) || 0) + a.units);
       }
-      out.set(t.id, { s, e, d });
+      out.set(t.id, shift ? { s, e, d, shift, earliestDn: null, earliest } : { s, e, d });
       state.set(t.id, 2);
     }
     for (const t of tasks) place(t);
@@ -129,7 +155,7 @@ const Schedule = (() => {
     // Successeurs : par lien, et pour une tâche de ressource, la suivante sur cette ressource (RG-11).
     const succ = new Map(tasks.map(t => [t.id, []]));
     for (const t of tasks) for (const dep of t.deps) if (succ.has(dep.id)) succ.get(dep.id).push({ to: t, type: dep.type, lag: dep.lag || 0 });
-    for (const r of project.resources) {
+    for (const r of (mode === 'off' || opts.noResourceEdges ? [] : project.resources)) {
       const on = tasks.filter(t => assignsOf(t).some(a => a.res === r.id))
         .sort((a, b) => out.get(a.id).s - out.get(b.id).s || order.get(a.id) - order.get(b.id));
       for (let k = 0; k < on.length; k++) {
@@ -181,6 +207,7 @@ const Schedule = (() => {
       if (r.empty) continue;
       r.startDn = cal.dnOf(r.s);
       r.endDn = cal.dnOf(r.e);
+      if (r.shift) r.earliestDn = cal.dnOf(r.earliest);
     }
 
     const criticalPath = tasks.filter(t => !isSummary(t) && out.get(t.id).critical)
@@ -204,7 +231,7 @@ const Schedule = (() => {
     }
 
     return {
-      cal, tasks: out, projectEnd, projectEndDn: cal.dnOf(projectEnd), startDn: cal.dnOf(0),
+      mode, cal, tasks: out, projectEnd, projectEndDn: cal.dnOf(projectEnd), startDn: cal.dnOf(0),
       criticalPath, conflicts, warnings,
       /** Charge d'une ressource un jour ouvré (somme des taux, RG-25). */
       loadOf: (resId, i) => (load.get(resId) && load.get(resId).get(i)) || 0,
@@ -213,5 +240,16 @@ const Schedule = (() => {
     };
   }
 
-  return { compute, durOf, isMilestone, isSummary };
+  /** Début au plus tard de chaque tâche dans un planning sans nivellement (borne du lissage, RG-33). */
+  function lateStartsWithoutLeveling(project) {
+    const free = compute(project, { mode: 'off', noResourceEdges: true });
+    const caps = new Map();
+    for (const t of project.tasks) {
+      const r = free.tasks.get(t.id);
+      if (r && !r.empty && !isSummary(t)) caps.set(t.id, r.s + Math.max(0, r.slack));
+    }
+    return caps;
+  }
+
+  return { compute, durOf, isMilestone, isSummary, MODES };
 })();

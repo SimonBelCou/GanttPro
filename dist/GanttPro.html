@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9Oug//tbndon2ARv/SQeSkPTdMhfFTgJlcoJ4XZrwAA='; style-src 'sha256-J1f6XrjIPg5ZPG1pZ+SBF1aAiPUVSZjjOSnW2DMu2rE='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bGb2/KXNQRwW6JBiy5cSH5z3lTTs9aEeIXCFjuJFyzk='; style-src 'sha256-5PXm2iD6dXa7C4cMo27CZU2Yji1M4RUBr/cxmBmZmVU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -102,6 +102,13 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks tr.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .tasks tr.critical td.id { color: var(--critical); font-weight: 700; }
 .tasks .marks { margin-left: .4rem; font-size: .8rem; color: var(--critical); }
+.tasks .marks.info { color: var(--muted); }
+.note { margin: 0 0 .8rem; padding: .5rem .7rem; border-left: 4px solid var(--accent); background: var(--panel-2); }
+.rsv-conflict { border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; margin: .6rem 0; }
+.rsv-conflict h3 { margin: 0 0 .4rem; font-size: .95rem; color: var(--critical); }
+.rsv-options { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.rsv-options li { display: flex; gap: .6rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.rsv-options .impact { color: var(--muted); font-size: .85rem; }
 .tasks tr.auto-ms td { color: var(--muted); font-style: italic; }
 .tasks td.status.late { color: var(--critical); font-weight: 600; }
 .tasks td.status.done { color: var(--ok); }
@@ -237,7 +244,15 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
+      <label class="field-inline"><span data-i18n="top.leveling">Charge des ressources</span>
+        <select id="leveling-mode" data-change="setLeveling">
+          <option value="level" data-i18n="lvl.level"></option>
+          <option value="smooth" data-i18n="lvl.smooth"></option>
+          <option value="off" data-i18n="lvl.off"></option>
+        </select>
+      </label>
       <button type="button" id="btn-alerts" class="badge" data-click="toggleAlerts" hidden></button>
+      <button type="button" id="btn-resolve" data-click="openResolve" data-i18n="top.resolve" hidden></button>
     </div>
     <div class="group">
       <button type="button" data-click="newProject" data-i18n="top.new"></button>
@@ -522,7 +537,15 @@ const Calendar = (() => {
 })();
 
 // ── js/core/20-schedule.js ──
-/* Ordonnancement (RG-04 à RG-12, RG-23 à RG-25).
+/* Ordonnancement (RG-04 à RG-12, RG-23 à RG-25, RG-33).
+ *
+ * Gestion de la charge des ressources, au choix du projet (project.leveling) :
+ *   'level'  nivellement automatique (défaut) : une tâche est décalée jusqu'à ce que ses ressources
+ *            soient libres, quitte à repousser la fin du projet (RG-08) ;
+ *   'smooth' lissage : une tâche n'est décalée que dans sa marge — jamais après sa date de début au
+ *            plus tard calculée SANS nivellement — donc la fin du projet et les échéances ne bougent
+ *            pas ; une surcharge qui ne tient pas dans la marge reste un conflit (RG-33) ;
+ *   'off'    aucun décalage : chaque chevauchement est un conflit.
  *
  * Calcul déterministe : mêmes données, même ordre de liste → mêmes dates. Tout se fait en
  * index de jours ouvrés (voir Calendar) ; les dates ne sont reconstituées qu'à la fin.
@@ -535,7 +558,12 @@ const Schedule = (() => {
   /** Décalage début → fin : une tâche de n jours finit n−1 jours ouvrés après son début (RG-05). */
   const spanOf = t => Math.max(durOf(t) - 1, 0);
 
-  function compute(project) {
+  const MODES = Object.freeze(['level', 'smooth', 'off']);
+
+  function compute(project, opts = {}) {
+    const mode = opts.mode || (MODES.includes(project.leveling) ? project.leveling : 'level');
+    // Lissage : dates de début au plus tard d'un calcul sans nivellement ni enchaînement de ressource.
+    const smoothCap = mode === 'smooth' ? lateStartsWithoutLeveling(project) : null;
     const cal = Calendar.create(project.calendar, project.projectStart);
     const tasks = project.tasks;
     const order = new Map(tasks.map((t, i) => [t.id, i]));
@@ -568,27 +596,35 @@ const Schedule = (() => {
       }
     }
 
-    /** Premier jour fautif (surcharge ou absence) de la période [s, s+d−1], ou −1. */
+    /** Premier jour fautif (surcharge ou absence) de la période [s, s+d−1] : {i, res, kind}, ou null. */
     function firstFault(assigns, s, d) {
       for (let i = s; i < s + d; i++) {
         for (const a of assigns) {
-          if (absent.get(a.res).has(i)) return i;
+          if (absent.get(a.res).has(i)) return { i, res: a.res, kind: 'absence' };
           const cap = resources.get(a.res).capacity;
           // Un taux supérieur à la capacité est refusé à la saisie ; par sûreté il n'est pas nivelé.
-          if (a.units <= cap && (load.get(a.res).get(i) || 0) + a.units > cap) return i;
+          if (a.units <= cap && (load.get(a.res).get(i) || 0) + a.units > cap) return { i, res: a.res, kind: 'overload' };
         }
       }
-      return -1;
+      return null;
     }
 
-    /** RG-08 : tant qu'un jour est fautif, la tâche commence le jour ouvré qui suit le premier jour fautif. */
-    function level(assigns, s, d) {
+    /**
+     * RG-08 : tant qu'un jour est fautif, la tâche commence le jour ouvré qui suit le premier jour fautif.
+     * cap (lissage, RG-33) : début à ne pas dépasser ; au-delà, la tâche reste à son début au plus tôt.
+     * Renvoie {s, cause} — cause : première ressource qui a imposé un décalage — ou {s, unresolved}.
+     */
+    function level(assigns, s, d, cap = Infinity) {
+      const start = s;
+      let cause = null;
       for (let guard = 0; guard < 1e6; guard++) {
         const f = firstFault(assigns, s, d);
-        if (f < 0) return s;
-        s = f + 1;
+        if (!f) return { s, cause };
+        if (!cause) cause = f;
+        if (f.i + 1 > cap) return { s: start, cause, unresolved: true };
+        s = f.i + 1;
       }
-      return s;
+      return { s, cause };
     }
 
     const state = new Map();
@@ -603,7 +639,7 @@ const Schedule = (() => {
       if (t.notBefore && !t.forcedStart) earliest = Math.max(earliest, cal.ceil(Dates.parse(t.notBefore)));
       for (const dep of t.deps) if (out.has(dep.id)) earliest = Math.max(earliest, linkBound(t, dep));
 
-      let s;
+      let s, shift = null;
       if (t.forcedStart) {
         s = cal.ceil(Dates.parse(t.forcedStart)); // RG-07 : l'emporte sur les liens et le nivellement
         for (const dep of t.deps) {
@@ -611,8 +647,13 @@ const Schedule = (() => {
           const bound = linkBound(t, dep);
           if (s < bound) warnings.push({ kind: 'link', task: t.id, pred: dep.id, type: dep.type, lag: dep.lag || 0, days: bound - s });
         }
-      } else if (assigns.length && d > 0) {
-        s = level(assigns, earliest, d);
+      } else if (assigns.length && d > 0 && mode !== 'off') {
+        const cap = smoothCap ? smoothCap.get(t.id) : Infinity;
+        const r = level(assigns, earliest, d, cap);
+        s = r.s;
+        if (r.unresolved) warnings.push({ kind: 'smooth', task: t.id, res: r.cause.res });
+        // Traçabilité (EF-106) : décalage dû aux ressources, en jours ouvrés, et sa cause.
+        else if (s > earliest) shift = { days: s - earliest, res: r.cause.res, kind: r.cause.kind };
       } else {
         s = earliest;
       }
@@ -621,7 +662,7 @@ const Schedule = (() => {
         const m = load.get(a.res);
         for (let i = s; i <= e; i++) m.set(i, (m.get(i) || 0) + a.units);
       }
-      out.set(t.id, { s, e, d });
+      out.set(t.id, shift ? { s, e, d, shift, earliestDn: null, earliest } : { s, e, d });
       state.set(t.id, 2);
     }
     for (const t of tasks) place(t);
@@ -653,7 +694,7 @@ const Schedule = (() => {
     // Successeurs : par lien, et pour une tâche de ressource, la suivante sur cette ressource (RG-11).
     const succ = new Map(tasks.map(t => [t.id, []]));
     for (const t of tasks) for (const dep of t.deps) if (succ.has(dep.id)) succ.get(dep.id).push({ to: t, type: dep.type, lag: dep.lag || 0 });
-    for (const r of project.resources) {
+    for (const r of (mode === 'off' || opts.noResourceEdges ? [] : project.resources)) {
       const on = tasks.filter(t => assignsOf(t).some(a => a.res === r.id))
         .sort((a, b) => out.get(a.id).s - out.get(b.id).s || order.get(a.id) - order.get(b.id));
       for (let k = 0; k < on.length; k++) {
@@ -705,6 +746,7 @@ const Schedule = (() => {
       if (r.empty) continue;
       r.startDn = cal.dnOf(r.s);
       r.endDn = cal.dnOf(r.e);
+      if (r.shift) r.earliestDn = cal.dnOf(r.earliest);
     }
 
     const criticalPath = tasks.filter(t => !isSummary(t) && out.get(t.id).critical)
@@ -728,7 +770,7 @@ const Schedule = (() => {
     }
 
     return {
-      cal, tasks: out, projectEnd, projectEndDn: cal.dnOf(projectEnd), startDn: cal.dnOf(0),
+      mode, cal, tasks: out, projectEnd, projectEndDn: cal.dnOf(projectEnd), startDn: cal.dnOf(0),
       criticalPath, conflicts, warnings,
       /** Charge d'une ressource un jour ouvré (somme des taux, RG-25). */
       loadOf: (resId, i) => (load.get(resId) && load.get(resId).get(i)) || 0,
@@ -737,7 +779,18 @@ const Schedule = (() => {
     };
   }
 
-  return { compute, durOf, isMilestone, isSummary };
+  /** Début au plus tard de chaque tâche dans un planning sans nivellement (borne du lissage, RG-33). */
+  function lateStartsWithoutLeveling(project) {
+    const free = compute(project, { mode: 'off', noResourceEdges: true });
+    const caps = new Map();
+    for (const t of project.tasks) {
+      const r = free.tasks.get(t.id);
+      if (r && !r.empty && !isSummary(t)) caps.set(t.id, r.s + Math.max(0, r.slack));
+    }
+    return caps;
+  }
+
+  return { compute, durOf, isMilestone, isSummary, MODES };
 })();
 
 // ── js/core/30-metrics.js ──
@@ -882,6 +935,117 @@ const Metrics = (() => {
   }
 
   return { STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
+})();
+
+// ── js/core/35-resolve.js ──
+/* Résolution des conflits de ressource (EF-31, RG-34).
+ *
+ * Pour chaque conflit, propose des corrections et SIMULE chacune sur une copie du projet avant de
+ * l'afficher : nombre de conflits restants et décalage de la fin du projet. Rien n'est appliqué
+ * sans un clic de l'utilisateur. Propositions, de la moins à la plus intrusive :
+ *   moveForced  déplacer la date imposée d'une tâche au premier jour où ses ressources sont libres ;
+ *   reassign    confier la tâche à une autre ressource libre sur toute sa période ;
+ *   unforce     lever la date imposée (la tâche est alors placée par le nivellement) ;
+ *   level       passer le projet en nivellement automatique (si lissage ou désactivé).
+ * Les propositions sont classées par conflits restants, puis par décalage de la fin. */
+const Resolve = (() => {
+  const MAX_REASSIGN = 3;
+  const SEARCH_DAYS = 520; // environ deux ans ouvrés de recherche pour une date libre
+
+  const copy = p => JSON.parse(JSON.stringify(p));
+
+  /** Premier début ≥ from où toutes les ressources de la tâche sont libres, sa propre charge retirée. */
+  function firstFreeStart(sched, task, from) {
+    const r = sched.tasks.get(task.id);
+    const d = task.dur;
+    for (let i = from; i < from + SEARCH_DAYS; i++) {
+      let ok = true;
+      for (let k = i; k < i + d && ok; k++) {
+        for (const a of task.assign) {
+          const own = k >= r.s && k <= r.e ? a.units : 0;
+          const cap = sched.capacityOf(a.res, k);
+          if (cap === 0 || sched.loadOf(a.res, k) - own + a.units > cap) { ok = false; break; }
+        }
+      }
+      if (ok) return i;
+    }
+    return null;
+  }
+
+  /** La ressource res est-elle libre pour units sur les jours [s, e] ? */
+  function isFree(sched, res, units, s, e) {
+    for (let k = s; k <= e; k++) {
+      const cap = sched.capacityOf(res, k);
+      if (cap === 0 || sched.loadOf(res, k) + units > cap) return false;
+    }
+    return true;
+  }
+
+  function simulate(project, sched, mutate) {
+    const p = copy(project);
+    mutate(p);
+    let after;
+    try { after = Schedule.compute(p); } catch { return null; }
+    const endShift = after.projectEndDn >= sched.projectEndDn
+      ? sched.cal.count(sched.projectEndDn + 1, after.projectEndDn)
+      : -sched.cal.count(after.projectEndDn + 1, sched.projectEndDn);
+    return { conflicts: after.conflicts.length, endDn: after.projectEndDn, endShift };
+  }
+
+  /**
+   * @returns {{conflicts: {conflict, options: object[]}[], global: object[]}}
+   * Chaque option : {kind, task?, from?, to?, date?, mutate(p), after:{conflicts, endDn, endShift}}.
+   */
+  function suggest(project, sched, { max = 20 } = {}) {
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    const result = { conflicts: [], global: [], more: Math.max(0, sched.conflicts.length - max) };
+    const seen = new Set();
+    // Chaque proposition coûte un calcul complet : on analyse les `max` premiers conflits, dans l'ordre.
+    for (const c of sched.conflicts.slice(0, max)) {
+      const options = [];
+      const add = (o, mutate) => {
+        const key = JSON.stringify([o.kind, o.task, o.to, o.date]);
+        const after = simulate(project, sched, mutate);
+        if (!after) return;
+        options.push({ ...o, mutate, after, key });
+      };
+      for (const id of c.tasks) {
+        const t = byId.get(id);
+        if (!t || t.type !== 'task') continue;
+        const r = sched.tasks.get(id);
+        if (t.forcedStart) {
+          const i = firstFreeStart(sched, t, r.s + 1);
+          if (i != null) {
+            const date = Dates.toISO(sched.cal.dnOf(i));
+            add({ kind: 'moveForced', task: id, date }, p => { p.tasks.find(x => x.id === id).forcedStart = date; });
+          }
+          add({ kind: 'unforce', task: id }, p => { p.tasks.find(x => x.id === id).forcedStart = ''; });
+        }
+        const a = t.assign.find(x => x.res === c.res);
+        if (!a) continue;
+        let n = 0;
+        for (const other of project.resources) {
+          if (n >= MAX_REASSIGN) break;
+          if (other.id === c.res || t.assign.some(x => x.res === other.id) || a.units > other.capacity) continue;
+          if (!isFree(sched, other.id, a.units, r.s, r.e)) continue;
+          n++;
+          add({ kind: 'reassign', task: id, from: c.res, to: other.id }, p => {
+            const pt = p.tasks.find(x => x.id === id);
+            pt.assign = pt.assign.map(x => (x.res === c.res ? { res: other.id, units: x.units } : x));
+          });
+        }
+      }
+      options.sort((x, y) => x.after.conflicts - y.after.conflicts || x.after.endShift - y.after.endShift);
+      result.conflicts.push({ conflict: c, options: options.filter(o => !seen.has(o.key) && seen.add(o.key)) });
+    }
+    if (sched.conflicts.length && sched.mode !== 'level') {
+      const after = simulate(project, sched, p => { p.leveling = 'level'; });
+      if (after) result.global.push({ kind: 'level', mutate: p => { p.leveling = 'level'; }, after });
+    }
+    return result;
+  }
+
+  return { suggest, firstFreeStart };
 })();
 
 // ── js/core/40-model.js ──
@@ -1049,7 +1213,7 @@ const Model = (() => {
     if (has(raw, 'format') && !(Number.isInteger(raw.format) && raw.format >= 1)) fail('imp.field', { obj: 'project', field: 'format', rule: 'rule.int', min: 1, max: FORMAT });
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
-    const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar',
+    const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
@@ -1069,6 +1233,7 @@ const Model = (() => {
       projectStart: P.date('projectStart', { def: Dates.toISO(Dates.todayDn()) }),
       reportNote: P.text('reportNote', { max: 2000 }),
       calendar: sanitizeCalendar(P.raw('calendar'), stats),
+      leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], 'level'),
     };
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -1298,6 +1463,7 @@ const Model = (() => {
       format: FORMAT, id: project.id, createdAt: project.createdAt,
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
+      leveling: project.leveling || 'level',
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1334,7 +1500,7 @@ const Model = (() => {
     const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
-      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] },
+      calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'level',
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
@@ -1493,6 +1659,21 @@ const I18n = (() => {
     'hol.belgium': 'Fête nationale', 'hol.assumption': 'Assomption', 'hol.allSaints': 'Toussaint', 'hol.armistice': 'Armistice 1918',
     'hol.germanUnity': "Jour de l'Unité allemande", 'hol.christmas': 'Noël', 'hol.stStephen': 'Saint-Étienne',
     'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.category': 'Général',
+    'top.leveling': 'Charge des ressources', 'lvl.level': 'Nivellement automatique', 'lvl.smooth': 'Lissage dans la marge', 'lvl.off': 'Sans nivellement',
+    'top.resolve': 'Résoudre…',
+    'rsv.title': 'Résoudre les conflits', 'rsv.none': 'Aucun conflit : rien à résoudre.',
+    'rsv.noOption': 'Aucune correction automatique : modifiez les dates, les durées ou les affectations de ces tâches.',
+    'rsv.opt.moveForced': 'Déplacer la date imposée de {task} au {date}', 'rsv.opt.unforce': 'Lever la date imposée de {task}',
+    'rsv.opt.reassign': 'Confier {task} à {to} au lieu de {from}', 'rsv.opt.level': 'Passer le projet en nivellement automatique',
+    'rsv.left': { one: '{count} conflit restant', other: '{count} conflits restants' }, 'rsv.left0': 'aucun conflit restant',
+    'rsv.endSame': 'fin inchangée', 'rsv.endLater': { one: 'fin repoussée de {count} jour', other: 'fin repoussée de {count} jours' },
+    'rsv.endEarlier': { one: 'fin avancée de {count} jour', other: 'fin avancée de {count} jours' },
+    'rsv.apply': 'Appliquer', 'rsv.applyLabel': 'Appliquer : {what}', 'rsv.applied': 'Correction appliquée : {left}.', 'rsv.global': 'Pour tout le projet',
+    'rsv.more': { one: '{count} autre conflit sera analysé après ces corrections.', other: '{count} autres conflits seront analysés après ces corrections.' },
+    'rsv.intro': "Chaque proposition est simulée avant d'être affichée. Rien n'est modifié sans votre clic ; « Annuler » revient en arrière.",
+    'list.shift': '{count} j de décalage ({res} : {why})', 'why.overload': 'surcharge', 'why.absence': 'absence',
+    'edit.shift': { one: 'Décalée de {count} jour ouvré par le nivellement ({res} : {why}). Sans ce décalage, elle commencerait le {date}.', other: 'Décalée de {count} jours ouvrés par le nivellement ({res} : {why}). Sans ce décalage, elle commencerait le {date}.' },
+    'alert.smooth': '{task} ne tient pas dans sa marge : la surcharge de {res} n\'est pas lissée',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.today': "Aujourd'hui",
   };
 
@@ -1589,6 +1770,21 @@ const I18n = (() => {
     'hol.victory': 'Victory in Europe Day', 'hol.ascension': 'Ascension Day', 'hol.whitMonday': 'Whit Monday', 'hol.bastille': 'Bastille Day',
     'hol.belgium': 'Belgian National Day', 'hol.assumption': 'Assumption Day', 'hol.allSaints': "All Saints' Day", 'hol.armistice': 'Armistice Day',
     'hol.germanUnity': 'German Unity Day', 'hol.christmas': 'Christmas Day', 'hol.stStephen': "St Stephen's Day",
+    'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
+    'top.resolve': 'Resolve…',
+    'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
+    'rsv.noOption': 'No automatic fix: change the dates, durations or assignments of these tasks.',
+    'rsv.opt.moveForced': 'Move the fixed date of {task} to {date}', 'rsv.opt.unforce': 'Remove the fixed date of {task}',
+    'rsv.opt.reassign': 'Give {task} to {to} instead of {from}', 'rsv.opt.level': 'Switch the project to automatic levelling',
+    'rsv.left': { one: '{count} conflict left', other: '{count} conflicts left' }, 'rsv.left0': 'no conflict left',
+    'rsv.endSame': 'finish unchanged', 'rsv.endLater': { one: 'finish delayed by {count} day', other: 'finish delayed by {count} days' },
+    'rsv.endEarlier': { one: 'finish brought forward by {count} day', other: 'finish brought forward by {count} days' },
+    'rsv.apply': 'Apply', 'rsv.applyLabel': 'Apply: {what}', 'rsv.applied': 'Fix applied: {left}.', 'rsv.global': 'For the whole project',
+    'rsv.more': { one: '{count} more conflict will be analysed after these fixes.', other: '{count} more conflicts will be analysed after these fixes.' },
+    'rsv.intro': 'Each proposal is simulated before it is shown. Nothing changes until you click; “Undo” reverts it.',
+    'list.shift': '{count} d shift ({res}: {why})', 'why.overload': 'overload', 'why.absence': 'absence',
+    'edit.shift': { one: 'Shifted by {count} working day by levelling ({res}: {why}). Without it, it would start on {date}.', other: 'Shifted by {count} working days by levelling ({res}: {why}). Without it, it would start on {date}.' },
+    'alert.smooth': '{task} does not fit in its slack: the overload of {res} is not smoothed',
     'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.category': 'General',
     'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.today': 'Today',
   };
@@ -2015,6 +2211,16 @@ function renderTopbar() {
   badge.textContent = App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n });
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
+  $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const lvl = $('leveling-mode');
+  if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
+}
+
+/** « 3 j de décalage (Alice : surcharge) » pour une tâche décalée par le nivellement (EF-106). */
+function shiftText(r) {
+  if (!r || !r.shift) return '';
+  const res = resById(r.shift.res);
+  return t('list.shift', { count: r.shift.days, res: res ? res.name : '', why: t('why.' + r.shift.kind) });
 }
 
 function renderKpis() {
@@ -2054,6 +2260,7 @@ function alertMessages() {
   for (const w of s.warnings) {
     const r = s.tasks.get(w.task);
     if (w.kind === 'deadline') out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, count: w.days }) });
+    else if (w.kind === 'smooth') { const res = resById(w.res); out.push({ kind: 'warning', text: t('alert.smooth', { task: w.task, res: res ? res.name : '' }) }); }
     else {
       const p = s.tasks.get(w.pred);
       const own = w.type === 'FF' || w.type === 'SF' ? r.endDn : r.startDn;
@@ -2093,6 +2300,7 @@ function renderList(rows, fl) {
     if (crit) marks.push(t('list.critical'));
     if (fl.conflict.has(task.id)) marks.push(t('list.conflict'));
     if (fl.warn.has(task.id)) marks.push(t('list.warning'));
+    if (r && r.shift) marks.push(shiftText(r));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
     if (task.type === 'summary') {
@@ -2102,7 +2310,7 @@ function renderList(rows, fl) {
     nameCell.append(h('button', { type: 'button', class: 'select', data: { click: 'selectTask', arg: task.id },
       aria: { current: App.selected === task.id ? 'true' : undefined } },
       task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
-    if (marks.length) nameCell.append(' ', h('span', { class: 'marks', text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
+    if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
     frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
@@ -2202,7 +2410,7 @@ function renderGantt(rows, fl) {
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
     } else {
-      const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced')].filter(Boolean);
+      const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced'), shiftText(r)].filter(Boolean);
       el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),
@@ -2318,6 +2526,11 @@ const Editor = (() => {
     const box = clear($('edit-fields'));
     const d = draft;
     $('editor-title').textContent = t('edit.title', { id: originalId });
+    const r = App.sched && App.sched.tasks.get(originalId);
+    if (r && r.shift) {
+      const res = resById(r.shift.res);
+      box.append(h('p', { class: 'note', id: 'edit-shift', text: t('edit.shift', { count: r.shift.days, res: res ? res.name : '', why: t('why.' + r.shift.kind), date: I18n.date(r.earliestDn) }) }));
+    }
     const idIn = input('text', d.id, { maxlength: 12, autocomplete: 'off', spellcheck: 'false', class: 'upper', required: true });
     idIn.dataset.input = 'upperCase';
     box.append(field('id', t('f.id'), idIn));
@@ -2725,6 +2938,67 @@ action('catDelete', async id => {
   categoriesWindow.paint && categoriesWindow.paint();
 });
 
+/* Résolution des conflits (EF-31) : propositions simulées par Resolve.suggest, appliquées d'un clic. */
+let resolveState = null;
+
+function optionLabel(o) {
+  const res = id => (resById(id) || { name: '' }).name;
+  switch (o.kind) {
+    case 'moveForced': return t('rsv.opt.moveForced', { task: o.task, date: I18n.date(Dates.parse(o.date)) });
+    case 'unforce': return t('rsv.opt.unforce', { task: o.task });
+    case 'reassign': return t('rsv.opt.reassign', { task: o.task, from: res(o.from), to: res(o.to) });
+    default: return t('rsv.opt.level');
+  }
+}
+function impactLabel(a) {
+  const left = a.conflicts ? t('rsv.left', { count: a.conflicts }) : t('rsv.left0');
+  const end = a.endShift > 0 ? t('rsv.endLater', { count: a.endShift }) : a.endShift < 0 ? t('rsv.endEarlier', { count: -a.endShift }) : t('rsv.endSame');
+  return `${left} ; ${end}`;
+}
+
+function paintResolve(body) {
+  clear(body);
+  if (!App.sched || !App.sched.conflicts.length) { body.append(h('p', { text: t('rsv.none') })); resolveState = null; return; }
+  const sug = Resolve.suggest(App.project, App.sched);
+  resolveState = sug;
+  body.append(h('p', { class: 'hint', text: t('rsv.intro') }));
+  const msgs = alertMessages().filter(m => m.kind === 'conflict');
+  const optionRow = (o, arg) => h('li', {},
+    h('span', {}, optionLabel(o), h('br'), h('span', { class: 'impact', text: impactLabel(o.after) })),
+    h('button', { type: 'button', class: 'primary', data: { click: 'applyResolve', arg }, aria: { label: t('rsv.applyLabel', { what: optionLabel(o) }) } }, t('rsv.apply')));
+  sug.conflicts.forEach((c, k) => {
+    body.append(h('section', { class: 'rsv-conflict' },
+      h('h3', { text: '⚠ ' + (msgs[k] ? msgs[k].text : '') }),
+      c.options.length ? h('ul', { class: 'rsv-options' }, c.options.map((o, j) => optionRow(o, `${k}:${j}`))) : h('p', { class: 'hint', text: t('rsv.noOption') })));
+  });
+  if (sug.global.length) body.append(h('section', { class: 'rsv-conflict' }, h('h3', { text: t('rsv.global') }),
+    h('ul', { class: 'rsv-options' }, sug.global.map((o, j) => optionRow(o, `g:${j}`)))));
+  if (sug.more) body.append(h('p', { class: 'hint', text: t('rsv.more', { count: sug.more }) }));
+}
+
+function resolveWindow() {
+  const body = h('div', { id: 'rsv-win' });
+  resolveWindow.body = body;
+  paintResolve(body);
+  return Dialog.open({ title: t('rsv.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+    .then(() => { resolveWindow.body = null; resolveState = null; });
+}
+
+action('applyResolve', arg => {
+  if (!resolveState) return;
+  const [k, j] = arg.split(':');
+  const o = k === 'g' ? resolveState.global[Number(j)] : (resolveState.conflicts[Number(k)] || { options: [] }).options[Number(j)];
+  if (!o) return;
+  commit(p => o.mutate(p));
+  const left = App.sched && App.sched.conflicts.length ? t('rsv.left', { count: App.sched.conflicts.length }) : t('rsv.left0');
+  announce(t('rsv.applied', { left }));
+  if (resolveWindow.body) {
+    paintResolve(resolveWindow.body);
+    const next = resolveWindow.body.querySelector('button');
+    if (next) next.focus(); else resolveWindow.body.closest('dialog').querySelector('.actions button').focus();
+  }
+});
+
 // ── js/ui/80-files.js ──
 /* Fichiers : nouveau projet (EF-49), import (EF-52), export (EF-50, EF-51).
  * Un fichier importé est contrôlé en entier par Model.parseFile AVANT tout changement :
@@ -2916,6 +3190,13 @@ action('toggleLang', () => {
 });
 
 action('editProject', () => editProjectWindow());
+action('openResolve', () => resolveWindow());
+action('setLeveling', (arg, el) => {
+  if (!Schedule.MODES.includes(el.value)) return;
+  commit(p => { p.leveling = el.value; });
+  const n = App.sched ? App.sched.conflicts.length : 0;
+  announce(`${t('top.leveling')} : ${t('lvl.' + el.value)}. ${n ? t('top.conflicts', { count: n }) : t('rsv.left0')}`);
+});
 action('openResources', () => resourcesWindow());
 action('openCategories', () => categoriesWindow());
 action('newProject', () => newProjectAction());

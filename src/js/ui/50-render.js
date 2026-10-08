@@ -53,6 +53,16 @@ function renderTopbar() {
   badge.textContent = App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n });
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
+  $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const lvl = $('leveling-mode');
+  if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
+}
+
+/** « 3 j de décalage (Alice : surcharge) » pour une tâche décalée par le nivellement (EF-106). */
+function shiftText(r) {
+  if (!r || !r.shift) return '';
+  const res = resById(r.shift.res);
+  return t('list.shift', { count: r.shift.days, res: res ? res.name : '', why: t('why.' + r.shift.kind) });
 }
 
 function renderKpis() {
@@ -92,6 +102,7 @@ function alertMessages() {
   for (const w of s.warnings) {
     const r = s.tasks.get(w.task);
     if (w.kind === 'deadline') out.push({ kind: 'warning', text: t('alert.deadline', { task: w.task, count: w.days }) });
+    else if (w.kind === 'smooth') { const res = resById(w.res); out.push({ kind: 'warning', text: t('alert.smooth', { task: w.task, res: res ? res.name : '' }) }); }
     else {
       const p = s.tasks.get(w.pred);
       const own = w.type === 'FF' || w.type === 'SF' ? r.endDn : r.startDn;
@@ -131,6 +142,7 @@ function renderList(rows, fl) {
     if (crit) marks.push(t('list.critical'));
     if (fl.conflict.has(task.id)) marks.push(t('list.conflict'));
     if (fl.warn.has(task.id)) marks.push(t('list.warning'));
+    if (r && r.shift) marks.push(shiftText(r));
     const nameCell = h('td', { class: 'name' });
     nameCell.style.setProperty('--depth', String(depth));
     if (task.type === 'summary') {
@@ -140,7 +152,7 @@ function renderList(rows, fl) {
     nameCell.append(h('button', { type: 'button', class: 'select', data: { click: 'selectTask', arg: task.id },
       aria: { current: App.selected === task.id ? 'true' : undefined } },
       task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : ''));
-    if (marks.length) nameCell.append(' ', h('span', { class: 'marks', text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
+    if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
     frag.append(h('tr', { class: [task.type, crit && 'critical', App.selected === task.id && 'selected', fl.conflict.has(task.id) && 'conflict'], data: { id: task.id } },
       h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
       nameCell,
@@ -240,7 +252,7 @@ function renderGantt(rows, fl) {
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
     } else {
-      const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced')].filter(Boolean);
+      const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced'), shiftText(r)].filter(Boolean);
       el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),

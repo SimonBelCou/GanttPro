@@ -39,7 +39,15 @@
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
+      <label class="field-inline"><span data-i18n="top.leveling">Charge des ressources</span>
+        <select id="leveling-mode" data-change="setLeveling">
+          <option value="level" data-i18n="lvl.level"></option>
+          <option value="smooth" data-i18n="lvl.smooth"></option>
+          <option value="off" data-i18n="lvl.off"></option>
+        </select>
+      </label>
       <button type="button" id="btn-alerts" class="badge" data-click="toggleAlerts" hidden></button>
+      <button type="button" id="btn-resolve" data-click="openResolve" data-i18n="top.resolve" hidden></button>
     </div>
     <div class="group">
       <button type="button" data-click="newProject" data-i18n="top.new"></button>

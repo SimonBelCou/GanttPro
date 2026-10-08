@@ -88,6 +88,13 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks tr.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .tasks tr.critical td.id { color: var(--critical); font-weight: 700; }
 .tasks .marks { margin-left: .4rem; font-size: .8rem; color: var(--critical); }
+.tasks .marks.info { color: var(--muted); }
+.note { margin: 0 0 .8rem; padding: .5rem .7rem; border-left: 4px solid var(--accent); background: var(--panel-2); }
+.rsv-conflict { border: 1px solid var(--line); border-radius: 8px; padding: .5rem .7rem; margin: .6rem 0; }
+.rsv-conflict h3 { margin: 0 0 .4rem; font-size: .95rem; color: var(--critical); }
+.rsv-options { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.rsv-options li { display: flex; gap: .6rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.rsv-options .impact { color: var(--muted); font-size: .85rem; }
 .tasks tr.auto-ms td { color: var(--muted); font-style: italic; }
 .tasks td.status.late { color: var(--critical); font-weight: 600; }
 .tasks td.status.done { color: var(--ok); }

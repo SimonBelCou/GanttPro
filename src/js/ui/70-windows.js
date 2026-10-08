@@ -184,3 +184,64 @@ action('catDelete', async id => {
   });
   categoriesWindow.paint && categoriesWindow.paint();
 });
+
+/* Résolution des conflits (EF-31) : propositions simulées par Resolve.suggest, appliquées d'un clic. */
+let resolveState = null;
+
+function optionLabel(o) {
+  const res = id => (resById(id) || { name: '' }).name;
+  switch (o.kind) {
+    case 'moveForced': return t('rsv.opt.moveForced', { task: o.task, date: I18n.date(Dates.parse(o.date)) });
+    case 'unforce': return t('rsv.opt.unforce', { task: o.task });
+    case 'reassign': return t('rsv.opt.reassign', { task: o.task, from: res(o.from), to: res(o.to) });
+    default: return t('rsv.opt.level');
+  }
+}
+function impactLabel(a) {
+  const left = a.conflicts ? t('rsv.left', { count: a.conflicts }) : t('rsv.left0');
+  const end = a.endShift > 0 ? t('rsv.endLater', { count: a.endShift }) : a.endShift < 0 ? t('rsv.endEarlier', { count: -a.endShift }) : t('rsv.endSame');
+  return `${left} ; ${end}`;
+}
+
+function paintResolve(body) {
+  clear(body);
+  if (!App.sched || !App.sched.conflicts.length) { body.append(h('p', { text: t('rsv.none') })); resolveState = null; return; }
+  const sug = Resolve.suggest(App.project, App.sched);
+  resolveState = sug;
+  body.append(h('p', { class: 'hint', text: t('rsv.intro') }));
+  const msgs = alertMessages().filter(m => m.kind === 'conflict');
+  const optionRow = (o, arg) => h('li', {},
+    h('span', {}, optionLabel(o), h('br'), h('span', { class: 'impact', text: impactLabel(o.after) })),
+    h('button', { type: 'button', class: 'primary', data: { click: 'applyResolve', arg }, aria: { label: t('rsv.applyLabel', { what: optionLabel(o) }) } }, t('rsv.apply')));
+  sug.conflicts.forEach((c, k) => {
+    body.append(h('section', { class: 'rsv-conflict' },
+      h('h3', { text: '⚠ ' + (msgs[k] ? msgs[k].text : '') }),
+      c.options.length ? h('ul', { class: 'rsv-options' }, c.options.map((o, j) => optionRow(o, `${k}:${j}`))) : h('p', { class: 'hint', text: t('rsv.noOption') })));
+  });
+  if (sug.global.length) body.append(h('section', { class: 'rsv-conflict' }, h('h3', { text: t('rsv.global') }),
+    h('ul', { class: 'rsv-options' }, sug.global.map((o, j) => optionRow(o, `g:${j}`)))));
+  if (sug.more) body.append(h('p', { class: 'hint', text: t('rsv.more', { count: sug.more }) }));
+}
+
+function resolveWindow() {
+  const body = h('div', { id: 'rsv-win' });
+  resolveWindow.body = body;
+  paintResolve(body);
+  return Dialog.open({ title: t('rsv.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+    .then(() => { resolveWindow.body = null; resolveState = null; });
+}
+
+action('applyResolve', arg => {
+  if (!resolveState) return;
+  const [k, j] = arg.split(':');
+  const o = k === 'g' ? resolveState.global[Number(j)] : (resolveState.conflicts[Number(k)] || { options: [] }).options[Number(j)];
+  if (!o) return;
+  commit(p => o.mutate(p));
+  const left = App.sched && App.sched.conflicts.length ? t('rsv.left', { count: App.sched.conflicts.length }) : t('rsv.left0');
+  announce(t('rsv.applied', { left }));
+  if (resolveWindow.body) {
+    paintResolve(resolveWindow.body);
+    const next = resolveWindow.body.querySelector('button');
+    if (next) next.focus(); else resolveWindow.body.closest('dialog').querySelector('.actions button').focus();
+  }
+});

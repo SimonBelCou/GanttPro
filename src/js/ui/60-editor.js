@@ -72,6 +72,11 @@ const Editor = (() => {
     const box = clear($('edit-fields'));
     const d = draft;
     $('editor-title').textContent = t('edit.title', { id: originalId });
+    const r = App.sched && App.sched.tasks.get(originalId);
+    if (r && r.shift) {
+      const res = resById(r.shift.res);
+      box.append(h('p', { class: 'note', id: 'edit-shift', text: t('edit.shift', { count: r.shift.days, res: res ? res.name : '', why: t('why.' + r.shift.kind), date: I18n.date(r.earliestDn) }) }));
+    }
     const idIn = input('text', d.id, { maxlength: 12, autocomplete: 'off', spellcheck: 'false', class: 'upper', required: true });
     idIn.dataset.input = 'upperCase';
     box.append(field('id', t('f.id'), idIn));
