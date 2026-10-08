@@ -4,6 +4,11 @@ GanttPro est un éditeur de diagramme de Gantt interactif, complet et autonome �
 
 Ouvrez le fichier dans votre navigateur et commencez à planifier.
 
+> **Refonte v3 en cours** (dossier `src/`, fichier assemblé `dist/GanttPro.html`) : nouvelle version construite à
+> partir du cahier des charges fonctionnel — liens FD/DD/FF/DF avec délai, récapitulatives, capacité et absences
+> des ressources, calendriers FR / Alsace-Moselle / BE / DE, français et anglais, CSP stricte sans `unsafe-inline`.
+> Construction : `python3 tools/build.py` ; tests : `node --test tests/core/*.test.mjs` et `python3 tests/test_v3.py`.
+
 ## ✨ Fonctionnalités
 
 ### 📋 Gestion des tâches

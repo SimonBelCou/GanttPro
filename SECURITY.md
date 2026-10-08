@@ -26,8 +26,20 @@ Mesures en place :
 | A09 – Journalisation | Aucune donnée personnelle ni secret écrit dans la console |
 | Données personnelles (RGPD) | Aucun cookie, aucun traceur, aucun envoi : voir la section « Vie privée » du README |
 
-Limite connue : `style-src 'unsafe-inline'` reste nécessaire (attributs `style` générés). Il n'autorise
-pas l'exécution de code.
+Limite connue de la version 2.3 : `style-src 'unsafe-inline'` reste nécessaire (attributs `style` générés).
+Il n'autorise pas l'exécution de code.
+
+### Refonte v3 (`src/`, `dist/GanttPro.html`)
+
+- CSP sans aucun `'unsafe-inline'` : script et feuille de style autorisés par empreinte SHA-256 ; les styles
+  calculés passent par le CSSOM. Un attribut `style=` ou `onclick=` injecté est bloqué (testé).
+- DOM construit sans `innerHTML` : tout texte venant d'un fichier est inséré par `textContent`.
+- Import reconstruit champ par champ (liste blanche), y compris les versions imbriquées ; pollution de
+  prototype sans effet ; dates bornées à 1970-2199 pour qu'un fichier ne puisse pas bloquer l'onglet.
+- Stockage local limité aux réglages (langue, thème), lus avec validation ; aucun projet ni nom stocké.
+- Le build refuse les motifs dangereux (`eval`, gestionnaires inline, appels réseau, journalisation).
+- Sans objet pour une application locale sans serveur ni compte : contrôle d'accès (A01), authentification
+  (A07), SSRF (A10), journalisation centralisée (A09) ; aucune donnée ne quitte le poste.
 
 ## Bonnes pratiques de développement
 

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';
 
-const { Model, Schedule } = loadCore();
+const { Model, Schedule, Dates } = loadCore();
 const plain = x => JSON.parse(JSON.stringify(x));
 
 /** Exécute fn et renvoie la clé d'erreur (ou null si accepté). */
@@ -161,4 +161,29 @@ test('projet initial valide et calculable', () => {
   const r = imp(Model.serialize(p));
   assert.equal(r.project.tasks[0].dur, 10);
   assert.doesNotThrow(() => Schedule.compute(r.project));
+});
+
+test('catalogues : chaque libellé français existe en anglais, avec les mêmes paramètres', () => {
+  const { I18n } = loadCore();
+  const { fr, en } = I18n.CATALOGS;
+  const params = v => JSON.stringify([...JSON.stringify(v).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort());
+  const missing = Object.keys(fr).filter(k => k !== 'app.title' && !(k in en));
+  assert.deepEqual(missing, []);
+  const mismatch = Object.keys(en).filter(k => !(k in fr) || params(fr[k]) !== params(en[k]));
+  assert.deepEqual(mismatch, []);
+});
+
+test('pluriels et messages d\'import traduits', () => {
+  const { I18n } = loadCore();
+  I18n.setLang('fr');
+  assert.equal(I18n.t('top.conflicts', { count: 1 }), '1 conflit');
+  assert.equal(I18n.t('top.conflicts', { count: 2 }), '2 conflits');
+  try { imp({ tasks: [task('A', { dur: 0 })] }); } catch (e) {
+    assert.equal(I18n.error(e), 'Tâche n° 1 : champ « dur » invalide (entier de 1 à 3650).');
+  }
+  I18n.setLang('en');
+  assert.equal(I18n.t('top.conflicts', { count: 1 }), '1 conflict');
+  assert.equal(I18n.date(Dates.parse('2026-01-05')), 'Mon 05 Jan 2026');
+  I18n.setLang('fr');
+  assert.equal(I18n.date(Dates.parse('2026-01-05')), 'lun. 05 janv. 2026');
 });

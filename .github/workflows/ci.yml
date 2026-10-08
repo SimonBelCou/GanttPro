@@ -36,6 +36,12 @@ jobs:
           PY
           node --check /tmp/app.js
 
+      - name: Refonte v3 — fichier assemblé à jour (dist/GanttPro.html)
+        run: python3 tools/build.py --check
+
+      - name: Refonte v3 — moteur et recette (node --test, sans dépendance)
+        run: node --test tests/core/*.test.mjs
+
       - name: Détection de secrets (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -47,3 +53,4 @@ jobs:
           python3 -m playwright install --with-deps chromium
           npm install --no-save axe-core
           python3 tests/test_gantt.py
+          python3 tests/test_v3.py

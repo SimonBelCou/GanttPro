@@ -124,6 +124,18 @@ Un prompt guide la génération de code mais ne garantit rien seul. À coupler a
 Application en **un seul fichier** `GanttPro.html` (HTML + CSS + JS vanilla), ouverte en local, sans serveur.
 Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout code produit ou modifié.
 
+## Refonte v3 (branche `refonte-v3`, dossier `src/`)
+La nouvelle version se construit à partir du cahier des charges fonctionnel, à côté de l'application 2.3.
+- Sources : `src/js/core/` (moteur sans DOM : calendrier, planning, indicateurs, validation des fichiers,
+  traductions), `src/js/ui/` (interface), `src/styles/`, gabarit `src/index.html`.
+- `python3 tools/build.py` assemble `dist/GanttPro.html` (un seul fichier) et calcule la CSP : script ET
+  style autorisés par empreinte, **aucun `'unsafe-inline'`**. Le build refuse `eval`, `new Function`,
+  `document.write`, `onclick=`, `style=`, `setAttribute('style'|'on…')`, `console.*`, tout appel réseau et
+  tout accès au stockage hors de `src/js/ui/10-storage.js`.
+- Le DOM se construit avec `h()` (textContent, jamais innerHTML) ; les styles calculés passent par
+  `element.style.setProperty` ; les couleurs par `safeColor()`.
+- Tests : `node --test tests/core/*.test.mjs` (scénarios R de la recette) puis `python3 tests/test_v3.py`.
+
 ## Obligatoire à chaque modification du JavaScript
 1. Lancer `python3 tools/update-csp.py` : la CSP autorise le script par son empreinte SHA-256, elle devient
    périmée à la moindre modification (la CI échoue sinon). Ne jamais ajouter `'unsafe-inline'` à `script-src`.

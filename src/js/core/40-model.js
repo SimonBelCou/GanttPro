@@ -443,14 +443,15 @@ const Model = (() => {
   }
 
   /** Projet initial (3.8). */
-  function newProject(todayIso, now = 0) {
+  function newProject(todayIso, now = 0, names = {}) {
+    const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
-      id: 'P' + now.toString(36), createdAt: now, name: 'Nouveau projet', desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
+      id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] },
-      tasks: [{ id: 'A', name: 'Renommer cette tâche…', type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
+      tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
-      resources: [{ id: 'R1', name: 'Ressource', role: '', color: PALETTE[0], capacity: 100, absences: [] }],
-      categories: [{ id: 'C1', name: 'Général', color: PALETTE[0] }],
+      resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
+      categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
     };
   }
