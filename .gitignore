@@ -1,0 +1,24 @@
+# Secrets et identifiants (règle CLAUDE.md §2)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials*
+secrets*
+
+# Exports de projets : peuvent contenir des données personnelles (noms, rôles)
+*_gantt.json
+
+# Outils et artefacts de test
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+test-results/
+
+# Système et éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

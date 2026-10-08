@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # gitleaks analyse l'historique complet
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Content-Security-Policy à jour (empreinte du script)
+        run: python3 tools/update-csp.py --check
+
+      - name: Syntaxe JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          html = open('GanttPro.html', encoding='utf-8').read()
+          open('/tmp/app.js', 'w', encoding='utf-8').write(re.search(r'<script>(.*?)</script>', html, re.S).group(1))
+          PY
+          node --check /tmp/app.js
+
+      - name: Détection de secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tests de bout en bout (sécurité, parcours, accessibilité)
+        run: |
+          pip install playwright
+          python3 -m playwright install --with-deps chromium
+          npm install --no-save axe-core
+          python3 tests/test_gantt.py
