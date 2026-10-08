@@ -138,5 +138,31 @@ const Metrics = (() => {
     return { light, drift };
   }
 
-  return { STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
+  /** RG-28 : avancement prévu à ce jour = jours ouvrés prévus écoulés jusqu'à aujourd'hui / somme des durées. */
+  function plannedToDate(project, sched, today) {
+    const work = project.tasks.filter(countsInProgress);
+    const total = work.reduce((a, t) => a + t.dur, 0);
+    if (!total) return 0;
+    const upto = sched.cal.floor(today);
+    return 100 * work.reduce((a, t) => { const r = sched.tasks.get(t.id); return a + Math.max(0, Math.min(upto, r.e) - r.s + 1); }, 0) / total;
+  }
+
+  /** RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant). */
+  function report(project, sched, today, baseline) {
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    const items = project.tasks.filter(t => t.type !== 'summary');
+    const late = items.filter(t => status(t, sched, today) === STATUS.LATE)
+      .map(t => ({ id: t.id, dev: (deviation(t, sched, today) || { days: 0 }).days }))
+      .sort((a, b) => b.dev - a.dev || 0);
+    const soon = items.filter(t => { const r = sched.tasks.get(t.id); return r.startDn >= today && r.startDn <= today + 14; })
+      .sort((a, b) => sched.tasks.get(a.id).startDn - sched.tasks.get(b.id).startDn).map(t => t.id);
+    const msPast = items.filter(t => t.type === 'milestone' && t.pct >= 100 && sched.tasks.get(t.id).startDn >= today - 14 && sched.tasks.get(t.id).startDn <= today).map(t => t.id);
+    const msNext = items.filter(t => t.type === 'milestone' && sched.tasks.get(t.id).startDn > today && sched.tasks.get(t.id).startDn <= today + 30).map(t => t.id);
+    const progress = globalProgress(project), planned = plannedToDate(project, sched, today);
+    const light = statusLight(project, sched, today, baseline);
+    return { progress, planned, gap: progress - planned, counters: counters(project, sched, today), late, soon, msPast, msNext,
+      critical: sched.criticalPath.filter(id => byId.get(id)), light: light.light, drift: light.drift };
+  }
+
+  return { plannedToDate, report, STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
 })();

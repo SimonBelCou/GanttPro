@@ -288,7 +288,19 @@ function renderGantt(items, fl) {
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
   for (const it of items) {
-    if (it.group) { body.append(h('div', { class: 'g-row g-group', aria: { hidden: 'true' } })); continue; }
+    if (it.group) {
+      const gr = h('div', { class: 'g-row g-group', aria: { hidden: 'true' } });
+      // EF-72 : en regroupement par ressource, les absences sont hachurées sur l'en-tête du groupe.
+      const res = App.view.groupBy === 'res' && resById(it.group.key);
+      if (res) for (const a of res.absences) {
+        const z = h('div', { class: 'g-absence', title: a.label || t('load.absent') });
+        z.style.setProperty('left', x(Dates.parse(a.start)) + 'px');
+        z.style.setProperty('width', ((Dates.parse(a.end) - Dates.parse(a.start) + 1) * dayW) + 'px');
+        gr.append(z);
+      }
+      body.append(gr);
+      continue;
+    }
     const task = it.task;
     const r = s.tasks.get(task.id);
     if (!r || r.empty) { body.append(row()); continue; }

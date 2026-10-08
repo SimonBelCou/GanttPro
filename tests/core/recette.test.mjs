@@ -376,3 +376,18 @@ test('filtres combinés : ET entre critères, OU dans un critère, période, san
   assert.deepEqual(ids({ from: '2026-01-12', to: '2026-01-12' }), ['B']);
   assert.deepEqual(ids({ status: ['late'] }), ['A', 'C']);
 });
+
+test('RG-28 rapport : avancement prévu à ce jour, retards triés, échéances proches', () => {
+  // Aujourd'hui 14/01 : A (05-09, 100 %), B (12-16, 0 %, dépend de A), C (05-07 imposée, 0 %), J jalon le 23/01.
+  const p = project({ tasks: [{ id: 'A', pct: 100 }, { id: 'B', deps: ['A'] }, { id: 'C', dur: 3, pct: 0 },
+    { id: 'D', dur: 2, forcedStart: '2026-01-26' }, { id: 'J', type: 'milestone', dur: 0, forcedStart: '2026-01-23' }] });
+  const s = run(p);
+  const r = Metrics.report(p, s, TODAY, null);
+  // Prévu à ce jour : A 5 + B 3 (12, 13, 14) + C 3 + D 0 = 11 sur 15.
+  assert.equal(Math.round(r.planned * 100) / 100, Math.round(11 / 15 * 10000) / 100);
+  assert.equal(Math.round(r.progress), 33);
+  assert.deepEqual(plain(r.late.map(x => [x.id, x.dev])), [['C', 5]]);
+  assert.deepEqual(plain(r.soon), ['J', 'D']);
+  assert.deepEqual(plain(r.msNext), ['J']);
+  assert.equal(r.light, 'orange');
+});

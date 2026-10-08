@@ -192,10 +192,41 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* Rapport d'état (EF-88) */
+.rep-layout { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .rep-layout { grid-template-columns: 1fr; } }
+.report-page { border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.2rem; background: var(--panel); }
+.rep-sec { margin-bottom: .8rem; } .rep-sec h4 { margin: 0 0 .3rem; font-size: .95rem; } .rep-sec ul { margin: 0; padding-left: 1.1rem; }
+.rep-head { display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; }
+.rep-title { margin: 0; display: inline; } .voyant { font-size: 1.4rem; margin-right: .4rem; }
+.voyant.red { color: var(--critical); } .voyant.orange { color: var(--warning); } .voyant.green { color: var(--ok); }
+.print-area { display: none; }
+
+/* Impression (EX-26) : seul #print-area est imprimé ; noir sur blanc, motifs au lieu des couleurs. */
 @media print {
-  .topbar .toolbar, .editor, .skip { display: none !important; }
-  body { background: #fff; color: #000; }
-  .planner { max-height: none; overflow: visible; }
+  body.printing > *:not(#print-area) { display: none !important; }
+  body.printing #print-area { display: block !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .report-page { border: 0; padding: 0; }
+  .rep-sec { break-inside: avoid; }
+  .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
+  .scurve .grid { stroke: #bbb !important; } .scurve text { fill: #000 !important; }
+  table.print-gantt { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table.print-gantt caption { text-align: left; font-weight: 700; margin-bottom: 4pt; }
+  table.print-gantt thead { display: table-header-group; }
+  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: nowrap; overflow: hidden; }
+  table.print-gantt tr { break-inside: avoid; }
+  .pg-timecell { padding: 0 !important; }
+  .pg-time, .pg-lane { position: relative; height: 16pt; }
+  .pg-col { position: absolute; top: 0; height: 100%; border-left: 0.5pt solid #999; font-size: 7pt; padding-left: 1pt; overflow: hidden; }
+  .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background: #fff !important; overflow: hidden; }
+  .pg-bar.critical { background: repeating-linear-gradient(45deg, #000 0 1pt, #fff 1pt 4pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, #000 0 1.5pt, transparent 1.5pt 3pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; }
+  .pg-bar.summary { height: 4pt; top: 6pt; background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.summary td { font-weight: 700; }
+  .pg-legend { font-size: 8pt; margin-top: 6pt; }
 }
 
 /* Baselines, flèches, infobulle (EF-23, EF-34, EF-45) */
@@ -330,3 +361,21 @@ body.dragging { user-select: none; cursor: grabbing; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 30; display: flex; gap: .8rem; align-items: center; padding: .5rem .8rem; border-radius: 8px; background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 .toast button { background: var(--bg); color: var(--text); }
 @media print { .toast, .tooltip { display: none !important; } }
+
+/* Onglets du tableau de bord et charge (EF-87) */
+.tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); margin-bottom: .8rem; }
+.tabs [role="tab"] { border-radius: 6px 6px 0 0; border-bottom: 0; background: transparent; }
+.tabs [role="tab"][aria-selected="true"] { background: var(--panel-2); font-weight: 700; border-color: var(--accent); }
+.load-res h4 { margin: .8rem 0 .3rem; font-size: .95rem; }
+.chart-scroll { overflow-x: auto; }
+.loadchart .grid { stroke: var(--line); } .loadchart .cap { stroke: var(--text); stroke-dasharray: 4 3; }
+.loadchart .axis { fill: var(--muted); font-size: 11px; }
+.loadchart .bar-ok { fill: var(--series-planned); } .loadchart .bar-over { fill: var(--critical); }
+.loadchart .over-mark { fill: var(--critical); font-size: 10px; }
+.loadchart .hatch-bg { fill: var(--panel); } .loadchart .hatch-line { stroke: var(--muted); stroke-width: 2; }
+.key-box { display: inline-block; width: 14px; height: 12px; border-radius: 2px; }
+.key-box.ok { background: var(--series-planned); } .key-box.over { background: var(--critical); }
+.key-box.absent { background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 5px); border: 1px solid var(--line); }
+.key-line { display: inline-block; width: 18px; border-top: 2px dashed var(--text); }
+
+.g-absence { position: absolute; top: 4px; bottom: 4px; background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .6; border-radius: 2px; }

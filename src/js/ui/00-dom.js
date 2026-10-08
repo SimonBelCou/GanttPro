@@ -39,7 +39,14 @@ function append(el, children) {
   return el;
 }
 
-function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+/* Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
+ * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu. */
+function clear(el) {
+  const a = document.activeElement;
+  if (a && a !== document.body && el.contains(a)) a.blur();
+  el.replaceChildren();
+  return el;
+}
 
 /** Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre. */
 function safeColor(c, fallback = '#8a94a6') { return typeof c === 'string' && Model.COLOR_RE.test(c) ? c : fallback; }

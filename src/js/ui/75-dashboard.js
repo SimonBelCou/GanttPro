@@ -2,7 +2,7 @@
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '' };
+const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
@@ -149,6 +149,15 @@ function trackingTable() {
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
+  // Onglets « Synthèse » et « Charge » (motif ARIA tabs : flèches gauche/droite).
+  const tabs = ['summary', 'load'];
+  body.append(h('div', { role: 'tablist', class: 'tabs', aria: { label: t('top.dashboard') } }, tabs.map(k => h('button', {
+    type: 'button', role: 'tab', id: 'dtab-' + k, tabindex: Dash.tab === k ? '0' : '-1', aria: { selected: String(Dash.tab === k), controls: 'dpanel' },
+    data: { click: 'dashTab', arg: k } }, t('dash.tab.' + k)))));
+  const panel = h('div', { role: 'tabpanel', id: 'dpanel', aria: { labelledby: 'dtab-' + Dash.tab }, tabindex: '0' });
+  body.append(panel);
+  if (Dash.tab === 'load') { paintLoad(panel); return; }
+  body = panel;
   const today = Dates.todayDn();
   const c = Metrics.counters(App.project, App.sched, today);
   const tile = (label, value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', { text: value }));
@@ -190,6 +199,13 @@ function repaintDashboard(focusSel) {
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
+action('dashTab', k => { Dash.tab = k === 'load' ? 'load' : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
+document.addEventListener('keydown', ev => {
+  const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
+  if (!tab || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
+  ev.preventDefault();
+  ACTIONS.dashTab(Dash.tab === 'load' ? 'summary' : 'load');
+});
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });

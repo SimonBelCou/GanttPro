@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-G4UGtKeLSjdrcu4arclUn339CiqNdnMxYzuza6oLsaE='; style-src 'sha256-lpZSVWvJjEfR4SdiOEJfA5y3i24wvQCrgik3LGSeTjQ='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LmD2/c2xhLOy0PfrCodDrb+m/1Asjm3a86pUdEMXVDY='; style-src 'sha256-sWu1ZWOuI1pyHq2znQFJe/oRMvg38quvso02YLV3QfY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -206,10 +206,41 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* Rapport d'état (EF-88) */
+.rep-layout { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .rep-layout { grid-template-columns: 1fr; } }
+.report-page { border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.2rem; background: var(--panel); }
+.rep-sec { margin-bottom: .8rem; } .rep-sec h4 { margin: 0 0 .3rem; font-size: .95rem; } .rep-sec ul { margin: 0; padding-left: 1.1rem; }
+.rep-head { display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; }
+.rep-title { margin: 0; display: inline; } .voyant { font-size: 1.4rem; margin-right: .4rem; }
+.voyant.red { color: var(--critical); } .voyant.orange { color: var(--warning); } .voyant.green { color: var(--ok); }
+.print-area { display: none; }
+
+/* Impression (EX-26) : seul #print-area est imprimé ; noir sur blanc, motifs au lieu des couleurs. */
 @media print {
-  .topbar .toolbar, .editor, .skip { display: none !important; }
-  body { background: #fff; color: #000; }
-  .planner { max-height: none; overflow: visible; }
+  body.printing > *:not(#print-area) { display: none !important; }
+  body.printing #print-area { display: block !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .report-page { border: 0; padding: 0; }
+  .rep-sec { break-inside: avoid; }
+  .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
+  .scurve .grid { stroke: #bbb !important; } .scurve text { fill: #000 !important; }
+  table.print-gantt { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table.print-gantt caption { text-align: left; font-weight: 700; margin-bottom: 4pt; }
+  table.print-gantt thead { display: table-header-group; }
+  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: nowrap; overflow: hidden; }
+  table.print-gantt tr { break-inside: avoid; }
+  .pg-timecell { padding: 0 !important; }
+  .pg-time, .pg-lane { position: relative; height: 16pt; }
+  .pg-col { position: absolute; top: 0; height: 100%; border-left: 0.5pt solid #999; font-size: 7pt; padding-left: 1pt; overflow: hidden; }
+  .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background: #fff !important; overflow: hidden; }
+  .pg-bar.critical { background: repeating-linear-gradient(45deg, #000 0 1pt, #fff 1pt 4pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, #000 0 1.5pt, transparent 1.5pt 3pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; }
+  .pg-bar.summary { height: 4pt; top: 6pt; background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.summary td { font-weight: 700; }
+  .pg-legend { font-size: 8pt; margin-top: 6pt; }
 }
 
 /* Baselines, flèches, infobulle (EF-23, EF-34, EF-45) */
@@ -345,6 +376,24 @@ body.dragging { user-select: none; cursor: grabbing; }
 .toast button { background: var(--bg); color: var(--text); }
 @media print { .toast, .tooltip { display: none !important; } }
 
+/* Onglets du tableau de bord et charge (EF-87) */
+.tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); margin-bottom: .8rem; }
+.tabs [role="tab"] { border-radius: 6px 6px 0 0; border-bottom: 0; background: transparent; }
+.tabs [role="tab"][aria-selected="true"] { background: var(--panel-2); font-weight: 700; border-color: var(--accent); }
+.load-res h4 { margin: .8rem 0 .3rem; font-size: .95rem; }
+.chart-scroll { overflow-x: auto; }
+.loadchart .grid { stroke: var(--line); } .loadchart .cap { stroke: var(--text); stroke-dasharray: 4 3; }
+.loadchart .axis { fill: var(--muted); font-size: 11px; }
+.loadchart .bar-ok { fill: var(--series-planned); } .loadchart .bar-over { fill: var(--critical); }
+.loadchart .over-mark { fill: var(--critical); font-size: 10px; }
+.loadchart .hatch-bg { fill: var(--panel); } .loadchart .hatch-line { stroke: var(--muted); stroke-width: 2; }
+.key-box { display: inline-block; width: 14px; height: 12px; border-radius: 2px; }
+.key-box.ok { background: var(--series-planned); } .key-box.over { background: var(--critical); }
+.key-box.absent { background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 5px); border: 1px solid var(--line); }
+.key-line { display: inline-block; width: 18px; border-top: 2px dashed var(--text); }
+
+.g-absence { position: absolute; top: 4px; bottom: 4px; background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .6; border-radius: 2px; }
+
 </style>
 </head>
 <body>
@@ -369,6 +418,9 @@ body.dragging { user-select: none; cursor: grabbing; }
       <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
+      <button type="button" data-click="openReport" data-i18n="top.report"></button>
+      <button type="button" data-click="openPrint" data-i18n="top.print"></button>
+      <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
     </div>
     <div class="group">
@@ -473,6 +525,7 @@ body.dragging { user-select: none; cursor: grabbing; }
 <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
+<div id="print-area" class="print-area" hidden></div>
 <script>
 (() => {
 'use strict';
@@ -1099,7 +1152,33 @@ const Metrics = (() => {
     return { light, drift };
   }
 
-  return { STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
+  /** RG-28 : avancement prévu à ce jour = jours ouvrés prévus écoulés jusqu'à aujourd'hui / somme des durées. */
+  function plannedToDate(project, sched, today) {
+    const work = project.tasks.filter(countsInProgress);
+    const total = work.reduce((a, t) => a + t.dur, 0);
+    if (!total) return 0;
+    const upto = sched.cal.floor(today);
+    return 100 * work.reduce((a, t) => { const r = sched.tasks.get(t.id); return a + Math.max(0, Math.min(upto, r.e) - r.s + 1); }, 0) / total;
+  }
+
+  /** RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant). */
+  function report(project, sched, today, baseline) {
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    const items = project.tasks.filter(t => t.type !== 'summary');
+    const late = items.filter(t => status(t, sched, today) === STATUS.LATE)
+      .map(t => ({ id: t.id, dev: (deviation(t, sched, today) || { days: 0 }).days }))
+      .sort((a, b) => b.dev - a.dev || 0);
+    const soon = items.filter(t => { const r = sched.tasks.get(t.id); return r.startDn >= today && r.startDn <= today + 14; })
+      .sort((a, b) => sched.tasks.get(a.id).startDn - sched.tasks.get(b.id).startDn).map(t => t.id);
+    const msPast = items.filter(t => t.type === 'milestone' && t.pct >= 100 && sched.tasks.get(t.id).startDn >= today - 14 && sched.tasks.get(t.id).startDn <= today).map(t => t.id);
+    const msNext = items.filter(t => t.type === 'milestone' && sched.tasks.get(t.id).startDn > today && sched.tasks.get(t.id).startDn <= today + 30).map(t => t.id);
+    const progress = globalProgress(project), planned = plannedToDate(project, sched, today);
+    const light = statusLight(project, sched, today, baseline);
+    return { progress, planned, gap: progress - planned, counters: counters(project, sched, today), late, soon, msPast, msNext,
+      critical: sched.criticalPath.filter(id => byId.get(id)), light: light.light, drift: light.drift };
+  }
+
+  return { plannedToDate, report, STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
 })();
 
 // ── js/core/35-resolve.js ──
@@ -2031,6 +2110,28 @@ const I18n = (() => {
     'gst.linked': 'Lien {type} créé : {pred} → {succ}.', 'gst.monthView': 'Zoomez au-delà de 60 % pour déplacer ou allonger une barre.',
     'gst.linkSelf': 'Choisissez une autre tâche.', 'gst.linkSummary': 'Une récapitulative ne peut pas être liée.', 'gst.linkDup': '{succ} dépend déjà de {pred}.',
     'tags.title': 'Étiquettes', 'tags.none': 'Aucune étiquette dans le projet.', 'tags.uses': 'Usages', 'tags.renamed': 'Étiquette {old} renommée en {name} partout.', 'tags.delete': 'Supprimer l\'étiquette {name} de toutes les tâches ?',
+    'dash.tab.summary': 'Synthèse', 'dash.tab.load': 'Charge',
+    'load.day': 'Jours', 'load.week': 'Semaines', 'load.month': 'Mois', 'load.absent': 'absence', 'load.over': 'surcharge',
+    'load.value': '{pct} % ({load} j-p chargés pour {avail} j-p disponibles)', 'load.chartLabel': 'Charge de {name} par période ; détail dans le tableau des valeurs.',
+    'load.legendOk': 'Occupation', 'load.legendOver': 'Surcharge (▲)', 'load.legendAbsent': 'Absence (hachures)', 'load.legendCap': 'Capacité (100 %)',
+    'load.empty': 'Aucune ressource ou aucune tâche planifiée.', 'load.capacity': '(capacité {cap} %)', 'load.values': 'Occupation par période et par ressource',
+    'rep.title': "Rapport d'état", 'rep.preview': 'Aperçu du rapport', 'rep.date': 'Rapport du {date}', 'rep.light': 'Voyant : {light}',
+    'rep.light.red': 'ROUGE (retard critique ou dérive de plus de 5 jours ouvrés)', 'rep.light.orange': 'ORANGE (retard ou dérive de 1 à 5 jours ouvrés)', 'rep.light.green': 'VERT (dans les temps)',
+    'rep.drift': 'fin du projet {days} j ouvrés par rapport à {name}', 'rep.kpis': 'Indicateurs',
+    'rep.progress': 'Avancement réel {real} % pour {planned} % prévu à ce jour (écart {gap} points).', 'rep.counters': '{done} terminées, {ongoing} en cours, {late} en retard sur {total}.',
+    'rep.end': 'Fin prévue : {date}.', 'rep.late': 'Tâches en retard', 'rep.soon': 'Dans les 14 prochains jours', 'rep.milestones': 'Jalons (14 jours passés, 30 jours à venir)',
+    'rep.vsBaseline': 'Comparaison avec {name}', 'rep.note': 'Note', 'rep.none': 'Aucun élément.', 'rep.blocks': 'Blocs du rapport', 'rep.baseline': 'Baseline de comparaison',
+    'rep.b.kpis': 'Indicateurs', 'rep.b.curve': 'Courbe en S', 'rep.b.late': 'Retards', 'rep.b.soon': 'Échéances à venir', 'rep.b.milestones': 'Jalons', 'rep.b.critical': 'Tâches critiques',
+    'rep.b.alerts': 'Alertes', 'rep.b.baseline': 'Comparaison à une baseline', 'rep.b.note': 'Note',
+    'rep.print': 'Imprimer ou enregistrer en PDF', 'rep.copy': 'Copier le texte', 'rep.copied': 'Texte du rapport copié.', 'rep.copyFail': 'La copie a échoué : sélectionnez le texte de l\'aperçu.', 'top.report': "Rapport d'état",
+    'top.print': 'Imprimer le Gantt', 'top.versions': 'Versions',
+    'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
+    'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
+    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Le navigateur propose aussi « Enregistrer en PDF ».", 'print.go': 'Imprimer',
+    'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
+    'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
+    'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
+    'ver.saved': 'Version « {name} » enregistrée.', 'ver.restored': 'Version « {name} » restaurée.', 'ver.deleteQ': 'Supprimer la version « {name} » ?',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -2190,6 +2291,28 @@ const I18n = (() => {
     'gst.linked': '{type} link created: {pred} → {succ}.', 'gst.monthView': 'Zoom above 60% to move or resize a bar.',
     'gst.linkSelf': 'Choose another task.', 'gst.linkSummary': 'A summary task cannot be linked.', 'gst.linkDup': '{succ} already depends on {pred}.',
     'tags.title': 'Tags', 'tags.none': 'No tags in the project.', 'tags.uses': 'Uses', 'tags.renamed': 'Tag {old} renamed to {name} everywhere.', 'tags.delete': 'Remove tag {name} from all tasks?',
+    'dash.tab.summary': 'Summary', 'dash.tab.load': 'Workload',
+    'load.day': 'Days', 'load.week': 'Weeks', 'load.month': 'Months', 'load.absent': 'absence', 'load.over': 'overload',
+    'load.value': '{pct}% ({load} p-d loaded for {avail} p-d available)', 'load.chartLabel': 'Workload of {name} per period; details in the values table.',
+    'load.legendOk': 'Occupation', 'load.legendOver': 'Overload (▲)', 'load.legendAbsent': 'Absence (hatched)', 'load.legendCap': 'Capacity (100%)',
+    'load.empty': 'No resource or no scheduled task.', 'load.capacity': '(capacity {cap}%)', 'load.values': 'Occupation per period and resource',
+    'rep.title': 'Status report', 'rep.preview': 'Report preview', 'rep.date': 'Report of {date}', 'rep.light': 'Status: {light}',
+    'rep.light.red': 'RED (critical delay or drift over 5 working days)', 'rep.light.orange': 'AMBER (delay or drift of 1 to 5 working days)', 'rep.light.green': 'GREEN (on time)',
+    'rep.drift': 'project finish {days} working days versus {name}', 'rep.kpis': 'Key figures',
+    'rep.progress': 'Actual progress {real}% for {planned}% planned to date (gap {gap} points).', 'rep.counters': '{done} done, {ongoing} in progress, {late} late out of {total}.',
+    'rep.end': 'Planned finish: {date}.', 'rep.late': 'Late tasks', 'rep.soon': 'In the next 14 days', 'rep.milestones': 'Milestones (past 14 days, next 30 days)',
+    'rep.vsBaseline': 'Comparison with {name}', 'rep.note': 'Note', 'rep.none': 'Nothing.', 'rep.blocks': 'Report blocks', 'rep.baseline': 'Baseline for comparison',
+    'rep.b.kpis': 'Key figures', 'rep.b.curve': 'S-curve', 'rep.b.late': 'Delays', 'rep.b.soon': 'Upcoming items', 'rep.b.milestones': 'Milestones', 'rep.b.critical': 'Critical tasks',
+    'rep.b.alerts': 'Alerts', 'rep.b.baseline': 'Baseline comparison', 'rep.b.note': 'Note',
+    'rep.print': 'Print or save as PDF', 'rep.copy': 'Copy text', 'rep.copied': 'Report text copied.', 'rep.copyFail': 'Copy failed: select the preview text.', 'top.report': 'Status report',
+    'top.print': 'Print the Gantt', 'top.versions': 'Versions',
+    'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
+    'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
+    'print.hint': 'The printed rows are those displayed (filters included). The browser also offers “Save as PDF”.', 'print.go': 'Print',
+    'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
+    'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
+    'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
+    'ver.saved': 'Version “{name}” saved.', 'ver.restored': 'Version “{name}” restored.', 'ver.deleteQ': 'Delete version “{name}”?',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -2320,7 +2443,14 @@ function append(el, children) {
   return el;
 }
 
-function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+/* Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
+ * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu. */
+function clear(el) {
+  const a = document.activeElement;
+  if (a && a !== document.body && el.contains(a)) a.blur();
+  el.replaceChildren();
+  return el;
+}
 
 /** Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre. */
 function safeColor(c, fallback = '#8a94a6') { return typeof c === 'string' && Model.COLOR_RE.test(c) ? c : fallback; }
@@ -2878,7 +3008,19 @@ function renderGantt(items, fl) {
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
   body.append(msAuto(s.cal.dnOf(0), 'start'));
   for (const it of items) {
-    if (it.group) { body.append(h('div', { class: 'g-row g-group', aria: { hidden: 'true' } })); continue; }
+    if (it.group) {
+      const gr = h('div', { class: 'g-row g-group', aria: { hidden: 'true' } });
+      // EF-72 : en regroupement par ressource, les absences sont hachurées sur l'en-tête du groupe.
+      const res = App.view.groupBy === 'res' && resById(it.group.key);
+      if (res) for (const a of res.absences) {
+        const z = h('div', { class: 'g-absence', title: a.label || t('load.absent') });
+        z.style.setProperty('left', x(Dates.parse(a.start)) + 'px');
+        z.style.setProperty('width', ((Dates.parse(a.end) - Dates.parse(a.start) + 1) * dayW) + 'px');
+        gr.append(z);
+      }
+      body.append(gr);
+      continue;
+    }
     const task = it.task;
     const r = s.tasks.get(task.id);
     if (!r || r.empty) { body.append(row()); continue; }
@@ -4870,7 +5012,7 @@ action('calAdd', kind => {
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '' };
+const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
@@ -5017,6 +5159,15 @@ function trackingTable() {
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
+  // Onglets « Synthèse » et « Charge » (motif ARIA tabs : flèches gauche/droite).
+  const tabs = ['summary', 'load'];
+  body.append(h('div', { role: 'tablist', class: 'tabs', aria: { label: t('top.dashboard') } }, tabs.map(k => h('button', {
+    type: 'button', role: 'tab', id: 'dtab-' + k, tabindex: Dash.tab === k ? '0' : '-1', aria: { selected: String(Dash.tab === k), controls: 'dpanel' },
+    data: { click: 'dashTab', arg: k } }, t('dash.tab.' + k)))));
+  const panel = h('div', { role: 'tabpanel', id: 'dpanel', aria: { labelledby: 'dtab-' + Dash.tab }, tabindex: '0' });
+  body.append(panel);
+  if (Dash.tab === 'load') { paintLoad(panel); return; }
+  body = panel;
   const today = Dates.todayDn();
   const c = Metrics.counters(App.project, App.sched, today);
   const tile = (label, value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', { text: value }));
@@ -5058,12 +5209,402 @@ function repaintDashboard(focusSel) {
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
+action('dashTab', k => { Dash.tab = k === 'load' ? 'load' : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
+document.addEventListener('keydown', ev => {
+  const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
+  if (!tab || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
+  ev.preventDefault();
+  ACTIONS.dashTab(Dash.tab === 'load' ? 'summary' : 'load');
+});
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
 action('dashSort', k => {
   Dash.sort = Dash.sort.key === k ? { key: k, dir: -Dash.sort.dir } : { key: k, dir: 1 };
   repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
+});
+
+// ── js/ui/76-load.js ──
+/* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à
+ * 100 %. Une surcharge est rouge ET marquée ▲ ; une absence est hachurée ET nommée dans l'infobulle
+ * et le tableau ; jamais la couleur seule. Tableau des valeurs pour qui ne lit pas un graphique. */
+const Load = { unit: 'week', res: null, showValues: false };
+
+function loadPeriods() {
+  const s = App.sched;
+  let lo = Infinity, hi = -Infinity;
+  for (const r of s.tasks.values()) if (!r.empty) { lo = Math.min(lo, r.startDn); hi = Math.max(hi, r.endDn); }
+  if (lo === Infinity) return [];
+  if (Load.unit === 'day') {
+    const out = [];
+    for (let dn = lo; dn <= hi; dn++) if (s.cal.isWork(dn)) out.push({ start: dn, end: dn });
+    return out;
+  }
+  return Metrics.periods(lo, hi, Load.unit);
+}
+function periodLabel(p) {
+  if (Load.unit === 'month') return I18n.monthLabel(p.start);
+  if (Load.unit === 'week') return t('gantt.week', { date: I18n.shortDate(p.start) });
+  return I18n.date(p.start);
+}
+function occText(o) {
+  if (o.state === 'absent') return t('load.absent');
+  return t('load.value', { pct: Math.round(o.ratio * 100), load: I18n.number(o.load, 1), avail: I18n.number(o.available, 1) }) + (o.state === 'overload' ? ' — ' + t('load.over') : '');
+}
+
+function loadChart(res, periods) {
+  const occ = periods.map(p => Metrics.occupation(App.sched, res.id, p.start, p.end));
+  const n = periods.length, bw = Load.unit === 'day' ? 10 : Load.unit === 'week' ? 18 : 40;
+  const W = Math.max(600, 50 + n * (bw + 4) + 10), H = 150, m = { l: 44, t: 18, b: 26 };
+  const maxPct = Math.max(150, ...occ.map(o => (o.ratio || 0) * 100 + 20));
+  const py = v => m.t + (1 - v / maxPct) * (H - m.t - m.b);
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'loadchart', role: 'img', 'aria-label': t('load.chartLabel', { name: res.name }) },
+    svg('defs', {}, svg('pattern', { id: 'hatch-' + res.id, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+      svg('rect', { width: 6, height: 6, class: 'hatch-bg' }), svg('line', { x1: 0, y1: 0, x2: 0, y2: 6, class: 'hatch-line' }))));
+  for (const v of [0, 100]) chart.append(svg('line', { x1: m.l, x2: W - 8, y1: py(v), y2: py(v), class: v ? 'cap' : 'grid' }),
+    svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: `${v} %` }));
+  const step = Math.max(1, Math.ceil(n / 10));
+  occ.forEach((o, i) => {
+    const x = m.l + 4 + i * (bw + 4);
+    const tip = `${periodLabel(periods[i])} : ${occText(o)}`;
+    if (o.state === 'absent') {
+      chart.append(svg('rect', { x, y: py(100), width: bw, height: py(0) - py(100), fill: `url(#hatch-${res.id})`, class: 'absent' }, svg('title', { text: tip })));
+    } else {
+      const v = Math.min(maxPct, (o.ratio || 0) * 100);
+      const over = o.state === 'overload';
+      chart.append(svg('rect', { x, y: py(v), width: bw, height: Math.max(0, py(0) - py(v)), rx: 2, class: over ? 'bar-over' : 'bar-ok' }, svg('title', { text: tip })));
+      if (over) chart.append(svg('text', { x: x + bw / 2, y: py(v) - 3, class: 'over-mark', 'text-anchor': 'middle', text: '▲' }));
+    }
+    if (i % step === 0) chart.append(svg('text', { x: x + bw / 2, y: H - 8, class: 'axis', 'text-anchor': 'middle',
+      text: Load.unit === 'month' ? I18n.monthLabel(periods[i].start) : I18n.shortDate(periods[i].start) }));
+  });
+  return { chart, occ };
+}
+
+function paintLoad(box) {
+  const periods = loadPeriods();
+  const all = App.project.resources;
+  if (!Load.res) Load.res = new Set(all.map(r => r.id));
+  box.append(h('div', { class: 'row' },
+    h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+      ['day', 'week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'ld-unit', id: 'ld-' + u, value: u, checked: Load.unit === u, data: { change: 'loadUnit' } }),
+        h('label', { for: 'ld-' + u, text: ' ' + t('load.' + u) })))),
+    h('button', { type: 'button', data: { click: 'loadValues' }, aria: { expanded: String(Load.showValues), controls: 'ld-values' } }, t(Load.showValues ? 'dash.hideValues' : 'dash.showValues'))));
+  box.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('top.resources') }),
+    all.map(r => h('span', { class: 'check' }, h('input', { type: 'checkbox', id: 'ld-r-' + r.id, checked: Load.res.has(r.id), data: { change: 'loadRes', arg: r.id } }),
+      h('label', { for: 'ld-r-' + r.id, text: r.name })))));
+  box.append(h('ul', { class: 'chart-legend' },
+    h('li', {}, h('span', { class: 'key-box ok', aria: { hidden: 'true' } }), t('load.legendOk')),
+    h('li', {}, h('span', { class: 'key-box over', aria: { hidden: 'true' } }), t('load.legendOver')),
+    h('li', {}, h('span', { class: 'key-box absent', aria: { hidden: 'true' } }), t('load.legendAbsent')),
+    h('li', {}, h('span', { class: 'key-line', aria: { hidden: 'true' } }), t('load.legendCap'))));
+  if (!periods.length || !all.length) { box.append(h('p', { class: 'hint', text: t('load.empty') })); return; }
+  const tables = [];
+  for (const r of all.filter(x => Load.res.has(x.id))) {
+    const { chart, occ } = loadChart(r, periods);
+    const total = occ.reduce((a, o) => a + o.load, 0);
+    box.append(h('section', { class: 'load-res' }, h('h4', { text: `${r.name} — ${t('rs.load', { load: I18n.number(total, total % 1 ? 1 : 0) })} ${t('load.capacity', { cap: r.capacity })}` }),
+      h('div', { class: 'chart-scroll' }, chart)));
+    tables.push([r, occ]);
+  }
+  if (Load.showValues) {
+    box.append(h('div', { class: 'table-scroll', id: 'ld-values' }, h('table', { class: 'manage values' },
+      h('caption', { text: t('load.values') }),
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('dash.period') }), tables.map(([r]) => h('th', { scope: 'col', text: r.name })))),
+      h('tbody', {}, periods.map((p, i) => h('tr', {}, h('th', { scope: 'row', text: periodLabel(p) }), tables.map(([, occ]) => h('td', { text: occText(occ[i]) }))))))));
+  }
+}
+
+action('loadUnit', (arg, el) => { Load.unit = ['day', 'week', 'month'].includes(el.value) ? el.value : 'week'; repaintDashboard('#ld-' + Load.unit); });
+action('loadRes', (id, el) => { if (el.checked) Load.res.add(id); else Load.res.delete(id); repaintDashboard('#ld-r-' + CSS.escape(id)); });
+action('loadValues', () => { Load.showValues = !Load.showValues; repaintDashboard('[data-click="loadValues"]'); });
+
+// ── js/ui/77-report.js ──
+/* Rapport d'état (EF-88, RG-28) : aperçu, choix des blocs, note, impression ou PDF, texte brut.
+ * Le voyant est toujours écrit en toutes lettres (jamais la couleur seule, EX-03). */
+const Report = { blocks: { kpis: true, curve: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
+const REPORT_BLOCKS = ['kpis', 'curve', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
+
+function reportData() {
+  const today = Dates.todayDn();
+  const bl = App.project.baselines.find(b => b.id === Report.baseline) || null;
+  return { today, bl, r: Metrics.report(App.project, App.sched, today, bl) };
+}
+const taskLabel = id => { const x = taskById(id); return x ? `${id} ${x.name}` : id; };
+
+/** Contenu du rapport sous forme de sections {title, lines[]} : sert à l'aperçu ET au texte brut. */
+function reportSections() {
+  const { today, bl, r } = reportData();
+  const s = App.sched;
+  const out = [];
+  const B = Report.blocks;
+  out.push({ key: 'head', title: `${App.project.emoji} ${App.project.name}`, lines: [
+    t('rep.date', { date: I18n.date(today) }),
+    t('rep.light', { light: t('rep.light.' + r.light) }) + (r.drift != null && bl ? ' — ' + t('rep.drift', { name: bl.name, days: r.drift > 0 ? '+' + r.drift : String(r.drift) }) : ''),
+  ] });
+  if (B.kpis) out.push({ key: 'kpis', title: t('rep.kpis'), lines: [
+    t('rep.progress', { real: I18n.number(r.progress), planned: I18n.number(r.planned), gap: (r.gap >= 0 ? '+' : '') + I18n.number(r.gap) }),
+    t('rep.counters', { done: r.counters.done, ongoing: r.counters.ongoing, late: r.counters.late, total: r.counters.total }),
+    t('rep.end', { date: I18n.date(s.projectEndDn) }),
+  ] });
+  if (B.curve) out.push({ key: 'curve', title: t('dash.curve'), lines: [], chart: true });
+  if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
+  if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });
+  if (B.milestones) out.push({ key: 'milestones', title: t('rep.milestones'), lines: [
+    ...r.msPast.map(id => `✓ ${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)} (${t('status.done')})`),
+    ...r.msNext.map(id => `◇ ${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`),
+  ].concat(r.msPast.length || r.msNext.length ? [] : [t('rep.none')]) });
+  if (B.critical) out.push({ key: 'critical', title: t('kpi.critical'), lines: r.critical.length ? [r.critical.join(' → ')] : [t('rep.none')] });
+  if (B.alerts) { const a = alertMessages(); out.push({ key: 'alerts', title: t('alerts.label'), lines: a.length ? a.map(m => '⚠ ' + m.text) : [t('rep.none')] }); }
+  if (B.baseline && bl) out.push({ key: 'baseline', title: t('rep.vsBaseline', { name: bl.name }), lines: [t('rep.drift', { name: bl.name, days: r.drift > 0 ? '+' + r.drift : String(r.drift) })] });
+  if (B.note && App.project.reportNote) out.push({ key: 'note', title: t('rep.note'), lines: App.project.reportNote.split('\n') });
+  return out;
+}
+
+function reportArticle() {
+  const art = h('article', { class: 'report-page', id: 'report-preview', aria: { label: t('rep.preview') } });
+  const { r } = reportData();
+  for (const sec of reportSections()) {
+    const el = h('section', { class: 'rep-sec rep-' + sec.key },
+      sec.key === 'head' ? h('h3', { class: 'rep-title', text: sec.title }) : h('h4', { text: sec.title }));
+    if (sec.key === 'head') el.prepend(h('span', { class: 'voyant ' + r.light, aria: { hidden: 'true' }, text: { red: '■', orange: '▲', green: '●' }[r.light] }));
+    if (sec.chart) {
+      const curve = Metrics.sCurve(App.project, App.sched, Dates.todayDn(), 'week');
+      const c = sCurveChart(curve);
+      c.removeAttribute('tabindex');
+      el.append(c);
+    }
+    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', { text: l }))));
+    art.append(el);
+  }
+  return art;
+}
+
+function reportText() {
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? l : `- ${l}`))].join('\n')).join('\n');
+}
+
+function paintReport(body, focusSel) {
+  clear(body);
+  const opts = h('div', { class: 'rep-options' },
+    h('fieldset', { class: 'sub' }, h('legend', { text: t('rep.blocks') }),
+      REPORT_BLOCKS.map(k => h('div', { class: 'check' }, h('input', { type: 'checkbox', id: 'rb-' + k, checked: Report.blocks[k], data: { change: 'repBlock', arg: k } }),
+        h('label', { for: 'rb-' + k, text: t('rep.b.' + k) })))),
+    h('div', { class: 'field' }, h('label', { for: 'rep-bl', text: t('rep.baseline') }),
+      h('select', { id: 'rep-bl', data: { change: 'repBaseline' } }, h('option', { value: '' }, t('dash.noBl')),
+        App.project.baselines.map(b => h('option', { value: b.id, selected: Report.baseline === b.id }, b.name)))),
+    h('div', { class: 'field' }, h('label', { for: 'rep-note', text: t('rep.note') }),
+      h('textarea', { id: 'rep-note', rows: 4, maxlength: 2000, text: App.project.reportNote, data: { change: 'repNote' } })),
+    h('div', { class: 'actions' },
+      h('button', { type: 'button', class: 'primary', data: { click: 'repPrint' } }, t('rep.print')),
+      h('button', { type: 'button', data: { click: 'repCopy' } }, t('rep.copy'))));
+  body.append(h('div', { class: 'rep-layout' }, opts, reportArticle()));
+  const el = focusSel && body.querySelector(focusSel);
+  if (el) el.focus();
+}
+
+function reportWindow() {
+  if (!App.sched) return;
+  if (Report.baseline && !App.project.baselines.some(b => b.id === Report.baseline)) Report.baseline = '';
+  const body = h('div', { id: 'rep-win' });
+  reportWindow.body = body;
+  paintReport(body);
+  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
+}
+
+/** Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26). */
+function printNode(node, cls, pageRule) {
+  const area = clear($('print-area'));
+  area.append(node);
+  area.hidden = false;
+  document.body.classList.add('printing', cls);
+  const sheet = document.styleSheets[0];
+  let ruleIndex = -1;
+  // Feuille de style via le CSSOM (autorisé par la CSP) ; textes échappés pour une chaîne CSS.
+  const cssStr = v => '"' + String(v).replace(/[\\"]/g, '\\$&').replace(/[\n\r]/g, ' ') + '"';
+  try {
+    ruleIndex = sheet.insertRule(`@page { size: ${pageRule}; margin: 12mm; @top-left { content: ${cssStr(App.project.name)}; } @top-right { content: ${cssStr(I18n.date(Dates.todayDn()))}; } @bottom-right { content: counter(page) " / " counter(pages); } }`, sheet.cssRules.length);
+  } catch {
+    try { ruleIndex = sheet.insertRule(`@page { size: ${pageRule}; margin: 12mm; }`, sheet.cssRules.length); } catch { ruleIndex = -1; }
+  }
+  const done = () => {
+    document.body.classList.remove('printing', cls);
+    area.hidden = true; clear(area);
+    if (ruleIndex >= 0) try { sheet.deleteRule(ruleIndex); } catch { /* règle déjà retirée */ }
+    window.removeEventListener('afterprint', done);
+  };
+  window.addEventListener('afterprint', done);
+  window.print();
+  // Certains navigateurs n'émettent pas afterprint : nettoyage de secours.
+  setTimeout(() => { if (document.body.classList.contains('printing')) done(); }, 1500);
+}
+
+function copyText(text) {
+  const fallback = () => {
+    const ta = h('textarea', { class: 'sr-only', aria: { hidden: 'true' } });
+    ta.value = text; document.body.append(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
+    ta.remove();
+    return ok;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, () => fallback());
+  return Promise.resolve(fallback());
+}
+
+action('openReport', () => reportWindow());
+action('repBlock', (k, el) => { Report.blocks[k] = el.checked; paintReport(reportWindow.body, '#rb-' + k); });
+action('repBaseline', (a, el) => { Report.baseline = el.value; paintReport(reportWindow.body, '#rep-bl'); });
+action('repNote', (a, el) => { const v = el.value.slice(0, 2000); if (v !== App.project.reportNote) commit(p => { p.reportNote = v; }); paintReport(reportWindow.body, '#rep-note'); });
+action('repPrint', () => printNode(reportArticle(), 'print-report', 'A4 portrait'));
+action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });
+
+// ── js/ui/78-print.js ──
+/* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
+ * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
+ * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
+const PrintOpt = { period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
+
+function buildPrintGantt() {
+  const s = App.sched;
+  const tasks = viewItems().filter(it => it.task).map(it => it.task);
+  let { from, to } = gridRange();
+  if (PrintOpt.period === 'range') {
+    const a = Dates.parse(PrintOpt.from), b = Dates.parse(PrintOpt.to);
+    if (a != null) from = Dates.mondayOf(a);
+    if (b != null) to = Math.max(from + 6, b);
+  }
+  const days = to - from + 1;
+  const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
+  // Largeur imprimable approximative en px CSS (A4, marges 12 mm) moins les colonnes.
+  const pageW = PrintOpt.orient === 'landscape' ? 1045 : 715;
+  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80 };
+  const ganttW = PrintOpt.scale === 'fit' ? Math.max(200, pageW - cols.reduce((a, k) => a + colW[k], 0)) : Math.round(days * 26 * App.zoom / 100 / 7);
+  const dayW = ganttW / days;
+  const x = dn => (dn - from) * dayW;
+  const head = h('div', { class: 'pg-time' });
+  head.style.setProperty('width', ganttW + 'px');
+  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
+    const a = Math.max(p.start, from), b = Math.min(p.end, to);
+    const c = h('div', { class: 'pg-col', text: dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) });
+    c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
+    head.append(c);
+  }
+  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status') };
+  const table = h('table', { class: 'print-gantt' },
+    h('caption', { text: `${App.project.emoji} ${App.project.name} — ${I18n.date(from)} → ${I18n.date(to)}` }),
+    h('thead', {}, h('tr', {}, cols.map(k => h('th', { scope: 'col', text: labels[k] })), h('th', { scope: 'col', class: 'pg-timecell' }, head))));
+  const tb = h('tbody');
+  const fl = flags();
+  for (const task of tasks) {
+    const r = s.tasks.get(task.id);
+    const st = statusOf(task);
+    const cells = {
+      id: task.id, name: task.name, dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
+      status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
+    };
+    const lane = h('div', { class: 'pg-lane' });
+    lane.style.setProperty('width', ganttW + 'px');
+    if (r && !r.empty && r.endDn >= from && r.startDn <= to) {
+      const a = Math.max(r.startDn, from), b = Math.min(r.endDn, to);
+      const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
+      el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
+      if (task.type !== 'milestone') {
+        el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
+        const pct = Metrics.pctOf(task, s);
+        const done = h('span', { class: 'pg-done' }); done.style.setProperty('width', pct + '%'); el.append(done);
+      }
+      lane.append(el);
+    }
+    tb.append(h('tr', { class: task.type }, cols.map(k => h('td', { class: 'pg-' + k, text: cells[k] })), h('td', { class: 'pg-timecell' }, lane)));
+  }
+  table.append(tb);
+  const wrap = h('div', { class: 'print-wrap' }, table);
+  if (PrintOpt.legend) wrap.append(h('p', { class: 'pg-legend', text: t('print.legend') }));
+  return wrap;
+}
+
+function printWindow() {
+  if (!App.sched) return;
+  const chk = (id, label, checked, arg) => h('span', { class: 'check' }, h('input', { type: 'checkbox', id, checked, data: { change: 'printOpt', arg } }), h('label', { for: id, text: label }));
+  const radio = (name, value, label, checked) => h('span', { class: 'check' }, h('input', { type: 'radio', name, id: `pr-${name}-${value}`, value, checked, data: { change: 'printOpt', arg: name } }), h('label', { for: `pr-${name}-${value}`, text: label }));
+  const body = h('div', { id: 'print-win' },
+    h('fieldset', { class: 'inline' }, h('legend', { text: t('print.period') }), radio('period', 'all', t('print.all'), PrintOpt.period === 'all'), radio('period', 'range', t('print.range'), PrintOpt.period === 'range'),
+      h('label', { for: 'pr-from', text: t('view.f.from') }), h('input', { type: 'date', id: 'pr-from', value: PrintOpt.from, data: { change: 'printOpt', arg: 'from' } }),
+      h('label', { for: 'pr-to', text: t('view.f.to') }), h('input', { type: 'date', id: 'pr-to', value: PrintOpt.to, data: { change: 'printOpt', arg: 'to' } })),
+    h('fieldset', { class: 'inline' }, h('legend', { text: t('print.scale') }), radio('scale', 'fit', t('print.fit'), PrintOpt.scale === 'fit'), radio('scale', 'zoom', t('print.zoom'), PrintOpt.scale === 'zoom')),
+    h('fieldset', { class: 'inline' }, h('legend', { text: t('print.orient') }), radio('orient', 'landscape', t('print.landscape'), PrintOpt.orient === 'landscape'), radio('orient', 'portrait', t('print.portrait'), PrintOpt.orient === 'portrait')),
+    h('fieldset', { class: 'inline' }, h('legend', { text: t('print.cols') }), Object.keys(PrintOpt.cols).map(k => chk('pr-col-' + k, t('col.' + k), PrintOpt.cols[k], 'col:' + k))),
+    chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
+    h('p', { class: 'hint', text: t('print.hint') }));
+  return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
+    onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
+}
+action('openPrint', () => printWindow());
+action('printOpt', (arg, el) => {
+  if (arg === 'period' || arg === 'scale' || arg === 'orient') PrintOpt[arg] = el.value;
+  else if (arg === 'from' || arg === 'to') { PrintOpt[arg] = Dates.parse(el.value) != null ? el.value : ''; PrintOpt.period = 'range'; }
+  else if (arg === 'legend') PrintOpt.legend = el.checked;
+  else if (arg.startsWith('col:')) PrintOpt.cols[arg.slice(4)] = el.checked;
+});
+
+// ── js/ui/79-versions.js ──
+/* Versions (EF-54) : copies nommées et datées de l'état complet, dix au plus, enregistrées dans le
+ * fichier exporté. Restaurer est confirmé et s'annule avec « Annuler » (un pas d'historique). */
+function versionsWindow() {
+  const body = h('div', { id: 'ver-win' });
+  const paint = focusSel => {
+    clear(body);
+    const list = App.project.versions;
+    body.append(h('p', { class: 'field-error', id: 'ver-err', role: 'alert', hidden: true }),
+      h('div', { class: 'add-row' }, h('label', { for: 'ver-name', text: t('ver.name') }), h('input', { type: 'text', id: 'ver-name', maxlength: 100 }),
+        h('button', { type: 'button', class: 'primary', data: { click: 'verSave' } }, t('ver.save'))));
+    if (!list.length) body.append(h('p', { class: 'hint', text: t('ver.none') }));
+    else body.append(h('table', { class: 'manage' },
+      h('thead', {}, h('tr', {}, [t('res.name'), t('ver.date'), t('ver.tasks'), ''].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, [...list].reverse().map(v => h('tr', {},
+        h('td', { text: v.label }), h('td', { text: I18n.dateTime(v.ts) }), h('td', { text: String((v.state.tasks || []).length) }),
+        h('td', {}, h('button', { type: 'button', data: { click: 'verRestore', arg: v.id } }, `${t('ver.restore')} ${v.label}`), ' ',
+          h('button', { type: 'button', class: 'danger', data: { click: 'verDelete', arg: v.id } }, `${t('edit.delete')} ${v.label}`)))))));
+    const el = focusSel && body.querySelector(focusSel);
+    if (el) el.focus();
+  };
+  versionsWindow.paint = paint;
+  paint('#ver-name');
+  return Dialog.open({ title: t('top.versions'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { versionsWindow.paint = null; });
+}
+action('openVersions', () => versionsWindow());
+action('verSave', () => {
+  const inp = $('ver-name'), err = $('ver-err');
+  const label = inp.value.trim();
+  if (!label || label.length > 100) { err.textContent = t('err.text', { field: t('ver.name'), min: 1, max: 100 }); err.hidden = false; inp.focus(); return; }
+  if (App.project.versions.length >= Model.LIMITS.versions) { err.textContent = t('err.limit', { max: Model.LIMITS.versions, what: t('top.versions').toLowerCase() }); err.hidden = false; return; }
+  const state = Model.serialize(App.project, { withVersions: false });
+  let n = 1; while (App.project.versions.some(v => v.id === 'V' + n)) n++;
+  commit(p => { p.versions.push({ id: 'V' + n, label, ts: Date.now(), state }); });
+  announce(t('ver.saved', { name: label }));
+  versionsWindow.paint && versionsWindow.paint('#ver-name');
+});
+action('verRestore', async id => {
+  const v = App.project.versions.find(x => x.id === id);
+  if (!v) return;
+  if (!(await Dialog.confirm(t('ver.restoreQ', { name: v.label }), [t('ver.restoreHint')], t('ver.restore'), false))) return;
+  let restored;
+  try { restored = Model.sanitize(v.state, { nested: true }).project; } catch (e) { Dialog.message(t('top.versions'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  commit(p => {
+    const keep = p.versions;
+    for (const k of Object.keys(restored)) p[k] = restored[k];
+    p.versions = keep;
+  });
+  Editor.close(); clearSelection();
+  render();
+  announce(t('ver.restored', { name: v.label }));
+  versionsWindow.paint && versionsWindow.paint();
+});
+action('verDelete', async id => {
+  const v = App.project.versions.find(x => x.id === id);
+  if (!v || !(await Dialog.confirm(t('ver.deleteQ', { name: v.label }), [], t('edit.delete')))) return;
+  commit(p => { p.versions = p.versions.filter(x => x.id !== id); });
+  versionsWindow.paint && versionsWindow.paint();
 });
 
 // ── js/ui/80-files.js ──
