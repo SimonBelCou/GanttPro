@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LmD2/c2xhLOy0PfrCodDrb+m/1Asjm3a86pUdEMXVDY='; style-src 'sha256-sWu1ZWOuI1pyHq2znQFJe/oRMvg38quvso02YLV3QfY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gkQ21eoY1NsKgNIw19i1eRSJss+Lhk7AFNuYW23Vr78='; style-src 'sha256-hVxvUH14dMVOQv/fe3dH0LPXeS2EMiC0+zIYYu8sYuM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -193,6 +193,13 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
 .emoji-opt label { font-size: 1.3rem; padding: .2rem .35rem; border: 2px solid transparent; border-radius: 6px; cursor: pointer; }
 .emoji-opt input:checked + label { border-color: var(--accent); background: var(--panel-2); }
 .emoji-opt input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 1px; }
+
+/* Grand écran : le contenu se resserre à côté du panneau d'édition au lieu d'être recouvert
+   (barre d'outils, Gantt et légende restent utilisables pendant l'édition). */
+@media (min-width: 1100px) {
+  body:has(#editor:not([hidden])) > header, body:has(#editor:not([hidden])) > main { margin-right: min(440px, 100vw); }
+  body:has(#editor:not([hidden])) .editor { box-shadow: none; }
+}
 
 /* Écrans étroits (4.4) */
 @media (max-width: 900px) {
@@ -448,7 +455,7 @@ body.dragging { user-select: none; cursor: grabbing; }
       <button type="button" data-click="newProject" data-i18n="top.new"></button>
       <button type="button" data-click="importFile" data-i18n="top.import"></button>
       <button type="button" data-click="exportFile" data-i18n="top.export"></button>
-      <input type="file" id="file-input" accept=".json,application/json" hidden data-change="fileChosen">
+      <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
     </div>
     <div class="group">
       <button type="button" id="btn-theme" data-click="toggleTheme"></button>
@@ -1982,7 +1989,6 @@ const I18n = (() => {
     'imp.title': "Aperçu de l'import", 'imp.replace': 'Remplacer le projet ouvert', 'imp.summary': '{tasks} tâches, {resources} ressources, {categories} catégories, {baselines} baselines ; début le {start} ; avancement moyen {pct} %.',
     'imp.notice.unknown': { one: '{count} champ inconnu a été ignoré.', other: '{count} champs inconnus ont été ignorés.' },
     'imp.notice.resources': 'Ressources créées : {names}.', 'imp.notice.categories': 'Catégories créées : {names}.',
-    'imp.encrypted': "Ce fichier est protégé par mot de passe : l'ouverture des fichiers protégés n'est pas encore disponible dans cette version.",
     'exp.notice': "Fichier exporté. Il n'est pas chiffré et contient les noms des ressources.",
     'exp.anonymize': 'Exporter sans noms de personnes',
     // Messages d'import (8.3)
@@ -2132,6 +2138,36 @@ const I18n = (() => {
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
     'ver.saved': 'Version « {name} » enregistrée.', 'ver.restored': 'Version « {name} » restaurée.', 'ver.deleteQ': 'Supprimer la version « {name} » ?',
+    'xp.outline': 'N°', 'xp.id': 'Identifiant', 'xp.name': 'Nom', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Durée', 'xp.start': 'Début', 'xp.end': 'Fin',
+    'xp.deps': 'Prédécesseurs', 'xp.res': 'Ressources', 'xp.cat': 'Catégorie', 'xp.pct': 'Avancement', 'xp.status': 'Statut', 'xp.critical': 'Critique', 'xp.slack': 'Marge',
+    'xp.realStart': 'Début réel', 'xp.realEnd': 'Fin réelle', 'xp.forced': 'Début imposé', 'xp.notBefore': 'Ne pas commencer avant', 'xp.deadline': 'Échéance',
+    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
+    'xp.sheet.tasks': 'Tâches', 'xp.sheet.resources': 'Ressources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendrier', 'xp.sheet.baselines': 'Baselines',
+    'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable',
+    'imp.resFormat': '« {value} » ne se lit pas (ex. « Alice 50 %; Bob »)',
+    'msp.ign.calendars': 'calendriers secondaires', 'msp.ign.constraint': 'contrainte de type {n}', 'msp.ign.cost': 'coûts', 'msp.ign.work': 'heures de travail',
+    'msp.ign.resCalendars': 'calendriers des ressources', 'msp.ign.units': 'taux d\'affectation ramenés à la capacité de la ressource',
+    'pwd.short': 'Mot de passe : {min} caractères au moins (une phrase convient très bien).', 'pwd.bad': 'Mot de passe incorrect ou fichier altéré.',
+    'exp.format': 'Format', 'exp.f.json': 'Projet GanttPro (.json)', 'exp.f.xlsx': 'Classeur Excel (.xlsx)', 'exp.f.csv': 'Tableau CSV (.csv)', 'exp.f.msp': 'MS Project (.xml)', 'exp.f.png': 'Image du Gantt (.png)',
+    'exp.protect': 'Protéger par mot de passe', 'exp.mspNote': "Sont transmis : tâches, jalons, récapitulatives, durées, dates, avancement, liens, contraintes, échéances, ressources, affectations et calendrier. Ne sont pas transmis : catégories, étiquettes, commentaires, versions, baselines et absences.",
+    'exp.sheetNote': 'Les cellules qui pourraient être lues comme des formules sont précédées d\'une apostrophe.', 'exp.resolution': 'Résolution', 'exp.scale1': 'Normale', 'exp.scale2': 'Double',
+    'exp.white': 'Fond blanc (sinon celui du thème)', 'exp.pngA11y': "Une image n'est pas lisible par un lecteur d'écran : pour un partage accessible, préférez le classeur ou le rapport d'état.",
+    'exp.done': 'Export « {format} » terminé.', 'exp.failed': "L'export a échoué.", 'exp.pngTooBig': 'Image trop grande : choisissez une période plus courte ou la résolution normale.',
+    'pwd.label': 'Mot de passe', 'pwd.confirm': 'Confirmer le mot de passe', 'pwd.mismatch': 'Les deux mots de passe ne sont pas identiques.',
+    'pwd.warn': 'Au moins {min} caractères ; une phrase est idéale. Un mot de passe perdu rend le fichier irrécupérable : GanttPro ne le conserve jamais.',
+    'pwd.working': 'Chiffrement en cours…', 'pwd.openTitle': 'Fichier protégé', 'pwd.openHint': 'Ce fichier est protégé par mot de passe.',
+    'imp.newTab': 'Ouvrir dans un nouvel onglet', 'imp.opened': 'Projet « {name} » ouvert.', 'imp.zip': 'Classeur illisible ou trop volumineux (200 fichiers et 50 Mo décompressés au plus).', 'imp.emptySheet': 'Le tableau est vide.',
+    'msp.ignored': 'Éléments sans équivalent, ignorés : {list}.', 'msp.calNote': 'Les jours fériés du fichier deviennent des jours chômés du calendrier.',
+    'wiz.title': 'Importer des tâches depuis un tableur', 'wiz.step': 'Étape {n} sur 3', 'wiz.sheet': 'Feuille', 'wiz.header': 'La première ligne contient les en-têtes',
+    'wiz.rows': { one: '{count} ligne de données dans « {name} ».', other: '{count} lignes de données dans « {name} ».' }, 'wiz.mapHint': 'Associez chaque information à une colonne (proposition automatique).',
+    'wiz.field': 'Information', 'wiz.column': 'Colonne', 'wiz.valid': '{count} ligne(s) valide(s) sur {total}.', 'wiz.errors': 'Lignes écartées', 'wiz.line': 'Ligne', 'wiz.problem': 'Problème',
+    'wiz.mode': 'Les tâches importées', 'wiz.m.add': 'S\'ajoutent à celles du projet', 'wiz.m.replace': 'Remplacent celles du projet', 'wiz.back': 'Précédent', 'wiz.next': 'Suivant', 'wiz.import': 'Importer',
+    'wiz.needName': 'Associez au moins la colonne du nom.', 'wiz.none': 'Aucune ligne valide à importer.', 'wiz.imported': { one: '{count} tâche importée.', other: '{count} tâches importées.' },
+    'wiz.importValid': { one: 'Importer la ligne valide', other: 'Importer les {count} lignes valides' },
+    'wiz.f.id': 'Identifiant', 'wiz.f.num': 'N° (référence des liens)', 'wiz.f.name': 'Nom', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Durée', 'wiz.f.deps': 'Prédécesseurs', 'wiz.f.res': 'Ressources',
+    'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
+    'clip.copied': { one: '{count} tâche copiée.', other: '{count} tâches copiées.' }, 'clip.pasted': { one: '{count} tâche collée.', other: '{count} tâches collées.' }, 'clip.paste': 'Coller',
+    'png.legend': 'Barre : tâche (partie sombre = réalisé) ; contour rouge : critique ; losange : jalon ; trait rouge : aujourd\'hui.',
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -2200,7 +2236,6 @@ const I18n = (() => {
     'imp.summary': '{tasks} tasks, {resources} resources, {categories} categories, {baselines} baselines; starts {start}; average progress {pct}%.',
     'imp.notice.unknown': { one: '{count} unknown field was ignored.', other: '{count} unknown fields were ignored.' },
     'imp.notice.resources': 'Resources created: {names}.', 'imp.notice.categories': 'Categories created: {names}.',
-    'imp.encrypted': 'This file is password-protected: opening protected files is not available in this version yet.',
     'exp.notice': 'File exported. It is not encrypted and contains resource names.', 'exp.anonymize': 'Export without personal names',
     'imp.unreadable': 'This file is not a readable GanttPro project.', 'imp.tooBig': 'File too large (5 MB maximum).',
     'imp.noTasks': 'The "tasks" field is missing or invalid.', 'imp.newer': 'This file comes from a newer version of GanttPro.',
@@ -2313,6 +2348,36 @@ const I18n = (() => {
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
     'ver.saved': 'Version “{name}” saved.', 'ver.restored': 'Version “{name}” restored.', 'ver.deleteQ': 'Delete version “{name}”?',
+    'xp.outline': 'No.', 'xp.id': 'ID', 'xp.name': 'Name', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Duration', 'xp.start': 'Start', 'xp.end': 'Finish',
+    'xp.deps': 'Predecessors', 'xp.res': 'Resources', 'xp.cat': 'Category', 'xp.pct': 'Progress', 'xp.status': 'Status', 'xp.critical': 'Critical', 'xp.slack': 'Slack',
+    'xp.realStart': 'Actual start', 'xp.realEnd': 'Actual finish', 'xp.forced': 'Fixed start date', 'xp.notBefore': 'Start no earlier than', 'xp.deadline': 'Deadline',
+    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
+    'xp.sheet.tasks': 'Tasks', 'xp.sheet.resources': 'Resources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendar', 'xp.sheet.baselines': 'Baselines',
+    'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found',
+    'imp.resFormat': '“{value}” cannot be read (e.g. “Alice 50 %; Bob”)',
+    'msp.ign.calendars': 'secondary calendars', 'msp.ign.constraint': 'constraint of type {n}', 'msp.ign.cost': 'costs', 'msp.ign.work': 'work hours',
+    'msp.ign.resCalendars': 'resource calendars', 'msp.ign.units': 'assignment units reduced to the resource capacity',
+    'pwd.short': 'Password: at least {min} characters (a sentence works very well).', 'pwd.bad': 'Wrong password or altered file.',
+    'exp.format': 'Format', 'exp.f.json': 'GanttPro project (.json)', 'exp.f.xlsx': 'Excel workbook (.xlsx)', 'exp.f.csv': 'CSV table (.csv)', 'exp.f.msp': 'MS Project (.xml)', 'exp.f.png': 'Gantt image (.png)',
+    'exp.protect': 'Protect with a password', 'exp.mspNote': 'Transferred: tasks, milestones, summary tasks, durations, dates, progress, links, constraints, deadlines, resources, assignments and calendar. Not transferred: categories, tags, comments, versions, baselines and absences.',
+    'exp.sheetNote': 'Cells that could be read as formulas are prefixed with an apostrophe.', 'exp.resolution': 'Resolution', 'exp.scale1': 'Normal', 'exp.scale2': 'Double',
+    'exp.white': 'White background (otherwise the theme one)', 'exp.pngA11y': 'An image cannot be read by a screen reader: for accessible sharing, prefer the workbook or the status report.',
+    'exp.done': '“{format}” export finished.', 'exp.failed': 'The export failed.', 'exp.pngTooBig': 'Image too large: choose a shorter period or normal resolution.',
+    'pwd.label': 'Password', 'pwd.confirm': 'Confirm the password', 'pwd.mismatch': 'The two passwords do not match.',
+    'pwd.warn': 'At least {min} characters; a sentence is ideal. A lost password makes the file unrecoverable: GanttPro never keeps it.',
+    'pwd.working': 'Encrypting…', 'pwd.openTitle': 'Protected file', 'pwd.openHint': 'This file is password-protected.',
+    'imp.newTab': 'Open in a new tab', 'imp.opened': 'Project “{name}” opened.', 'imp.zip': 'Unreadable or too large workbook (at most 200 files and 50 MB uncompressed).', 'imp.emptySheet': 'The table is empty.',
+    'msp.ignored': 'Items without equivalent, ignored: {list}.', 'msp.calNote': 'Public holidays in the file become days off in the calendar.',
+    'wiz.title': 'Import tasks from a spreadsheet', 'wiz.step': 'Step {n} of 3', 'wiz.sheet': 'Sheet', 'wiz.header': 'The first row contains headers',
+    'wiz.rows': { one: '{count} data row in “{name}”.', other: '{count} data rows in “{name}”.' }, 'wiz.mapHint': 'Match each item to a column (automatic proposal).',
+    'wiz.field': 'Item', 'wiz.column': 'Column', 'wiz.valid': '{count} valid row(s) out of {total}.', 'wiz.errors': 'Rejected rows', 'wiz.line': 'Row', 'wiz.problem': 'Problem',
+    'wiz.mode': 'Imported tasks', 'wiz.m.add': 'Are added to the project tasks', 'wiz.m.replace': 'Replace the project tasks', 'wiz.back': 'Back', 'wiz.next': 'Next', 'wiz.import': 'Import',
+    'wiz.needName': 'Match at least the name column.', 'wiz.none': 'No valid row to import.', 'wiz.imported': { one: '{count} task imported.', other: '{count} tasks imported.' },
+    'wiz.importValid': { one: 'Import the valid row', other: 'Import the {count} valid rows' },
+    'wiz.f.id': 'ID', 'wiz.f.num': 'No. (link reference)', 'wiz.f.name': 'Name', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Duration', 'wiz.f.deps': 'Predecessors', 'wiz.f.res': 'Resources',
+    'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
+    'clip.copied': { one: '{count} task copied.', other: '{count} tasks copied.' }, 'clip.pasted': { one: '{count} task pasted.', other: '{count} tasks pasted.' }, 'clip.paste': 'Paste',
+    'png.legend': 'Bar: task (dark part = done); red outline: critical; diamond: milestone; red line: today.',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -2399,6 +2464,737 @@ const I18n = (() => {
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
   return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+})();
+
+// ── js/core/60-xml.js ──
+/* Lecteur XML minimal, sans DOM, pour les classeurs Excel et les fichiers MS Project (EX-27).
+ * Sûreté : toute déclaration DOCTYPE ou ENTITY est refusée (pas d'entité externe, pas d'expansion
+ * exponentielle) ; seules les cinq entités prédéfinies et les références numériques sont décodées ;
+ * profondeur et nombre de nœuds bornés. */
+const Xml = (() => {
+  const MAX_NODES = 2e6, MAX_DEPTH = 64;
+  const ENT = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
+
+  function decode(s) {
+    return s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-z]+);/g, (m, e) => {
+      if (e[0] === '#') {
+        const n = e[1] === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+        return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '';
+      }
+      return ENT[e] !== undefined ? ENT[e] : m;
+    });
+  }
+
+  /** Échappe un texte pour le XML et retire les caractères interdits par XML 1.0. */
+  function escape(s) {
+    return String(s ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f￾￿]/g, '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /** Arbre {name (sans préfixe), attrs, children, text}. Lève Error('xml') si le texte est refusé. */
+  function parse(text) {
+    if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error('xml.doctype');
+    const root = { name: '#root', attrs: {}, children: [], text: '' };
+    const stack = [root];
+    let i = 0, nodes = 0;
+    const local = n => n.slice(n.indexOf(':') + 1);
+    while (i < text.length) {
+      const lt = text.indexOf('<', i);
+      const top = stack[stack.length - 1];
+      if (lt < 0) { top.text += decode(text.slice(i)); break; }
+      if (lt > i) top.text += decode(text.slice(i, lt));
+      if (text.startsWith('<!--', lt)) { const e = text.indexOf('-->', lt); if (e < 0) throw new Error('xml'); i = e + 3; continue; }
+      if (text.startsWith('<![CDATA[', lt)) { const e = text.indexOf(']]>', lt); if (e < 0) throw new Error('xml'); top.text += text.slice(lt + 9, e); i = e + 3; continue; }
+      if (text.startsWith('<?', lt)) { const e = text.indexOf('?>', lt); if (e < 0) throw new Error('xml'); i = e + 2; continue; }
+      if (text.startsWith('<!', lt)) throw new Error('xml');
+      const gt = text.indexOf('>', lt);
+      if (gt < 0) throw new Error('xml');
+      let tag = text.slice(lt + 1, gt);
+      if (tag[0] === '/') {
+        const name = local(tag.slice(1).trim());
+        if (stack.length < 2 || stack[stack.length - 1].name !== name) throw new Error('xml');
+        stack.pop();
+        i = gt + 1;
+        continue;
+      }
+      const selfClose = tag.endsWith('/');
+      if (selfClose) tag = tag.slice(0, -1);
+      const m = /^([^\s]+)/.exec(tag);
+      if (!m) throw new Error('xml');
+      const node = { name: local(m[1]), attrs: {}, children: [], text: '' };
+      const re = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+      let a;
+      while ((a = re.exec(tag.slice(m[1].length)))) node.attrs[local(a[1])] = decode(a[3] !== undefined ? a[3] : a[4]);
+      if (++nodes > MAX_NODES) throw new Error('xml.size');
+      top.children.push(node);
+      if (!selfClose) { stack.push(node); if (stack.length > MAX_DEPTH) throw new Error('xml.depth'); }
+      i = gt + 1;
+    }
+    if (stack.length !== 1) throw new Error('xml');
+    return root;
+  }
+
+  const child = (n, name) => (n && n.children.find(c => c.name === name)) || null;
+  const children = (n, name) => (n ? n.children.filter(c => c.name === name) : []);
+  const textOf = (n, name) => { const c = child(n, name); return c ? c.text.trim() : ''; };
+  /** Texte de tout le sous-arbre (pour les chaînes riches d'Excel). */
+  const deepText = n => n.text + n.children.map(deepText).join('');
+
+  return { parse, escape, child, children, textOf, deepText };
+})();
+
+// ── js/core/61-zip.js ──
+/* Archives ZIP : écriture sans compression (classeurs Excel) et lecture prudente (EX-27).
+ * Lecture : au plus 200 fichiers et 50 Mo décompressés au total, vérifiés sur les tailles déclarées
+ * ET sur les octets réellement produits (une archive qui ment sur ses tailles est arrêtée). */
+const Zip = (() => {
+  const MAX_ENTRIES = 200, MAX_TOTAL = 50 * 1024 * 1024;
+  let table = null;
+  function crc32(bytes) {
+    if (!table) {
+      table = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; table[n] = c >>> 0; }
+    }
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = table[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  const enc = new TextEncoder();
+
+  /** @param {{name:string, data:Uint8Array|string}[]} files */
+  function write(files) {
+    const parts = [], central = [];
+    let offset = 0;
+    for (const f of files) {
+      const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+      const name = enc.encode(f.name);
+      const crc = crc32(data);
+      const local = new DataView(new ArrayBuffer(30));
+      local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true); local.setUint16(8, 0, true);
+      local.setUint16(10, 0, true); local.setUint16(12, 0x21, true); local.setUint32(14, crc, true);
+      local.setUint32(18, data.length, true); local.setUint32(22, data.length, true); local.setUint16(26, name.length, true); local.setUint16(28, 0, true);
+      parts.push(new Uint8Array(local.buffer), name, data);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, 0, true); c.setUint16(14, 0x21, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+      c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+      central.push(new Uint8Array(c.buffer), name);
+      offset += 30 + name.length + data.length;
+    }
+    const cdSize = central.reduce((a, b) => a + b.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    const all = [...parts, ...central, new Uint8Array(end.buffer)];
+    const out = new Uint8Array(all.reduce((a, b) => a + b.length, 0));
+    let p = 0;
+    for (const b of all) { out.set(b, p); p += b.length; }
+    return out;
+  }
+
+  async function inflate(bytes, budget) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    const reader = stream.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > budget.left) { await reader.cancel(); throw new Error('zip.tooBig'); }
+      chunks.push(value);
+    }
+    budget.left -= total;
+    const out = new Uint8Array(total);
+    let p = 0;
+    for (const c of chunks) { out.set(c, p); p += c.length; }
+    return out;
+  }
+
+  /** Lit une archive : Map nom → octets. Lève Error('zip…') si elle est refusée. */
+  async function read(bytes) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('zip');
+    const count = dv.getUint16(eocd + 10, true);
+    if (count > MAX_ENTRIES) throw new Error('zip.tooMany');
+    let p = dv.getUint32(eocd + 16, true);
+    const entries = [];
+    let declared = 0;
+    for (let k = 0; k < count; k++) {
+      if (p + 46 > bytes.length || dv.getUint32(p, true) !== 0x02014b50) throw new Error('zip');
+      const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+      const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+      const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nlen));
+      declared += usize;
+      if (declared > MAX_TOTAL) throw new Error('zip.tooBig');
+      entries.push({ name, method, csize, off });
+      p += 46 + nlen + xlen + clen;
+    }
+    const budget = { left: MAX_TOTAL };
+    const out = new Map();
+    for (const e of entries) {
+      if (e.name.endsWith('/')) continue;
+      if (dv.getUint32(e.off, true) !== 0x04034b50) throw new Error('zip');
+      const start = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+      const raw = bytes.subarray(start, start + e.csize);
+      if (e.method === 0) { if (raw.length > budget.left) throw new Error('zip.tooBig'); budget.left -= raw.length; out.set(e.name, raw); }
+      else if (e.method === 8) out.set(e.name, await inflate(raw, budget));
+      else throw new Error('zip.method');
+    }
+    return out;
+  }
+
+  return { write, read, crc32, MAX_ENTRIES, MAX_TOTAL };
+})();
+
+// ── js/core/62-csv.js ──
+/* CSV et texte tabulé (EF-93, RG-30, EX-21). */
+const Csv = (() => {
+  /** EX-21 : une cellule de texte qui commence par =, +, -, −, @, tabulation ou retour chariot est
+   * précédée d'une apostrophe, pour qu'un tableur ne l'exécute jamais comme une formule. */
+  function neutralize(v) {
+    const s = String(v ?? '');
+    return /^[=+\-−@\t\r]/.test(s) ? "'" + s : s;
+  }
+
+  /** Lignes → texte CSV (UTF-8 avec BOM, séparateur « ; », fins de ligne CRLF). Les nombres restent nus. */
+  function write(rows, sep = ';', bom = true) {
+    const cell = v => {
+      if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
+      const s = neutralize(v);
+      return /["\n\r]/.test(s) || s.includes(sep) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    return (bom ? '﻿' : '') + rows.map(r => r.map(cell).join(sep)).join('\r\n') + '\r\n';
+  }
+
+  /** Séparateur reconnu sur la première ligne non vide, hors guillemets : « ; », « , » ou tabulation. */
+  function detect(text) {
+    const line = text.split(/\r?\n/).find(l => l.trim()) || '';
+    let best = ';', n = -1;
+    for (const sep of [';', '\t', ',']) {
+      let c = 0, q = false;
+      for (const ch of line) { if (ch === '"') q = !q; else if (ch === sep && !q) c++; }
+      if (c > n) { n = c; best = sep; }
+    }
+    return best;
+  }
+
+  /** Texte → lignes (RFC 4180 : guillemets doublés, champs multilignes). BOM retiré. */
+  function parse(text, sep = null, maxRows = 5000) {
+    let s = String(text);
+    if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
+    const d = sep || detect(s);
+    const rows = [];
+    let row = [], f = '', q = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (q) {
+        if (ch === '"') { if (s[i + 1] === '"') { f += '"'; i++; } else q = false; }
+        else f += ch;
+      } else if (ch === '"' && f === '') q = true;
+      else if (ch === d) { row.push(f); f = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && s[i + 1] === '\n') i++;
+        row.push(f); f = '';
+        rows.push(row); row = [];
+        if (rows.length > maxRows) throw new Error('csv.tooMany');
+      } else f += ch;
+    }
+    if (f !== '' || row.length) { row.push(f); rows.push(row); }
+    return { rows: rows.filter(r => r.some(c => c.trim() !== '')), sep: d };
+  }
+
+  return { neutralize, write, parse, detect };
+})();
+
+// ── js/core/63-xlsx.js ──
+/* Classeurs Excel (.xlsx) : écriture (EF-94) et lecture des valeurs (EF-96, EX-27).
+ * Écriture : chaînes en ligne, jamais de formule ; en-tête en gras, figée, avec filtre automatique.
+ * Lecture : valeurs seulement ; une formule est lue comme sa dernière valeur calculée. */
+const Xlsx = (() => {
+  const esc = Xml.escape;
+  const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const colIndex = ref => { let n = 0; for (const ch of ref.replace(/[0-9]/g, '')) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
+  const sheetName = (n, i) => (String(n).replace(/[[\]:*?/\\]/g, ' ').slice(0, 31).trim() || `Feuille${i + 1}`);
+
+  function sheetXml(rows, widths) {
+    const n = Math.max(1, ...rows.map(r => r.length));
+    const cols = widths && widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+    const data = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => {
+      const ref = colName(ci) + (ri + 1), st = ri === 0 ? ' s="1"' : '';
+      if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'number' && Number.isFinite(v)) return `<c r="${ref}"${st}><v>${v}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${esc(Csv.neutralize(v))}</t></is></c>`;
+    }).join('')}</row>`).join('');
+    const last = colName(n - 1) + Math.max(1, rows.length);
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+      cols + `<sheetData>${data}</sheetData>` + (rows.length > 1 ? `<autoFilter ref="A1:${last}"/>` : '') + '</worksheet>';
+  }
+
+  /** @param {{name:string, rows:(string|number|null)[][]}[]} sheets → octets .xlsx */
+  function build(sheets) {
+    const names = sheets.map((s, i) => sheetName(s.name, i));
+    const widthsOf = rows => {
+      const n = Math.max(0, ...rows.map(r => r.length));
+      return Array.from({ length: n }, (_, c) => Math.min(60, Math.max(8, ...rows.slice(0, 500).map(r => String(r[c] ?? '').length + 2))));
+    };
+    const files = [
+      { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        names.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') + '</Types>' },
+      { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+      { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+        names.map((n, i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets>' +
+        (sheets.some(s => s.rows.length > 1) ? '<definedNames>' + names.map((n, i) => sheets[i].rows.length > 1
+          ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${esc(n.replace(/'/g, "''"))}'!$A$1:$${colName(Math.max(0, ...sheets[i].rows.map(r => r.length)) - 1)}$${sheets[i].rows.length}</definedName>` : '').join('') + '</definedNames>' : '') + '</workbook>' },
+      { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        names.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+        `<Relationship Id="rId${names.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+      { name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+        '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+        '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+        '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
+      ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s.rows, widthsOf(s.rows)) })),
+    ];
+    return Zip.write(files);
+  }
+
+  /** Classeur → [{name, rows}] (valeurs texte ou nombre). */
+  async function read(bytes) {
+    const files = await Zip.read(bytes);
+    const text = name => { const b = files.get(name); return b ? new TextDecoder().decode(b) : null; };
+    const wbText = text('xl/workbook.xml');
+    if (!wbText) throw new Error('xlsx');
+    const wb = Xml.parse(wbText);
+    const rels = new Map();
+    const relText = text('xl/_rels/workbook.xml.rels');
+    if (relText) for (const r of Xml.children(Xml.child(Xml.parse(relText), 'Relationships'), 'Relationship')) rels.set(r.attrs.Id, r.attrs.Target);
+    const shared = [];
+    const ss = text('xl/sharedStrings.xml');
+    if (ss) for (const si of Xml.children(Xml.child(Xml.parse(ss), 'sst'), 'si')) shared.push(Xml.deepText({ ...si, children: si.children.filter(c => c.name !== 'rPh') }));
+    const sheets = [];
+    for (const sh of Xml.children(Xml.child(Xml.child(wb, 'workbook'), 'sheets'), 'sheet')) {
+      let target = rels.get(sh.attrs.id) || '';
+      target = target.startsWith('/') ? target.slice(1) : 'xl/' + target.replace(/^\.\//, '');
+      const xml = text(target);
+      if (!xml) continue;
+      const data = Xml.child(Xml.child(Xml.parse(xml), 'worksheet'), 'sheetData');
+      const rows = [];
+      for (const row of Xml.children(data, 'row')) {
+        const ri = Number(row.attrs.r || rows.length + 1) - 1;
+        if (ri > 5000) throw new Error('xlsx.tooMany');
+        const cells = [];
+        let ci = 0;
+        for (const c of Xml.children(row, 'c')) {
+          if (c.attrs.r) ci = colIndex(c.attrs.r);
+          const tp = c.attrs.t, v = Xml.textOf(c, 'v');
+          let val;
+          if (tp === 's') val = shared[Number(v)] ?? '';
+          else if (tp === 'inlineStr') { const is = Xml.child(c, 'is'); val = is ? Xml.deepText(is) : ''; }
+          else if (tp === 'str' || tp === 'e') val = v;
+          else if (tp === 'b') val = v === '1' ? 'TRUE' : 'FALSE';
+          else val = v === '' ? '' : Number(v);
+          cells[ci++] = val;
+        }
+        rows[ri] = Array.from(cells, x => (x === undefined ? '' : x));
+      }
+      sheets.push({ name: sh.attrs.name || `Feuille${sheets.length + 1}`, rows: Array.from(rows, r => r || []) });
+    }
+    return sheets;
+  }
+
+  return { build, read, colName };
+})();
+
+// ── js/core/64-exchange.js ──
+/* Échanges de fichiers (EF-93 à EF-96, 8.6) : tableur (CSV, Excel), MS Project (XML), import de
+ * tâches depuis un tableau. Tout ce qui entre repasse par Model.sanitize (section 8.3). */
+const Exchange = (() => {
+  const t = (k, p) => I18n.t(k, p);
+  const LINK_FR = { FS: 'FD', SS: 'DD', FF: 'FF', SF: 'DF' };
+  const LINK_IN = { FD: 'FS', DD: 'SS', FF: 'FF', DF: 'SF', FS: 'FS', SS: 'SS', SF: 'SF' };
+
+  /** Numérotation hiérarchique 1, 1.1, 1.2, 2… selon l'ordre de la liste. */
+  function outline(project) {
+    const num = new Map(), counters = new Map();
+    for (const x of project.tasks) {
+      const base = x.parent ? num.get(x.parent) : '';
+      const n = (counters.get(x.parent || '') || 0) + 1;
+      counters.set(x.parent || '', n);
+      num.set(x.id, base ? `${base}.${n}` : String(n));
+    }
+    return num;
+  }
+
+  function depsCell(task) {
+    const codes = I18n.getLang() === 'fr' ? LINK_FR : { FS: 'FS', SS: 'SS', FF: 'FF', SF: 'SF' };
+    return task.deps.map(d => d.id + (d.type !== 'FS' || d.lag ? ` ${codes[d.type]}${d.lag ? (d.lag > 0 ? '+' : '') + d.lag : ''}` : '')).join('; ');
+  }
+
+  /** Lignes du tableau des tâches (EF-93) : en-tête puis une ligne par tâche. */
+  function taskRows(project, sched, today, { anonymize = false } = {}) {
+    const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
+    const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
+    const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
+    const num = outline(project);
+    const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
+      'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes'].map(k => t(k));
+    const rows = [head];
+    for (const x of project.tasks) {
+      const r = sched.tasks.get(x.id);
+      const st = r && !r.empty ? Metrics.status(x, sched, today) : null;
+      rows.push([
+        num.get(x.id), x.id, x.name, t('type.' + x.type), x.parent, x.type === 'summary' ? (r && !r.empty ? r.d : 0) : (x.type === 'milestone' ? 0 : x.dur),
+        r && !r.empty ? Dates.toISO(r.startDn) : '', r && !r.empty ? Dates.toISO(r.endDn) : '', depsCell(x),
+        x.assign.map(a => resName(a.res) + (a.units !== 100 ? ` ${a.units} %` : '')).join('; '), cat(x.cat), Metrics.pctOf(x, sched),
+        st ? t('status.' + st) : '', r && r.critical && x.type !== 'summary' ? t('xp.yes') : '', x.type !== 'summary' && r ? r.slack : '',
+        x.realStart, x.realEnd, x.forcedStart, x.notBefore, x.deadline, x.tags.join('; '), x.notes,
+      ]);
+    }
+    return rows;
+  }
+
+  const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
+
+  /** Classeur de cinq feuilles (EF-94). */
+  function xlsx(project, sched, today, { anonymize = false } = {}) {
+    const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
+    const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
+    const cal = project.calendar;
+    return Xlsx.build([
+      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize }) },
+      { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd')],
+        ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10])] },
+      { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
+        ...(anonymize ? [] : project.resources.flatMap((r, i) => r.absences.map(a => [rName(r, i), a.start, a.end, a.label])))] },
+      { name: t('xp.sheet.calendar'), rows: [[t('xp.kind'), t('cal.from'), t('xp.to'), t('cal.label')],
+        [t('cal.holidays'), '', '', t('cal.set.' + cal.holidays)],
+        [t('cal.week'), '', '', cal.workDays.map((v, i) => (v ? I18n.dayName(i) : '')).filter(Boolean).join(' ')],
+        ...cal.daysOff.map(d => [t('cal.daysOff'), d.start, d.end, d.label]), ...cal.daysWorked.map(d => [t('cal.daysWorked'), d.start, d.end, d.label])] },
+      { name: t('xp.sheet.baselines'), rows: [[t('xp.id'), t('xp.name'), ...project.baselines.flatMap(b => [`${b.name} — ${t('xp.start')}`, `${b.name} — ${t('xp.end')}`])],
+        ...project.tasks.filter(x => x.type !== 'summary').map(x => [x.id, x.name, ...project.baselines.flatMap(b => { const bt = b.tasks.find(y => y.id === x.id); return bt ? [bt.start, bt.end] : ['', '']; })])] },
+    ]);
+  }
+
+  /* ── MS Project XML (EF-95, 8.6) ─────────────────────────────────────────────────────────── */
+  const MSP_TYPE = { FF: 0, FS: 1, SF: 2, SS: 3 }, MSP_BACK = ['FF', 'FS', 'SF', 'SS'];
+  const X = Xml.escape;
+
+  function mspXml(project, sched) {
+    const cal = Calendar.create(project.calendar, project.projectStart);
+    const uid = new Map(project.tasks.map((x, i) => [x.id, i + 1]));
+    const ruid = new Map(project.resources.map((r, i) => [r.id, i + 1]));
+    const level = new Map();
+    for (const x of project.tasks) level.set(x.id, x.parent ? level.get(x.parent) + 1 : 1);
+    const iso = dn => Dates.toISO(dn);
+    const lo = sched.startDn, hi = sched.projectEndDn;
+    // Jours fériés et chômés de la période : exceptions non travaillées ; jours travaillés exceptionnels : exceptions travaillées.
+    const exc = [];
+    for (let dn = lo - 7; dn <= hi + 31; dn++) {
+      const info = cal.dayInfo(dn);
+      if (!info) continue;
+      if ((info.kind === 'holiday' || info.kind === 'off')) exc.push({ dn, working: false, name: info.kind === 'holiday' ? t(info.key) : info.label });
+      if (info.kind === 'worked') exc.push({ dn, working: true, name: info.label });
+    }
+    const wt = '<WorkingTimes><WorkingTime><FromTime>08:00:00</FromTime><ToTime>12:00:00</ToTime></WorkingTime><WorkingTime><FromTime>13:00:00</FromTime><ToTime>17:00:00</ToTime></WorkingTime></WorkingTimes>';
+    const mspDay = k => (k + 1) % 7 + 1; // lundi (0) → 2 … dimanche (6) → 1
+    const weekDays = project.calendar.workDays.map((w, k) => `<WeekDay><DayType>${mspDay(k)}</DayType><DayWorking>${w}</DayWorking>${w ? wt : ''}</WeekDay>`).join('');
+    const exceptions = exc.map(e => `<Exception><EnteredByOccurrences>0</EnteredByOccurrences><TimePeriod><FromDate>${iso(e.dn)}T00:00:00</FromDate><ToDate>${iso(e.dn)}T23:59:00</ToDate></TimePeriod><Occurrences>1</Occurrences><Name>${X(e.name)}</Name><Type>1</Type><DayWorking>${e.working ? 1 : 0}</DayWorking>${e.working ? wt : ''}</Exception>`).join('');
+    const tasks = project.tasks.map(x => {
+      const r = sched.tasks.get(x.id);
+      const dur = x.type === 'summary' ? (r && !r.empty ? r.d : 0) : x.type === 'milestone' ? 0 : x.dur;
+      const start = r && !r.empty ? `${iso(r.startDn)}T08:00:00` : `${project.projectStart}T08:00:00`;
+      const finish = r && !r.empty ? `${iso(r.endDn)}T${x.type === 'milestone' ? '08:00:00' : '17:00:00'}` : start;
+      let ctype = 0, cdate = '';
+      if (x.forcedStart) { ctype = 2; cdate = x.forcedStart; } else if (x.notBefore) { ctype = 4; cdate = x.notBefore; }
+      return `<Task><UID>${uid.get(x.id)}</UID><ID>${uid.get(x.id)}</ID><Name>${X(x.name)}</Name><WBS>${X(x.id)}</WBS><OutlineLevel>${level.get(x.id)}</OutlineLevel>` +
+        `<Start>${start}</Start><Finish>${finish}</Finish><Duration>PT${dur * 8}H0M0S</Duration><DurationFormat>7</DurationFormat>` +
+        `<Milestone>${x.type === 'milestone' ? 1 : 0}</Milestone><Summary>${x.type === 'summary' ? 1 : 0}</Summary><PercentComplete>${Metrics.pctOf(x, sched)}</PercentComplete>` +
+        `<ConstraintType>${ctype}</ConstraintType>${cdate ? `<ConstraintDate>${cdate}T08:00:00</ConstraintDate>` : ''}` +
+        (x.deadline ? `<Deadline>${x.deadline}T17:00:00</Deadline>` : '') +
+        (x.realStart ? `<ActualStart>${x.realStart}T08:00:00</ActualStart>` : '') + (x.realEnd ? `<ActualFinish>${x.realEnd}T17:00:00</ActualFinish>` : '') +
+        x.deps.map(d => `<PredecessorLink><PredecessorUID>${uid.get(d.id)}</PredecessorUID><Type>${MSP_TYPE[d.type]}</Type><LinkLag>${d.lag * 4800}</LinkLag><LagFormat>7</LagFormat></PredecessorLink>`).join('') +
+        (x.notes ? `<Notes>${X(x.notes)}</Notes>` : '') + '</Task>';
+    }).join('');
+    const resources = project.resources.map(r => `<Resource><UID>${ruid.get(r.id)}</UID><ID>${ruid.get(r.id)}</ID><Name>${X(r.name)}</Name><Type>1</Type><MaxUnits>${(r.capacity / 100).toFixed(2)}</MaxUnits></Resource>`).join('');
+    let auid = 0;
+    const assigns = project.tasks.flatMap(x => x.assign.map(a => `<Assignment><UID>${++auid}</UID><TaskUID>${uid.get(x.id)}</TaskUID><ResourceUID>${ruid.get(a.res)}</ResourceUID><Units>${(a.units / 100).toFixed(2)}</Units></Assignment>`)).join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Project xmlns="http://schemas.microsoft.com/project">' +
+      `<SaveVersion>14</SaveVersion><Name>${X(project.name)}</Name><Title>${X(project.name)}</Title><StartDate>${project.projectStart}T08:00:00</StartDate>` +
+      `<FinishDate>${iso(hi)}T17:00:00</FinishDate><CalendarUID>1</CalendarUID><MinutesPerDay>480</MinutesPerDay><MinutesPerWeek>2400</MinutesPerWeek><DaysPerMonth>20</DaysPerMonth>` +
+      `<Calendars><Calendar><UID>1</UID><Name>Standard</Name><IsBaseCalendar>1</IsBaseCalendar><WeekDays>${weekDays}</WeekDays><Exceptions>${exceptions}</Exceptions></Calendar></Calendars>` +
+      `<Tasks>${tasks}</Tasks><Resources>${resources}</Resources><Assignments>${assigns}</Assignments></Project>\n`;
+  }
+
+  /** XML MS Project → {raw (objet au format 8.2, à contrôler par Model.sanitize), ignored:[libellés]}. */
+  function fromMspXml(text) {
+    let doc;
+    try { doc = Xml.parse(text); } catch { throw new Model.Invalid('imp.unreadable'); }
+    const P = Xml.child(doc, 'Project');
+    if (!P) throw new Model.Invalid('imp.unreadable');
+    const ignored = new Set();
+    const day = s => (s || '').slice(0, 10);
+    const calUid = Xml.textOf(P, 'CalendarUID') || '1';
+    const cals = Xml.children(Xml.child(P, 'Calendars'), 'Calendar');
+    const base = cals.find(c => Xml.textOf(c, 'UID') === calUid) || cals[0];
+    const calendar = { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'NONE', daysOff: [], daysWorked: [] };
+    if (base) {
+      for (const wd of Xml.children(Xml.child(base, 'WeekDays'), 'WeekDay')) {
+        const dt = Number(Xml.textOf(wd, 'DayType'));
+        if (dt >= 1 && dt <= 7 && !Xml.child(wd, 'TimePeriod')) calendar.workDays[(dt + 5) % 7] = Xml.textOf(wd, 'DayWorking') === '1' ? 1 : 0;
+      }
+      for (const e of [...Xml.children(Xml.child(base, 'Exceptions'), 'Exception'), ...Xml.children(Xml.child(base, 'WeekDays'), 'WeekDay').filter(w => Xml.child(w, 'TimePeriod'))]) {
+        const tp = Xml.child(e, 'TimePeriod');
+        const from = day(Xml.textOf(tp, 'FromDate')), to = day(Xml.textOf(tp, 'ToDate')) || from;
+        if (!Dates.parse(from)) continue;
+        const entry = { start: from, end: Dates.parse(to) != null && to >= from ? to : from, label: Xml.textOf(e, 'Name').slice(0, 100) };
+        (Xml.textOf(e, 'DayWorking') === '1' ? calendar.daysWorked : calendar.daysOff).push(entry);
+      }
+      if (cals.length > 1) ignored.add(t('msp.ign.calendars'));
+    }
+    const rows = Xml.children(Xml.child(P, 'Tasks'), 'Task')
+      .filter(x => Xml.textOf(x, 'UID') !== '0' && Xml.textOf(x, 'IsNull') !== '1')
+      .sort((a, b) => Number(Xml.textOf(a, 'ID')) - Number(Xml.textOf(b, 'ID')));
+    const used = new Set(), byUid = new Map(), stack = [];
+    const tasks = rows.map(x => {
+      const wbs = Xml.textOf(x, 'WBS').toUpperCase();
+      let id = Model.ID_RE.test(wbs) && !used.has(wbs) ? wbs : '';
+      if (!id) id = Model.nextTaskId([...used]);
+      used.add(id);
+      byUid.set(Xml.textOf(x, 'UID'), id);
+      const lvl = Math.max(1, Number(Xml.textOf(x, 'OutlineLevel')) || 1);
+      stack.length = lvl - 1;
+      const parent = stack.length ? stack[stack.length - 1] : '';
+      const summary = Xml.textOf(x, 'Summary') === '1', milestone = Xml.textOf(x, 'Milestone') === '1';
+      stack[lvl - 1] = id;
+      const m = /PT(\d+)H(\d+)M/.exec(Xml.textOf(x, 'Duration'));
+      const hours = m ? Number(m[1]) + Number(m[2]) / 60 : 8;
+      const ct = Number(Xml.textOf(x, 'ConstraintType') || 0), cd = day(Xml.textOf(x, 'ConstraintDate'));
+      if (ct && ct !== 2 && ct !== 4) ignored.add(t('msp.ign.constraint', { n: ct }));
+      for (const k of ['Cost', 'Work', 'FixedCost', 'ActualCost', 'ActualWork']) if (Number(Xml.textOf(x, k).replace(/[^\d.]/g, '')) > 0) ignored.add(t('msp.ign.' + (k.includes('Cost') ? 'cost' : 'work')));
+      const pct = Math.max(0, Math.min(100, Math.round(Number(Xml.textOf(x, 'PercentComplete')) || 0)));
+      const realEnd = day(Xml.textOf(x, 'ActualFinish'));
+      return {
+        uid: Xml.textOf(x, 'UID'), id, name: (Xml.textOf(x, 'Name') || id).slice(0, 200), parent,
+        type: summary ? 'summary' : milestone ? 'milestone' : 'task',
+        dur: summary || milestone ? 0 : Math.min(Model.LIMITS.dur, Math.max(1, Math.ceil(hours / 8))),
+        pct: milestone ? (pct >= 100 ? 100 : 0) : summary ? 0 : (realEnd ? 100 : pct),
+        forcedStart: summary ? '' : ct === 2 ? cd : '', notBefore: summary ? '' : ct === 4 ? cd : '',
+        deadline: summary ? '' : day(Xml.textOf(x, 'Deadline')),
+        realStart: summary || milestone ? '' : day(Xml.textOf(x, 'ActualStart')), realEnd: summary || milestone ? '' : realEnd,
+        notes: Xml.textOf(x, 'Notes').slice(0, 2000), links: summary ? [] : Xml.children(x, 'PredecessorLink'),
+      };
+    });
+    const resources = Xml.children(Xml.child(P, 'Resources'), 'Resource').filter(r => Xml.textOf(r, 'UID') !== '0' && Xml.textOf(r, 'Name'))
+      .map(r => ({ uid: Xml.textOf(r, 'UID'), name: Xml.textOf(r, 'Name').slice(0, 100), capacity: Math.max(1, Math.min(100, Math.round((Number(Xml.textOf(r, 'MaxUnits')) || 1) * 100))) }));
+    if (Xml.children(Xml.child(P, 'Resources'), 'Resource').some(r => Xml.textOf(r, 'CalendarUID') && Xml.textOf(r, 'CalendarUID') !== calUid && Xml.textOf(r, 'CalendarUID') !== '-1')) ignored.add(t('msp.ign.resCalendars'));
+    const resByUid = new Map(resources.map(r => [r.uid, r]));
+    const assign = new Map();
+    for (const a of Xml.children(Xml.child(P, 'Assignments'), 'Assignment')) {
+      const r = resByUid.get(Xml.textOf(a, 'ResourceUID')), tid = Xml.textOf(a, 'TaskUID');
+      if (!r) continue;
+      let units = Math.round((Number(Xml.textOf(a, 'Units')) || 1) * 100);
+      if (units > r.capacity) { units = r.capacity; ignored.add(t('msp.ign.units')); }
+      (assign.get(tid) || assign.set(tid, []).get(tid)).push({ res: r.name, units: Math.max(1, units) });
+    }
+    const raw = {
+      format: 3, name: (Xml.textOf(P, 'Title') || Xml.textOf(P, 'Name') || 'Projet MS Project').slice(0, 60),
+      projectStart: day(Xml.textOf(P, 'StartDate')) || Dates.toISO(Dates.todayDn()), calendar, leveling: 'smooth',
+      tasks: tasks.map(x => ({
+        id: x.id, name: x.name, type: x.type, parent: x.parent, dur: x.dur, pct: x.pct,
+        deps: x.links.map(l => ({ id: byUid.get(Xml.textOf(l, 'PredecessorUID')), type: MSP_BACK[Number(Xml.textOf(l, 'Type'))] || 'FS',
+          lag: Math.max(-365, Math.min(365, Math.round((Number(Xml.textOf(l, 'LinkLag')) || 0) / 4800))) })).filter(d => d.id && d.id !== x.id),
+        assign: x.type === 'task' ? (assign.get(x.uid) || []) : [],
+        forcedStart: x.forcedStart, notBefore: x.notBefore, deadline: x.deadline, realStart: x.realStart, realEnd: x.realEnd, notes: x.notes,
+      })),
+      resources: resources.map(r => ({ name: r.name, capacity: r.capacity })),
+      categories: [], baselines: [],
+    };
+    return { raw, ignored: [...ignored] };
+  }
+
+  /* ── Import de tâches depuis un tableau (EF-96, RG-30) ─────────────────────────────────── */
+  const FIELDS = ['id', 'num', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'cat', 'pct', 'tags', 'notes', 'forcedStart', 'notBefore', 'deadline'];
+  const SYN = {
+    id: ['identifiant', 'id', 'code'], num: ['n°', 'n', 'no', 'numero', 'num', 'number', 'ligne', 'row', '#', 'wbs', 'edt'], name: ['nom', 'name', 'activite', 'activity', 'tache', 'task', 'libelle'],
+    type: ['type'], parent: ['parent', 'recapitulative', 'summary'], dur: ['duree', 'duration', 'jours', 'days'],
+    deps: ['predecesseurs', 'predecessors', 'dependances', 'dependencies', 'dep'], res: ['ressource', 'ressources', 'resource', 'resources'],
+    cat: ['categorie', 'category'], pct: ['avancement', 'progress', '% acheve', 'percent complete'], tags: ['etiquettes', 'tags', 'etiquette'],
+    notes: ['notes', 'note', 'commentaire'], forcedStart: ['debut impose', 'date imposee', 'fixed start date', 'fixed start', 'must start on'],
+    notBefore: ['ne pas commencer avant', 'start no earlier than', 'pas avant'], deadline: ['echeance', 'deadline'],
+  };
+  const norm = s => View.fold(String(s)).replace(/[^a-z0-9%° ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  /** Association automatique des colonnes à partir de la première ligne (RG-30). */
+  function guessMapping(header) {
+    const map = {};
+    header.forEach((h, i) => {
+      const n = norm(h);
+      for (const f of FIELDS) if (map[f] === undefined && SYN[f].includes(n)) { map[f] = i; break; }
+    });
+    return map;
+  }
+
+  function parseDate(v) {
+    if (typeof v === 'number' && v > 20000 && v < 120000) return Dates.toISO(Math.round(v) - 25569); // date série Excel
+    const s = String(v ?? '').trim();
+    if (!s) return '';
+    if (Dates.parse(s) != null) return s;
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+    if (m) { const iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; if (Dates.parse(iso) != null) return iso; }
+    return null;
+  }
+
+  /**
+   * Lignes → tâches au format 8.2. Renvoie {tasks, resources, categories, errors:[{line, msg}], valid}.
+   * Une ligne en erreur est écartée ; les autres sont gardées. Les prédécesseurs désignent les
+   * identifiants du fichier, sinon des tâches existantes du projet (RG-30). Sans colonne
+   * d'identifiant, une colonne « N° » sert de référence pour les liens et les parents : les tâches
+   * reçoivent alors de nouveaux identifiants et les liens suivent.
+   */
+  function rowsToTasks(rows, map, existing, { skipHeader = true } = {}) {
+    const data = rows.slice(skipHeader ? 1 : 0);
+    if (data.length > 1000) throw new Model.Invalid('imp.tooMany', { what: 'lignes', max: 1000 });
+    const get = (r, f) => (map[f] === undefined ? '' : r[map[f]] ?? '');
+    const errors = [], out = [];
+    const fileIds = new Set();
+    const refOf = r => String(get(r, 'id')).trim().toUpperCase() || String(get(r, 'num')).trim().toUpperCase();
+    for (const r of data) { const id = refOf(r); if (Model.ID_RE.test(id)) fileIds.add(id); }
+    const known = new Set([...fileIds, ...existing]);
+    data.forEach((r, k) => {
+      const line = k + (skipHeader ? 2 : 1);
+      const LABEL = { name: 'xp.name', dur: 'xp.dur', pct: 'xp.pct', deps: 'xp.deps', res: 'xp.res', forcedStart: 'xp.forced', notBefore: 'xp.notBefore', deadline: 'xp.deadline' };
+      const fail = (field, msg) => errors.push({ line, msg: `${t(LABEL[field])} : ${msg}` });
+      const before = errors.length;
+      const name = String(get(r, 'name')).trim();
+      if (!name || name.length > 200) fail('name', t('rule.text', { min: 1, max: 200 }));
+      const typeRaw = norm(get(r, 'type'));
+      let type = ['jalon', 'milestone'].includes(typeRaw) ? 'milestone' : ['recapitulative', 'summary task', 'summary'].includes(typeRaw) ? 'summary' : 'task';
+      let dur = 5;
+      const dRaw = String(get(r, 'dur')).trim();
+      if (dRaw !== '') {
+        const m = /^(\d+)\s*(j|d|jours?|days?)?$/i.exec(dRaw);
+        if (!m) fail('dur', t('imp.durFormat'));
+        else { dur = Number(m[1]); if (dur === 0 && type === 'task') type = 'milestone'; else if (type === 'task' && (dur < 1 || dur > Model.LIMITS.dur)) fail('dur', t('rule.int', { min: 1, max: '3 650' })); }
+      }
+      let pct = 0;
+      const pRaw = String(get(r, 'pct')).replace('%', '').trim();
+      if (pRaw !== '') { pct = Number(pRaw.replace(',', '.')); if (!Number.isFinite(pct) || pct < 0 || pct > 100) fail('pct', t('rule.int', { min: 0, max: 100 })); else pct = Math.round(pct); }
+      const deps = [];
+      for (const part of String(get(r, 'deps')).split(/[;,]/).map(x => x.trim()).filter(Boolean)) {
+        const m = /^([A-Za-z0-9._-]{1,12})(?:\s+([A-Za-z]{2})\s*([+\-−]\s*\d+)?)?$/.exec(part);
+        if (!m || (m[2] && !LINK_IN[m[2].toUpperCase()])) { fail('deps', t('imp.depFormat', { value: part })); continue; }
+        const id = m[1].toUpperCase();
+        if (!known.has(id)) { fail('deps', t('imp.missingDep', { id })); continue; }
+        const lag = m[3] ? Number(m[3].replace(/\s/g, '').replace('\u2212', '-')) : 0;
+        if (Math.abs(lag) > Model.LIMITS.lag) { fail('deps', t('rule.int', { min: -365, max: 365 })); continue; }
+        deps.push({ id, type: m[2] ? LINK_IN[m[2].toUpperCase()] : 'FS', lag });
+      }
+      const assign = [];
+      for (const part of String(get(r, 'res')).split(';').map(x => x.trim()).filter(Boolean)) {
+        const m = /^(.*?)(?:\s+(\d{1,3})\s*%)?$/.exec(part);
+        const units = m[2] ? Number(m[2]) : 100;
+        if (!m[1] || m[1].length > 100 || units < 1 || units > 100) { fail('res', t('imp.resFormat', { value: part })); continue; }
+        assign.push({ res: m[1].trim(), units });
+      }
+      const dates = {};
+      for (const f of ['forcedStart', 'notBefore', 'deadline']) { const v = parseDate(get(r, f)); if (v === null) fail(f, t('rule.date')); else dates[f] = v; }
+      const tags = String(get(r, 'tags')).split(/[;,]/).map(x => x.trim()).filter(Boolean).slice(0, Model.LIMITS.tags).map(x => x.slice(0, 30));
+      if (errors.length > before) return;
+      out.push({
+        fileId: String(get(r, 'id')).trim().toUpperCase(), ref: refOf(r), name, type, parent: String(get(r, 'parent')).trim().toUpperCase(),
+        dur: type === 'task' ? dur : 0, pct: type === 'milestone' ? (pct >= 100 ? 100 : 0) : type === 'summary' ? 0 : pct,
+        deps: type === 'summary' ? [] : deps, assign: type === 'task' ? assign : [], cat: String(get(r, 'cat')).trim().slice(0, 100),
+        tags, notes: String(get(r, 'notes')).slice(0, 2000), ...dates, line,
+      });
+    });
+    return { rows: out, errors, total: data.length };
+  }
+
+  /**
+   * Fusionne les lignes valides dans le projet (ajout ou remplacement), au format 8.2, puis contrôle
+   * le tout par Model.sanitize. Renvoie {project, added:[ids]} ou lève Model.Invalid.
+   */
+  function mergeRows(project, rows, mode) {
+    const file = Model.serialize(project, { withVersions: true });
+    if (mode === 'replace') file.tasks = [];
+    const used = new Set(file.tasks.map(x => x.id));
+    const remap = new Map();
+    // Identifiant du fichier gardé s'il est libre ; sinon un identifiant libre, et les liens suivent.
+    const ids = rows.map(r => {
+      const id = Model.ID_RE.test(r.fileId) && !used.has(r.fileId) ? r.fileId : Model.nextTaskId([...used]);
+      used.add(id);
+      if (r.ref || r.fileId) remap.set(r.ref || r.fileId, id);
+      return id;
+    });
+    const fix = id => remap.get(id) || id;
+    rows.forEach((r, i) => file.tasks.push({
+      id: ids[i], name: r.name, type: r.type, parent: r.parent ? fix(r.parent) : '', dur: r.dur, pct: r.pct,
+      deps: r.deps.map(d => ({ id: fix(d.id), type: d.type, lag: d.lag })), assign: r.assign, cat: r.cat, tags: r.tags, notes: r.notes,
+      forcedStart: r.forcedStart || '', notBefore: r.notBefore || '', deadline: r.deadline || '',
+    }));
+    const { project: p } = Model.sanitize(file);
+    return { project: p, added: ids };
+  }
+
+  return { taskRows, csv, xlsx, mspXml, fromMspXml, guessMapping, rowsToTasks, mergeRows, FIELDS, outline };
+})();
+
+// ── js/core/65-crypto.js ──
+/* Protection par mot de passe (EF-102, section 8.5) avec l'API Web Crypto du navigateur, sans
+ * bibliothèque : clé dérivée par PBKDF2-SHA256 (600 000 itérations, sel aléatoire de 16 octets),
+ * chiffrement authentifié AES-256-GCM (vecteur de 12 octets). Le mot de passe n'est jamais
+ * enregistré ; un mot de passe faux et un fichier altéré donnent le même message.
+ * Choix (CLAUDE.md, A02) : bcrypt/argon2 servent à STOCKER des mots de passe ; ici on dérive une
+ * clé de chiffrement, rôle pour lequel PBKDF2 est natif et recommandé à ce nombre d'itérations. */
+const Secure = (() => {
+  const ITER = 600000, MAX_ITER = 5000000, MIN_PASSWORD = 12;
+  const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = str => { const s = atob(str); const out = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; };
+
+  async function key(password, salt, iterations, usage) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, base, { name: 'AES-GCM', length: 256 }, false, [usage]);
+  }
+
+  /** Mot de passe acceptable : 12 caractères au moins (ou une phrase), recommandation ANSSI. */
+  const passwordOk = p => typeof p === 'string' && [...p].length >= MIN_PASSWORD;
+
+  /** Texte → enveloppe 8.5. */
+  async function encrypt(text, password, iterations = ITER) {
+    if (!passwordOk(password)) throw new Model.Invalid('pwd.short', { min: MIN_PASSWORD });
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await key(password, salt, iterations, 'encrypt');
+    const data = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(text)));
+    return { format: Model.FORMAT, encrypted: true, kdf: { name: 'PBKDF2-SHA256', iterations, salt: b64(salt) }, cipher: { name: 'AES-256-GCM', iv: b64(iv) }, data: b64(data) };
+  }
+
+  /** Enveloppe → texte ; Model.Invalid('pwd.bad') si mot de passe faux ou fichier altéré. */
+  async function decrypt(env, password) {
+    const ok = env && env.encrypted === true && env.kdf && env.kdf.name === 'PBKDF2-SHA256' && env.cipher && env.cipher.name === 'AES-256-GCM'
+      && Number.isInteger(env.kdf.iterations) && env.kdf.iterations >= ITER && env.kdf.iterations <= MAX_ITER
+      && typeof env.kdf.salt === 'string' && typeof env.cipher.iv === 'string' && typeof env.data === 'string';
+    if (!ok) throw new Model.Invalid('imp.unreadable');
+    let salt, iv, data;
+    try { salt = unb64(env.kdf.salt); iv = unb64(env.cipher.iv); data = unb64(env.data); } catch { throw new Model.Invalid('imp.unreadable'); }
+    if (salt.length < 16 || iv.length !== 12) throw new Model.Invalid('imp.unreadable');
+    try {
+      const k = await key(password, salt, env.kdf.iterations, 'decrypt');
+      return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, k, data));
+    } catch { throw new Model.Invalid('pwd.bad'); }
+  }
+
+  return { encrypt, decrypt, passwordOk, MIN_PASSWORD, ITER };
 })();
 
 // ── js/ui/00-dom.js ──
@@ -2687,8 +3483,11 @@ function undoStep(from, to) {
   to.push(clone(App.project));
   App.project = from.pop();
   App.dirty = true;
+  const editing = Editor.isOpen() ? App.selected : null;
   if (App.selected && !App.project.tasks.some(t => t.id === App.selected)) App.selected = null;
   recompute();
+  // La fiche d'édition ouverte suit l'état rétabli : rechargée si la tâche existe encore, fermée sinon.
+  if (editing) { if (App.selected === editing) Editor.open(editing); else Editor.close(); }
   render();
   return true;
 }
@@ -5608,18 +6407,19 @@ action('verDelete', async id => {
 });
 
 // ── js/ui/80-files.js ──
-/* Fichiers : nouveau projet (EF-49), import (EF-52), export (EF-50, EF-51).
- * Un fichier importé est contrôlé en entier par Model.parseFile AVANT tout changement :
- * en cas de refus, le projet ouvert reste intact (EX-14). */
+/* Fichiers : nouveau projet (EF-49), import (EF-52, EF-95, EF-96), export (EF-50, EF-51, EF-92 à
+ * EF-97), fichiers protégés par mot de passe (EF-102). Tout fichier est contrôlé en entier AVANT
+ * tout changement : en cas de refus, le projet ouvert reste intact (EX-14). */
 
-/** Nom de fichier d'export : « <nom>_gantt.json », a-z et 0-9 seulement (EF-50). */
-function exportFileName(name) {
+/** Nom de fichier : « <nom>_gantt.<ext> », a-z et 0-9 seulement (EF-50). */
+function exportFileName(name, ext = 'json') {
   const base = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '_') || 'projet';
-  return base + '_gantt.json';
+  return `${base}_gantt.${ext}`;
 }
 
-function download(text, filename, type) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
+function download(data, filename, type) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  const url = URL.createObjectURL(blob);
   const a = h('a', { href: url, download: filename, hidden: true });
   document.body.append(a);
   a.click();
@@ -5627,52 +6427,321 @@ function download(text, filename, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function exportWindow() {
-  const anon = h('input', { type: 'checkbox', id: 'exp-anon' });
-  const v = await Dialog.open({
-    title: t('top.export'),
-    body: [h('p', { text: t('exp.notice') }), h('div', { class: 'field check' }, anon, h('label', { for: 'exp-anon', text: t('exp.anonymize') }))],
-    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('top.export'), value: 'ok', kind: 'primary', focus: true }],
-  });
-  if (v !== 'ok') return;
-  const file = Model.serialize(App.project, { anonymize: anon.checked });
-  download(JSON.stringify(file, null, 2), exportFileName(App.project.name), 'application/json');
-  if (!anon.checked) App.dirty = false; // un export anonymisé ne conserve pas le projet complet
-  announce(t('exp.notice'));
+/* ── Export (EF-92) ─────────────────────────────────────────────────────────────────────── */
+const ExportOpt = { format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
+const FORMATS = ['json', 'xlsx', 'csv', 'msp', 'png'];
+
+function exportBody() {
+  const o = ExportOpt;
+  const radio = f => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'exp-format', id: 'exp-f-' + f, value: f, checked: o.format === f, data: { change: 'expOpt', arg: 'format' } }),
+    h('label', { for: 'exp-f-' + f, text: t('exp.f.' + f) }));
+  const chk = (id, key, label) => h('div', { class: 'field check' }, h('input', { type: 'checkbox', id, checked: o[key], data: { change: 'expOpt', arg: key } }), h('label', { for: id, text: label }));
+  const box = h('div', { id: 'exp-win' }, h('fieldset', { class: 'sub' }, h('legend', { text: t('exp.format') }), FORMATS.map(radio)));
+  box.append(h('p', { class: 'field-error', id: 'exp-err', role: 'alert', hidden: true }));
+  if (o.format !== 'png') box.append(chk('exp-anon', 'anonymize', t('exp.anonymize')));
+  if (o.format === 'json') {
+    box.append(h('p', { class: 'hint', text: t('exp.notice') }), chk('exp-protect', 'protect', t('exp.protect')));
+    if (o.protect) box.append(
+      h('div', { class: 'field' }, h('label', { for: 'exp-pwd', text: t('pwd.label') }), h('input', { type: 'password', id: 'exp-pwd', autocomplete: 'new-password', aria: { describedby: 'exp-pwd-hint' } })),
+      h('div', { class: 'field' }, h('label', { for: 'exp-pwd2', text: t('pwd.confirm') }), h('input', { type: 'password', id: 'exp-pwd2', autocomplete: 'new-password' })),
+      h('p', { class: 'warning', id: 'exp-pwd-hint', text: t('pwd.warn', { min: Secure.MIN_PASSWORD }) }));
+  }
+  if (o.format === 'msp') box.append(h('p', { class: 'hint', text: t('exp.mspNote') }));
+  if (o.format === 'csv' || o.format === 'xlsx') box.append(h('p', { class: 'hint', text: t('exp.sheetNote') }));
+  if (o.format === 'png') {
+    box.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('print.period') }),
+      h('span', { class: 'check' }, h('input', { type: 'radio', name: 'exp-period', id: 'exp-p-all', value: 'all', checked: o.period === 'all', data: { change: 'expOpt', arg: 'period' } }), h('label', { for: 'exp-p-all', text: t('print.all') })),
+      h('span', { class: 'check' }, h('input', { type: 'radio', name: 'exp-period', id: 'exp-p-range', value: 'range', checked: o.period === 'range', data: { change: 'expOpt', arg: 'period' } }), h('label', { for: 'exp-p-range', text: t('print.range') })),
+      h('label', { for: 'exp-from', text: t('view.f.from') }), h('input', { type: 'date', id: 'exp-from', value: o.from, data: { change: 'expOpt', arg: 'from' } }),
+      h('label', { for: 'exp-to', text: t('view.f.to') }), h('input', { type: 'date', id: 'exp-to', value: o.to, data: { change: 'expOpt', arg: 'to' } })),
+      h('fieldset', { class: 'inline' }, h('legend', { text: t('exp.resolution') }),
+        [1, 2].map(k => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'exp-scale', id: 'exp-s-' + k, value: k, checked: o.scale === k, data: { change: 'expOpt', arg: 'scale' } }), h('label', { for: 'exp-s-' + k, text: t('exp.scale' + k) })))),
+      chk('exp-legend', 'legend', t('print.withLegend')), chk('exp-white', 'white', t('exp.white')),
+      h('p', { class: 'hint', text: t('exp.pngA11y') }));
+  }
+  return box;
 }
 
-async function importText(text) {
+function exportWindow() {
+  const holder = h('div', {}, exportBody());
+  exportWindow.holder = holder;
+  return Dialog.open({
+    title: t('top.export'), body: [holder],
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('top.export'), value: 'ok', kind: 'primary', focus: true }],
+    onAction: v => { if (v === 'ok') { doExport(); return false; } return true; },
+  }).then(() => { exportWindow.holder = null; });
+}
+
+action('expOpt', (key, el) => {
+  const o = ExportOpt;
+  if (key === 'format') o.format = FORMATS.includes(el.value) ? el.value : 'json';
+  else if (key === 'scale') o.scale = el.value === '2' ? 2 : 1;
+  else if (key === 'period') o.period = el.value === 'range' ? 'range' : 'all';
+  else if (key === 'from' || key === 'to') { o[key] = Dates.parse(el.value) != null ? el.value : ''; o.period = 'range'; }
+  else o[key] = el.checked;
+  if (['format', 'protect'].includes(key) && exportWindow.holder) {
+    clear(exportWindow.holder).append(exportBody());
+    const f = $(key === 'format' ? 'exp-f-' + o.format : 'exp-protect'); if (f) f.focus();
+  }
+});
+
+async function doExport() {
+  const o = ExportOpt, p = App.project, s = App.sched, today = Dates.todayDn();
+  const err = msg => { const e = $('exp-err'); if (e) { e.textContent = msg; e.hidden = false; } announce(msg); };
+  if (!s) { err(t('calc.error')); return; }
+  try {
+    if (o.format === 'json') {
+      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize }), null, 2);
+      if (o.protect) {
+        const a = $('exp-pwd').value, b = $('exp-pwd2').value;
+        if (!Secure.passwordOk(a)) { err(t('pwd.short', { min: Secure.MIN_PASSWORD })); $('exp-pwd').focus(); return; }
+        if (a !== b) { err(t('pwd.mismatch')); $('exp-pwd2').focus(); return; }
+        announce(t('pwd.working'));
+        const env = await Secure.encrypt(text, a);
+        download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
+      } else download(text, exportFileName(p.name), 'application/json');
+      if (!o.anonymize) { App.dirty = false; if (typeof Recovery !== 'undefined') Recovery.clearCurrent(); }
+    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
+    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    else if (o.format === 'msp') {
+      const q = o.anonymize ? Model.sanitize(Model.serialize(p, { anonymize: true })).project : p;
+      download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
+    } else if (o.format === 'png') download(await ganttPng(o), exportFileName(p.name, 'png'), 'image/png');
+  } catch (e) {
+    err(e instanceof Model.Invalid ? I18n.error(e) : t('exp.failed'));
+    return;
+  }
+  document.querySelector('dialog[open] [data-dlg="cancel"]').click();
+  toast(t('exp.done', { format: t('exp.f.' + o.format) }));
+}
+
+/* ── Image PNG du Gantt (EF-97) ───────────────────────────────────────────────────────────── */
+function ganttPng(o) {
+  const s = App.sched;
+  const tasks = viewItems().filter(it => it.task).map(it => it.task);
+  let { from, to } = gridRange();
+  if (o.period === 'range') { const a = Dates.parse(o.from), b = Dates.parse(o.to); if (a != null) from = Dates.mondayOf(a); if (b != null) to = Math.max(from + 6, b); }
+  const dayW = Math.max(4, 26 * App.zoom / 100 / 7), rowH = 24, left = 260, head = 40;
+  const legendH = o.legend ? 30 : 0;
+  const W = Math.round(left + (to - from + 1) * dayW + 10), H = head + tasks.length * rowH + legendH + 10;
+  if (W * H * o.scale * o.scale > 16e7) throw new Model.Invalid('exp.pngTooBig');
+  const canvas = document.createElement('canvas');
+  canvas.width = W * o.scale; canvas.height = H * o.scale;
+  const g = canvas.getContext('2d');
+  g.scale(o.scale, o.scale);
+  const css = getComputedStyle(document.documentElement);
+  const col = name => css.getPropertyValue(name).trim();
+  const white = o.white;
+  const ink = white ? '#141a26' : col('--text'), muted = white ? '#4a5468' : col('--muted'), line = white ? '#c7cedb' : col('--line');
+  g.fillStyle = white ? '#ffffff' : col('--panel'); g.fillRect(0, 0, W, H);
+  g.font = '600 12px Sora, sans-serif'; g.textBaseline = 'middle';
+  const x = dn => left + (dn - from) * dayW;
+  for (let dn = from; dn <= to; dn++) if (!s.cal.isWork(dn)) { g.fillStyle = white ? 'rgba(20,26,38,.06)' : col('--off'); g.fillRect(x(dn), head, dayW, H - head - legendH); }
+  g.fillStyle = muted; g.font = '11px Sora, sans-serif';
+  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
+    g.fillRect(x(Math.max(p.start, from)), 0, 1, H - legendH);
+    g.fillText(dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start), x(Math.max(p.start, from)) + 3, head / 2);
+  }
+  g.fillStyle = ink; g.font = '700 13px Sora, sans-serif';
+  g.fillText(`${App.project.name}`, 8, head / 2);
+  tasks.forEach((task, i) => {
+    const y = head + i * rowH, r = s.tasks.get(task.id);
+    g.fillStyle = line; g.fillRect(0, y + rowH - 1, W, 1);
+    g.fillStyle = ink; g.font = (task.type === 'summary' ? '700 ' : '') + '12px Sora, sans-serif';
+    const depth = ancestorsOf(task.id).length;
+    const label = `${task.id}  ${task.name}`;
+    g.save(); g.beginPath(); g.rect(0, y, left - 6, rowH); g.clip(); g.fillText(label, 8 + depth * 12, y + rowH / 2); g.restore();
+    if (!r || r.empty || r.endDn < from || r.startDn > to) return;
+    const cat = catById(task.cat), c = safeColor(cat && cat.color);
+    if (task.type === 'milestone') {
+      const cx = x(r.startDn) + dayW / 2, cy = y + rowH / 2;
+      g.beginPath(); g.moveTo(cx, cy - 7); g.lineTo(cx + 7, cy); g.lineTo(cx, cy + 7); g.lineTo(cx - 7, cy); g.closePath();
+      g.fillStyle = task.pct >= 100 ? ink : (white ? '#fff' : col('--panel')); g.fill(); g.strokeStyle = r.critical ? '#c21f1f' : ink; g.lineWidth = 2; g.stroke();
+      return;
+    }
+    const a = Math.max(r.startDn, from), b = Math.min(r.endDn, to);
+    const bx = x(a), bw = Math.max(3, (b - a + 1) * dayW);
+    if (task.type === 'summary') { g.fillStyle = ink; g.fillRect(bx, y + 8, bw, 6); return; }
+    g.fillStyle = c; g.fillRect(bx, y + 5, bw, rowH - 10);
+    const pct = Metrics.pctOf(task, s);
+    if (pct) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(bx, y + 5, bw * pct / 100, rowH - 10); }
+    if (r.critical) { g.strokeStyle = '#c21f1f'; g.lineWidth = 2; g.strokeRect(bx, y + 5, bw, rowH - 10); }
+  });
+  const td = Dates.todayDn();
+  if (td >= from && td <= to) { g.fillStyle = '#c21f1f'; g.fillRect(x(td) + dayW / 2, head, 2, tasks.length * rowH); }
+  if (o.legend) {
+    g.font = '11px Sora, sans-serif'; g.fillStyle = muted;
+    let lx = 8;
+    const ly = H - legendH / 2 - 5;
+    for (const c of App.project.categories) { g.fillStyle = safeColor(c.color); g.fillRect(lx, ly - 5, 10, 10); g.fillStyle = ink; g.fillText(c.name, lx + 14, ly); lx += 24 + g.measureText(c.name).width; }
+    g.fillStyle = ink; g.fillText(t('png.legend'), lx + 10, ly);
+  }
+  return new Promise((resolve, reject) => canvas.toBlob(b => (b ? resolve(b) : reject(new Error('png'))), 'image/png'));
+}
+
+/* ── Import (EF-52, EF-95, EF-96, EF-102) ─────────────────────────────────────────────────── */
+async function importFile(file) {
+  if (file.size > 20 * 1024 * 1024) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+  const ext = (file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
+  try {
+    // Aiguillage par le contenu (signature) puis par l'extension : un fichier mal nommé est lu correctement.
+    const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+    if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 3 && head[3] === 4) return await sheetWizard({ kind: 'xlsx', bytes: new Uint8Array(await file.arrayBuffer()), name: file.name });
+    if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+    const text = await file.text(), lead = text.replace(/^\uFEFF/, '').trimStart();
+    if (lead.startsWith('<')) return await importMsp(text);
+    if (lead.startsWith('{')) return await importText(text);
+    if (/^(csv|tsv|txt)$/i.test(ext) || !ext) return await sheetWizard({ kind: 'csv', text, name: file.name });
+    return await importText(text);
+  } catch (e) {
+    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : /^zip/.test(e.message) ? t('imp.zip') : t('imp.unreadable'));
+  }
+}
+
+/** Demande un mot de passe (jamais conservé). Renvoie la chaîne ou null. */
+async function askPassword(title, hint) {
+  let pwd = null;
+  const inp = h('input', { type: 'password', id: 'ask-pwd', autocomplete: 'current-password' });
+  const v = await Dialog.open({ title, body: [h('p', { text: hint }), h('div', { class: 'field' }, h('label', { for: 'ask-pwd', text: t('pwd.label') }), inp)],
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('dlg.ok'), value: 'ok', kind: 'primary' }],
+    onAction: val => { pwd = inp.value; inp.value = ''; return true; } });
+  return v === 'ok' ? pwd : null;
+}
+
+async function importText(text, origin = 'file') {
   let result;
   try {
     result = Model.parseFile(text);
+    if (result.encrypted) {
+      const pwd = await askPassword(t('pwd.openTitle'), t('pwd.openHint'));
+      if (pwd === null) return;
+      announce(t('pwd.working'));
+      result = Model.parseFile(await Secure.decrypt(result.envelope, pwd));
+    }
   } catch (e) {
-    if (e instanceof Model.Invalid) { await Dialog.message(t('top.import'), I18n.error(e)); return; }
-    await Dialog.message(t('top.import'), t('imp.unreadable'));
+    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
     return;
   }
-  if (result.encrypted) { await Dialog.message(t('top.import'), t('imp.encrypted')); return; }
   const p = result.project;
-  const work = p.tasks.filter(x => x.type === 'task');
-  const avg = work.length ? Math.round(Metrics.globalProgress(p)) : 0;
+  const extra = [
+    result.notices.unknown ? t('imp.notice.unknown', { count: result.notices.unknown }) : '',
+    result.notices.createdResources.length ? t('imp.notice.resources', { names: result.notices.createdResources.join(', ') }) : '',
+    result.notices.createdCategories.length ? t('imp.notice.categories', { names: result.notices.createdCategories.join(', ') }) : '',
+  ];
+  await confirmOpen(p, extra, origin);
+}
+
+/** Aperçu commun d'un projet à ouvrir (EF-52) : nouvel onglet ou remplacement. */
+async function confirmOpen(p, extraLines, origin) {
+  const avg = Math.round(Metrics.globalProgress(p));
   const lines = [
     h('p', { class: 'strong', text: `${p.emoji} ${p.name}` }),
     p.desc ? h('p', { text: p.desc }) : null,
     h('p', { text: t('imp.summary', { tasks: p.tasks.length, resources: p.resources.length, categories: p.categories.length, baselines: p.baselines.length,
       start: I18n.date(Dates.parse(p.projectStart)), pct: avg }) }),
-    result.notices.unknown ? h('p', { class: 'hint', text: t('imp.notice.unknown', { count: result.notices.unknown }) }) : null,
-    result.notices.createdResources.length ? h('p', { class: 'hint', text: t('imp.notice.resources', { names: result.notices.createdResources.join(', ') }) }) : null,
-    result.notices.createdCategories.length ? h('p', { class: 'hint', text: t('imp.notice.categories', { names: result.notices.createdCategories.join(', ') }) }) : null,
-    App.dirty ? h('p', { class: 'warning', text: t('dlg.unsaved') }) : null,
+    ...extraLines.filter(Boolean).map(x => h('p', { class: 'hint', text: x })),
   ];
-  const v = await Dialog.open({
-    title: t('imp.title'), body: lines,
-    actions: [{ label: t('dlg.cancel'), value: 'cancel', focus: true }, { label: t('imp.replace'), value: 'ok', kind: 'primary' }],
+  const canTab = typeof Tabs !== 'undefined' && Tabs.canOpen();
+  if (App.dirty && !canTab) lines.push(h('p', { class: 'warning', text: t('dlg.unsaved') }));
+  const actions = [{ label: t('dlg.cancel'), value: 'cancel', focus: true }];
+  if (canTab) actions.push({ label: t('imp.newTab'), value: 'tab', kind: 'primary' });
+  actions.push({ label: t('imp.replace'), value: 'ok', kind: canTab ? '' : 'primary' });
+  const v = await Dialog.open({ title: t('imp.title'), body: lines, actions });
+  if (v === 'cancel') return false;
+  if (v === 'ok' && App.dirty && canTab && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
+  if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file' });
+  else { Editor.close(); clearSelection(); loadProject(p); App.dirty = origin !== 'file'; render(); }
+  announce(t('imp.opened', { name: p.name }));
+  return true;
+}
+
+async function importMsp(text) {
+  const { raw, ignored } = Exchange.fromMspXml(text);
+  const res = Model.sanitize(raw);
+  await confirmOpen(res.project, [ignored.length ? t('msp.ignored', { list: ignored.join(', ') }) : '', t('msp.calNote')], 'msp');
+}
+
+/* ── Assistant d'import de tableur (EF-96) : fichier/feuille → colonnes → aperçu ──────────── */
+async function sheetWizard(src) {
+  let sheets;
+  if (src.kind === 'xlsx') sheets = await Xlsx.read(src.bytes);
+  else { const { rows } = Csv.parse(src.text); sheets = [{ name: src.name, rows }]; }
+  sheets = sheets.filter(s => s.rows.length);
+  if (!sheets.length) throw new Model.Invalid('imp.emptySheet');
+  const W = { step: 1, sheet: 0, header: true, map: null, mode: 'add', result: null };
+  const body = h('div', { id: 'wiz' });
+  const rowsOf = () => sheets[W.sheet].rows.map(r => r.map(c => (typeof c === 'number' ? c : String(c ?? ''))));
+  const paint = focus => {
+    clear(body);
+    body.append(h('p', { class: 'hint', text: t('wiz.step', { n: W.step }) }), h('p', { class: 'field-error', id: 'wiz-err', role: 'alert', hidden: true }));
+    const rows = rowsOf();
+    if (W.step === 1) {
+      if (sheets.length > 1) body.append(h('div', { class: 'field' }, h('label', { for: 'wiz-sheet', text: t('wiz.sheet') }),
+        h('select', { id: 'wiz-sheet' }, sheets.map((s, i) => h('option', { value: i, selected: i === W.sheet }, `${s.name} (${s.rows.length})`)))));
+      body.append(h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'wiz-header', checked: W.header }), h('label', { for: 'wiz-header', text: t('wiz.header') })),
+        h('p', { text: t('wiz.rows', { count: rows.length - (W.header ? 1 : 0), name: sheets[W.sheet].name }) }));
+    } else if (W.step === 2) {
+      const n = Math.max(...rows.slice(0, 50).map(r => r.length));
+      const colLabel = i => (W.header ? `${Xlsx.colName(i)} — ${rows[0][i] ?? ''}` : `${Xlsx.colName(i)} — ${rows[0][i] ?? ''}…`);
+      body.append(h('p', { text: t('wiz.mapHint') }), h('table', { class: 'manage' },
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.field') }), h('th', { scope: 'col', text: t('wiz.column') }))),
+        h('tbody', {}, Exchange.FIELDS.map(f => h('tr', {}, h('th', { scope: 'row' }, h('label', { for: 'wiz-map-' + f, text: t('wiz.f.' + f) })),
+          h('td', {}, h('select', { id: 'wiz-map-' + f }, h('option', { value: '' }, t('f.none')),
+            Array.from({ length: n }, (_, i) => h('option', { value: i, selected: W.map[f] === i }, String(colLabel(i)).slice(0, 60))))))))));
+    } else {
+      const r = W.result;
+      body.append(h('p', { class: 'strong', text: t('wiz.valid', { count: r.rows.length, total: r.total }) }));
+      if (r.errors.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage' }, h('caption', { text: t('wiz.errors') }),
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
+        h('tbody', {}, r.errors.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
+      body.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('wiz.mode') }),
+        ['add', 'replace'].map(m => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'wiz-mode', id: 'wiz-m-' + m, value: m, checked: W.mode === m }), h('label', { for: 'wiz-m-' + m, text: t('wiz.m.' + m) })))));
+    }
+    const dlg = body.closest('dialog');
+    if (dlg) {
+      const next = dlg.querySelector('button[data-dlg="next"]'), back = dlg.querySelector('button[data-dlg="back"]');
+      next.textContent = W.step === 3 ? t('wiz.import') : t('wiz.next');
+      back.disabled = W.step === 1;
+    }
+    const el = focus && body.querySelector(focus) || body.querySelector('select, input');
+    if (el) el.focus();
+  };
+  const readStep = () => {
+    if (W.step === 1) {
+      if ($('wiz-sheet')) W.sheet = Number($('wiz-sheet').value) || 0;
+      W.header = $('wiz-header').checked;
+      W.map = W.header ? Exchange.guessMapping(rowsOf()[0]) : {};
+    } else if (W.step === 2) {
+      W.map = {};
+      for (const f of Exchange.FIELDS) { const v = $('wiz-map-' + f).value; if (v !== '') W.map[f] = Number(v); }
+    } else W.mode = document.querySelector('input[name="wiz-mode"]:checked').value === 'replace' ? 'replace' : 'add';
+  };
+  paint();
+  let done = false;
+  queueMicrotask(() => paint());
+  await Dialog.open({
+    title: t('wiz.title'), body: [body], size: 'wide',
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('wiz.back'), value: 'back' }, { label: t('wiz.next'), value: 'next', kind: 'primary' }],
+    onAction: v => {
+      const err = msg => { const e = $('wiz-err'); e.textContent = msg; e.hidden = false; announce(msg); return false; };
+      readStep();
+      if (v === 'back') { if (W.step > 1) W.step--; paint(); return false; }
+      if (W.step === 1) { W.step = 2; paint(); return false; }
+      if (W.step === 2) {
+        if (W.map.name === undefined) return err(t('wiz.needName'));
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        W.step = 3; paint(); return false;
+      }
+      if (!W.result.rows.length) return err(t('wiz.none'));
+      let merged;
+      try { merged = Exchange.mergeRows(App.project, W.result.rows, W.mode); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+      commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
+      announce(t('wiz.imported', { count: merged.added.length }));
+      done = true;
+      return true;
+    },
   });
-  if (v !== 'ok') return;
-  Editor.close();
-  loadProject(p);
-  App.dirty = false;
-  render();
+  return done;
 }
 
 /** Noms du projet initial dans la langue choisie (3.8). */
@@ -5681,6 +6750,7 @@ function initialNames() {
 }
 
 async function newProjectAction() {
+  if (typeof Tabs !== 'undefined' && Tabs.canOpen()) { Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames())); return; }
   if (App.dirty) {
     const ok = await Dialog.confirm(t('dlg.new'), [t('dlg.unsaved')], t('top.new'));
     if (!ok) return;
@@ -5688,6 +6758,97 @@ async function newProjectAction() {
   Editor.close();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   render();
+}
+
+// ── js/ui/82-clipboard.js ──
+/* Copier-coller (EF-83) : Ctrl + C copie la sélection en mémoire (avec ses liens internes) ET en
+ * texte tabulé ; Ctrl + V colle après la sélection, soit la copie mémoire, soit un texte tabulé
+ * venant d'un tableur (RG-30, même compte rendu d'erreurs qu'EF-96). */
+App.clipboard = null;
+// Sans ligne d'en-tête, un collage depuis un tableur se lit : nom, durée, prédécesseurs, ressources,
+// catégorie, avancement, étiquettes (ordre documenté dans le guide).
+const CLIP_COLS = ['name', 'dur', 'deps', 'res', 'cat', 'pct', 'tags'];
+
+function clipboardTsv(ids) {
+  const p = App.project;
+  const head = [t('xp.id'), t('xp.name'), t('xp.dur'), t('xp.deps'), t('xp.res'), t('xp.cat'), t('xp.pct'), t('xp.tags')];
+  const rows = ids.map(id => {
+    const x = taskById(id);
+    const cat = (p.categories.find(c => c.id === x.cat) || { name: '' }).name;
+    const res = x.assign.map(a => (resById(a.res) || { name: '' }).name + (a.units !== 100 ? ` ${a.units} %` : '')).join('; ');
+    return [x.id, x.name, x.type === 'task' ? x.dur : 0, depsText(x).replace(/, /g, '; '), res, cat, x.pct, x.tags.join('; ')];
+  });
+  return Csv.write([head, ...rows], '\t', false).replace(/\r\n$/, '');
+}
+
+function pasteInternal(clip) {
+  const p = App.project;
+  if (p.tasks.length + clip.tasks.length > Model.LIMITS.tasks) { Dialog.message(t('clip.paste'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
+  const anchor = selectedIds().slice(-1)[0];
+  const used = p.tasks.map(x => x.id), map = new Map();
+  for (const x of clip.tasks) { const id = Model.nextTaskId(used); used.push(id); map.set(x.id, id); }
+  const exists = id => p.tasks.some(y => y.id === id);
+  const copies = clip.tasks.map(x => ({
+    ...clone(x), id: map.get(x.id), parent: map.get(x.parent) || (anchor ? (taskById(anchor).type === 'summary' ? '' : taskById(anchor).parent) : ''),
+    deps: x.deps.map(d => ({ ...d, id: map.get(d.id) || d.id })).filter(d => map.has(d.id) || [...map.values()].includes(d.id) || exists(d.id)),
+    pct: 0, realStart: '', realEnd: '', comments: [],
+    assign: x.assign.filter(a => resById(a.res)), cat: catById(x.cat) ? x.cat : '',
+  }));
+  const trial = clone(p);
+  const at = anchor ? trial.tasks.indexOf(trial.tasks.find(y => y.id === anchor)) + 1 + descendants(anchor, trial.tasks).length : trial.tasks.length;
+  trial.tasks.splice(at, 0, ...copies);
+  normalizeOrder(trial);
+  try { Model.sanitize(Model.serialize(trial)); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  commit(q => { q.tasks.splice(at, 0, ...clone(copies)); });
+  App.multi = new Set(copies.map(c => c.id));
+  render();
+  announce(t('clip.pasted', { count: copies.length }));
+}
+
+async function pasteText(text) {
+  const { rows } = Csv.parse(text, '\t');
+  if (!rows.length) return;
+  let map = Exchange.guessMapping(rows[0]);
+  let header = map.name !== undefined;
+  if (!header) { map = {}; CLIP_COLS.forEach((f, i) => { map[f] = i; }); }
+  let res;
+  try { res = Exchange.rowsToTasks(rows, map, App.project.tasks.map(x => x.id), { skipHeader: header }); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  if (res.errors.length) {
+    const ok = await Dialog.open({ title: t('clip.paste'), body: [h('p', { text: t('wiz.valid', { count: res.rows.length, total: res.total }) }),
+      h('ul', {}, res.errors.slice(0, 50).map(e => h('li', { text: `${t('wiz.line')} ${e.line} : ${e.msg}` })))],
+      actions: [{ label: t('dlg.cancel'), value: 'cancel', focus: true }, { label: t('wiz.importValid', { count: res.rows.length }), value: 'ok', kind: 'primary' }] });
+    if (ok !== 'ok' || !res.rows.length) return;
+  }
+  if (!res.rows.length) return;
+  let merged;
+  try { merged = Exchange.mergeRows(App.project, res.rows, 'add'); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
+  App.multi = new Set(merged.added);
+  render();
+  announce(t('clip.pasted', { count: merged.added.length }));
+}
+
+function initClipboard() {
+  const blocked = ev => document.querySelector('dialog[open]') || (ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]'));
+  document.addEventListener('copy', ev => {
+    if (blocked(ev)) return;
+    const top = topSelected();
+    if (!top.length) return;
+    const ids = top.flatMap(id => [id, ...descendants(id).map(x => x.id)]);
+    const tsv = clipboardTsv(ids);
+    App.clipboard = { tsv, tasks: clone(ids.map(taskById)) };
+    ev.clipboardData.setData('text/plain', tsv);
+    ev.preventDefault();
+    announce(t('clip.copied', { count: ids.length }));
+  });
+  document.addEventListener('paste', ev => {
+    if (blocked(ev)) return;
+    const text = ev.clipboardData.getData('text/plain');
+    if (!text) return;
+    ev.preventDefault();
+    if (App.clipboard && text.replace(/\r\n/g, '\n') === App.clipboard.tsv.replace(/\r\n/g, '\n')) pasteInternal(App.clipboard);
+    else pasteText(text);
+  });
 }
 
 // ── js/ui/99-main.js ──
@@ -5796,9 +6957,7 @@ action('importFile', () => $('file-input').click());
 action('fileChosen', async (arg, el) => {
   const file = el.files && el.files[0];
   el.value = '';
-  if (!file) return;
-  if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
-  importText(await file.text());
+  if (file) importFile(file);
 });
 
 function applyTheme() {
@@ -5835,6 +6994,7 @@ function init() {
   initRowDrag();
   initListKeys();
   initGestures();
+  initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
@@ -5844,8 +7004,7 @@ function init() {
     const file = ev.dataTransfer && ev.dataTransfer.files[0];
     if (!file) return;
     ev.preventDefault();
-    if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
-    importText(await file.text());
+    importFile(file);
   });
   render();
 }

@@ -73,8 +73,11 @@ function undoStep(from, to) {
   to.push(clone(App.project));
   App.project = from.pop();
   App.dirty = true;
+  const editing = Editor.isOpen() ? App.selected : null;
   if (App.selected && !App.project.tasks.some(t => t.id === App.selected)) App.selected = null;
   recompute();
+  // La fiche d'édition ouverte suit l'état rétabli : rechargée si la tâche existe encore, fermée sinon.
+  if (editing) { if (App.selected === editing) Editor.open(editing); else Editor.close(); }
   render();
   return true;
 }

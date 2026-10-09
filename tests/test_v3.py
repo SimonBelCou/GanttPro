@@ -78,6 +78,7 @@ def main():
     write('edit.json', project(leveling='off', tasks=[
         {'id': 'A', 'name': 'Alpha', 'dur': 5}, {'id': 'B', 'name': 'Bravo', 'dur': 3, 'deps': ['A']},
         {'id': 'C', 'name': 'Charlie', 'dur': 2}, {'id': 'D', 'name': 'Delta', 'dur': 4, 'tags': ['urgent']}], resources=[{'name': 'Alice'}, {'name': 'Bob'}]))
+    write('sheet.csv', 'N°;Nom;Durée;Prédécesseurs;Ressources\n1;Cadrage;3;;Alice\n2;Maquette;4;1;Bob\n3;=HYPERLINK("x");2;9;\n4;Recette;abc;2;\n')
     write('level.json', project(leveling='level', tasks=[
         {'id': 'A', 'name': 'Conception', 'dur': 3, 'res': 'Alice'}, {'id': 'B', 'name': 'Revue', 'dur': 2, 'res': 'Alice'}]))
 
@@ -464,6 +465,94 @@ def main():
         files['export.json'] = path
         import_file('export.json')
         check('réimport accepté', 'Aperçu' in dialog_text())
+        close_dialog('Remplacer le projet ouvert')
+
+        # ── Lot C : exports multiformats, chiffrement, assistant d'import, copier-coller ─────
+        import zipfile
+        pg.click('button:has-text("Exporter")')
+        pg.wait_for_selector('#exp-win')
+        axe_check(pg, "fenêtre d'export")
+        pg.check('#exp-f-xlsx')
+        with pg.expect_download() as dl:
+            close_dialog('Exporter')
+        xp = dl.value.path()
+        with zipfile.ZipFile(xp) as z:
+            names = z.namelist(); sheet1 = z.read('xl/worksheets/sheet1.xml').decode()
+        check('export Excel : classeur valide', dl.value.suggested_filename.endswith('.xlsx') and 'xl/workbook.xml' in names and 'Conception' in sheet1, names)
+        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-csv')
+        with pg.expect_download() as dl:
+            close_dialog('Exporter')
+        csvt = Path(dl.value.path()).read_bytes()
+        check('export CSV : BOM et point-virgule', csvt.startswith(b'\xef\xbb\xbf') and b';' in csvt and 'Revue' in csvt.decode('utf-8-sig'))
+        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-msp')
+        with pg.expect_download() as dl:
+            close_dialog('Exporter')
+        mspx = Path(dl.value.path()).read_text(encoding='utf-8')
+        check('export MS Project : XML avec tâches et lien', '<Project' in mspx and '<Name>Revue</Name>' in mspx, mspx[:300])
+        files['export.xml'] = dl.value.path()
+        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-png')
+        with pg.expect_download() as dl:
+            close_dialog('Exporter')
+        png = Path(dl.value.path()).read_bytes()
+        check('export PNG : image', png[:8] == b'\x89PNG\r\n\x1a\n' and len(png) > 2000, len(png))
+        import_file('export.xml')
+        check('import MS Project : aperçu', 'Aperçu' in dialog_text() and '2 tâches' in dialog_text(), dialog_text())
+        close_dialog('Remplacer le projet ouvert')
+        check('import MS Project : tâches relues', 'Revue' in pg.inner_text('#task-rows') and 'Conception' in pg.inner_text('#task-rows'))
+        # Chiffrement : mot de passe court refusé, aller-retour réussi, mauvais mot de passe refusé
+        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-json'); pg.check('#exp-protect')
+        pg.fill('#exp-pwd', 'court'); pg.fill('#exp-pwd2', 'court')
+        close_dialog('Exporter')
+        check('mot de passe trop court refusé', '12' in pg.inner_text('#exp-err'), pg.inner_text('#exp-err'))
+        pg.fill('#exp-pwd', 'une phrase de passe solide'); pg.fill('#exp-pwd2', 'une phrase de passe solide')
+        with pg.expect_download(timeout=60000) as dl:
+            close_dialog('Exporter')
+        env = json.loads(Path(dl.value.path()).read_text(encoding='utf-8'))
+        check('export chiffré : enveloppe AES-GCM sans texte clair', env.get('encrypted') is True and env['cipher']['name'] == 'AES-256-GCM' and 'Revue' not in json.dumps(env))
+        files['enc.json'] = dl.value.path()
+        import_file('enc.json')
+        pg.wait_for_selector('#ask-pwd'); pg.fill('#ask-pwd', 'mauvais mot de passe'); close_dialog('Valider')
+        pg.wait_for_timeout(1500)
+        check('mauvais mot de passe : refus générique', 'mot de passe' in dialog_text().lower(), dialog_text())
+        while pg.query_selector('dialog[open]'): pg.keyboard.press('Escape')
+        import_file('enc.json')
+        pg.wait_for_selector('#ask-pwd'); pg.fill('#ask-pwd', 'une phrase de passe solide'); close_dialog('Valider')
+        pg.wait_for_selector('dialog[open] :text("Aperçu")', timeout=30000)
+        check('fichier chiffré rouvert avec le bon mot de passe', '2 tâches' in dialog_text())
+        close_dialog('Remplacer le projet ouvert')
+        # Assistant d'import CSV
+        import_file('sheet.csv')
+        pg.wait_for_selector('#wiz')
+        check('assistant : étape 1, en-têtes détectés', 'Étape 1 sur 3' in dialog_text() and pg.is_checked('#wiz-header'))
+        axe_check(pg, "assistant d'import")
+        close_dialog('Suivant')
+        check('assistant : correspondance proposée', pg.eval_on_selector('#wiz-map-name', 'e => e.selectedOptions[0].text').endswith('Nom') and pg.eval_on_selector('#wiz-map-id', 'e => e.value') == '')
+        close_dialog('Suivant')
+        wt = dialog_text()
+        check('assistant : lignes en erreur listées', '2 ligne(s) valide(s) sur 4' in wt and 'la tâche 9 est introuvable' in wt, wt)
+        pg.check('#wiz-m-add')
+        close_dialog('Importer')
+        rows = pg.inner_text('#task-rows')
+        check('assistant : tâches valides ajoutées, liens par N°', 'Cadrage' in rows and 'Maquette' in rows and 'Recette' not in rows, rows)
+        pg.click('#btn-undo')
+        check("assistant : l'import s'annule", 'Cadrage' not in pg.inner_text('#task-rows'))
+        # Copier-coller
+        pg.click('#task-rows tr[data-id="B"] button.select')
+        n0 = pg.locator('#task-rows tr').count()
+        pg.evaluate("document.activeElement && document.activeElement.blur()")
+        tsv = pg.evaluate("""() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent('copy', {clipboardData: dt, bubbles: true})); return dt.getData('text/plain'); }""")
+        check('copier : texte tabulé', '\t' in tsv and 'Revue' in tsv, tsv)
+        pg.evaluate("""(t) => { const dt = new DataTransfer(); dt.setData('text/plain', t); document.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true})); }""", tsv)
+        check('coller : copie ajoutée', pg.locator('#task-rows tr').count() == n0 + 1 and pg.inner_text('#task-rows').count('Revue') == 2, pg.inner_text('#task-rows'))
+        pg.evaluate("""() => { const dt = new DataTransfer(); dt.setData('text/plain', 'Essai collé\\t2'); document.dispatchEvent(new ClipboardEvent('paste', {clipboardData: dt, bubbles: true})); }""")
+        check('coller depuis un tableur', 'Essai collé' in pg.inner_text('#task-rows'), pg.inner_text('#task-rows'))
+        check("grand écran : le panneau d'édition ne recouvre pas la barre d'outils",
+              pg.evaluate("document.getElementById('btn-undo').getBoundingClientRect().right <= document.getElementById('editor').getBoundingClientRect().left"))
+        pg.click('#btn-undo'); pg.click('#btn-undo')
+        check('collages annulés', pg.locator('#task-rows tr').count() == n0)
+        pg.click('button[data-arg="task"]'); pg.click('#btn-undo')
+        check("annuler la création ferme la fiche de la tâche disparue", pg.is_hidden('#editor'))
+        import_file('conflict.json')
         close_dialog('Remplacer le projet ouvert')
 
         # ── Langue ───────────────────────────────────────────────────────────────────────────

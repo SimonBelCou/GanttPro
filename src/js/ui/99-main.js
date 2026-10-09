@@ -103,9 +103,7 @@ action('importFile', () => $('file-input').click());
 action('fileChosen', async (arg, el) => {
   const file = el.files && el.files[0];
   el.value = '';
-  if (!file) return;
-  if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
-  importText(await file.text());
+  if (file) importFile(file);
 });
 
 function applyTheme() {
@@ -142,6 +140,7 @@ function init() {
   initRowDrag();
   initListKeys();
   initGestures();
+  initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
   window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
@@ -151,8 +150,7 @@ function init() {
     const file = ev.dataTransfer && ev.dataTransfer.files[0];
     if (!file) return;
     ev.preventDefault();
-    if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
-    importText(await file.text());
+    importFile(file);
   });
   render();
 }
