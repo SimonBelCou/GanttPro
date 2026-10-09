@@ -127,6 +127,12 @@ def main():
             pg.locator('dialog[open]').last.locator(f'button:has-text("{button}")').first.click()
             pg.wait_for_timeout(100)
 
+        def replace_project():
+            # EF-52 : remplacer un projet modifié demande une confirmation de plus.
+            close_dialog('Remplacer le projet ouvert')
+            if pg.query_selector('dialog[open] button:has-text("Remplacer le projet ouvert")'):
+                close_dialog('Remplacer le projet ouvert')
+
         # ── Import refusé : projet intact ────────────────────────────────────────────────────
         before = pg.inner_text('#task-rows')
         for name, expected in [('badid.json', 'identifiant invalide'), ('badcolor.json', 'couleur'), ('cycle.json', 'Boucle de dépendances : A → B → A'),
@@ -140,7 +146,7 @@ def main():
         # ── Import malveillant : affiché comme du texte ──────────────────────────────────────
         import_file('evil.json')
         axe_check(pg, "fenêtre d'aperçu d'import")
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         pg.wait_for_timeout(200)
         pg.hover('.bar'); pg.click('.bar'); pg.wait_for_timeout(100)
         pg.keyboard.press('Escape')
@@ -150,7 +156,7 @@ def main():
 
         # ── Parcours : import, ajout au clavier, édition, dépendance, boucle ─────────────────
         import_file('ok.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         check('B suit A : B du 12/01 au 14/01', 'du lun. 12 janv. 2026 au mer. 14 janv. 2026' in pg.get_attribute('.bar >> nth=1', 'aria-label'))
         pg.focus('button:has-text("+ Ajouter tâche")'); pg.keyboard.press('Enter')
         pg.wait_for_selector('#editor:not([hidden])')
@@ -183,7 +189,7 @@ def main():
 
         # ── Conflit de ressource ─────────────────────────────────────────────────────────────
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         check('badge « 1 conflit »', pg.inner_text('#btn-alerts') == '1 conflit')
         check('bandeau : Alice à 200 %', 'Alice est à 200 % du 07/01 au 09/01 (A, B)' in pg.inner_text('#alerts'), pg.inner_text('#alerts'))
         check('conflit signalé en texte sur la ligne', 'en conflit' in pg.inner_text('#task-rows tr[data-id="B"]'))
@@ -203,7 +209,7 @@ def main():
 
         # ── Modes de gestion de la charge (RG-08, RG-33) ───────────────────────────────────
         import_file('level.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         check('nivellement : décalage affiché sur la ligne', '3 j de décalage (Alice : surcharge)' in pg.inner_text('#task-rows tr[data-id="B"]'), pg.inner_text('#task-rows tr[data-id="B"]'))
         pg.click('#task-rows button.select:has-text("Revue")')
         check("nivellement : expliqué dans l'édition", 'Sans ce décalage, elle commencerait le lun. 05 janv. 2026' in pg.inner_text('#edit-shift'))
@@ -220,11 +226,11 @@ def main():
         check('nivellement rétabli : plus de conflit', pg.input_value('#leveling-mode') == 'level' and pg.is_hidden('#btn-alerts'))
         close_dialog('Fermer')
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Baselines, flèches, infobulle, tableau de bord ─────────────────────────────────
         import_file('ok.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         check('flèches de liens affichées (Liens : ON)', pg.locator('.g-links .link').count() == 1 and pg.get_attribute('#btn-links', 'aria-pressed') == 'true')
         pg.click('#btn-links')
         check('Liens : OFF masque les flèches', pg.locator('.g-links').count() == 0)
@@ -258,11 +264,11 @@ def main():
         axe_check(pg, 'tableau de bord')
         close_dialog('Fermer')
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Calendrier, fiche de ressource (EF-69, EF-71) ─────────────────────────────────
         import_file('ok.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         pg.click('button[data-click="openCalendar"]')
         pg.wait_for_selector('#cal-win')
         check('calendrier : aperçu de janvier 2026 avec le 1er janvier férié', 'janv. 2026' in pg.inner_text('#cal-month') and pg.locator('#cal-win td.holiday').count() >= 1)
@@ -318,11 +324,11 @@ def main():
         pg.keyboard.press('Alt+Shift+ArrowRight')
         check('Alt + Maj + → allonge d\'un jour', '6 j' in pg.inner_text('#task-rows tr[data-id="C"]'))
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Lot A : sélection multiple, hiérarchie, gestes, commentaires ───────────────────
         import_file('edit.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         pg.click('#task-rows button.select:has-text("Charlie")', modifiers=['Control'])
         pg.click('#task-rows button.select:has-text("Delta")', modifiers=['Control'])
         check('Ctrl + clic : barre de sélection « 2 tâches sélectionnées »', '2 tâches sélectionnées' in pg.inner_text('#selbar'))
@@ -393,7 +399,7 @@ def main():
         pg.click('#btn-list')
         pg.click('button[aria-label="Zoom à 100 %"]')
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Lot B : charge, rapport, impression, versions ───────────────────────────────────
         pg.click('button[data-click="openDashboard"]'); pg.wait_for_selector('#dash-win')
@@ -439,7 +445,7 @@ def main():
         pg.click('#btn-undo')
         check('restauration annulée par « Annuler »', pg.input_value('#project-start') == '2026-02-02')
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Ressources ───────────────────────────────────────────────────────────────────────
         pg.click('button:has-text("Ressources")')
@@ -465,7 +471,7 @@ def main():
         files['export.json'] = path
         import_file('export.json')
         check('réimport accepté', 'Aperçu' in dialog_text())
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Lot C : exports multiformats, chiffrement, assistant d'import, copier-coller ─────
         import zipfile
@@ -497,7 +503,7 @@ def main():
         check('export PNG : image', png[:8] == b'\x89PNG\r\n\x1a\n' and len(png) > 2000, len(png))
         import_file('export.xml')
         check('import MS Project : aperçu', 'Aperçu' in dialog_text() and '2 tâches' in dialog_text(), dialog_text())
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         check('import MS Project : tâches relues', 'Revue' in pg.inner_text('#task-rows') and 'Conception' in pg.inner_text('#task-rows'))
         # Chiffrement : mot de passe court refusé, aller-retour réussi, mauvais mot de passe refusé
         pg.click('button:has-text("Exporter")'); pg.check('#exp-f-json'); pg.check('#exp-protect')
@@ -519,7 +525,7 @@ def main():
         pg.wait_for_selector('#ask-pwd'); pg.fill('#ask-pwd', 'une phrase de passe solide'); close_dialog('Valider')
         pg.wait_for_selector('dialog[open] :text("Aperçu")', timeout=30000)
         check('fichier chiffré rouvert avec le bon mot de passe', '2 tâches' in dialog_text())
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
         # Assistant d'import CSV
         import_file('sheet.csv')
         pg.wait_for_selector('#wiz')
@@ -553,7 +559,7 @@ def main():
         pg.click('button[data-arg="task"]'); pg.click('#btn-undo')
         check("annuler la création ferme la fiche de la tâche disparue", pg.is_hidden('#editor'))
         import_file('conflict.json')
-        close_dialog('Remplacer le projet ouvert')
+        replace_project()
 
         # ── Langue ───────────────────────────────────────────────────────────────────────────
         pg.click('#btn-lang')

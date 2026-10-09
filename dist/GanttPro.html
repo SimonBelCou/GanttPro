@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gkQ21eoY1NsKgNIw19i1eRSJss+Lhk7AFNuYW23Vr78='; style-src 'sha256-hVxvUH14dMVOQv/fe3dH0LPXeS2EMiC0+zIYYu8sYuM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dshvajbwnRk+eV1A8AP00Qfn6J+e8wHyI4tVGECLQYU='; style-src 'sha256-xn3HdGYGQsMpZpL16GKQNGqc5A5dLNtd/Zw2gdR8Ogk='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -88,7 +88,7 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 .alerts li.warning { color: var(--warning); font-weight: 600; }
 
 /* Planning : liste + grille, défilement vertical commun */
-main { outline: none; }
+
 .planner { display: grid; grid-template-columns: minmax(520px, 56%) 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
 .list { background: var(--panel); border-right: 1px solid var(--line); overflow-x: auto; }
 table.tasks { border-collapse: collapse; width: 100%; }
@@ -157,6 +157,20 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .swatch.critical { background: transparent; box-shadow: 0 0 0 2px var(--critical); }
 .swatch.today { width: 3px; background: var(--today); }
 
+/* Onglets de projets (EF-98) */
+.tabs { display: flex; align-items: flex-end; gap: .25rem; padding: .35rem 1rem 0; background: var(--panel-2); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs ul { display: flex; gap: .25rem; margin: 0; padding: 0; list-style: none; }
+.tabs li { display: flex; align-items: center; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--bg); }
+.tabs li.current { background: var(--panel); box-shadow: inset 0 3px 0 var(--accent); }
+.tabs button.tab { border: 0; background: transparent; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+.tabs li.current button.tab { font-weight: 700; }
+.tabs .dot { color: var(--warning); }
+.tabs .tab-close, .tabs .tab-plus { border: 0; background: transparent; }
+.autosave { color: var(--muted); font-size: .9em; }
+.row-actions { display: flex; flex-wrap: wrap; gap: .3rem; }
+.help-sec h3 { margin: 1rem 0 .3rem; }
+.help kbd { font-family: 'Fira Code', monospace; font-weight: 400; }
+
 /* Panneau d'édition */
 .editor {
   position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); overflow: auto; z-index: 5;
@@ -199,6 +213,13 @@ fieldset.emojis { border: 1px solid var(--line); border-radius: 8px; display: fl
 @media (min-width: 1100px) {
   body:has(#editor:not([hidden])) > header, body:has(#editor:not([hidden])) > main { margin-right: min(440px, 100vw); }
   body:has(#editor:not([hidden])) .editor { box-shadow: none; }
+}
+
+/* Cibles : 24 × 24 px au moins, 44 × 44 px sur écran tactile (EX-23) */
+button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; min-width: 24px; }
+@media (pointer: coarse) {
+  button, select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) { min-height: 44px; min-width: 44px; }
+  input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; margin: 10px; }
 }
 
 /* Écrans étroits (4.4) */
@@ -406,7 +427,14 @@ body.dragging { user-select: none; cursor: grabbing; }
 <body>
 <a class="skip" href="#main" data-i18n="app.skip">Aller au planning</a>
 
+<nav class="tabs" id="tabs" data-i18n-label="tabs.label" aria-label="Projets ouverts">
+  <ul id="tabs-list"></ul>
+  <button type="button" class="icon tab-plus" data-click="tabPlus" data-i18n-label="tabs.plus" aria-label="Ouvrir un projet">+</button>
+  <span class="sr-only" id="tabs-count"></span>
+</nav>
+
 <header class="topbar" role="banner">
+  <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
   <h1 class="brand">GanttPro</h1>
   <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
   <label class="field-inline"><span data-i18n="top.start">Début projet</span>
@@ -455,12 +483,17 @@ body.dragging { user-select: none; cursor: grabbing; }
       <button type="button" data-click="newProject" data-i18n="top.new"></button>
       <button type="button" data-click="importFile" data-i18n="top.import"></button>
       <button type="button" data-click="exportFile" data-i18n="top.export"></button>
+      <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
+      <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
       <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
     </div>
     <div class="group">
       <button type="button" id="btn-theme" data-click="toggleTheme"></button>
       <button type="button" id="btn-lang" data-click="toggleLang"></button>
+      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
+      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
     </div>
+    <span class="autosave" id="autosave-status" hidden></span>
   </nav>
 </header>
 
@@ -2168,6 +2201,65 @@ const I18n = (() => {
     'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
     'clip.copied': { one: '{count} tâche copiée.', other: '{count} tâches copiées.' }, 'clip.pasted': { one: '{count} tâche collée.', other: '{count} tâches collées.' }, 'clip.paste': 'Coller',
     'png.legend': 'Barre : tâche (partie sombre = réalisé) ; contour rouge : critique ; losange : jalon ; trait rouge : aujourd\'hui.',
+    'tabs.label': 'Projets ouverts', 'tabs.title': 'Onglets', 'tabs.max': 'Dix projets au plus peuvent être ouverts ({max}) : fermez un onglet pour en ouvrir un autre.',
+    'tabs.switched': 'Projet « {name} » affiché.', 'tabs.close': "Fermer l'onglet", 'tabs.closeDirty': "« {name} » a des modifications qui n'ont été ni exportées ni enregistrées. Elles seront perdues.",
+    'tabs.closeConfirm': "Fermer sans enregistrer", 'tabs.closed': 'Onglet « {name} » fermé.', 'tabs.modified': 'modifié', 'tabs.closeOne': "Fermer l'onglet {name}",
+    'tabs.count': '{count} onglet(s) sur {max}', 'tabs.plus': 'Ouvrir un projet', 'tabs.new': 'Nouveau projet', 'tabs.plusHint': 'Que voulez-vous ouvrir dans un nouvel onglet ?',
+    'lib.title': 'Bibliothèque', 'lib.pwdHint': '« {name} » est protégé par mot de passe.', 'lib.missing': 'Cet élément de la bibliothèque est introuvable.',
+    'lib.save': 'Enregistrer dans la bibliothèque', 'lib.saveOver': '« {name} » remplacera sa version enregistrée sur cet appareil.', 'lib.saveNew': '« {name} » sera enregistré sur cet appareil.',
+    'lib.saveBtn': 'Enregistrer', 'lib.saved': '« {name} » enregistré dans la bibliothèque.', 'lib.tasks': { one: '{count} tâche', other: '{count} tâches' },
+    'lib.warn': "Ces projets ne sont enregistrés que dans ce navigateur, sur cet appareil : ils disparaissent si l'on efface les données du navigateur. Exportez régulièrement vos projets importants.",
+    'lib.saveCurrent': 'Enregistrer le projet courant (Ctrl + S)', 'lib.projects': 'Projets enregistrés', 'lib.templates': 'Mes modèles', 'lib.empty': 'Aucun pour le moment.',
+    'lib.protected': 'protégé', 'lib.name': 'Nom', 'lib.date': 'Enregistré le', 'lib.count': 'Tâches', 'lib.actions': 'Actions',
+    'lib.open': 'Ouvrir', 'lib.openOne': 'Ouvrir {name}', 'lib.rename': 'Renommer', 'lib.renameOne': 'Renommer {name}', 'lib.duplicate': 'Dupliquer', 'lib.duplicateOne': 'Dupliquer {name}',
+    'lib.delete': 'Supprimer', 'lib.deleteOne': 'Supprimer {name}', 'lib.deleteConfirm': '« {name} » sera supprimé de cet appareil. Les fichiers exportés ne sont pas touchés.',
+    'lib.deleted': '« {name} » supprimé.', 'lib.copyOf': 'Copie de {name}', 'lib.usage': 'Espace utilisé par GanttPro sur cet appareil : {size} Ko.',
+    'store.off': "Le stockage du navigateur n'est pas disponible (navigation privée ou réglage du navigateur) : rien n'a été enregistré. Exportez le projet pour le conserver.",
+    'store.full': "L'espace de stockage du navigateur est plein : rien n'a été enregistré. Supprimez des éléments de la bibliothèque ou exportez le projet.",
+    'store.noticeTitle': 'Enregistrer sur cet appareil', 'store.notice1': "GanttPro va enregistrer des données dans ce navigateur, sur cet appareil uniquement. Rien n'est jamais envoyé sur Internet.",
+    'store.notice2': "Sur un appareil partagé, toute personne utilisant ce navigateur pourra voir ces projets (y compris les noms des ressources). Protégez-les par un mot de passe ou préférez l'export.",
+    'store.notice3': "Vous pouvez tout effacer à tout moment dans Réglages > « Effacer toutes les données ».", 'store.understood': "J'ai compris, enregistrer",
+    'tpl.newFrom': "Nouveau projet à partir d'un modèle", 'tpl.save': 'Enregistrer comme modèle', 'tpl.saveHint': "Le modèle garde tâches, liens, durées, catégories, calendrier, étiquettes et notes. Avancement, dates réelles, commentaires, baselines et versions ne sont jamais gardés.",
+    'tpl.name': 'Nom du modèle', 'tpl.keepRes': 'Conserver les ressources et les affectations', 'tpl.saveBtn': 'Enregistrer le modèle', 'tpl.needName': 'Donnez un nom.',
+    'tpl.saved': 'Modèle « {name} » enregistré.', 'tpl.builtin': 'fourni', 'tpl.pick': 'Modèle', 'tpl.create': 'Créer le projet',
+    'tpl.phases.name': 'Projet en 5 phases', 'tpl.phases.t1': 'Cadrage', 'tpl.phases.t2': 'Conception', 'tpl.phases.t3': 'Réalisation', 'tpl.phases.t4': 'Recette', 'tpl.phases.t5': 'Mise en service', 'tpl.phases.t6': 'Livraison',
+    'tpl.event.name': 'Événement', 'tpl.event.t1': 'Définir le cadre', 'tpl.event.t2': 'Réserver le lieu', 'tpl.event.t3': 'Inviter les participants', 'tpl.event.t4': 'Préparer le programme', 'tpl.event.t5': 'Jour J', 'tpl.event.t6': 'Bilan',
+    'auto.title': 'Sauvegarde automatique', 'auto.savedAt': 'sauvegardé le {time}', 'auto.restore': 'Restaurer dans un onglet', 'auto.ignore': 'Ignorer pour cette fois', 'auto.delete': 'Supprimer la copie',
+    'auto.foundTitle': 'Travail non exporté retrouvé', 'auto.found': { one: 'Un projet non exporté a été retrouvé sur cet appareil. Que voulez-vous en faire ?', other: '{count} projets non exportés ont été retrouvés sur cet appareil. Que voulez-vous en faire ?' },
+    'auto.pwd': 'Mot de passe de la sauvegarde', 'auto.later': 'Décider plus tard', 'auto.restored': { one: '{count} projet restauré.', other: '{count} projets restaurés.' },
+    'auto.bad': { one: "{count} copie n'a pas pu être restaurée (mot de passe faux ou copie altérée) ; elle est gardée.", other: "{count} copies n'ont pas pu être restaurées (mot de passe faux ou copies altérées) ; elles sont gardées." },
+    'auto.paused': 'Sauvegarde automatique en pause : mot de passe à saisir dans les réglages', 'auto.failed': 'Sauvegarde automatique impossible', 'auto.saved': 'Sauvegardé sur cet appareil à {time}', 'auto.on': 'Sauvegarde automatique activée',
+    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
+    'auto.enable2': "La copie contient tout le projet, y compris les noms des ressources. Sur un appareil partagé, d'autres personnes pourraient la voir : protégez-la par un mot de passe.",
+    'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
+    'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
+    'set.recProtect': 'Protéger la sauvegarde automatique par mot de passe', 'set.recPwdEnter': 'Saisir le mot de passe', 'set.recPwdHint': 'Le mot de passe de la sauvegarde automatique est demandé à chaque ouverture de GanttPro ; il reste en mémoire seulement.',
+    'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques et réglages. Les fichiers exportés ne sont jamais touchés.",
+    'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': 'La bibliothèque, les modèles, les sauvegardes automatiques et les réglages seront supprimés définitivement de cet appareil.',
+    'set.clearConfirm2': 'Les projets ouverts et les fichiers exportés ne sont pas touchés.', 'set.clearBtn': 'Tout effacer', 'set.cleared': 'Toutes les données de GanttPro sur cet appareil ont été effacées.',
+    'home.back': '← Accueil', 'home.save': 'Sauvegarder', 'home.saved': "Copie du projet remise à la page d'accueil.",
+    'help.title': 'Aide', 'help.about': 'À propos', 'help.version': 'GanttPro, version {version}',
+    'help.license': "Logiciel libre sous licence MIT. Il fonctionne entièrement dans votre navigateur, sans serveur et sans connexion.",
+    'help.fonts': 'Polices intégrées : Sora et Fira Code, sous licence SIL Open Font License 1.1 (texte de la licence dans le dépôt du projet).',
+    'help.start': "Mode d'emploi en bref", 'help.s1': 'Donnez un nom au projet (bouton du projet) et sa date de début.',
+    'help.s2': 'Ajoutez tâches, jalons et récapitulatives ; Entrée ou un clic sur le nom ouvre leur édition (durée en jours ouvrés, prédécesseurs, ressources).',
+    'help.s3': 'Le planning se recalcule seul : chemin critique, conflits de ressources et alertes apparaissent en haut.',
+    'help.s4': 'Choisissez la gestion de la charge (nivellement, lissage ou sans) et utilisez « Résoudre… » pour arbitrer les conflits.',
+    'help.s5': "Suivez l'avancement : baselines, tableau de bord, rapport d'état et impression.",
+    'help.s6': "Exportez votre projet (fichier GanttPro, Excel, CSV, MS Project ou image) : c'est la seule copie durable, sauf enregistrement dans la bibliothèque.",
+    'help.keys': 'Raccourcis clavier', 'help.keysHint': "Inactifs pendant la saisie dans un champ (sauf Ctrl + S). Toute action à la souris a un équivalent au clavier.",
+    'help.key': 'Touches', 'help.action': 'Action', 'help.k.move': 'Changer de tâche sélectionnée dans la liste', 'help.k.edit': "Ouvrir l'édition de la tâche sélectionnée",
+    'help.k.multi': 'Sélectionner plusieurs tâches', 'help.k.all': 'Tout sélectionner', 'help.k.del': 'Supprimer la sélection (avec confirmation)', 'help.k.esc': "Fermer la fenêtre, l'édition ou l'infobulle ; annuler un geste",
+    'help.k.undo': 'Annuler, rétablir', 'help.k.copy': 'Copier, coller des tâches (aussi depuis un tableur)', 'help.k.dup': 'Dupliquer la tâche', 'help.k.nudge': "Décaler la tâche d'un jour (Maj : d'une semaine)",
+    'help.k.indent': 'Rattacher à la récapitulative précédente, détacher', 'help.k.save': 'Enregistrer dans la bibliothèque', 'help.k.zoom': 'Zoomer, dézoomer le Gantt', 'help.k.help': "Ouvrir l'aide",
+    'help.privacy': 'Vie privée', 'help.p1': "GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ou image externe.",
+    'help.p2': "Vos projets restent dans l'onglet tant que vous ne les exportez pas. Sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez.",
+    'help.p3': "Les noms de ressources peuvent être des données personnelles : préférez des prénoms, des initiales ou des fonctions. Un fichier exporté contient tout le projet (y compris ces noms, les commentaires et les versions) ; l'export anonymisé les remplace.",
+    'help.p4': "Pour tout effacer : Réglages > « Effacer toutes les données », puis supprimez vos fichiers exportés.",
+    'help.a11y': "Déclaration d'accessibilité", 'help.a1': "État de conformité : GanttPro vise le niveau AA des WCAG 2.1 et le RGAA 4.1. Il est partiellement conforme : les contrôles automatiques (axe-core) ne relèvent aucun défaut, mais aucun audit RGAA complet ni essai avec des utilisateurs de technologies d'assistance n'a encore été réalisé.",
+    'help.a2': "Limites connues : le diagramme est un dessin ; son contenu est donné en texte par la liste des tâches, les noms des barres et le tableau de bord. L'export en image n'est pas accessible : préférez le classeur ou le rapport d'état. Les gestes à la souris ont tous un équivalent au clavier.",
+    'help.a3': "Aides : navigation complète au clavier, focus visible, contrastes renforcés, thème sombre, respect de la réduction des animations, annonces aux lecteurs d'écran.",
+    'help.a4': "Signaler un défaut : décrivez la page, l'action et votre équipement à la personne ou au service qui vous a fourni GanttPro, ou dans le suivi des demandes du projet. Si vous n'obtenez pas de réponse, vous pouvez saisir le Défenseur des droits.",
     'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
   };
 
@@ -2378,6 +2470,65 @@ const I18n = (() => {
     'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
     'clip.copied': { one: '{count} task copied.', other: '{count} tasks copied.' }, 'clip.pasted': { one: '{count} task pasted.', other: '{count} tasks pasted.' }, 'clip.paste': 'Paste',
     'png.legend': 'Bar: task (dark part = done); red outline: critical; diamond: milestone; red line: today.',
+    'tabs.label': 'Open projects', 'tabs.title': 'Tabs', 'tabs.max': 'At most ten projects can be open ({max}): close a tab to open another one.',
+    'tabs.switched': 'Project “{name}” shown.', 'tabs.close': 'Close tab', 'tabs.closeDirty': '“{name}” has changes that were neither exported nor saved. They will be lost.',
+    'tabs.closeConfirm': 'Close without saving', 'tabs.closed': 'Tab “{name}” closed.', 'tabs.modified': 'modified', 'tabs.closeOne': 'Close tab {name}',
+    'tabs.count': '{count} tab(s) out of {max}', 'tabs.plus': 'Open a project', 'tabs.new': 'New project', 'tabs.plusHint': 'What do you want to open in a new tab?',
+    'lib.title': 'Library', 'lib.pwdHint': '“{name}” is password-protected.', 'lib.missing': 'This library item cannot be found.',
+    'lib.save': 'Save to the library', 'lib.saveOver': '“{name}” will replace its saved version on this device.', 'lib.saveNew': '“{name}” will be saved on this device.',
+    'lib.saveBtn': 'Save', 'lib.saved': '“{name}” saved to the library.', 'lib.tasks': { one: '{count} task', other: '{count} tasks' },
+    'lib.warn': 'These projects are only saved in this browser, on this device: they disappear if the browser data is cleared. Export your important projects regularly.',
+    'lib.saveCurrent': 'Save the current project (Ctrl + S)', 'lib.projects': 'Saved projects', 'lib.templates': 'My templates', 'lib.empty': 'None yet.',
+    'lib.protected': 'protected', 'lib.name': 'Name', 'lib.date': 'Saved on', 'lib.count': 'Tasks', 'lib.actions': 'Actions',
+    'lib.open': 'Open', 'lib.openOne': 'Open {name}', 'lib.rename': 'Rename', 'lib.renameOne': 'Rename {name}', 'lib.duplicate': 'Duplicate', 'lib.duplicateOne': 'Duplicate {name}',
+    'lib.delete': 'Delete', 'lib.deleteOne': 'Delete {name}', 'lib.deleteConfirm': '“{name}” will be deleted from this device. Exported files are not affected.',
+    'lib.deleted': '“{name}” deleted.', 'lib.copyOf': 'Copy of {name}', 'lib.usage': 'Space used by GanttPro on this device: {size} KB.',
+    'store.off': 'Browser storage is not available (private browsing or browser setting): nothing was saved. Export the project to keep it.',
+    'store.full': 'Browser storage is full: nothing was saved. Delete library items or export the project.',
+    'store.noticeTitle': 'Save on this device', 'store.notice1': 'GanttPro will save data in this browser, on this device only. Nothing is ever sent over the Internet.',
+    'store.notice2': 'On a shared device, anyone using this browser could see these projects (including resource names). Protect them with a password or prefer exporting.',
+    'store.notice3': 'You can erase everything at any time in Settings > “Erase all data”.', 'store.understood': 'Understood, save',
+    'tpl.newFrom': 'New project from a template', 'tpl.save': 'Save as template', 'tpl.saveHint': 'The template keeps tasks, links, durations, categories, calendar, tags and notes. Progress, actual dates, comments, baselines and versions are never kept.',
+    'tpl.name': 'Template name', 'tpl.keepRes': 'Keep resources and assignments', 'tpl.saveBtn': 'Save template', 'tpl.needName': 'Enter a name.',
+    'tpl.saved': 'Template “{name}” saved.', 'tpl.builtin': 'built-in', 'tpl.pick': 'Template', 'tpl.create': 'Create project',
+    'tpl.phases.name': '5-phase project', 'tpl.phases.t1': 'Scoping', 'tpl.phases.t2': 'Design', 'tpl.phases.t3': 'Build', 'tpl.phases.t4': 'Acceptance testing', 'tpl.phases.t5': 'Go-live', 'tpl.phases.t6': 'Delivery',
+    'tpl.event.name': 'Event', 'tpl.event.t1': 'Define the scope', 'tpl.event.t2': 'Book the venue', 'tpl.event.t3': 'Invite participants', 'tpl.event.t4': 'Prepare the programme', 'tpl.event.t5': 'D-day', 'tpl.event.t6': 'Review',
+    'auto.title': 'Automatic backup', 'auto.savedAt': 'saved on {time}', 'auto.restore': 'Restore in a tab', 'auto.ignore': 'Ignore this time', 'auto.delete': 'Delete the copy',
+    'auto.foundTitle': 'Unexported work found', 'auto.found': { one: 'An unexported project was found on this device. What do you want to do with it?', other: '{count} unexported projects were found on this device. What do you want to do with them?' },
+    'auto.pwd': 'Backup password', 'auto.later': 'Decide later', 'auto.restored': { one: '{count} project restored.', other: '{count} projects restored.' },
+    'auto.bad': { one: '{count} copy could not be restored (wrong password or damaged copy); it is kept.', other: '{count} copies could not be restored (wrong password or damaged copies); they are kept.' },
+    'auto.paused': 'Automatic backup paused: enter the password in Settings', 'auto.failed': 'Automatic backup impossible', 'auto.saved': 'Saved on this device at {time}', 'auto.on': 'Automatic backup on',
+    'auto.enableTitle': 'Turn on automatic backup', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
+    'auto.enable2': 'The copy contains the whole project, including resource names. On a shared device, other people could see it: protect it with a password.',
+    'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
+    'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
+    'set.recProtect': 'Protect the automatic backup with a password', 'set.recPwdEnter': 'Enter the password', 'set.recPwdHint': 'The automatic backup password is asked each time GanttPro opens; it is only kept in memory.',
+    'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups and settings. Exported files are never affected.',
+    'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups and settings will be permanently deleted from this device.',
+    'set.clearConfirm2': 'Open projects and exported files are not affected.', 'set.clearBtn': 'Erase everything', 'set.cleared': 'All GanttPro data on this device was erased.',
+    'home.back': '← Home', 'home.save': 'Save', 'home.saved': 'Project copy handed to the home page.',
+    'help.title': 'Help', 'help.about': 'About', 'help.version': 'GanttPro, version {version}',
+    'help.license': 'Free software under the MIT licence. It runs entirely in your browser, with no server and no connection.',
+    'help.fonts': 'Embedded fonts: Sora and Fira Code, under the SIL Open Font License 1.1 (licence text in the project repository).',
+    'help.start': 'Quick guide', 'help.s1': 'Name the project (project button) and set its start date.',
+    'help.s2': 'Add tasks, milestones and summary tasks; Enter or a click on the name opens editing (duration in working days, predecessors, resources).',
+    'help.s3': 'The schedule recalculates by itself: critical path, resource conflicts and alerts appear at the top.',
+    'help.s4': 'Choose how resource load is handled (levelling, smoothing or none) and use “Resolve…” to arbitrate conflicts.',
+    'help.s5': 'Track progress: baselines, dashboard, status report and printing.',
+    'help.s6': 'Export your project (GanttPro file, Excel, CSV, MS Project or image): it is the only lasting copy, unless saved to the library.',
+    'help.keys': 'Keyboard shortcuts', 'help.keysHint': 'Inactive while typing in a field (except Ctrl + S). Every mouse action has a keyboard equivalent.',
+    'help.key': 'Keys', 'help.action': 'Action', 'help.k.move': 'Change the selected task in the list', 'help.k.edit': 'Edit the selected task',
+    'help.k.multi': 'Select several tasks', 'help.k.all': 'Select all', 'help.k.del': 'Delete the selection (with confirmation)', 'help.k.esc': 'Close the window, editing or tooltip; cancel a gesture',
+    'help.k.undo': 'Undo, redo', 'help.k.copy': 'Copy, paste tasks (also from a spreadsheet)', 'help.k.dup': 'Duplicate the task', 'help.k.nudge': 'Move the task by one day (Shift: one week)',
+    'help.k.indent': 'Attach to the previous summary task, detach', 'help.k.save': 'Save to the library', 'help.k.zoom': 'Zoom the Gantt in, out', 'help.k.help': 'Open help',
+    'help.privacy': 'Privacy', 'help.p1': 'GanttPro sends nothing: no connection, no cookie, no tracker, no external font or image.',
+    'help.p2': 'Your projects stay in the tab until you export them. Only settings are kept on the device, plus the library or automatic backup if you use them.',
+    'help.p3': 'Resource names may be personal data: prefer first names, initials or roles. An exported file contains the whole project (including these names, comments and versions); the anonymised export replaces them.',
+    'help.p4': 'To erase everything: Settings > “Erase all data”, then delete your exported files.',
+    'help.a11y': 'Accessibility statement', 'help.a1': 'Compliance status: GanttPro targets WCAG 2.1 level AA and RGAA 4.1. It is partially compliant: automated checks (axe-core) find no issue, but no full RGAA audit or test with assistive-technology users has been carried out yet.',
+    'help.a2': 'Known limits: the chart is a drawing; its content is given as text by the task list, the bar names and the dashboard. The image export is not accessible: prefer the workbook or the status report. Every mouse gesture has a keyboard equivalent.',
+    'help.a3': 'Aids: full keyboard navigation, visible focus, reinforced contrast, dark theme, reduced-motion support, screen-reader announcements.',
+    'help.a4': 'Report an issue: describe the page, the action and your equipment to the person or department that provided GanttPro, or in the project issue tracker.',
     'top.leveling': 'Resource load', 'lvl.level': 'Automatic levelling', 'lvl.smooth': 'Smoothing within slack', 'lvl.off': 'No levelling',
     'top.resolve': 'Resolve…',
     'rsv.title': 'Resolve conflicts', 'rsv.none': 'No conflicts: nothing to resolve.',
@@ -3272,13 +3423,18 @@ function announce(msg) {
 // ── js/ui/10-storage.js ──
 /* Seul module autorisé à toucher au stockage du navigateur (contrôlé par tools/build.py).
  *
- * Vie privée (EX-10, EX-22) : ne sont conservés sur l'appareil que les RÉGLAGES (langue, thème),
- * jamais un projet ni un nom de ressource. Pas de cookie. Chaque lecture est validée (le stockage
- * est une donnée non fiable : une autre page locale peut l'avoir modifié) et chaque accès est
- * protégé, car le stockage peut être indisponible (navigation privée, fichier local). */
+ * Vie privée (EX-10, EX-22) : sont conservés sur l'appareil, sans cookie,
+ *  - les RÉGLAGES (langue, thème, sauvegarde automatique, message de première utilisation vu) ;
+ *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
+ *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
+ *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
+ * Rien n'est jamais envoyé. Toute lecture est une donnée NON FIABLE (une autre page locale peut
+ * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
+ * Model.sanitize chez l'appelant. Chaque accès est protégé, le stockage pouvant être indisponible
+ * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'] };
 
   function get(key) {
     try {
@@ -3290,7 +3446,7 @@ const Settings = (() => {
     if (!ALLOWED[key] || !ALLOWED[key].includes(value)) return false;
     try { window.localStorage.setItem(PREFIX + key, value); return true; } catch { return false; }
   }
-  /** Efface tout ce que GanttPro a écrit sur l'appareil (EF-104). */
+  /** Efface tout ce que GanttPro a écrit sur l'appareil (EF-104) : réglages, bibliothèque, récupération. */
   function clearAll() {
     try {
       for (let i = window.localStorage.length - 1; i >= 0; i--) {
@@ -3301,6 +3457,82 @@ const Settings = (() => {
     } catch { return false; }
   }
   return { get, set, clearAll };
+})();
+
+/** Entrepôt de textes sous des espaces de noms fixes (bibliothèque et récupération). */
+const Store = (() => {
+  const SPACES = { lib: 'ganttpro.lib.', rec: 'ganttpro.rec.' };
+  const KEY_RE = /^[a-z0-9-]{1,40}$/;
+  const full = (space, key) => {
+    if (!SPACES[space] || !KEY_RE.test(key)) throw new Error('store.key');
+    return SPACES[space] + key;
+  };
+  /** Écrit un texte. Renvoie 'ok', 'full' (espace insuffisant) ou 'off' (stockage indisponible). */
+  function write(space, key, text) {
+    try { window.localStorage.setItem(full(space, key), text); return 'ok'; } catch (e) {
+      return e && (e.name === 'QuotaExceededError' || e.code === 22) ? 'full' : 'off';
+    }
+  }
+  function read(space, key) {
+    try { return window.localStorage.getItem(full(space, key)); } catch { return null; }
+  }
+  function remove(space, key) {
+    try { window.localStorage.removeItem(full(space, key)); return true; } catch { return false; }
+  }
+  /** Clés présentes dans un espace. */
+  function keys(space) {
+    const out = [];
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith(SPACES[space])) { const s = k.slice(SPACES[space].length); if (KEY_RE.test(s)) out.push(s); }
+      }
+    } catch { /* stockage indisponible : liste vide */ }
+    return out;
+  }
+  /** Octets occupés par GanttPro (approximation : 2 octets par caractère). */
+  function usage() {
+    let n = 0;
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith('ganttpro.')) n += 2 * (k.length + (window.localStorage.getItem(k) || '').length);
+      }
+    } catch { return 0; }
+    return n;
+  }
+  const available = () => { try { const k = 'ganttpro.probe'; window.localStorage.setItem(k, '1'); window.localStorage.removeItem(k); return true; } catch { return false; } };
+  return { write, read, remove, keys, usage, available };
+})();
+
+/** Contrat avec une page d'accueil (EF-56, 8.4) : trois clés de la mémoire de session, rien d'autre. */
+const HomeLink = (() => {
+  const KEYS = { project: 'gantt_project', saved: 'gantt_saved_project', home: 'gantt_home_url' };
+  const get = k => { try { return window.sessionStorage.getItem(KEYS[k]); } catch { return null; } };
+  /** Projet transmis : lu une seule fois puis supprimé. */
+  function takeProject() {
+    const v = get('project');
+    try { window.sessionStorage.removeItem(KEYS.project); } catch { /* indisponible */ }
+    return v;
+  }
+  function saveProject(text) {
+    try { window.sessionStorage.setItem(KEYS.saved, text); return 'ok'; } catch (e) {
+      return e && (e.name === 'QuotaExceededError' || e.code === 22) ? 'full' : 'off';
+    }
+  }
+  /** Adresse de retour validée : http(s) ou file, de même origine que l'application ; sinon null. */
+  function homeUrl() {
+    const raw = get('home');
+    if (!raw || raw.length > 2000) return null;
+    let u;
+    try { u = new URL(raw, window.location.href); } catch { return null; }
+    const here = new URL(window.location.href);
+    if (!['http:', 'https:', 'file:'].includes(u.protocol) || u.protocol !== here.protocol) return null;
+    if (u.protocol !== 'file:' && u.origin !== here.origin) return null;
+    if (u.protocol === 'file:' && u.host !== here.host) return null;
+    return u.href;
+  }
+  return { takeProject, saveProject, homeUrl };
 })();
 
 // ── js/ui/20-actions.js ──
@@ -3467,6 +3699,7 @@ function commit(mutate) {
   App.dirty = true;
   recompute();
   render();
+  Recovery.touch();
 }
 
 function loadProject(project) {
@@ -3489,6 +3722,7 @@ function undoStep(from, to) {
   // La fiche d'édition ouverte suit l'état rétabli : rechargée si la tâche existe encore, fermée sinon.
   if (editing) { if (App.selected === editing) Editor.open(editing); else Editor.close(); }
   render();
+  Recovery.touch();
   return true;
 }
 
@@ -3961,6 +4195,7 @@ function render() {
   renderList(items, fl);
   renderGantt(items, fl);
   renderLegend();
+  Tabs.paint();
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
 }
 
@@ -6500,7 +6735,7 @@ async function doExport() {
         const env = await Secure.encrypt(text, a);
         download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
       } else download(text, exportFileName(p.name), 'application/json');
-      if (!o.anonymize) { App.dirty = false; if (typeof Recovery !== 'undefined') Recovery.clearCurrent(); }
+      if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
     } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
     else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     else if (o.format === 'msp') {
@@ -6641,16 +6876,16 @@ async function confirmOpen(p, extraLines, origin) {
       start: I18n.date(Dates.parse(p.projectStart)), pct: avg }) }),
     ...extraLines.filter(Boolean).map(x => h('p', { class: 'hint', text: x })),
   ];
-  const canTab = typeof Tabs !== 'undefined' && Tabs.canOpen();
-  if (App.dirty && !canTab) lines.push(h('p', { class: 'warning', text: t('dlg.unsaved') }));
+  const canTab = Tabs.canOpen() && !Tabs.pristine();
+  if (!Tabs.canOpen()) lines.push(h('p', { class: 'hint', text: t('tabs.max', { max: Tabs.MAX }) }));
   const actions = [{ label: t('dlg.cancel'), value: 'cancel', focus: true }];
   if (canTab) actions.push({ label: t('imp.newTab'), value: 'tab', kind: 'primary' });
   actions.push({ label: t('imp.replace'), value: 'ok', kind: canTab ? '' : 'primary' });
   const v = await Dialog.open({ title: t('imp.title'), body: lines, actions });
   if (v === 'cancel') return false;
-  if (v === 'ok' && App.dirty && canTab && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
+  if (v === 'ok' && App.dirty && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
   if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file' });
-  else { Editor.close(); clearSelection(); loadProject(p); App.dirty = origin !== 'file'; render(); }
+  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file' }); }
   announce(t('imp.opened', { name: p.name }));
   return true;
 }
@@ -6750,14 +6985,8 @@ function initialNames() {
 }
 
 async function newProjectAction() {
-  if (typeof Tabs !== 'undefined' && Tabs.canOpen()) { Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames())); return; }
-  if (App.dirty) {
-    const ok = await Dialog.confirm(t('dlg.new'), [t('dlg.unsaved')], t('top.new'));
-    if (!ok) return;
-  }
-  Editor.close();
-  loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
-  render();
+  // Nouveau projet dans un nouvel onglet (EF-49, EF-98) ; au-delà de dix, la limite est annoncée.
+  Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
 }
 
 // ── js/ui/82-clipboard.js ──
@@ -6851,6 +7080,717 @@ function initClipboard() {
   });
 }
 
+// ── js/ui/84-tabs.js ──
+/* Onglets de projets (EF-98) : jusqu'à dix projets ouverts. Chaque onglet garde son projet, son
+ * zoom, sa vue (recherche, filtres, regroupement), sa sélection, son historique d'annulation, son
+ * indicateur « modifié », sa place dans la bibliothèque et son emplacement de récupération.
+ * Seul l'onglet actif vit dans App ; les autres sont des instantanés en mémoire. */
+const Tabs = (() => {
+  const MAX = 10;
+  const FIELDS = ['project', 'selected', 'multi', 'zoom', 'view', 'undo', 'redo', 'dirty', 'showAlerts', 'libKey', 'recKey'];
+  let list = [], active = 0, seq = 0;
+
+  const newKey = () => (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''));
+  const freshView = () => ({ query: '', highlight: false, filters: null, groupBy: '', collapsedGroups: new Set(), panel: false, showTags: App.view.showTags });
+  const snapshot = () => { const s = {}; for (const f of FIELDS) s[f] = App[f]; return s; };
+  const restore = s => { for (const f of FIELDS) App[f] = s[f]; recompute(); };
+  const tabOf = uid => list.find(x => x.uid === uid);
+  const stateOf = tab => (tab.uid === active ? snapshot() : tab.state);
+
+  function init() {
+    seq = 1; active = 1;
+    App.libKey = ''; App.recKey = newKey();
+    list = [{ uid: 1, state: null }];
+  }
+  const count = () => list.length;
+  const canOpen = () => list.length < MAX;
+  const anyDirty = () => list.some(tab => stateOf(tab).dirty);
+  /** Onglets avec leur état (pour la sauvegarde automatique). */
+  const all = () => list.map(tab => ({ uid: tab.uid, state: stateOf(tab) }));
+  /** L'onglet actif est-il un projet initial jamais touché (qu'un projet ouvert peut remplacer) ? */
+  const pristine = () => list.length === 1 && !App.dirty && !App.undo.length && !App.libKey;
+
+  /** Ouvre un projet dans un nouvel onglet. Renvoie false (et le dit) au-delà de dix. */
+  function open(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+    if (!canOpen()) { Dialog.message(t('tabs.title'), t('tabs.max', { max: MAX })); return false; }
+    Editor.close();
+    tabOf(active).state = snapshot();
+    const uid = ++seq;
+    list.push({ uid, state: null });
+    active = uid;
+    loadProject(project);
+    App.multi = new Set(); App.view = freshView(); App.zoom = 100; App.showAlerts = true;
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || newKey();
+    render();
+    if (typeof Recovery !== 'undefined' && App.dirty) Recovery.touch();
+    return true;
+  }
+
+  /** Remplace le projet de l'onglet actif (import « remplacer », restauration au lancement). */
+  function replace(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+    Editor.close();
+    if (App.recKey && recKey && App.recKey !== recKey && typeof Recovery !== 'undefined') Recovery.drop(App.recKey);
+    loadProject(project);
+    App.multi = new Set(); App.view = freshView();
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || App.recKey || newKey();
+    render();
+  }
+
+  function switchTo(uid) {
+    const target = tabOf(uid);
+    if (!target || uid === active) return;
+    Editor.close();
+    tabOf(active).state = snapshot();
+    restore(target.state);
+    target.state = null;
+    active = uid;
+    render();
+    announce(t('tabs.switched', { name: App.project.name }));
+  }
+
+  async function close(uid) {
+    const tab = tabOf(uid);
+    if (!tab) return;
+    const st = stateOf(tab);
+    if (st.dirty && !(await Dialog.confirm(t('tabs.close'), [t('tabs.closeDirty', { name: st.project.name })], t('tabs.closeConfirm'), true))) return;
+    if (typeof Recovery !== 'undefined') Recovery.drop(st.recKey);
+    if (list.length === 1) {
+      replace(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()), { recKey: newKey() });
+      App.libKey = '';
+      announce(t('tabs.closed', { name: st.project.name }));
+      return;
+    }
+    const i = list.indexOf(tab);
+    list.splice(i, 1);
+    if (uid === active) {
+      const next = list[Math.min(i, list.length - 1)];
+      Editor.close();
+      restore(next.state); next.state = null; active = next.uid;
+    }
+    render();
+    announce(t('tabs.closed', { name: st.project.name }));
+    const btn = document.querySelector(`#tabs button.tab[aria-current="page"]`);
+    if (btn) btn.focus();
+  }
+
+  /** Bande d'onglets (au-dessus de la barre du haut). */
+  function paint() {
+    const ul = $('tabs-list');
+    if (!ul) return;
+    clear(ul);
+    for (const tab of list) {
+      const st = stateOf(tab), p = st.project, cur = tab.uid === active;
+      ul.append(h('li', { class: cur ? 'current' : '' },
+        h('button', { type: 'button', class: 'tab', data: { click: 'tabSwitch', arg: String(tab.uid) }, aria: { current: cur ? 'page' : undefined } },
+          h('span', { text: `${p.emoji} ${p.name}` }),
+          st.dirty ? h('span', { class: 'dot', text: ' ●', aria: { hidden: 'true' } }) : null,
+          st.dirty ? h('span', { class: 'sr-only', text: ` (${t('tabs.modified')})` }) : null),
+        h('button', { type: 'button', class: 'icon tab-close', data: { click: 'tabClose', arg: String(tab.uid) }, aria: { label: t('tabs.closeOne', { name: p.name }) } }, '✕')));
+    }
+    $('tabs-count').textContent = t('tabs.count', { count: list.length, max: MAX });
+  }
+
+  return { init, open, replace, switchTo, close, paint, count, canOpen, anyDirty, all, pristine, newKey, MAX };
+})();
+
+action('tabSwitch', arg => Tabs.switchTo(Number(arg)));
+action('tabClose', arg => Tabs.close(Number(arg)));
+
+/** « + » : nouveau projet, modèle, fichier ou bibliothèque (EF-98). */
+action('tabPlus', async () => {
+  const v = await Dialog.open({ title: t('tabs.plus'), body: [h('p', { text: t('tabs.plusHint') })],
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('tabs.new'), value: 'new', kind: 'primary', focus: true },
+      { label: t('tpl.newFrom'), value: 'tpl' }, { label: t('top.import'), value: 'file' }, { label: t('lib.title'), value: 'lib' }] });
+  if (v === 'new') newProjectAction();
+  else if (v === 'tpl') ACTIONS.newFromTemplate();
+  else if (v === 'file') $('file-input').click();
+  else if (v === 'lib') ACTIONS.openLibrary();
+});
+
+// ── js/ui/85-library.js ──
+/* Bibliothèque locale (EF-99) et modèles (EF-100), éventuellement protégés par mot de passe (EF-102).
+ * Un enregistrement est toujours un geste explicite de l'utilisateur. Le sommaire (« index ») et
+ * chaque contenu relu du stockage sont des données non fiables : le sommaire est validé champ par
+ * champ, chaque projet repasse par Model.parseFile (même contrôle qu'un import). */
+const Library = (() => {
+  const INDEX = 'index', MAX_ENTRIES = 200;
+
+  function index() {
+    let raw;
+    try { raw = JSON.parse(Store.read('lib', INDEX) || '[]'); } catch { return []; }
+    if (!Array.isArray(raw)) return [];
+    const keys = new Set(Store.keys('lib'));
+    return raw.slice(0, MAX_ENTRIES).filter(e => e && typeof e === 'object' && typeof e.key === 'string' && /^[a-z0-9-]{1,40}$/.test(e.key) && e.key !== INDEX && keys.has(e.key)
+      && (e.kind === 'project' || e.kind === 'template') && typeof e.name === 'string' && e.name.length <= 200)
+      .map(e => ({ key: e.key, kind: e.kind, name: e.name, emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
+        date: Number.isFinite(e.date) ? e.date : 0, tasks: Number.isInteger(e.tasks) && e.tasks >= 0 ? e.tasks : 0, enc: e.enc === true, withRes: e.withRes === true }));
+  }
+  const writeIndex = list => Store.write('lib', INDEX, JSON.stringify(list));
+
+  /** Enregistre un texte (projet sérialisé) ; renvoie 'ok' | 'full' | 'off'. */
+  async function put(entry, project, password) {
+    const text = JSON.stringify(Model.serialize(project, { withVersions: entry.kind === 'project' }));
+    const data = password ? JSON.stringify(await Secure.encrypt(text, password)) : text;
+    const r = Store.write('lib', entry.key, data);
+    if (r !== 'ok') return r;
+    const list = index().filter(e => e.key !== entry.key);
+    list.unshift({ ...entry, name: project.name, emoji: project.emoji, date: Date.now(), tasks: project.tasks.length, enc: !!password });
+    const w = writeIndex(list);
+    if (w !== 'ok') Store.remove('lib', entry.key);
+    return w;
+  }
+
+  /** Relit une entrée → projet contrôlé (demande le mot de passe si besoin) ; null si abandon. */
+  async function load(entry) {
+    const text = Store.read('lib', entry.key);
+    if (text === null) throw new Model.Invalid('lib.missing');
+    let r = Model.parseFile(text);
+    if (r.encrypted) {
+      const pwd = await askPassword(t('pwd.openTitle'), t('lib.pwdHint', { name: entry.name }));
+      if (pwd === null) return null;
+      announce(t('pwd.working'));
+      r = Model.parseFile(await Secure.decrypt(r.envelope, pwd));
+    }
+    return r.project;
+  }
+
+  function remove(key) { writeIndex(index().filter(e => e.key !== key)); Store.remove('lib', key); }
+  function rename(key, name) { const list = index(); const e = list.find(x => x.key === key); if (e) { e.name = name; writeIndex(list); } }
+  return { index, put, load, remove, rename };
+})();
+
+/** Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce. */
+async function storageNotice() {
+  if (!Store.available()) { await Dialog.message(t('lib.title'), t('store.off')); return false; }
+  if (Settings.get('noticed') === 'yes') return true;
+  const v = await Dialog.open({ title: t('store.noticeTitle'), body: [t('store.notice1'), t('store.notice2'), t('store.notice3')].map(x => h('p', { text: x })),
+    actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('store.understood'), value: 'ok', kind: 'primary', focus: true }] });
+  if (v !== 'ok') return false;
+  Settings.set('noticed', 'yes');
+  return true;
+}
+
+function storeFailed(r) {
+  return Dialog.message(t('lib.title'), r === 'full' ? t('store.full') : t('store.off'));
+}
+
+/** Mot de passe facultatif pour un enregistrement : '' = sans, null = abandon. */
+function protectFields(prefix) {
+  const box = h('div', { class: 'pwd-box', hidden: true },
+    h('div', { class: 'field' }, h('label', { for: prefix + '-pwd', text: t('pwd.label') }), h('input', { type: 'password', id: prefix + '-pwd', autocomplete: 'new-password', aria: { describedby: prefix + '-pwd-hint' } })),
+    h('div', { class: 'field' }, h('label', { for: prefix + '-pwd2', text: t('pwd.confirm') }), h('input', { type: 'password', id: prefix + '-pwd2', autocomplete: 'new-password' })),
+    h('p', { class: 'warning', id: prefix + '-pwd-hint', text: t('pwd.warn', { min: Secure.MIN_PASSWORD }) }));
+  const chk = h('input', { type: 'checkbox', id: prefix + '-protect' });
+  chk.addEventListener('change', () => { box.hidden = !chk.checked; if (chk.checked) $(prefix + '-pwd').focus(); });
+  const nodes = [h('div', { class: 'field check' }, chk, h('label', { for: prefix + '-protect', text: t('exp.protect') })), box];
+  const read = () => {
+    if (!chk.checked) return { pwd: '' };
+    const a = $(prefix + '-pwd').value, b = $(prefix + '-pwd2').value;
+    if (!Secure.passwordOk(a)) return { err: t('pwd.short', { min: Secure.MIN_PASSWORD }), focus: prefix + '-pwd' };
+    if (a !== b) return { err: t('pwd.mismatch'), focus: prefix + '-pwd2' };
+    return { pwd: a };
+  };
+  return { nodes, read };
+}
+
+/** Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S). */
+async function saveToLibrary() {
+  if (!(await storageNotice())) return;
+  const existing = App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
+  const prot = protectFields('lib');
+  let pwd = '';
+  const v = await Dialog.open({ title: t('lib.save'), body: [h('p', { text: existing ? t('lib.saveOver', { name: App.project.name }) : t('lib.saveNew', { name: App.project.name }) }),
+    h('p', { class: 'field-error', id: 'lib-err', role: 'alert', hidden: true }), ...prot.nodes],
+  actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('lib.saveBtn'), value: 'ok', kind: 'primary', focus: true }],
+  onAction: val => {
+    if (val !== 'ok') return true;
+    const r = prot.read();
+    if (r.err) { const e = $('lib-err'); e.textContent = r.err; e.hidden = false; $(r.focus).focus(); return false; }
+    pwd = r.pwd; return true;
+  } });
+  if (v !== 'ok') return;
+  const key = existing ? existing.key : Tabs.newKey();
+  if (pwd) announce(t('pwd.working'));
+  const r = await Library.put({ key, kind: 'project' }, App.project, pwd);
+  if (r !== 'ok') { await storeFailed(r); return; }
+  App.libKey = key; App.dirty = false;
+  if (typeof Recovery !== 'undefined') Recovery.clearCurrent();
+  render();
+  toast(t('lib.saved', { name: App.project.name }));
+}
+
+/* ── Modèles (EF-100) ─────────────────────────────────────────────────────────────────────── */
+/** Projet → modèle : sans avancement, dates réelles, commentaires, baselines ni versions. */
+function toTemplate(project, keepResources) {
+  const p = clone(project);
+  p.baselines = []; p.versions = [];
+  for (const x of p.tasks) {
+    x.pct = 0; x.realStart = ''; x.realEnd = ''; x.comments = [];
+    if (!keepResources) x.assign = [];
+  }
+  if (!keepResources) p.resources = [];
+  return p;
+}
+
+/** Modèles fournis (aucune donnée réelle), traduits dans la langue courante. */
+function builtinTemplates() {
+  const mk = (code, emoji, tasks) => ({ key: 'builtin-' + code, kind: 'template', builtin: true, name: t(`tpl.${code}.name`), emoji, tasks: tasks.length,
+    build: start => Model.sanitize({ format: Model.FORMAT, name: t(`tpl.${code}.name`), emoji, projectStart: start, leveling: 'smooth',
+      tasks: tasks.map(([id, dur, dep, type], i) => ({ id, name: t(`tpl.${code}.t${i + 1}`), dur, type: type || 'task', deps: dep ? [dep] : [] })) }).project });
+  return [
+    mk('phases', '🎯', [['A', 5], ['B', 10, 'A'], ['C', 20, 'B'], ['D', 5, 'C'], ['E', 1, 'D'], ['F', 0, 'E', 'milestone']]),
+    mk('event', '🏆', [['A', 3], ['B', 5, 'A'], ['C', 10, 'B'], ['D', 7, 'B'], ['E', 1, 'C'], ['F', 2, 'E']]),
+  ];
+}
+
+/** Décale les dates d'un modèle sur un nouveau début (dates imposées, « pas avant », échéances). */
+function shiftTemplate(p, start) {
+  const from = Dates.parse(p.projectStart), to = Dates.parse(start), d = to - from;
+  const mv = s => (s ? Dates.toISO(Math.min(Dates.parse('2199-12-31'), Math.max(0, Dates.parse(s) + d))) : s);
+  p.projectStart = start;
+  for (const x of p.tasks) { x.forcedStart = mv(x.forcedStart); x.notBefore = mv(x.notBefore); x.deadline = mv(x.deadline); }
+  for (const r of p.resources) r.absences = (r.absences || []).map(a => ({ ...a, from: mv(a.from), to: mv(a.to) }));
+  return p;
+}
+
+async function saveAsTemplate() {
+  if (!(await storageNotice())) return;
+  const name = h('input', { type: 'text', id: 'tpl-name', maxlength: 60, value: App.project.name, required: true });
+  const keep = h('input', { type: 'checkbox', id: 'tpl-res' });
+  let opts = null;
+  const v = await Dialog.open({ title: t('tpl.save'), body: [h('p', { text: t('tpl.saveHint') }), h('p', { class: 'field-error', id: 'tpl-err', role: 'alert', hidden: true }),
+    h('div', { class: 'field' }, h('label', { for: 'tpl-name', text: t('tpl.name') }), name),
+    h('div', { class: 'field check' }, keep, h('label', { for: 'tpl-res', text: t('tpl.keepRes') }))],
+  actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('tpl.saveBtn'), value: 'ok', kind: 'primary' }],
+  onAction: val => {
+    if (val !== 'ok') return true;
+    const n = name.value.trim();
+    if (!n) { const e = $('tpl-err'); e.textContent = t('tpl.needName'); e.hidden = false; name.focus(); return false; }
+    opts = { name: n, keep: keep.checked }; return true;
+  } });
+  if (v !== 'ok') return;
+  const p = toTemplate(App.project, opts.keep);
+  p.name = opts.name;
+  const r = await Library.put({ key: Tabs.newKey(), kind: 'template', withRes: opts.keep }, p, '');
+  if (r !== 'ok') { await storeFailed(r); return; }
+  toast(t('tpl.saved', { name: opts.name }));
+}
+
+/** Nouveau projet à partir d'un modèle : modèle, nom et date de début (EF-100). */
+async function newFromTemplate() {
+  const all = [...builtinTemplates(), ...Library.index().filter(e => e.kind === 'template')];
+  const sel = h('select', { id: 'tpl-pick' }, all.map((e, i) => h('option', { value: i }, `${e.emoji} ${e.name} — ${t('lib.tasks', { count: e.tasks })}${e.builtin ? ` (${t('tpl.builtin')})` : ''}`)));
+  const name = h('input', { type: 'text', id: 'tpl-pname', maxlength: 60, required: true });
+  const start = h('input', { type: 'date', id: 'tpl-start', value: Dates.toISO(Dates.todayDn()), min: '1970-01-01', max: '2199-12-31', required: true });
+  let chosen = null;
+  const v = await Dialog.open({ title: t('tpl.newFrom'), body: [h('p', { class: 'field-error', id: 'tpl-err', role: 'alert', hidden: true }),
+    h('div', { class: 'field' }, h('label', { for: 'tpl-pick', text: t('tpl.pick') }), sel),
+    h('div', { class: 'field' }, h('label', { for: 'tpl-pname', text: t('f.name') }), name),
+    h('div', { class: 'field' }, h('label', { for: 'tpl-start', text: t('top.start') }), start)],
+  actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('tpl.create'), value: 'ok', kind: 'primary' }],
+  onAction: val => {
+    if (val !== 'ok') return true;
+    const err = (m, el) => { const e = $('tpl-err'); e.textContent = m; e.hidden = false; el.focus(); return false; };
+    if (!name.value.trim()) return err(t('tpl.needName'), name);
+    if (Dates.parse(start.value) == null) return err(t('rule.date'), start);
+    chosen = { entry: all[Number(sel.value)], name: name.value.trim().slice(0, 60), start: start.value }; return true;
+  } });
+  if (v !== 'ok') return;
+  let p;
+  try {
+    if (chosen.entry.builtin) p = chosen.entry.build(chosen.start);
+    else { p = await Library.load(chosen.entry); if (!p) return; p = shiftTemplate(toTemplate(p, true), chosen.start); }
+  } catch (e) { await Dialog.message(t('tpl.newFrom'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  p.name = chosen.name; p.id = 'P' + Date.now().toString(36); p.createdAt = Date.now();
+  if (Tabs.pristine()) Tabs.replace(p, { dirty: true }); else if (!Tabs.open(p, { dirty: true })) return;
+  announce(t('imp.opened', { name: p.name }));
+}
+
+/* ── Fenêtre Bibliothèque ─────────────────────────────────────────────────────────────────── */
+async function openLibrary(focusSel) {
+  const body = h('div', { id: 'lib-win' });
+  const fmt = ms => (ms ? I18n.dateTime(ms) : '—');
+  const paint = sel => {
+    clear(body);
+    const list = Library.index();
+    body.append(h('p', { class: 'hint', text: t('lib.warn') }),
+      h('div', { class: 'actions' }, h('button', { type: 'button', class: 'primary', id: 'lib-save', data: { dlg: 'save' } }, t('lib.saveCurrent')),
+        h('button', { type: 'button', id: 'lib-tpl', data: { dlg: 'tpl' } }, t('tpl.save')),
+        h('button', { type: 'button', id: 'lib-new', data: { dlg: 'newtpl' } }, t('tpl.newFrom'))));
+    for (const kind of ['project', 'template']) {
+      const rows = list.filter(e => e.kind === kind);
+      body.append(h('h3', { text: t(kind === 'project' ? 'lib.projects' : 'lib.templates') }));
+      if (!rows.length) { body.append(h('p', { class: 'hint', text: t('lib.empty') })); continue; }
+      body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage' },
+        h('caption', { class: 'sr-only', text: t(kind === 'project' ? 'lib.projects' : 'lib.templates') }),
+        h('thead', {}, h('tr', {}, ['lib.name', 'lib.date', 'lib.count', 'lib.actions'].map(k => h('th', { scope: 'col', text: t(k) })))),
+        h('tbody', {}, rows.map(e => h('tr', {},
+          h('th', { scope: 'row' }, `${e.emoji} ${e.name}`, e.enc ? h('span', { class: 'hint', text: ` 🔒 ${t('lib.protected')}` }) : null),
+          h('td', { text: fmt(e.date) }), h('td', { text: String(e.tasks) }),
+          h('td', { class: 'row-actions' },
+            kind === 'project' ? h('button', { type: 'button', id: `lib-open-${e.key}`, data: { dlg: 'open:' + e.key }, aria: { label: t('lib.openOne', { name: e.name }) } }, t('lib.open')) : null,
+            h('button', { type: 'button', id: `lib-ren-${e.key}`, data: { dlg: 'ren:' + e.key }, aria: { label: t('lib.renameOne', { name: e.name }) } }, t('lib.rename')),
+            h('button', { type: 'button', id: `lib-dup-${e.key}`, data: { dlg: 'dup:' + e.key }, aria: { label: t('lib.duplicateOne', { name: e.name }) } }, t('lib.duplicate')),
+            h('button', { type: 'button', class: 'danger', id: `lib-del-${e.key}`, data: { dlg: 'del:' + e.key }, aria: { label: t('lib.deleteOne', { name: e.name }) } }, t('lib.delete')))))))));
+    }
+    body.append(h('p', { class: 'hint', text: t('lib.usage', { size: I18n.number(Math.round(Store.usage() / 1024)) }) }));
+    const el = sel && body.querySelector(sel);
+    (el || $('lib-save')).focus();
+  };
+  // Boutons de la fenêtre : délégation sur data-dlg (aucun gestionnaire inline).
+  body.addEventListener('click', async ev => {
+    const b = ev.target.closest('button[data-dlg]');
+    if (!b) return;
+    const [cmd, key] = b.dataset.dlg.split(':');
+    const entry = key && Library.index().find(e => e.key === key);
+    if (cmd === 'save') { await saveToLibrary(); paint('#lib-save'); return; }
+    if (cmd === 'tpl') { await saveAsTemplate(); paint('#lib-tpl'); return; }
+    if (cmd === 'newtpl') { closeDlg(); await newFromTemplate(); return; }
+    if (!entry) { paint(); return; }
+    if (cmd === 'open') {
+      let p;
+      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
+      if (!p) { paint(`#lib-open-${key}`); return; }
+      closeDlg();
+      if (Tabs.pristine()) Tabs.replace(p, { libKey: key }); else Tabs.open(p, { libKey: key });
+      announce(t('imp.opened', { name: p.name }));
+    } else if (cmd === 'ren') {
+      const inp = h('input', { type: 'text', id: 'lib-newname', maxlength: 60, value: entry.name });
+      let n = null;
+      const v = await Dialog.open({ title: t('lib.rename'), body: [h('div', { class: 'field' }, h('label', { for: 'lib-newname', text: t('lib.name') }), inp)],
+        actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('dlg.ok'), value: 'ok', kind: 'primary' }], onAction: () => { n = inp.value.trim().slice(0, 60); return true; } });
+      if (v === 'ok' && n) {
+        // Le nom est aussi celui du projet enregistré : on le change dans le contenu s'il est lisible en clair.
+        Library.rename(key, n);
+        if (!entry.enc) { try { const r = Model.parseFile(Store.read('lib', key)); r.project.name = n; await Library.put(entry, r.project, ''); } catch { /* contenu illisible : sommaire seul */ } }
+      }
+      paint(`#lib-ren-${key}`);
+    } else if (cmd === 'dup') {
+      const text = Store.read('lib', key);
+      const nk = Tabs.newKey();
+      const r = text === null ? 'off' : Store.write('lib', nk, text);
+      if (r !== 'ok') await storeFailed(r);
+      else {
+        const list = Library.index();
+        list.unshift({ ...entry, key: nk, name: t('lib.copyOf', { name: entry.name }).slice(0, 60), date: Date.now() });
+        const w = Store.write('lib', 'index', JSON.stringify(list));
+        if (w !== 'ok') { Store.remove('lib', nk); await storeFailed(w); }
+      }
+      paint(`#lib-dup-${key}`);
+    } else if (cmd === 'del') {
+      if (await Dialog.confirm(t('lib.delete'), [t('lib.deleteConfirm', { name: entry.name })], t('lib.delete'))) {
+        Library.remove(key);
+        if (App.libKey === key) App.libKey = '';
+        announce(t('lib.deleted', { name: entry.name }));
+      }
+      paint('#lib-save');
+    }
+  });
+  let closeDlg = () => {};
+  const p = Dialog.open({ title: t('lib.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'cancel' }] });
+  const dlg = body.closest('dialog');
+  closeDlg = () => { const c = dlg && dlg.querySelector('button[value="cancel"]'); if (c) c.click(); };
+  paint(focusSel);
+  await p;
+}
+
+action('openLibrary', () => openLibrary());
+action('saveLibrary', () => saveToLibrary());
+action('newFromTemplate', () => newFromTemplate());
+
+// ── js/ui/86-recovery.js ──
+/* Sauvegarde automatique (EF-101, RG-31) — DÉSACTIVÉE par défaut (EX-10).
+ * Quand elle est activée, l'état de chaque onglet modifié est écrit 5 secondes après la dernière
+ * modification dans un emplacement de récupération propre à l'onglet. L'emplacement est vidé par
+ * un export, un enregistrement dans la bibliothèque ou la fermeture de l'onglet ; s'il existe au
+ * lancement suivant, l'application propose de le restaurer.
+ * Protection (EF-102) : si l'utilisateur l'a demandé, le contenu est chiffré avec un mot de passe
+ * gardé UNIQUEMENT en mémoire pendant la session ; après un rechargement, la sauvegarde reste en
+ * pause tant que le mot de passe n'a pas été ressaisi (Réglages ou fenêtre de récupération). */
+const Recovery = (() => {
+  const DELAY = 5000;
+  let timer = 0, password = null, lastSaved = 0, failed = '';
+
+  const enabled = () => Settings.get('autosave') === 'on';
+  const protectedMode = () => Settings.get('recprotect') === 'on';
+  const paused = () => enabled() && protectedMode() && !password;
+
+  /** Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, data}. */
+  async function wrap(project) {
+    const text = JSON.stringify(Model.serialize(project, { withVersions: true }));
+    const enc = protectedMode();
+    const data = enc ? JSON.stringify(await Secure.encrypt(text, password)) : text;
+    return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, data });
+  }
+
+  async function saveAll() {
+    timer = 0;
+    if (!enabled() || paused()) { paint(); return; }
+    let r = 'ok';
+    for (const { state } of Tabs.all()) {
+      if (!state.dirty) continue;
+      try { r = Store.write('rec', state.recKey, await wrap(state.project)); } catch { r = 'off'; }
+      if (r !== 'ok') break;
+    }
+    if (r === 'ok') { lastSaved = Date.now(); failed = ''; }
+    else if (failed !== r) { failed = r; Dialog.message(t('auto.title'), r === 'full' ? t('store.full') : t('store.off')); }
+    paint();
+  }
+
+  /** À appeler après chaque modification : sauvegarde différée de 5 secondes. */
+  function touch() {
+    if (!enabled()) return;
+    clearTimeout(timer);
+    timer = setTimeout(saveAll, DELAY);
+  }
+  function drop(key) { if (key) Store.remove('rec', key); }
+  function clearCurrent() { drop(App.recKey); }
+  function clearAllCopies() { for (const k of Store.keys('rec')) Store.remove('rec', k); }
+
+  /** Copies trouvées (enveloppes validées champ par champ ; le contenu sera relu par Model.parseFile). */
+  function found() {
+    const out = [];
+    for (const key of Store.keys('rec')) {
+      let e;
+      try { e = JSON.parse(Store.read('rec', key) || ''); } catch { continue; }
+      if (!e || e.v !== 1 || typeof e.data !== 'string' || typeof e.name !== 'string') continue;
+      out.push({ key, savedAt: Number.isFinite(e.savedAt) ? e.savedAt : 0, name: e.name.slice(0, 60), emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
+        tasks: Number.isInteger(e.tasks) ? e.tasks : 0, enc: e.enc === true, data: e.data });
+    }
+    return out.sort((a, b) => b.savedAt - a.savedAt);
+  }
+
+  async function unwrap(entry, pwd) {
+    let r = Model.parseFile(entry.data);
+    if (r.encrypted) r = Model.parseFile(await Secure.decrypt(r.envelope, pwd));
+    return r.project;
+  }
+
+  /** Au lancement : pour chaque copie, restaurer dans un onglet, ignorer ou supprimer (EF-101). */
+  async function offer() {
+    const list = found();
+    if (!list.length) return;
+    const groups = list.map((e, i) => h('fieldset', { class: 'sub' },
+      h('legend', { text: `${e.emoji} ${e.name} — ${t('auto.savedAt', { time: I18n.dateTime(e.savedAt) })}, ${t('lib.tasks', { count: e.tasks })}${e.enc ? ' 🔒' : ''}` }),
+      ['restore', 'ignore', 'delete'].map(c => h('span', { class: 'check' },
+        h('input', { type: 'radio', name: 'rec-' + i, id: `rec-${i}-${c}`, value: c, checked: c === 'restore' }), h('label', { for: `rec-${i}-${c}`, text: t('auto.' + c) })))));
+    const needPwd = list.some(e => e.enc);
+    const pwdInp = needPwd ? h('input', { type: 'password', id: 'rec-pwd', autocomplete: 'current-password' }) : null;
+    let choices = null;
+    const v = await Dialog.open({ title: t('auto.foundTitle'), size: 'wide',
+      body: [h('p', { text: t('auto.found', { count: list.length }) }), ...groups,
+        needPwd ? h('div', { class: 'field' }, h('label', { for: 'rec-pwd', text: t('auto.pwd') }), pwdInp) : null,
+        h('p', { class: 'field-error', id: 'rec-err', role: 'alert', hidden: true })],
+      actions: [{ label: t('auto.later'), value: 'cancel' }, { label: t('dlg.ok'), value: 'ok', kind: 'primary', focus: true }],
+      onAction: () => { choices = list.map((e, i) => document.querySelector(`input[name="rec-${i}"]:checked`).value); return true; } });
+    if (v !== 'ok') return;
+    const pwd = pwdInp ? pwdInp.value : null;
+    if (pwdInp) pwdInp.value = '';
+    let bad = 0, restored = 0;
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i], c = choices[i];
+      if (c === 'delete') { drop(e.key); continue; }
+      if (c !== 'restore') continue;
+      let p;
+      try { p = await unwrap(e, pwd); } catch { bad++; continue; }
+      if (e.enc && protectedMode()) password = pwd; // la sauvegarde protégée reprend
+      const ok = Tabs.pristine() ? (Tabs.replace(p, { dirty: true, recKey: e.key }), true) : Tabs.open(p, { dirty: true, recKey: e.key });
+      if (!ok) break;
+      restored++;
+    }
+    if (restored) announce(t('auto.restored', { count: restored }));
+    if (bad) await Dialog.message(t('auto.foundTitle'), t('auto.bad', { count: bad }));
+    paint();
+  }
+
+  /** Indicateur discret de la barre du haut. */
+  function paint() {
+    const el = $('autosave-status');
+    if (!el) return;
+    if (!enabled()) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = paused() ? t('auto.paused') : failed ? t('auto.failed') : lastSaved ? t('auto.saved', { time: I18n.dateTime(lastSaved).split(' ').pop() }) : t('auto.on');
+  }
+
+  /** Écriture immédiate à la fermeture de la page (sans chiffrement possible, donc seulement en clair). */
+  function flushSync() {
+    if (!enabled() || protectedMode() || !timer) return;
+    clearTimeout(timer); timer = 0;
+    for (const { state } of Tabs.all()) {
+      if (!state.dirty) continue;
+      const text = JSON.stringify(Model.serialize(state.project, { withVersions: true }));
+      Store.write('rec', state.recKey, JSON.stringify({ v: 1, savedAt: Date.now(), name: state.project.name, emoji: state.project.emoji, tasks: state.project.tasks.length, enc: false, data: text }));
+    }
+  }
+
+  function setPassword(p) { password = p; touch(); paint(); }
+  function stop() { clearTimeout(timer); timer = 0; password = null; lastSaved = 0; failed = ''; paint(); }
+  return { touch, drop, clearCurrent, clearAllCopies, offer, paint, flushSync, setPassword, stop, enabled, paused, protectedMode, saveNow: saveAll };
+})();
+
+// ── js/ui/87-settings.js ──
+/* Réglages (EF-104), aide et à propos (EF-57, EF-58) et page d'accueil facultative (EF-56). */
+const APP_VERSION = '3.0.0';
+
+function setLanguage(next) {
+  if (!['fr', 'en'].includes(next) || next === I18n.getLang()) return;
+  Settings.set('lang', next);
+  I18n.setLang(next);
+  render();
+  Recovery.paint();
+  if (Editor.isOpen()) Editor.open(App.selected);
+}
+
+/** Activation de la sauvegarde automatique : message sur ce qui est conservé, où, et le risque. */
+async function enableAutosave() {
+  if (!Store.available()) { await Dialog.message(t('auto.title'), t('store.off')); return false; }
+  const ok = await Dialog.confirm(t('auto.enableTitle'), [t('auto.enable1'), t('auto.enable2'), t('auto.enable3')], t('auto.enableBtn'), false);
+  if (!ok) return false;
+  Settings.set('noticed', 'yes');
+  Settings.set('autosave', 'on');
+  Recovery.touch();
+  if (App.dirty) Recovery.saveNow();
+  return true;
+}
+
+async function openSettings() {
+  const body = h('div', { id: 'set-win' });
+  const paint = focusId => {
+    clear(body);
+    const auto = Recovery.enabled();
+    body.append(
+      h('div', { class: 'field' }, h('label', { for: 'set-lang', text: t('set.lang') }),
+        h('select', { id: 'set-lang' }, [['fr', 'Français'], ['en', 'English']].map(([v, l]) => h('option', { value: v, selected: I18n.getLang() === v, lang: v }, l)))),
+      h('div', { class: 'field' }, h('label', { for: 'set-theme', text: t('set.theme') }),
+        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || 'system') === v }, t('theme.' + v))))),
+      h('fieldset', { class: 'sub' }, h('legend', { text: t('auto.title') }),
+        h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-auto', checked: auto, aria: { describedby: 'set-auto-hint' } }), h('label', { for: 'set-auto', text: t('set.autosave') })),
+        h('p', { class: 'hint', id: 'set-auto-hint', text: t('set.autosaveHint') }),
+        auto ? h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-recprot', checked: Recovery.protectedMode() }), h('label', { for: 'set-recprot', text: t('set.recProtect') })) : null,
+        auto && Recovery.paused() ? h('div', {}, h('p', { class: 'warning', text: t('auto.paused') }),
+          h('button', { type: 'button', id: 'set-recpwd' }, t('set.recPwdEnter'))) : null),
+      h('fieldset', { class: 'sub' }, h('legend', { text: t('set.data') }),
+        h('p', { text: t('lib.usage', { size: I18n.number(Math.round(Store.usage() / 1024)) }) }),
+        h('p', { class: 'hint', text: t('set.dataHint') }),
+        h('button', { type: 'button', class: 'danger', id: 'set-clear' }, t('set.clearAll'))));
+    const el = focusId && $(focusId);
+    (el || $('set-lang')).focus();
+  };
+  const askNewPassword = async () => {
+    const prot = protectFields('rec');
+    prot.nodes[0].querySelector('input').checked = true; prot.nodes[1].hidden = false;
+    let pwd = null;
+    const v = await Dialog.open({ title: t('set.recProtect'), body: [h('p', { class: 'field-error', id: 'recset-err', role: 'alert', hidden: true }), prot.nodes[1]],
+      actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('dlg.ok'), value: 'ok', kind: 'primary' }],
+      onAction: val => {
+        if (val !== 'ok') return true;
+        const r = prot.read();
+        if (r.err) { const e = $('recset-err'); e.textContent = r.err; e.hidden = false; $(r.focus).focus(); return false; }
+        pwd = r.pwd; return true;
+      } });
+    return v === 'ok' ? pwd : null;
+  };
+  body.addEventListener('change', async ev => {
+    const id = ev.target.id;
+    if (id === 'set-lang') { setLanguage(ev.target.value); closeDlg(); openSettings(); return; }
+    if (id === 'set-theme') { Settings.set('theme', ev.target.value); applyTheme(); render(); return; }
+    if (id === 'set-auto') {
+      if (ev.target.checked) { if (!(await enableAutosave())) ev.target.checked = false; }
+      else { Settings.set('autosave', 'off'); Settings.set('recprotect', 'off'); Recovery.stop(); Recovery.clearAllCopies(); announce(t('auto.disabled')); }
+      Recovery.paint(); paint('set-auto'); return;
+    }
+    if (id === 'set-recprot') {
+      if (ev.target.checked) {
+        const pwd = await askNewPassword();
+        if (pwd) { Settings.set('recprotect', 'on'); Recovery.clearAllCopies(); Recovery.setPassword(pwd); Recovery.saveNow(); }
+      } else { Settings.set('recprotect', 'off'); Recovery.clearAllCopies(); Recovery.setPassword(null); Recovery.saveNow(); }
+      paint('set-recprot');
+    }
+  });
+  body.addEventListener('click', async ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.id === 'set-recpwd') {
+      const pwd = await askPassword(t('set.recProtect'), t('set.recPwdHint'));
+      if (pwd && Secure.passwordOk(pwd)) { Recovery.setPassword(pwd); Recovery.saveNow(); }
+      paint('set-auto');
+    } else if (b.id === 'set-clear') {
+      if (!(await Dialog.confirm(t('set.clearAll'), [t('set.clearConfirm1'), t('set.clearConfirm2')], t('set.clearBtn')))) { paint('set-clear'); return; }
+      Recovery.stop();
+      Settings.clearAll();
+      for (const k of Store.keys('rec')) Store.remove('rec', k);
+      App.libKey = '';
+      applyTheme();
+      Recovery.paint(); render();
+      announce(t('set.cleared'));
+      paint('set-clear');
+    }
+  });
+  let closeDlg = () => {};
+  const p = Dialog.open({ title: t('set.title'), body: [body], actions: [{ label: t('dlg.close'), value: 'cancel' }] });
+  const dlg = body.closest('dialog');
+  closeDlg = () => { const c = dlg && dlg.querySelector('button[value="cancel"]'); if (c) c.click(); };
+  paint();
+  await p;
+}
+
+/* ── Aide, à propos et déclaration d'accessibilité (EF-57, EF-58, EX-05, EX-09) ─────────── */
+function openHelp() {
+  const sec = (key, ...nodes) => h('section', { class: 'help-sec', aria: { labelledby: 'help-' + key } }, h('h3', { id: 'help-' + key, text: t('help.' + key) }), ...nodes);
+  const para = keys => keys.map(k => h('p', { text: t(k) }));
+  const KEYS = [['↑ / ↓', 'help.k.move'], ['Entrée / Enter', 'help.k.edit'], ['Maj + clic, Ctrl + clic', 'help.k.multi'], ['Ctrl + A', 'help.k.all'],
+    ['Suppr / Delete', 'help.k.del'], ['Échap / Esc', 'help.k.esc'], ['Ctrl + Z, Ctrl + Y', 'help.k.undo'], ['Ctrl + C, Ctrl + V', 'help.k.copy'],
+    ['Ctrl + D', 'help.k.dup'], ['Alt + ← / →', 'help.k.nudge'], ['Ctrl + Maj + → / ←', 'help.k.indent'], ['Ctrl + S', 'help.k.save'],
+    ['+ / − (Gantt)', 'help.k.zoom'], ['?', 'help.k.help']];
+  const body = h('div', { id: 'help-win', class: 'help', tabindex: '-1', autofocus: true },
+    sec('about', h('p', { class: 'strong', text: t('help.version', { version: APP_VERSION }) }), ...para(['help.license', 'help.fonts'])),
+    sec('start', h('ol', {}, ['help.s1', 'help.s2', 'help.s3', 'help.s4', 'help.s5', 'help.s6'].map(k => h('li', { text: t(k) })))),
+    sec('keys', h('p', { class: 'hint', text: t('help.keysHint') }), h('table', { class: 'manage' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('help.key') }), h('th', { scope: 'col', text: t('help.action') }))),
+      h('tbody', {}, KEYS.map(([k, d]) => h('tr', {}, h('th', { scope: 'row' }, h('kbd', { text: k })), h('td', { text: t(d) })))))),
+    sec('privacy', ...para(['help.p1', 'help.p2', 'help.p3', 'help.p4'])),
+    sec('a11y', ...para(['help.a1', 'help.a2', 'help.a3', 'help.a4'])));
+  return Dialog.open({ title: t('help.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'cancel' }] });
+}
+
+/* ── Page d'accueil facultative (EF-56, 8.4) ──────────────────────────────────────────────── */
+const Home = { url: null };
+
+/** Au lancement : projet transmis (contrôlé comme un import) et adresse de retour validée. */
+async function initHome() {
+  Home.url = HomeLink.homeUrl();
+  $('btn-home').hidden = !Home.url;
+  $('btn-homesave').hidden = !Home.url;
+  const raw = HomeLink.takeProject();
+  if (raw === null) return;
+  try {
+    const r = Model.parseFile(raw);
+    if (r.encrypted) throw new Model.Invalid('imp.unreadable');
+    Tabs.replace(r.project, { dirty: false });
+    announce(t('imp.opened', { name: r.project.name }));
+  } catch (e) {
+    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
+  }
+}
+
+function homeSave() {
+  const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
+  if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
+  App.dirty = false;
+  Recovery.clearCurrent();
+  render();
+  toast(t('home.saved'));
+  return true;
+}
+
+action('homeSave', () => homeSave());
+action('goHome', () => {
+  if (!Home.url || !homeSave()) return;
+  window.location.assign(Home.url); // adresse déjà validée : même origine, http(s) ou file
+});
+action('openSettings', () => openSettings());
+action('openHelp', () => openHelp());
+
 // ── js/ui/99-main.js ──
 /* Actions de l'écran principal et démarrage. */
 
@@ -6928,11 +7868,7 @@ action('toggleTheme', () => {
 });
 
 action('toggleLang', () => {
-  const next = I18n.getLang() === 'fr' ? 'en' : 'fr';
-  Settings.set('lang', next);
-  I18n.setLang(next);
-  render();
-  if (Editor.isOpen()) Editor.open(App.selected);
+  setLanguage(I18n.getLang() === 'fr' ? 'en' : 'fr');
   $('btn-lang').focus();
 });
 
@@ -6969,6 +7905,12 @@ function applyTheme() {
 function initKeyboard() {
   document.addEventListener('keydown', ev => {
     const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
+    // Ctrl + S : enregistrer dans la bibliothèque (EF-99), y compris depuis un champ.
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && ev.key.toLowerCase() === 's') {
+      ev.preventDefault();
+      if (!document.querySelector('dialog[open]')) saveToLibrary();
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !inField && !document.querySelector('dialog[open]')) {
       const k = ev.key.toLowerCase();
       if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); ACTIONS.undo(); }
@@ -6996,8 +7938,12 @@ function init() {
   initGestures();
   initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
-  // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
-  window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+  Tabs.init();
+  // Avertissement à la fermeture uniquement si un onglet a des modifications non exportées (EF-53).
+  window.addEventListener('beforeunload', ev => {
+    Recovery.flushSync();
+    if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
+  });
   // Import par glisser-déposer (EF-52).
   document.addEventListener('dragover', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) ev.preventDefault(); });
   document.addEventListener('drop', async ev => {
@@ -7007,6 +7953,8 @@ function init() {
     importFile(file);
   });
   render();
+  Recovery.paint();
+  initHome().then(() => Recovery.offer());
 }
 
 init();

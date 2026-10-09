@@ -91,7 +91,7 @@ async function doExport() {
         const env = await Secure.encrypt(text, a);
         download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
       } else download(text, exportFileName(p.name), 'application/json');
-      if (!o.anonymize) { App.dirty = false; if (typeof Recovery !== 'undefined') Recovery.clearCurrent(); }
+      if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
     } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
     else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     else if (o.format === 'msp') {
@@ -232,16 +232,16 @@ async function confirmOpen(p, extraLines, origin) {
       start: I18n.date(Dates.parse(p.projectStart)), pct: avg }) }),
     ...extraLines.filter(Boolean).map(x => h('p', { class: 'hint', text: x })),
   ];
-  const canTab = typeof Tabs !== 'undefined' && Tabs.canOpen();
-  if (App.dirty && !canTab) lines.push(h('p', { class: 'warning', text: t('dlg.unsaved') }));
+  const canTab = Tabs.canOpen() && !Tabs.pristine();
+  if (!Tabs.canOpen()) lines.push(h('p', { class: 'hint', text: t('tabs.max', { max: Tabs.MAX }) }));
   const actions = [{ label: t('dlg.cancel'), value: 'cancel', focus: true }];
   if (canTab) actions.push({ label: t('imp.newTab'), value: 'tab', kind: 'primary' });
   actions.push({ label: t('imp.replace'), value: 'ok', kind: canTab ? '' : 'primary' });
   const v = await Dialog.open({ title: t('imp.title'), body: lines, actions });
   if (v === 'cancel') return false;
-  if (v === 'ok' && App.dirty && canTab && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
+  if (v === 'ok' && App.dirty && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
   if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file' });
-  else { Editor.close(); clearSelection(); loadProject(p); App.dirty = origin !== 'file'; render(); }
+  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file' }); }
   announce(t('imp.opened', { name: p.name }));
   return true;
 }
@@ -341,12 +341,6 @@ function initialNames() {
 }
 
 async function newProjectAction() {
-  if (typeof Tabs !== 'undefined' && Tabs.canOpen()) { Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames())); return; }
-  if (App.dirty) {
-    const ok = await Dialog.confirm(t('dlg.new'), [t('dlg.unsaved')], t('top.new'));
-    if (!ok) return;
-  }
-  Editor.close();
-  loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
-  render();
+  // Nouveau projet dans un nouvel onglet (EF-49, EF-98) ; au-delà de dix, la limite est annoncée.
+  Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
 }

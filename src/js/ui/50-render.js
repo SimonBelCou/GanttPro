@@ -442,5 +442,6 @@ function render() {
   renderList(items, fl);
   renderGantt(items, fl);
   renderLegend();
+  Tabs.paint();
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
 }

@@ -54,3 +54,4 @@ jobs:
           npm install --no-save axe-core
           python3 tests/test_gantt.py
           python3 tests/test_v3.py
+          python3 tests/test_v3_espace.py

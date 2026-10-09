@@ -12,7 +12,14 @@
 <body>
 <a class="skip" href="#main" data-i18n="app.skip">Aller au planning</a>
 
+<nav class="tabs" id="tabs" data-i18n-label="tabs.label" aria-label="Projets ouverts">
+  <ul id="tabs-list"></ul>
+  <button type="button" class="icon tab-plus" data-click="tabPlus" data-i18n-label="tabs.plus" aria-label="Ouvrir un projet">+</button>
+  <span class="sr-only" id="tabs-count"></span>
+</nav>
+
 <header class="topbar" role="banner">
+  <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
   <h1 class="brand">GanttPro</h1>
   <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
   <label class="field-inline"><span data-i18n="top.start">Début projet</span>
@@ -61,12 +68,17 @@
       <button type="button" data-click="newProject" data-i18n="top.new"></button>
       <button type="button" data-click="importFile" data-i18n="top.import"></button>
       <button type="button" data-click="exportFile" data-i18n="top.export"></button>
+      <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
+      <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
       <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
     </div>
     <div class="group">
       <button type="button" id="btn-theme" data-click="toggleTheme"></button>
       <button type="button" id="btn-lang" data-click="toggleLang"></button>
+      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
+      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
     </div>
+    <span class="autosave" id="autosave-status" hidden></span>
   </nav>
 </header>
 

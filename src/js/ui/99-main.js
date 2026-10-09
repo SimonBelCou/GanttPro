@@ -74,11 +74,7 @@ action('toggleTheme', () => {
 });
 
 action('toggleLang', () => {
-  const next = I18n.getLang() === 'fr' ? 'en' : 'fr';
-  Settings.set('lang', next);
-  I18n.setLang(next);
-  render();
-  if (Editor.isOpen()) Editor.open(App.selected);
+  setLanguage(I18n.getLang() === 'fr' ? 'en' : 'fr');
   $('btn-lang').focus();
 });
 
@@ -115,6 +111,12 @@ function applyTheme() {
 function initKeyboard() {
   document.addEventListener('keydown', ev => {
     const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
+    // Ctrl + S : enregistrer dans la bibliothèque (EF-99), y compris depuis un champ.
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && ev.key.toLowerCase() === 's') {
+      ev.preventDefault();
+      if (!document.querySelector('dialog[open]')) saveToLibrary();
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !inField && !document.querySelector('dialog[open]')) {
       const k = ev.key.toLowerCase();
       if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); ACTIONS.undo(); }
@@ -142,8 +144,12 @@ function init() {
   initGestures();
   initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
-  // Avertissement à la fermeture uniquement si des données ont changé (EF-53).
-  window.addEventListener('beforeunload', ev => { if (App.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+  Tabs.init();
+  // Avertissement à la fermeture uniquement si un onglet a des modifications non exportées (EF-53).
+  window.addEventListener('beforeunload', ev => {
+    Recovery.flushSync();
+    if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
+  });
   // Import par glisser-déposer (EF-52).
   document.addEventListener('dragover', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) ev.preventDefault(); });
   document.addEventListener('drop', async ev => {
@@ -153,6 +159,8 @@ function init() {
     importFile(file);
   });
   render();
+  Recovery.paint();
+  initHome().then(() => Recovery.offer());
 }
 
 init();

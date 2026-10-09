@@ -36,7 +36,19 @@ Il n'autorise pas l'exécution de code.
 - DOM construit sans `innerHTML` : tout texte venant d'un fichier est inséré par `textContent`.
 - Import reconstruit champ par champ (liste blanche), y compris les versions imbriquées ; pollution de
   prototype sans effet ; dates bornées à 1970-2199 pour qu'un fichier ne puisse pas bloquer l'onglet.
-- Stockage local limité aux réglages (langue, thème), lus avec validation ; aucun projet ni nom stocké.
+- Stockage local maîtrisé (EX-10, EX-22), concentré dans `src/js/ui/10-storage.js` (vérifié au build) :
+  réglages validés par liste blanche ; bibliothèque et modèles uniquement sur geste explicite ; sauvegarde
+  automatique **désactivée par défaut**. Un message à la première utilisation explique où vont les données et
+  le risque sur un appareil partagé. Tout contenu relu du stockage repasse par le même contrôle qu'un import.
+- Chiffrement au repos facultatif (A02) : export, bibliothèque et sauvegarde automatique peuvent être protégés par
+  mot de passe (PBKDF2-SHA256 600 000 itérations, AES-256-GCM, Web Crypto). Le mot de passe (12 caractères au
+  moins) n'est jamais écrit ; pour la sauvegarde automatique, il reste en mémoire le temps de la session.
+- Effacement (RGPD) : « Réglages > Effacer toutes les données » supprime bibliothèque, sauvegardes et réglages ;
+  désactiver la sauvegarde automatique supprime ses copies.
+- Page d'accueil (8.4) : seules trois clés de la mémoire de session sont lues ; le projet transmis est contrôlé
+  comme un import puis supprimé ; l'adresse de retour n'est suivie que si elle est de même origine (http(s)/file).
+- Import de classeurs : ZIP borné (200 entrées, 50 Mo décompressés), XML sans DOCTYPE ni entités ; cellules
+  commençant par `= + - @` neutralisées à l'export (injection de formules).
 - Le build refuse les motifs dangereux (`eval`, gestionnaires inline, appels réseau, journalisation).
 - Sans objet pour une application locale sans serveur ni compte : contrôle d'accès (A01), authentification
   (A07), SSRF (A10), journalisation centralisée (A09) ; aucune donnée ne quitte le poste.

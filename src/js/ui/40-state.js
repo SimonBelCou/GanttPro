@@ -57,6 +57,7 @@ function commit(mutate) {
   App.dirty = true;
   recompute();
   render();
+  Recovery.touch();
 }
 
 function loadProject(project) {
@@ -79,6 +80,7 @@ function undoStep(from, to) {
   // La fiche d'édition ouverte suit l'état rétabli : rechargée si la tâche existe encore, fermée sinon.
   if (editing) { if (App.selected === editing) Editor.open(editing); else Editor.close(); }
   render();
+  Recovery.touch();
   return true;
 }
 
