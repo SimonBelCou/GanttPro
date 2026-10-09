@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dshvajbwnRk+eV1A8AP00Qfn6J+e8wHyI4tVGECLQYU='; style-src 'sha256-xn3HdGYGQsMpZpL16GKQNGqc5A5dLNtd/Zw2gdR8Ogk='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6pV7hh6g9wVJUKaiMhajUgo3+mhldtWYrTo3BGsGfck='; style-src 'sha256-w/DZVQQgokbjjgUNBaWcMa+ghA1AlQ5qJ/csoa3K9nc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -67,7 +67,9 @@ input.upper { text-transform: uppercase; font-family: 'Fira Code', monospace; }
 .project-label { font-weight: 600; background: transparent; }
 .field-inline { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); }
 .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.toolbar .group { display: inline-flex; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); }
+.toolbar .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); max-width: 100%; }
+.toolbar { max-width: 100%; min-width: 0; }
+.field-inline { flex-wrap: wrap; max-width: 100%; }
 .toolbar .group:last-child { border-right: 0; }
 .zoom-level { min-width: 6.5em; text-align: center; color: var(--muted); }
 .badge { color: var(--critical); border-color: var(--critical); font-weight: 600; }
@@ -170,6 +172,12 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .row-actions { display: flex; flex-wrap: wrap; gap: .3rem; }
 .help-sec h3 { margin: 1rem 0 .3rem; }
 .help kbd { font-family: 'Fira Code', monospace; font-weight: 400; }
+.help .ofl pre { white-space: pre-wrap; font-size: .8rem; max-height: 16rem; overflow: auto; border: 1px solid var(--line); padding: .5rem; }
+.legend .status-key { font-weight: 600; }
+.legend ul + ul { margin-top: .35rem; }
+.legend .strong { font-weight: 700; color: var(--text); }
+.legend .status-key.late { color: var(--critical); }
+.legend .status-key.done { color: var(--ok); }
 
 /* Panneau d'édition */
 .editor {
@@ -396,6 +404,7 @@ table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .ghost { position: absolute; top: 7px; height: 20px; border: 2px dashed var(--accent); border-radius: 4px; background: color-mix(in srgb, var(--accent) 15%, transparent); pointer-events: none; z-index: 4; }
 .ghost.pct { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent) var(--pct), transparent var(--pct)); }
 .g-drag { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
+body.dragging .g-links .link-hit { pointer-events: none; }
 .g-drag line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
 body.dragging { user-select: none; cursor: grabbing; }
 .real-band { position: absolute; top: 27px; height: 3px; border-radius: 2px; z-index: 1; }
@@ -555,8 +564,10 @@ body.dragging { user-select: none; cursor: grabbing; }
       <button type="submit" class="primary" data-i18n="edit.save"></button>
       <button type="button" data-click="closeEditor" data-i18n="edit.cancel"></button>
       <button type="button" data-click="duplicateTask" data-i18n="edit.duplicate" aria-keyshortcuts="Control+D"></button>
-      <button type="button" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
-      <button type="button" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
+      <button type="button" id="btn-up" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
+      <button type="button" id="btn-down" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
+      <button type="button" id="btn-indent" data-click="indent" data-i18n="sel.indent" aria-keyshortcuts="Control+Shift+ArrowRight"></button>
+      <button type="button" id="btn-outdent" data-click="outdent" data-i18n="sel.outdent" aria-keyshortcuts="Control+Shift+ArrowLeft"></button>
       <button type="button" class="danger" data-click="deleteTask" data-i18n="edit.delete"></button>
     </div>
   </form>
@@ -2014,6 +2025,7 @@ const I18n = (() => {
     'res.name': 'Nom', 'res.role': 'Rôle', 'res.color': 'Couleur', 'res.capacity': 'Capacité (%)', 'res.add': 'Ajouter la ressource',
     'res.new': 'Nouvelle ressource', 'res.tasks': { one: '{count} tâche', other: '{count} tâches' },
     'res.delete': 'Supprimer la ressource {name} ?', 'res.deleteUsed': { one: 'Elle est affectée à {count} tâche.', other: 'Elle est affectée à {count} tâches.' },
+    'res.deleteOrphans': { one: '{count} tâche deviendra sans ressource.', other: '{count} tâches deviendront sans ressource.' },
     'res.privacy': 'Les noms de ressources sont des données personnelles : préférez des prénoms, des initiales ou des fonctions.',
     'cat.add': 'Ajouter la catégorie', 'cat.new': 'Nouvelle catégorie', 'cat.delete': 'Supprimer la catégorie {name} ?',
     'cat.deleteUsed': { one: 'Sa tâche passera dans {other}.', other: 'Ses {count} tâches passeront dans {other}.' },
@@ -2182,7 +2194,7 @@ const I18n = (() => {
     'msp.ign.resCalendars': 'calendriers des ressources', 'msp.ign.units': 'taux d\'affectation ramenés à la capacité de la ressource',
     'pwd.short': 'Mot de passe : {min} caractères au moins (une phrase convient très bien).', 'pwd.bad': 'Mot de passe incorrect ou fichier altéré.',
     'exp.format': 'Format', 'exp.f.json': 'Projet GanttPro (.json)', 'exp.f.xlsx': 'Classeur Excel (.xlsx)', 'exp.f.csv': 'Tableau CSV (.csv)', 'exp.f.msp': 'MS Project (.xml)', 'exp.f.png': 'Image du Gantt (.png)',
-    'exp.protect': 'Protéger par mot de passe', 'exp.mspNote': "Sont transmis : tâches, jalons, récapitulatives, durées, dates, avancement, liens, contraintes, échéances, ressources, affectations et calendrier. Ne sont pas transmis : catégories, étiquettes, commentaires, versions, baselines et absences.",
+    'exp.protect': 'Protéger par mot de passe', 'exp.mspNote': "Sont transmis : tâches, jalons, récapitulatives, durées, dates, avancement, liens, contraintes, échéances, ressources, affectations et calendrier. Ne sont pas transmis : catégories, étiquettes, commentaires, versions, baselines au-delà de la première et absences des ressources.",
     'exp.sheetNote': 'Les cellules qui pourraient être lues comme des formules sont précédées d\'une apostrophe.', 'exp.resolution': 'Résolution', 'exp.scale1': 'Normale', 'exp.scale2': 'Double',
     'exp.white': 'Fond blanc (sinon celui du thème)', 'exp.pngA11y': "Une image n'est pas lisible par un lecteur d'écran : pour un partage accessible, préférez le classeur ou le rapport d'état.",
     'exp.done': 'Export « {format} » terminé.', 'exp.failed': "L'export a échoué.", 'exp.pngTooBig': 'Image trop grande : choisissez une période plus courte ou la résolution normale.',
@@ -2213,7 +2225,7 @@ const I18n = (() => {
     'lib.protected': 'protégé', 'lib.name': 'Nom', 'lib.date': 'Enregistré le', 'lib.count': 'Tâches', 'lib.actions': 'Actions',
     'lib.open': 'Ouvrir', 'lib.openOne': 'Ouvrir {name}', 'lib.rename': 'Renommer', 'lib.renameOne': 'Renommer {name}', 'lib.duplicate': 'Dupliquer', 'lib.duplicateOne': 'Dupliquer {name}',
     'lib.delete': 'Supprimer', 'lib.deleteOne': 'Supprimer {name}', 'lib.deleteConfirm': '« {name} » sera supprimé de cet appareil. Les fichiers exportés ne sont pas touchés.',
-    'lib.deleted': '« {name} » supprimé.', 'lib.copyOf': 'Copie de {name}', 'lib.usage': 'Espace utilisé par GanttPro sur cet appareil : {size} Ko.',
+    'lib.limit': 'La bibliothèque est pleine ({max} projets et modèles au plus) : supprimez un élément pour en enregistrer un autre.', 'err.projectTags': 'Étiquettes : {max} étiquettes différentes au plus dans le projet.', 'msp.baseline': 'Baseline MS Project', 'lib.deleted': '« {name} » supprimé.', 'lib.copyOf': 'Copie de {name}', 'lib.usage': 'Espace utilisé par GanttPro sur cet appareil : {size} Ko.',
     'store.off': "Le stockage du navigateur n'est pas disponible (navigation privée ou réglage du navigateur) : rien n'a été enregistré. Exportez le projet pour le conserver.",
     'store.full': "L'espace de stockage du navigateur est plein : rien n'a été enregistré. Supprimez des éléments de la bibliothèque ou exportez le projet.",
     'store.noticeTitle': 'Enregistrer sur cet appareil', 'store.notice1': "GanttPro va enregistrer des données dans ce navigateur, sur cet appareil uniquement. Rien n'est jamais envoyé sur Internet.",
@@ -2240,7 +2252,7 @@ const I18n = (() => {
     'home.back': '← Accueil', 'home.save': 'Sauvegarder', 'home.saved': "Copie du projet remise à la page d'accueil.",
     'help.title': 'Aide', 'help.about': 'À propos', 'help.version': 'GanttPro, version {version}',
     'help.license': "Logiciel libre sous licence MIT. Il fonctionne entièrement dans votre navigateur, sans serveur et sans connexion.",
-    'help.fonts': 'Polices intégrées : Sora et Fira Code, sous licence SIL Open Font License 1.1 (texte de la licence dans le dépôt du projet).',
+    'help.fonts': 'Polices intégrées : Sora et Fira Code, sous licence SIL Open Font License 1.1 (OFL), reproduite ci-dessous.',
     'help.start': "Mode d'emploi en bref", 'help.s1': 'Donnez un nom au projet (bouton du projet) et sa date de début.',
     'help.s2': 'Ajoutez tâches, jalons et récapitulatives ; Entrée ou un clic sur le nom ouvre leur édition (durée en jours ouvrés, prédécesseurs, ressources).',
     'help.s3': 'Le planning se recalcule seul : chemin critique, conflits de ressources et alertes apparaissent en haut.',
@@ -2250,7 +2262,7 @@ const I18n = (() => {
     'help.keys': 'Raccourcis clavier', 'help.keysHint': "Inactifs pendant la saisie dans un champ (sauf Ctrl + S). Toute action à la souris a un équivalent au clavier.",
     'help.key': 'Touches', 'help.action': 'Action', 'help.k.move': 'Changer de tâche sélectionnée dans la liste', 'help.k.edit': "Ouvrir l'édition de la tâche sélectionnée",
     'help.k.multi': 'Sélectionner plusieurs tâches', 'help.k.all': 'Tout sélectionner', 'help.k.del': 'Supprimer la sélection (avec confirmation)', 'help.k.esc': "Fermer la fenêtre, l'édition ou l'infobulle ; annuler un geste",
-    'help.k.undo': 'Annuler, rétablir', 'help.k.copy': 'Copier, coller des tâches (aussi depuis un tableur)', 'help.k.dup': 'Dupliquer la tâche', 'help.k.nudge': "Décaler la tâche d'un jour (Maj : d'une semaine)",
+    'help.k.undo': 'Annuler, rétablir', 'help.k.copy': 'Copier, coller des tâches (aussi depuis un tableur)', 'help.k.dup': 'Dupliquer la tâche', 'help.k.nudge': "Date imposée un jour ouvré plus tôt ou plus tard", 'help.k.nudgeDur': 'Durée diminuée ou allongée d\'un jour', 'help.k.search': 'Aller au champ de recherche', 'help.oflShow': 'Afficher la licence des polices (SIL OFL 1.1, en anglais)',
     'help.k.indent': 'Rattacher à la récapitulative précédente, détacher', 'help.k.save': 'Enregistrer dans la bibliothèque', 'help.k.zoom': 'Zoomer, dézoomer le Gantt', 'help.k.help': "Ouvrir l'aide",
     'help.privacy': 'Vie privée', 'help.p1': "GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ou image externe.",
     'help.p2': "Vos projets restent dans l'onglet tant que vous ne les exportez pas. Sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez.",
@@ -2260,7 +2272,7 @@ const I18n = (() => {
     'help.a2': "Limites connues : le diagramme est un dessin ; son contenu est donné en texte par la liste des tâches, les noms des barres et le tableau de bord. L'export en image n'est pas accessible : préférez le classeur ou le rapport d'état. Les gestes à la souris ont tous un équivalent au clavier.",
     'help.a3': "Aides : navigation complète au clavier, focus visible, contrastes renforcés, thème sombre, respect de la réduction des animations, annonces aux lecteurs d'écran.",
     'help.a4': "Signaler un défaut : décrivez la page, l'action et votre équipement à la personne ou au service qui vous a fourni GanttPro, ou dans le suivi des demandes du projet. Si vous n'obtenez pas de réponse, vous pouvez saisir le Défenseur des droits.",
-    'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui",
+    'legend.label': 'Légende', 'legend.critical': 'Tâche critique (●)', 'legend.forced': 'Date imposée (📌)', 'legend.milestone': 'Jalon (◆)', 'legend.baseline': 'Baseline (barre fine)', 'legend.today': "Aujourd'hui", 'legend.conflict': 'En conflit (⚠)', 'legend.resources': 'Ressources', 'legend.statuses': 'Statuts',
   };
 
   const EN = {
@@ -2320,6 +2332,7 @@ const I18n = (() => {
     'res.name': 'Name', 'res.role': 'Role', 'res.color': 'Colour', 'res.capacity': 'Capacity (%)', 'res.add': 'Add resource', 'res.new': 'New resource',
     'res.tasks': { one: '{count} task', other: '{count} tasks' }, 'res.delete': 'Delete resource {name}?',
     'res.deleteUsed': { one: 'It is assigned to {count} task.', other: 'It is assigned to {count} tasks.' },
+    'res.deleteOrphans': { one: '{count} task will have no resource.', other: '{count} tasks will have no resource.' },
     'res.privacy': 'Resource names are personal data: prefer first names, initials or job titles.',
     'cat.add': 'Add category', 'cat.new': 'New category', 'cat.delete': 'Delete category {name}?',
     'cat.deleteUsed': { one: 'Its task will move to {other}.', other: 'Its {count} tasks will move to {other}.' }, 'color.pick': 'Colour {n}',
@@ -2451,7 +2464,7 @@ const I18n = (() => {
     'msp.ign.resCalendars': 'resource calendars', 'msp.ign.units': 'assignment units reduced to the resource capacity',
     'pwd.short': 'Password: at least {min} characters (a sentence works very well).', 'pwd.bad': 'Wrong password or altered file.',
     'exp.format': 'Format', 'exp.f.json': 'GanttPro project (.json)', 'exp.f.xlsx': 'Excel workbook (.xlsx)', 'exp.f.csv': 'CSV table (.csv)', 'exp.f.msp': 'MS Project (.xml)', 'exp.f.png': 'Gantt image (.png)',
-    'exp.protect': 'Protect with a password', 'exp.mspNote': 'Transferred: tasks, milestones, summary tasks, durations, dates, progress, links, constraints, deadlines, resources, assignments and calendar. Not transferred: categories, tags, comments, versions, baselines and absences.',
+    'exp.protect': 'Protect with a password', 'exp.mspNote': 'Transferred: tasks, milestones, summary tasks, durations, dates, progress, links, constraints, deadlines, resources, assignments and calendar. Not transferred: categories, tags, comments, versions, baselines beyond the first one and resource absences.',
     'exp.sheetNote': 'Cells that could be read as formulas are prefixed with an apostrophe.', 'exp.resolution': 'Resolution', 'exp.scale1': 'Normal', 'exp.scale2': 'Double',
     'exp.white': 'White background (otherwise the theme one)', 'exp.pngA11y': 'An image cannot be read by a screen reader: for accessible sharing, prefer the workbook or the status report.',
     'exp.done': '“{format}” export finished.', 'exp.failed': 'The export failed.', 'exp.pngTooBig': 'Image too large: choose a shorter period or normal resolution.',
@@ -2482,7 +2495,7 @@ const I18n = (() => {
     'lib.protected': 'protected', 'lib.name': 'Name', 'lib.date': 'Saved on', 'lib.count': 'Tasks', 'lib.actions': 'Actions',
     'lib.open': 'Open', 'lib.openOne': 'Open {name}', 'lib.rename': 'Rename', 'lib.renameOne': 'Rename {name}', 'lib.duplicate': 'Duplicate', 'lib.duplicateOne': 'Duplicate {name}',
     'lib.delete': 'Delete', 'lib.deleteOne': 'Delete {name}', 'lib.deleteConfirm': '“{name}” will be deleted from this device. Exported files are not affected.',
-    'lib.deleted': '“{name}” deleted.', 'lib.copyOf': 'Copy of {name}', 'lib.usage': 'Space used by GanttPro on this device: {size} KB.',
+    'lib.limit': 'The library is full ({max} projects and templates at most): delete an item to save another one.', 'err.projectTags': 'Tags: {max} different tags at most in the project.', 'msp.baseline': 'MS Project baseline', 'lib.deleted': '“{name}” deleted.', 'lib.copyOf': 'Copy of {name}', 'lib.usage': 'Space used by GanttPro on this device: {size} KB.',
     'store.off': 'Browser storage is not available (private browsing or browser setting): nothing was saved. Export the project to keep it.',
     'store.full': 'Browser storage is full: nothing was saved. Delete library items or export the project.',
     'store.noticeTitle': 'Save on this device', 'store.notice1': 'GanttPro will save data in this browser, on this device only. Nothing is ever sent over the Internet.',
@@ -2509,7 +2522,7 @@ const I18n = (() => {
     'home.back': '← Home', 'home.save': 'Save', 'home.saved': 'Project copy handed to the home page.',
     'help.title': 'Help', 'help.about': 'About', 'help.version': 'GanttPro, version {version}',
     'help.license': 'Free software under the MIT licence. It runs entirely in your browser, with no server and no connection.',
-    'help.fonts': 'Embedded fonts: Sora and Fira Code, under the SIL Open Font License 1.1 (licence text in the project repository).',
+    'help.fonts': 'Embedded fonts: Sora and Fira Code, under the SIL Open Font License 1.1 (OFL), reproduced below.',
     'help.start': 'Quick guide', 'help.s1': 'Name the project (project button) and set its start date.',
     'help.s2': 'Add tasks, milestones and summary tasks; Enter or a click on the name opens editing (duration in working days, predecessors, resources).',
     'help.s3': 'The schedule recalculates by itself: critical path, resource conflicts and alerts appear at the top.',
@@ -2519,7 +2532,7 @@ const I18n = (() => {
     'help.keys': 'Keyboard shortcuts', 'help.keysHint': 'Inactive while typing in a field (except Ctrl + S). Every mouse action has a keyboard equivalent.',
     'help.key': 'Keys', 'help.action': 'Action', 'help.k.move': 'Change the selected task in the list', 'help.k.edit': 'Edit the selected task',
     'help.k.multi': 'Select several tasks', 'help.k.all': 'Select all', 'help.k.del': 'Delete the selection (with confirmation)', 'help.k.esc': 'Close the window, editing or tooltip; cancel a gesture',
-    'help.k.undo': 'Undo, redo', 'help.k.copy': 'Copy, paste tasks (also from a spreadsheet)', 'help.k.dup': 'Duplicate the task', 'help.k.nudge': 'Move the task by one day (Shift: one week)',
+    'help.k.undo': 'Undo, redo', 'help.k.copy': 'Copy, paste tasks (also from a spreadsheet)', 'help.k.dup': 'Duplicate the task', 'help.k.nudge': 'Fixed start date one working day earlier or later', 'help.k.nudgeDur': 'Duration shortened or extended by one day', 'help.k.search': 'Go to the search field', 'help.oflShow': 'Show the font licence (SIL OFL 1.1)',
     'help.k.indent': 'Attach to the previous summary task, detach', 'help.k.save': 'Save to the library', 'help.k.zoom': 'Zoom the Gantt in, out', 'help.k.help': 'Open help',
     'help.privacy': 'Privacy', 'help.p1': 'GanttPro sends nothing: no connection, no cookie, no tracker, no external font or image.',
     'help.p2': 'Your projects stay in the tab until you export them. Only settings are kept on the device, plus the library or automatic backup if you use them.',
@@ -2546,7 +2559,7 @@ const I18n = (() => {
     'edit.shift': { one: 'Shifted by {count} working day by levelling ({res}: {why}). Without it, it would start on {date}.', other: 'Shifted by {count} working days by levelling ({res}: {why}). Without it, it would start on {date}.' },
     'alert.smooth': '{task} does not fit in its slack: the overload of {res} is not smoothed',
     'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.category': 'General',
-    'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.baseline': 'Baseline (thin bar)', 'legend.today': 'Today',
+    'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.baseline': 'Baseline (thin bar)', 'legend.today': 'Today', 'legend.conflict': 'In conflict (⚠)', 'legend.resources': 'Resources', 'legend.statuses': 'Statuses',
   };
 
   const CATALOGS = { fr: FR, en: EN };
@@ -3061,6 +3074,13 @@ const Exchange = (() => {
     const mspDay = k => (k + 1) % 7 + 1; // lundi (0) → 2 … dimanche (6) → 1
     const weekDays = project.calendar.workDays.map((w, k) => `<WeekDay><DayType>${mspDay(k)}</DayType><DayWorking>${w}</DayWorking>${w ? wt : ''}</WeekDay>`).join('');
     const exceptions = exc.map(e => `<Exception><EnteredByOccurrences>0</EnteredByOccurrences><TimePeriod><FromDate>${iso(e.dn)}T00:00:00</FromDate><ToDate>${iso(e.dn)}T23:59:00</ToDate></TimePeriod><Occurrences>1</Occurrences><Name>${X(e.name)}</Name><Type>1</Type><DayWorking>${e.working ? 1 : 0}</DayWorking>${e.working ? wt : ''}</Exception>`).join('');
+    // Première baseline seulement (EF-95) : élément Baseline n° 0 de chaque tâche.
+    const bl0 = project.baselines[0] || null;
+    const blXml = x => {
+      const bt = bl0 && bl0.tasks.find(y => y.id === x.id);
+      if (!bt) return '';
+      return `<Baseline><Number>0</Number><Start>${bt.start}T08:00:00</Start><Finish>${bt.end}T${bt.dur ? '17:00:00' : '08:00:00'}</Finish><Duration>PT${bt.dur * 8}H0M0S</Duration></Baseline>`;
+    };
     const tasks = project.tasks.map(x => {
       const r = sched.tasks.get(x.id);
       const dur = x.type === 'summary' ? (r && !r.empty ? r.d : 0) : x.type === 'milestone' ? 0 : x.dur;
@@ -3075,7 +3095,7 @@ const Exchange = (() => {
         (x.deadline ? `<Deadline>${x.deadline}T17:00:00</Deadline>` : '') +
         (x.realStart ? `<ActualStart>${x.realStart}T08:00:00</ActualStart>` : '') + (x.realEnd ? `<ActualFinish>${x.realEnd}T17:00:00</ActualFinish>` : '') +
         x.deps.map(d => `<PredecessorLink><PredecessorUID>${uid.get(d.id)}</PredecessorUID><Type>${MSP_TYPE[d.type]}</Type><LinkLag>${d.lag * 4800}</LinkLag><LagFormat>7</LagFormat></PredecessorLink>`).join('') +
-        (x.notes ? `<Notes>${X(x.notes)}</Notes>` : '') + '</Task>';
+        blXml(x) + (x.notes ? `<Notes>${X(x.notes)}</Notes>` : '') + '</Task>';
     }).join('');
     const resources = project.resources.map(r => `<Resource><UID>${ruid.get(r.id)}</UID><ID>${ruid.get(r.id)}</ID><Name>${X(r.name)}</Name><Type>1</Type><MaxUnits>${(r.capacity / 100).toFixed(2)}</MaxUnits></Resource>`).join('');
     let auid = 0;
@@ -3144,6 +3164,14 @@ const Exchange = (() => {
         deadline: summary ? '' : day(Xml.textOf(x, 'Deadline')),
         realStart: summary || milestone ? '' : day(Xml.textOf(x, 'ActualStart')), realEnd: summary || milestone ? '' : realEnd,
         notes: Xml.textOf(x, 'Notes').slice(0, 2000), links: summary ? [] : Xml.children(x, 'PredecessorLink'),
+        baseline: summary ? null : (() => {
+          const b = Xml.children(x, 'Baseline').find(e => (Xml.textOf(e, 'Number') || '0') === '0');
+          if (!b) return null;
+          const bs = day(Xml.textOf(b, 'Start')), bf = day(Xml.textOf(b, 'Finish'));
+          if (Dates.parse(bs) == null || Dates.parse(bf) == null || bf < bs) return null;
+          const bm = /PT(\d+)H(\d+)M/.exec(Xml.textOf(b, 'Duration'));
+          return { start: bs, end: bf, dur: milestone ? 0 : Math.min(Model.LIMITS.dur, Math.max(1, Math.ceil((bm ? Number(bm[1]) + Number(bm[2]) / 60 : 8) / 8))) };
+        })(),
       };
     });
     const resources = Xml.children(Xml.child(P, 'Resources'), 'Resource').filter(r => Xml.textOf(r, 'UID') !== '0' && Xml.textOf(r, 'Name'))
@@ -3171,6 +3199,12 @@ const Exchange = (() => {
       resources: resources.map(r => ({ name: r.name, capacity: r.capacity })),
       categories: [], baselines: [],
     };
+    // Baseline n° 0 → une baseline GanttPro (les suivantes sont ignorées, EF-95).
+    const blTasks = tasks.filter(x => x.baseline);
+    if (blTasks.length) {
+      raw.baselines.push({ name: t('msp.baseline'), color: '#f0b429', createdAt: Date.now(), projectStart: raw.projectStart, shownOnGantt: true, shownOnScurve: true,
+        tasks: blTasks.map(x => ({ id: x.id, name: x.name, dur: x.baseline.dur, deps: raw.tasks.find(y => y.id === x.id).deps.map(d => d.id), cat: '', start: x.baseline.start, end: x.baseline.end })) });
+    }
     return { raw, ignored: [...ignored] };
   }
 
@@ -3726,7 +3760,17 @@ function undoStep(from, to) {
   return true;
 }
 
-const taskById = id => App.project.tasks.find(t => t.id === id);
+/** Index id → tâche valable le temps d'un affichage (les données ne changent pas pendant render). */
+const RenderIndex = (() => {
+  let tasks = null, map = null;
+  return {
+    open(list) { tasks = list; map = new Map(list.map(x => [x.id, x])); },
+    close() { tasks = null; map = null; },
+    get(list, id) { return list === tasks && map ? map.get(id) : undefined; },
+    active(list) { return list === tasks && !!map; },
+  };
+})();
+const taskById = id => (RenderIndex.active(App.project.tasks) ? RenderIndex.get(App.project.tasks, id) : App.project.tasks.find(t => t.id === id));
 const resById = id => App.project.resources.find(r => r.id === id);
 const catById = id => App.project.categories.find(c => c.id === id);
 
@@ -3739,8 +3783,9 @@ function descendants(id, tasks = App.project.tasks) {
 }
 function ancestorsOf(id, tasks = App.project.tasks) {
   const out = [];
-  let t = tasks.find(x => x.id === id);
-  while (t && t.parent && out.length <= Model.LIMITS.depth) { out.push(t.parent); t = tasks.find(x => x.id === t.parent); }
+  const find = RenderIndex.active(tasks) ? k => RenderIndex.get(tasks, k) : k => tasks.find(x => x.id === k);
+  let t = find(id);
+  while (t && t.parent && out.length <= Model.LIMITS.depth) { out.push(t.parent); t = find(t.parent); }
   return out;
 }
 
@@ -3750,13 +3795,20 @@ function visibleTasks() {
   return App.project.tasks.filter(t => !ancestorsOf(t.id).some(a => collapsed.has(a)));
 }
 
+/** Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7). */
+function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }
+
 // ── js/ui/50-render.js ──
 /* Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches). */
 const t = (k, p) => I18n.t(k, p);
 const today = () => Dates.todayDn();
 
+let staticLang = '';
 function applyStaticTexts() {
+  // Les textes du gabarit ne changent qu'avec la langue : inutile de les réécrire à chaque affichage.
+  if (staticLang === I18n.getLang()) return;
+  staticLang = I18n.getLang();
   document.documentElement.lang = I18n.getLang();
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
@@ -3810,6 +3862,8 @@ function renderTopbar() {
   const links = $('btn-links');
   links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
   links.setAttribute('aria-pressed', String(App.showLinks));
+  // Réordonner et changer de niveau sont indisponibles en vue regroupée (EF-86).
+  for (const id of ['btn-up', 'btn-down', 'btn-indent', 'btn-outdent']) { const b = $(id); if (b) b.disabled = !!App.view.groupBy; }
   const lvl = $('leveling-mode');
   if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
 }
@@ -3892,7 +3946,16 @@ function groupLabel(g) {
   return { name, totals: t('view.groupTotals', { count: g.count, dur: g.dur, pct: g.pct }) };
 }
 
+/** Cellule de tableau en texte seul (textContent, jamais innerHTML). */
+function textCell(text, cls) {
+  const td = document.createElement('td');
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
 function renderList(items, fl) {
+  const noRes = t('list.noRes');
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
@@ -3934,13 +3997,16 @@ function renderList(items, fl) {
     if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
     if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { draggable: App.view.groupBy ? undefined : 'true', class: [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
-      h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
-      nameCell,
-      h('td', { text: durText(task, r) }),
-      h('td', { text: depsText(task) }),
-      h('td', { text: task.type === 'task' ? (resText(task) || t('list.noRes')) : '' }),
-      h('td', { class: 'status ' + (st || ''), text: st ? t('status.' + st) : '' })));
+    // Cellules de texte créées directement (textContent) : même sûreté que h(), plus rapide sur 1 000 lignes (EX-25).
+    const tr = document.createElement('tr');
+    if (!App.view.groupBy) tr.setAttribute('draggable', 'true');
+    tr.className = [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'].filter(Boolean).join(' ');
+    tr.dataset.id = task.id;
+    const idCell = textCell(task.id, 'id');
+    if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
+    tr.append(idCell, nameCell, textCell(durText(task, r)), textCell(depsText(task)),
+      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')));
+    frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
   body.append(frag);
@@ -3975,10 +4041,13 @@ function renderGantt(items, fl) {
   const { from, to } = gridRange();
   const dayW = 26 * App.zoom / 100 / 7;
   const days = to - from + 1;
-  const width = Math.max(1, Math.round(days * dayW));
+  // Marge à gauche : la poignée de début d'une barre qui commence au premier jour reste atteignable
+  // (elle déborde de 12 px à gauche de la barre).
+  const PAD = 16;
+  const width = Math.max(1, Math.round(days * dayW) + PAD);
   inner.style.setProperty('--grid-w', width + 'px');
-  const x = dn => (dn - from) * dayW;
-  App.grid = { from, dayW };
+  const x = dn => PAD + (dn - from) * dayW;
+  App.grid = { from, dayW, pad: PAD };
 
   // En-tête sur deux lignes : les mois, puis le lundi de chaque semaine (vue semaine) ;
   // sous 60 % de zoom, les mois seuls (RG-21). Les jours fériés sont signalés par semaine (EF-16).
@@ -4067,7 +4136,7 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
-      el.append(h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -4078,17 +4147,16 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', isSelected(task.id) && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),
-        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
+        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: (fl.conflict.has(task.id) ? '⚠ ' : '') + task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
-      // Poignées des gestes (EF-74 à EF-77) : décoratives, le clavier a ses équivalents (EF-78).
-      const hp = h('span', { class: 'h-pct', aria: { hidden: 'true' } });
-      hp.style.setProperty('left', pct + '%');
-      el.append(h('span', { class: 'h-end', aria: { hidden: 'true' } }), hp,
-        h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      // Poignées des gestes (EF-74 à EF-77) : créées au survol ou au focus (ensureHandles), pour
+      // garder un affichage rapide sur 1 000 tâches (EX-15) ; le clavier a ses équivalents (EF-78).
+      el.dataset.pct = String(pct);
+      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
       // Bande des dates réelles, couleur de la première ressource (EF-21).
       const rs = Dates.parse(task.realStart);
       if (rs != null) {
@@ -4107,7 +4175,7 @@ function renderGantt(items, fl) {
       const bt = b.tasks.find(x => x.id === task.id);
       if (!bt) return null;
       const a = Dates.parse(bt.start), z = Dates.parse(bt.end);
-      const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
+      const m = h('div', { class: 'bl', aria: { hidden: 'true' }, title: `${b.name} : ${I18n.shortDate(a)} → ${I18n.shortDate(z)}` });
       m.style.setProperty('left', x(a) + 'px');
       m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
       m.style.setProperty('top', (28 + k * 2) + 'px');
@@ -4122,6 +4190,8 @@ function renderGantt(items, fl) {
   inner.append(body);
 }
 
+/** Au-delà de ce nombre de lignes, les poignées des gestes ne sont créées qu'à l'approche d'une barre. */
+const HANDLES_EAGER = 300;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style). */
 function svg(tag, attrs = {}, ...children) {
@@ -4175,11 +4245,22 @@ function renderLegend() {
     h('li', {}, t('legend.forced')), h('li', {}, t('legend.notBefore')), h('li', {}, t('legend.deadline')), h('li', {}, t('legend.milestone')),
     App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
+    h('li', {}, t('legend.conflict')),
   ];
   box.append(h('ul', {}, items));
+  // Ressources (couleur de la bande des dates réelles et de l'avatar) et statuts, toujours en texte (EF-46).
+  if (App.project.resources.length) box.append(h('ul', { aria: { label: t('legend.resources') } }, h('li', { class: 'strong', text: t('legend.resources') + ' :' }),
+    App.project.resources.map(r => h('li', {}, swatch(r.color), r.name))));
+  box.append(h('ul', { aria: { label: t('legend.statuses') } }, h('li', { class: 'strong', text: t('legend.statuses') + ' :' }),
+    ['done', 'ongoing', 'late', 'notStarted', 'upcoming'].map(k => h('li', { class: 'status-key ' + k, text: t('status.' + k) }))));
 }
 
 function render() {
+  // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
+  RenderIndex.open(App.project.tasks);
+  try { renderAll(); } finally { RenderIndex.close(); }
+}
+function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
   const focusId = document.activeElement && document.activeElement.id;
   Tooltip.hide();
@@ -4643,7 +4724,11 @@ const Editor = (() => {
     d.assign.forEach(a => { const r = resById(a.res); if (!r || !Number.isInteger(a.units) || a.units < 1 || a.units > r.capacity) e.assign = t('err.capacity', { field: t('f.units', { name: r ? r.name : '' }), name: r ? r.name : '', cap: r ? r.capacity : 100 }); });
     const tags = d.tagsRaw.split(',').map(s => s.trim()).filter(Boolean);
     if (tags.length > Model.LIMITS.tags || tags.some(s => s.length > 30)) e.tags = t('err.text', { field: t('f.tags'), min: 1, max: 30 });
-    else d.tags = tags.filter((s, i) => tags.findIndex(x => x.toLowerCase() === s.toLowerCase()) === i);
+    else {
+      d.tags = tags.filter((s, i) => tags.findIndex(x => x.toLowerCase() === s.toLowerCase()) === i);
+      const others = App.project.tasks.filter(x => x.id !== originalId);
+      if (projectTagCount([...others, d]) > Model.LIMITS.projectTags) e.tags = t('err.projectTags', { max: Model.LIMITS.projectTags });
+    }
     if (d.parent) {
       const height = Math.max(0, ...descendants(originalId).map(x => ancestorsOf(x.id).length - ancestorsOf(originalId).length));
       if (ancestorsOf(d.parent).length + 1 + height > Model.LIMITS.depth) e.parent = t('err.depth', { max: Model.LIMITS.depth });
@@ -4677,12 +4762,12 @@ const Editor = (() => {
     const trial = clone(App.project);
     applyTask(trial, oldId, final);
     try { Schedule.compute(trial); } catch { showErrors({ forcedStart: t('calc.error') }); return; }
-    commit(p => applyTask(p, oldId, final));
-    App.selected = newId;
-    originalId = newId;
+    // Fiche fermée AVANT la mise à jour : une seule reconstruction de l'affichage (EX-15).
     $('editor').hidden = true;
     draft = null;
-    render();
+    App.selected = newId;
+    originalId = newId;
+    commit(p => applyTask(p, oldId, final));
     announce(t('saved', { id: newId }) + (cleared ? ' ' + t('err.realEndCleared') : ''));
     const sel = document.querySelector(`button.select[data-arg="${CSS.escape(newId)}"]`);
     if (sel) sel.focus();
@@ -4764,7 +4849,20 @@ const Editor = (() => {
   action('saveTask', () => save());
   action('closeEditor', () => close());
 
-  return { open, close, isOpen: () => !!draft };
+  /** Après un changement de niveau (Mettre en retrait, Remonter) : le brouillon garde la saisie en
+   *  cours et reprend le nouveau parent, pour qu'« Enregistrer » ne l'annule pas. */
+  function syncParent() {
+    if (!draft) return;
+    const task = taskById(originalId);
+    if (!task) { close(); return; }
+    const back = document.activeElement && document.activeElement.id;
+    readForm();
+    draft.parent = task.parent;
+    build();
+    if (back && $(back)) $(back).focus();
+  }
+
+  return { open, close, syncParent, isOpen: () => !!draft };
 })();
 
 // ── js/ui/62-shortcuts.js ──
@@ -4961,6 +5059,8 @@ function hierarchyChange(mutate, okMsg) {
     Dialog.message(t('sel.hierarchy'), t('sel.linkHierarchy', { a: d.id, b: x.id })); return false;
   }
   commit(p => { mutate(p); });
+  // Fiche ouverte : son champ « Récapitulative parente » suit le changement, sans perdre la saisie.
+  Editor.syncParent();
   announce(okMsg);
   return true;
 }
@@ -5164,7 +5264,13 @@ function initListKeys() {
       if (b) { b.focus(); b.scrollIntoView({ block: 'nearest' }); }
       return;
     }
-    if ((ev.key === 'Delete' || ev.key === 'Suppr') && selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); return; }
+    if (ev.key === 'Delete' || ev.key === 'Suppr') {
+      // La ligne qui a le focus est celle visée si elle ne fait pas partie de la sélection.
+      const tr = inList && ev.target.closest('tr[data-id]');
+      if (tr && !isSelected(tr.dataset.id)) { App.multi.clear(); App.selected = tr.dataset.id; }
+      if (selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); }
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a' && !ev.altKey) {
       ev.preventDefault();
       App.multi = new Set(visibleOrder());
@@ -5268,6 +5374,7 @@ function bulkWindow() {
       const trial = clone(App.project);
       apply(trial);
       if (refused.length) return err(t('bulk.refused', { list: refused.join(' ; ') }));
+      if (projectTagCount(trial.tasks) > Model.LIMITS.projectTags) return err(t('err.projectTags', { max: Model.LIMITS.projectTags }));
       try { Schedule.compute(trial); } catch { return err(t('calc.error')); }
       commit(apply);
       announce(t('bulk.done', { count: ids.length }));
@@ -5317,6 +5424,18 @@ function endGesture(cancelled) {
   if (cancelled && g.active) announce(t('gst.cancelled'));
 }
 
+/** Poignées d'une barre ou d'un jalon (EF-74 à EF-77), ajoutées à la première approche. */
+function ensureHandles(el) {
+  if (!el || el.querySelector('.lk')) return;
+  const span = cls => h('span', { class: cls, aria: { hidden: 'true' } });
+  if (el.classList.contains('bar')) {
+    const hp = span('h-pct');
+    hp.style.setProperty('left', (Number(el.dataset.pct) || 0) + '%');
+    el.append(span('h-end'), hp);
+  }
+  el.append(span('lk lk-s'), span('lk lk-e'));
+}
+
 function linkType(fromEnd, toEnd) { return fromEnd ? (toEnd ? 'FF' : 'FS') : (toEnd ? 'SF' : 'SS'); }
 
 /** Contrôle d'un nouveau lien pred → succ (EF-76) ; renvoie un message d'erreur ou null. */
@@ -5338,6 +5457,7 @@ function startGesture(g, ev) {
     const layer = document.querySelector('.g-body');
     g.line = svg('svg', { class: 'g-drag', 'aria-hidden': 'true' }, svg('line', { x1: g.ox, y1: g.oy, x2: g.ox, y2: g.oy }));
     layer.append(g.line);
+    for (const bar of document.querySelectorAll('#gantt .bar, #gantt .ms[data-arg]')) ensureHandles(bar);
     for (const el of document.querySelectorAll('#gantt .lk')) if (el.closest('[data-arg]').dataset.arg !== g.id) el.classList.add('target');
   } else {
     g.ghost = g.el.cloneNode(false);
@@ -5359,7 +5479,7 @@ function moveGesture(ev) {
     let dn = g.r.startDn + days;
     dn = cal.dnOf(cal.ceil(dn));
     g.value = Dates.toISO(dn);
-    g.ghost.style.setProperty('left', ((dn - App.grid.from) * dayW + (g.task.type === 'milestone' ? dayW / 2 : 0)) + 'px');
+    g.ghost.style.setProperty('left', (App.grid.pad + (dn - App.grid.from) * dayW + (g.task.type === 'milestone' ? dayW / 2 : 0)) + 'px');
     gestureTip(t('gst.moveTo', { date: I18n.date(dn) }), ev.clientX, ev.clientY);
   } else if (g.kind === 'resize') {
     const target = Math.max(g.r.startDn, g.r.endDn + days);
@@ -5418,6 +5538,9 @@ function finishGesture() {
 
 function initGestures() {
   const grid = $('gantt');
+  const handlesFor = ev => { const el = ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg]'); if (el) ensureHandles(el); };
+  grid.addEventListener('pointerover', handlesFor);
+  grid.addEventListener('focusin', handlesFor);
   grid.addEventListener('pointerdown', ev => {
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
     const el = ev.target.closest('.bar, .ms[data-arg]');
@@ -5566,7 +5689,8 @@ action('resAdd', () => {
 action('resDelete', async id => {
   const r = resById(id);
   const used = App.project.tasks.filter(x => x.assign.some(a => a.res === id)).length;
-  const ok = await Dialog.confirm(t('res.delete', { name: r.name }), [used ? t('res.deleteUsed', { count: used }) : ''], t('edit.delete'));
+  const orphans = App.project.tasks.filter(x => x.assign.length === 1 && x.assign[0].res === id).length;
+  const ok = await Dialog.confirm(t('res.delete', { name: r.name }), [used ? t('res.deleteUsed', { count: used }) : '', orphans ? t('res.deleteOrphans', { count: orphans }) : ''], t('edit.delete'));
   if (!ok) return;
   commit(p => {
     p.resources = p.resources.filter(x => x.id !== id);
@@ -7213,14 +7337,16 @@ action('tabPlus', async () => {
  * chaque contenu relu du stockage sont des données non fiables : le sommaire est validé champ par
  * champ, chaque projet repasse par Model.parseFile (même contrôle qu'un import). */
 const Library = (() => {
-  const INDEX = 'index', MAX_ENTRIES = 200;
+  // MAX_ENTRIES : 50 entrées au plus, projets et modèles ensemble (3.7) ; la lecture tolère davantage
+  // (sommaire écrit par une version antérieure) sans jamais dépasser READ_MAX.
+  const INDEX = 'index', MAX_ENTRIES = 50, READ_MAX = 200;
 
   function index() {
     let raw;
     try { raw = JSON.parse(Store.read('lib', INDEX) || '[]'); } catch { return []; }
     if (!Array.isArray(raw)) return [];
     const keys = new Set(Store.keys('lib'));
-    return raw.slice(0, MAX_ENTRIES).filter(e => e && typeof e === 'object' && typeof e.key === 'string' && /^[a-z0-9-]{1,40}$/.test(e.key) && e.key !== INDEX && keys.has(e.key)
+    return raw.slice(0, READ_MAX).filter(e => e && typeof e === 'object' && typeof e.key === 'string' && /^[a-z0-9-]{1,40}$/.test(e.key) && e.key !== INDEX && keys.has(e.key)
       && (e.kind === 'project' || e.kind === 'template') && typeof e.name === 'string' && e.name.length <= 200)
       .map(e => ({ key: e.key, kind: e.kind, name: e.name, emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
         date: Number.isFinite(e.date) ? e.date : 0, tasks: Number.isInteger(e.tasks) && e.tasks >= 0 ? e.tasks : 0, enc: e.enc === true, withRes: e.withRes === true }));
@@ -7231,9 +7357,11 @@ const Library = (() => {
   async function put(entry, project, password) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: entry.kind === 'project' }));
     const data = password ? JSON.stringify(await Secure.encrypt(text, password)) : text;
+    const before = index();
+    if (!before.some(e => e.key === entry.key) && before.length >= MAX_ENTRIES) return 'limit';
     const r = Store.write('lib', entry.key, data);
     if (r !== 'ok') return r;
-    const list = index().filter(e => e.key !== entry.key);
+    const list = before.filter(e => e.key !== entry.key);
     list.unshift({ ...entry, name: project.name, emoji: project.emoji, date: Date.now(), tasks: project.tasks.length, enc: !!password });
     const w = writeIndex(list);
     if (w !== 'ok') Store.remove('lib', entry.key);
@@ -7256,7 +7384,8 @@ const Library = (() => {
 
   function remove(key) { writeIndex(index().filter(e => e.key !== key)); Store.remove('lib', key); }
   function rename(key, name) { const list = index(); const e = list.find(x => x.key === key); if (e) { e.name = name; writeIndex(list); } }
-  return { index, put, load, remove, rename };
+  const full = () => index().length >= MAX_ENTRIES;
+  return { index, put, load, remove, rename, full, MAX_ENTRIES };
 })();
 
 /** Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce. */
@@ -7271,7 +7400,7 @@ async function storageNotice() {
 }
 
 function storeFailed(r) {
-  return Dialog.message(t('lib.title'), r === 'full' ? t('store.full') : t('store.off'));
+  return Dialog.message(t('lib.title'), r === 'limit' ? t('lib.limit', { max: Library.MAX_ENTRIES }) : r === 'full' ? t('store.full') : t('store.off'));
 }
 
 /** Mot de passe facultatif pour un enregistrement : '' = sans, null = abandon. */
@@ -7349,7 +7478,7 @@ function shiftTemplate(p, start) {
   const mv = s => (s ? Dates.toISO(Math.min(Dates.parse('2199-12-31'), Math.max(0, Dates.parse(s) + d))) : s);
   p.projectStart = start;
   for (const x of p.tasks) { x.forcedStart = mv(x.forcedStart); x.notBefore = mv(x.notBefore); x.deadline = mv(x.deadline); }
-  for (const r of p.resources) r.absences = (r.absences || []).map(a => ({ ...a, from: mv(a.from), to: mv(a.to) }));
+  for (const r of p.resources) r.absences = (r.absences || []).map(a => ({ ...a, start: mv(a.start), end: mv(a.end) }));
   return p;
 }
 
@@ -7466,6 +7595,7 @@ async function openLibrary(focusSel) {
       }
       paint(`#lib-ren-${key}`);
     } else if (cmd === 'dup') {
+      if (Library.full()) { await storeFailed('limit'); paint(`#lib-dup-${key}`); return; }
       const text = Store.read('lib', key);
       const nk = Tabs.newKey();
       const r = text === null ? 'off' : Store.write('lib', nk, text);
@@ -7740,10 +7870,11 @@ function openHelp() {
   const para = keys => keys.map(k => h('p', { text: t(k) }));
   const KEYS = [['↑ / ↓', 'help.k.move'], ['Entrée / Enter', 'help.k.edit'], ['Maj + clic, Ctrl + clic', 'help.k.multi'], ['Ctrl + A', 'help.k.all'],
     ['Suppr / Delete', 'help.k.del'], ['Échap / Esc', 'help.k.esc'], ['Ctrl + Z, Ctrl + Y', 'help.k.undo'], ['Ctrl + C, Ctrl + V', 'help.k.copy'],
-    ['Ctrl + D', 'help.k.dup'], ['Alt + ← / →', 'help.k.nudge'], ['Ctrl + Maj + → / ←', 'help.k.indent'], ['Ctrl + S', 'help.k.save'],
+    ['Ctrl + D', 'help.k.dup'], ['Alt + ← / →', 'help.k.nudge'], ['Alt + Maj + ← / →', 'help.k.nudgeDur'], ['Ctrl + Maj + → / ←', 'help.k.indent'], ['/', 'help.k.search'], ['Ctrl + S', 'help.k.save'],
     ['+ / − (Gantt)', 'help.k.zoom'], ['?', 'help.k.help']];
   const body = h('div', { id: 'help-win', class: 'help', tabindex: '-1', autofocus: true },
-    sec('about', h('p', { class: 'strong', text: t('help.version', { version: APP_VERSION }) }), ...para(['help.license', 'help.fonts'])),
+    sec('about', h('p', { class: 'strong', text: t('help.version', { version: APP_VERSION }) }), ...para(['help.license', 'help.fonts']),
+      h('details', { class: 'ofl' }, h('summary', { text: t('help.oflShow') }), h('pre', { lang: 'en', text: OFL_TEXT }))),
     sec('start', h('ol', {}, ['help.s1', 'help.s2', 'help.s3', 'help.s4', 'help.s5', 'help.s6'].map(k => h('li', { text: t(k) })))),
     sec('keys', h('p', { class: 'hint', text: t('help.keysHint') }), h('table', { class: 'manage' },
       h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('help.key') }), h('th', { scope: 'col', text: t('help.action') }))),
@@ -7791,6 +7922,11 @@ action('goHome', () => {
 action('openSettings', () => openSettings());
 action('openHelp', () => openHelp());
 
+// ── js/ui/88-ofl.js ──
+/* Avis de licence des polices intégrées (EX-20) : texte de la SIL Open Font License 1.1, reproduit
+ * tel quel (texte juridique, non traduit) dans la fenêtre d'aide. Généré depuis THIRD_PARTY_LICENSES.md. */
+const OFL_TEXT = "Copyright 2019 The Sora Project Authors (https://github.com/sora-xor/sora-font)\nCopyright 2014-2020 The Fira Code Project Authors (https://github.com/tonsky/FiraCode)\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\nThis license is copied below, and is also available with a FAQ at:\nhttp://scripts.sil.org/OFL\n\n\n-----------------------------------------------------------\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n-----------------------------------------------------------\n\nPREAMBLE\nThe goals of the Open Font License (OFL) are to stimulate worldwide\ndevelopment of collaborative font projects, to support the font creation\nefforts of academic and linguistic communities, and to provide a free and\nopen framework in which fonts may be shared and improved in partnership\nwith others.\n\nThe OFL allows the licensed fonts to be used, studied, modified and\nredistributed freely as long as they are not sold by themselves. The\nfonts, including any derivative works, can be bundled, embedded,\nredistributed and/or sold with any software provided that any reserved\nnames are not used by derivative works. The fonts and derivatives,\nhowever, cannot be released under any other type of license. The\nrequirement for fonts to remain under this license does not apply\nto any document created using the fonts or their derivatives.\n\nDEFINITIONS\n\"Font Software\" refers to the set of files released by the Copyright\nHolder(s) under this license and clearly marked as such. This may\ninclude source files, build scripts and documentation.\n\n\"Reserved Font Name\" refers to any names specified as such after the\ncopyright statement(s).\n\n\"Original Version\" refers to the collection of Font Software components as\ndistributed by the Copyright Holder(s).\n\n\"Modified Version\" refers to any derivative made by adding to, deleting,\nor substituting -- in part or in whole -- any of the components of the\nOriginal Version, by changing formats or by porting the Font Software to a\nnew environment.\n\n\"Author\" refers to any designer, engineer, programmer, technical\nwriter or other person who contributed to the Font Software.\n\nPERMISSION & CONDITIONS\nPermission is hereby granted, free of charge, to any person obtaining\na copy of the Font Software, to use, study, copy, merge, embed, modify,\nredistribute, and sell modified and unmodified copies of the Font\nSoftware, subject to the following conditions:\n\n1) Neither the Font Software nor any of its individual components,\nin Original or Modified Versions, may be sold by itself.\n\n2) Original or Modified Versions of the Font Software may be bundled,\nredistributed and/or sold with any software, provided that each copy\ncontains the above copyright notice and this license. These can be\nincluded either as stand-alone text files, human-readable headers or\nin the appropriate machine-readable metadata fields within text or\nbinary files as long as those fields can be easily viewed by the user.\n\n3) No Modified Version of the Font Software may use the Reserved Font\nName(s) unless explicit written permission is granted by the corresponding\nCopyright Holder. This restriction only applies to the primary font name as\npresented to the users.\n\n4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font\nSoftware shall not be used to promote, endorse or advertise any\nModified Version, except to acknowledge the contribution(s) of the\nCopyright Holder(s) and the Author(s) or with their explicit written\npermission.\n\n5) The Font Software, modified or unmodified, in part or in whole,\nmust be distributed entirely under this license, and must not be\ndistributed under any other license. The requirement for fonts to\nremain under this license does not apply to any document created\nusing the Font Software.\n\nTERMINATION\nThis license becomes null and void if any of the above conditions are\nnot met.\n\nDISCLAIMER\nTHE FONT SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT\nOF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE\nCOPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\nINCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL\nDAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM\nOTHER DEALINGS IN THE FONT SOFTWARE.";
+
 // ── js/ui/99-main.js ──
 /* Actions de l'écran principal et démarrage. */
 
@@ -7823,6 +7959,7 @@ action('addTask', type => {
 });
 
 action('moveTask', dir => {
+  if (App.view.groupBy) { announce(t('view.flat')); return; }
   const id = App.selected;
   const task = taskById(id);
   if (!task) return;
@@ -7917,7 +8054,7 @@ function initKeyboard() {
       else if (k === 'y' || (k === 'z' && ev.shiftKey)) { ev.preventDefault(); ACTIONS.redo(); }
     }
     if (ev.key === 'Escape' && !document.querySelector('dialog[open]') && Editor.isOpen()) { ev.preventDefault(); Editor.close(); }
-    if (!inField && ev.target.closest && ev.target.closest('#gantt') && (ev.key === '+' || ev.key === '-')) { ev.preventDefault(); ACTIONS.zoom(ev.key === '+' ? '1' : '-1'); }
+    if (!inField && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !document.querySelector('dialog[open]') && (ev.key === '+' || ev.key === '-' || ev.key === '−')) { ev.preventDefault(); ACTIONS.zoom(ev.key === '+' ? '1' : '-1'); }
   });
   // Ctrl + molette sur la grille : zoom (EF-41).
   $('gantt').addEventListener('wheel', ev => { if (ev.ctrlKey) { ev.preventDefault(); ACTIONS.zoom(ev.deltaY < 0 ? '1' : '-1'); } }, { passive: false });

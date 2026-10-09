@@ -157,3 +157,17 @@ test('R-61 chiffrement : aller-retour, mauvais mot de passe, fichier altéré', 
   await assert.rejects(() => Secure.decrypt(altered, 'une phrase de passe assez longue'), e => e.key === 'pwd.bad');
   await assert.rejects(() => Secure.decrypt({ ...env, kdf: { ...env.kdf, iterations: 1000 } }, 'x'), e => e.key === 'imp.unreadable');
 });
+
+test('EF-95 MS Project : la première baseline est transmise, les suivantes non', () => {
+  const p = sample();
+  const s = Schedule.compute(p);
+  const snap = (name, shift) => ({ id: 'X', name, color: '#f0b429', createdAt: 0, projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    tasks: p.tasks.filter(x => x.type !== 'summary').map(x => { const r = s.tasks.get(x.id); return { id: x.id, name: x.name, dur: x.dur, deps: x.deps.map(d => d.id), cat: '', start: Dates.toISO(r.startDn + shift), end: Dates.toISO(r.endDn + shift) }; }) });
+  p.baselines = [snap('Référence', 0), snap('Seconde', 7)];
+  const xml = Exchange.mspXml(p, s);
+  assert.equal((xml.match(/<Baseline>/g) || []).length, 3, 'une baseline par tâche non récapitulative, la première seulement');
+  const q = Model.sanitize(Exchange.fromMspXml(xml).raw).project;
+  assert.equal(q.baselines.length, 1);
+  assert.equal(q.baselines[0].tasks.find(x => x.id === 'A').start, p.baselines[0].tasks.find(x => x.id === 'A').start);
+  assert.equal(q.baselines[0].tasks.find(x => x.id === 'B').end, p.baselines[0].tasks.find(x => x.id === 'B').end);
+});

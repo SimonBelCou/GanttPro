@@ -213,7 +213,11 @@ const Editor = (() => {
     d.assign.forEach(a => { const r = resById(a.res); if (!r || !Number.isInteger(a.units) || a.units < 1 || a.units > r.capacity) e.assign = t('err.capacity', { field: t('f.units', { name: r ? r.name : '' }), name: r ? r.name : '', cap: r ? r.capacity : 100 }); });
     const tags = d.tagsRaw.split(',').map(s => s.trim()).filter(Boolean);
     if (tags.length > Model.LIMITS.tags || tags.some(s => s.length > 30)) e.tags = t('err.text', { field: t('f.tags'), min: 1, max: 30 });
-    else d.tags = tags.filter((s, i) => tags.findIndex(x => x.toLowerCase() === s.toLowerCase()) === i);
+    else {
+      d.tags = tags.filter((s, i) => tags.findIndex(x => x.toLowerCase() === s.toLowerCase()) === i);
+      const others = App.project.tasks.filter(x => x.id !== originalId);
+      if (projectTagCount([...others, d]) > Model.LIMITS.projectTags) e.tags = t('err.projectTags', { max: Model.LIMITS.projectTags });
+    }
     if (d.parent) {
       const height = Math.max(0, ...descendants(originalId).map(x => ancestorsOf(x.id).length - ancestorsOf(originalId).length));
       if (ancestorsOf(d.parent).length + 1 + height > Model.LIMITS.depth) e.parent = t('err.depth', { max: Model.LIMITS.depth });
@@ -247,12 +251,12 @@ const Editor = (() => {
     const trial = clone(App.project);
     applyTask(trial, oldId, final);
     try { Schedule.compute(trial); } catch { showErrors({ forcedStart: t('calc.error') }); return; }
-    commit(p => applyTask(p, oldId, final));
-    App.selected = newId;
-    originalId = newId;
+    // Fiche fermée AVANT la mise à jour : une seule reconstruction de l'affichage (EX-15).
     $('editor').hidden = true;
     draft = null;
-    render();
+    App.selected = newId;
+    originalId = newId;
+    commit(p => applyTask(p, oldId, final));
     announce(t('saved', { id: newId }) + (cleared ? ' ' + t('err.realEndCleared') : ''));
     const sel = document.querySelector(`button.select[data-arg="${CSS.escape(newId)}"]`);
     if (sel) sel.focus();
@@ -334,5 +338,18 @@ const Editor = (() => {
   action('saveTask', () => save());
   action('closeEditor', () => close());
 
-  return { open, close, isOpen: () => !!draft };
+  /** Après un changement de niveau (Mettre en retrait, Remonter) : le brouillon garde la saisie en
+   *  cours et reprend le nouveau parent, pour qu'« Enregistrer » ne l'annule pas. */
+  function syncParent() {
+    if (!draft) return;
+    const task = taskById(originalId);
+    if (!task) { close(); return; }
+    const back = document.activeElement && document.activeElement.id;
+    readForm();
+    draft.parent = task.parent;
+    build();
+    if (back && $(back)) $(back).focus();
+  }
+
+  return { open, close, syncParent, isOpen: () => !!draft };
 })();

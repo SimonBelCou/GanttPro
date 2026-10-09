@@ -29,6 +29,7 @@ action('addTask', type => {
 });
 
 action('moveTask', dir => {
+  if (App.view.groupBy) { announce(t('view.flat')); return; }
   const id = App.selected;
   const task = taskById(id);
   if (!task) return;
@@ -123,7 +124,7 @@ function initKeyboard() {
       else if (k === 'y' || (k === 'z' && ev.shiftKey)) { ev.preventDefault(); ACTIONS.redo(); }
     }
     if (ev.key === 'Escape' && !document.querySelector('dialog[open]') && Editor.isOpen()) { ev.preventDefault(); Editor.close(); }
-    if (!inField && ev.target.closest && ev.target.closest('#gantt') && (ev.key === '+' || ev.key === '-')) { ev.preventDefault(); ACTIONS.zoom(ev.key === '+' ? '1' : '-1'); }
+    if (!inField && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !document.querySelector('dialog[open]') && (ev.key === '+' || ev.key === '-' || ev.key === '−')) { ev.preventDefault(); ACTIONS.zoom(ev.key === '+' ? '1' : '-1'); }
   });
   // Ctrl + molette sur la grille : zoom (EF-41).
   $('gantt').addEventListener('wheel', ev => { if (ev.ctrlKey) { ev.preventDefault(); ACTIONS.zoom(ev.deltaY < 0 ? '1' : '-1'); } }, { passive: false });

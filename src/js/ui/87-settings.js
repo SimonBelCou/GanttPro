@@ -109,10 +109,11 @@ function openHelp() {
   const para = keys => keys.map(k => h('p', { text: t(k) }));
   const KEYS = [['↑ / ↓', 'help.k.move'], ['Entrée / Enter', 'help.k.edit'], ['Maj + clic, Ctrl + clic', 'help.k.multi'], ['Ctrl + A', 'help.k.all'],
     ['Suppr / Delete', 'help.k.del'], ['Échap / Esc', 'help.k.esc'], ['Ctrl + Z, Ctrl + Y', 'help.k.undo'], ['Ctrl + C, Ctrl + V', 'help.k.copy'],
-    ['Ctrl + D', 'help.k.dup'], ['Alt + ← / →', 'help.k.nudge'], ['Ctrl + Maj + → / ←', 'help.k.indent'], ['Ctrl + S', 'help.k.save'],
+    ['Ctrl + D', 'help.k.dup'], ['Alt + ← / →', 'help.k.nudge'], ['Alt + Maj + ← / →', 'help.k.nudgeDur'], ['Ctrl + Maj + → / ←', 'help.k.indent'], ['/', 'help.k.search'], ['Ctrl + S', 'help.k.save'],
     ['+ / − (Gantt)', 'help.k.zoom'], ['?', 'help.k.help']];
   const body = h('div', { id: 'help-win', class: 'help', tabindex: '-1', autofocus: true },
-    sec('about', h('p', { class: 'strong', text: t('help.version', { version: APP_VERSION }) }), ...para(['help.license', 'help.fonts'])),
+    sec('about', h('p', { class: 'strong', text: t('help.version', { version: APP_VERSION }) }), ...para(['help.license', 'help.fonts']),
+      h('details', { class: 'ofl' }, h('summary', { text: t('help.oflShow') }), h('pre', { lang: 'en', text: OFL_TEXT }))),
     sec('start', h('ol', {}, ['help.s1', 'help.s2', 'help.s3', 'help.s4', 'help.s5', 'help.s6'].map(k => h('li', { text: t(k) })))),
     sec('keys', h('p', { class: 'hint', text: t('help.keysHint') }), h('table', { class: 'manage' },
       h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('help.key') }), h('th', { scope: 'col', text: t('help.action') }))),

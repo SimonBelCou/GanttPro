@@ -134,7 +134,8 @@ La nouvelle version se construit à partir du cahier des charges fonctionnel, à
   tout accès au stockage hors de `src/js/ui/10-storage.js`.
 - Le DOM se construit avec `h()` (textContent, jamais innerHTML) ; les styles calculés passent par
   `element.style.setProperty` ; les couleurs par `safeColor()`.
-- Tests : `node --test tests/core/*.test.mjs` (scénarios R de la recette) puis `python3 tests/test_v3.py`.
+- Tests : `node --test tests/core/*.test.mjs` (scénarios R de la recette), puis `python3 tests/test_v3.py`,
+  `python3 tests/test_v3_espace.py` et `python3 tests/test_v3_recette.py` (recette d'interface, EX-04, EX-15, EX-25).
 
 ## Obligatoire à chaque modification du JavaScript
 1. Lancer `python3 tools/update-csp.py` : la CSP autorise le script par son empreinte SHA-256, elle devient

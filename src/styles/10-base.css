@@ -53,7 +53,9 @@ input.upper { text-transform: uppercase; font-family: 'Fira Code', monospace; }
 .project-label { font-weight: 600; background: transparent; }
 .field-inline { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); }
 .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.toolbar .group { display: inline-flex; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); }
+.toolbar .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); max-width: 100%; }
+.toolbar { max-width: 100%; min-width: 0; }
+.field-inline { flex-wrap: wrap; max-width: 100%; }
 .toolbar .group:last-child { border-right: 0; }
 .zoom-level { min-width: 6.5em; text-align: center; color: var(--muted); }
 .badge { color: var(--critical); border-color: var(--critical); font-weight: 600; }
@@ -156,6 +158,12 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .row-actions { display: flex; flex-wrap: wrap; gap: .3rem; }
 .help-sec h3 { margin: 1rem 0 .3rem; }
 .help kbd { font-family: 'Fira Code', monospace; font-weight: 400; }
+.help .ofl pre { white-space: pre-wrap; font-size: .8rem; max-height: 16rem; overflow: auto; border: 1px solid var(--line); padding: .5rem; }
+.legend .status-key { font-weight: 600; }
+.legend ul + ul { margin-top: .35rem; }
+.legend .strong { font-weight: 700; color: var(--text); }
+.legend .status-key.late { color: var(--critical); }
+.legend .status-key.done { color: var(--ok); }
 
 /* Panneau d'édition */
 .editor {
@@ -382,6 +390,7 @@ table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .ghost { position: absolute; top: 7px; height: 20px; border: 2px dashed var(--accent); border-radius: 4px; background: color-mix(in srgb, var(--accent) 15%, transparent); pointer-events: none; z-index: 4; }
 .ghost.pct { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent) var(--pct), transparent var(--pct)); }
 .g-drag { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
+body.dragging .g-links .link-hit { pointer-events: none; }
 .g-drag line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
 body.dragging { user-select: none; cursor: grabbing; }
 .real-band { position: absolute; top: 27px; height: 3px; border-radius: 2px; z-index: 1; }

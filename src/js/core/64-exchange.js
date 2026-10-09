@@ -91,6 +91,13 @@ const Exchange = (() => {
     const mspDay = k => (k + 1) % 7 + 1; // lundi (0) → 2 … dimanche (6) → 1
     const weekDays = project.calendar.workDays.map((w, k) => `<WeekDay><DayType>${mspDay(k)}</DayType><DayWorking>${w}</DayWorking>${w ? wt : ''}</WeekDay>`).join('');
     const exceptions = exc.map(e => `<Exception><EnteredByOccurrences>0</EnteredByOccurrences><TimePeriod><FromDate>${iso(e.dn)}T00:00:00</FromDate><ToDate>${iso(e.dn)}T23:59:00</ToDate></TimePeriod><Occurrences>1</Occurrences><Name>${X(e.name)}</Name><Type>1</Type><DayWorking>${e.working ? 1 : 0}</DayWorking>${e.working ? wt : ''}</Exception>`).join('');
+    // Première baseline seulement (EF-95) : élément Baseline n° 0 de chaque tâche.
+    const bl0 = project.baselines[0] || null;
+    const blXml = x => {
+      const bt = bl0 && bl0.tasks.find(y => y.id === x.id);
+      if (!bt) return '';
+      return `<Baseline><Number>0</Number><Start>${bt.start}T08:00:00</Start><Finish>${bt.end}T${bt.dur ? '17:00:00' : '08:00:00'}</Finish><Duration>PT${bt.dur * 8}H0M0S</Duration></Baseline>`;
+    };
     const tasks = project.tasks.map(x => {
       const r = sched.tasks.get(x.id);
       const dur = x.type === 'summary' ? (r && !r.empty ? r.d : 0) : x.type === 'milestone' ? 0 : x.dur;
@@ -105,7 +112,7 @@ const Exchange = (() => {
         (x.deadline ? `<Deadline>${x.deadline}T17:00:00</Deadline>` : '') +
         (x.realStart ? `<ActualStart>${x.realStart}T08:00:00</ActualStart>` : '') + (x.realEnd ? `<ActualFinish>${x.realEnd}T17:00:00</ActualFinish>` : '') +
         x.deps.map(d => `<PredecessorLink><PredecessorUID>${uid.get(d.id)}</PredecessorUID><Type>${MSP_TYPE[d.type]}</Type><LinkLag>${d.lag * 4800}</LinkLag><LagFormat>7</LagFormat></PredecessorLink>`).join('') +
-        (x.notes ? `<Notes>${X(x.notes)}</Notes>` : '') + '</Task>';
+        blXml(x) + (x.notes ? `<Notes>${X(x.notes)}</Notes>` : '') + '</Task>';
     }).join('');
     const resources = project.resources.map(r => `<Resource><UID>${ruid.get(r.id)}</UID><ID>${ruid.get(r.id)}</ID><Name>${X(r.name)}</Name><Type>1</Type><MaxUnits>${(r.capacity / 100).toFixed(2)}</MaxUnits></Resource>`).join('');
     let auid = 0;
@@ -174,6 +181,14 @@ const Exchange = (() => {
         deadline: summary ? '' : day(Xml.textOf(x, 'Deadline')),
         realStart: summary || milestone ? '' : day(Xml.textOf(x, 'ActualStart')), realEnd: summary || milestone ? '' : realEnd,
         notes: Xml.textOf(x, 'Notes').slice(0, 2000), links: summary ? [] : Xml.children(x, 'PredecessorLink'),
+        baseline: summary ? null : (() => {
+          const b = Xml.children(x, 'Baseline').find(e => (Xml.textOf(e, 'Number') || '0') === '0');
+          if (!b) return null;
+          const bs = day(Xml.textOf(b, 'Start')), bf = day(Xml.textOf(b, 'Finish'));
+          if (Dates.parse(bs) == null || Dates.parse(bf) == null || bf < bs) return null;
+          const bm = /PT(\d+)H(\d+)M/.exec(Xml.textOf(b, 'Duration'));
+          return { start: bs, end: bf, dur: milestone ? 0 : Math.min(Model.LIMITS.dur, Math.max(1, Math.ceil((bm ? Number(bm[1]) + Number(bm[2]) / 60 : 8) / 8))) };
+        })(),
       };
     });
     const resources = Xml.children(Xml.child(P, 'Resources'), 'Resource').filter(r => Xml.textOf(r, 'UID') !== '0' && Xml.textOf(r, 'Name'))
@@ -201,6 +216,12 @@ const Exchange = (() => {
       resources: resources.map(r => ({ name: r.name, capacity: r.capacity })),
       categories: [], baselines: [],
     };
+    // Baseline n° 0 → une baseline GanttPro (les suivantes sont ignorées, EF-95).
+    const blTasks = tasks.filter(x => x.baseline);
+    if (blTasks.length) {
+      raw.baselines.push({ name: t('msp.baseline'), color: '#f0b429', createdAt: Date.now(), projectStart: raw.projectStart, shownOnGantt: true, shownOnScurve: true,
+        tasks: blTasks.map(x => ({ id: x.id, name: x.name, dur: x.baseline.dur, deps: raw.tasks.find(y => y.id === x.id).deps.map(d => d.id), cat: '', start: x.baseline.start, end: x.baseline.end })) });
+    }
     return { raw, ignored: [...ignored] };
   }
 

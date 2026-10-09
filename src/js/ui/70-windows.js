@@ -110,7 +110,8 @@ action('resAdd', () => {
 action('resDelete', async id => {
   const r = resById(id);
   const used = App.project.tasks.filter(x => x.assign.some(a => a.res === id)).length;
-  const ok = await Dialog.confirm(t('res.delete', { name: r.name }), [used ? t('res.deleteUsed', { count: used }) : ''], t('edit.delete'));
+  const orphans = App.project.tasks.filter(x => x.assign.length === 1 && x.assign[0].res === id).length;
+  const ok = await Dialog.confirm(t('res.delete', { name: r.name }), [used ? t('res.deleteUsed', { count: used }) : '', orphans ? t('res.deleteOrphans', { count: orphans }) : ''], t('edit.delete'));
   if (!ok) return;
   commit(p => {
     p.resources = p.resources.filter(x => x.id !== id);

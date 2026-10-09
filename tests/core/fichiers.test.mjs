@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';
 
-const { Model, Schedule, Dates } = loadCore();
+const { Model, Schedule, Dates, I18n } = loadCore();
 const plain = x => JSON.parse(JSON.stringify(x));
 
 /** Exécute fn et renvoie la clé d'erreur (ou null si accepté). */
@@ -194,4 +194,19 @@ test('gestion de la charge : lissage par défaut, nivellement pour un fichier 2.
   assert.equal(imp({ format: 3, leveling: 'off', tasks: [] }).project.leveling, 'off');
   assert.equal(keyOf({ format: 3, leveling: 'auto', tasks: [] }), 'imp.field');
   assert.equal(Model.newProject('2026-01-05').leveling, 'smooth');
+});
+
+test('R-13 boucle de dépendances refusée, avec le chemin', () => {
+  const tasks = [{ id: 'A', deps: [{ id: 'B', type: 'FS', lag: 0 }] }, { id: 'B', deps: [{ id: 'A', type: 'FS', lag: 0 }] }];
+  const cycle = Model.findCycle(tasks);
+  assert.ok(cycle && cycle[0] === cycle[cycle.length - 1] && cycle.includes('A') && cycle.includes('B'), JSON.stringify(cycle));
+  assert.throws(() => Model.sanitize({ format: 3, tasks: [{ id: 'A', name: 'a', dur: 1, deps: ['B'] }, { id: 'B', name: 'b', dur: 1, deps: ['A'] }] }),
+    e => e instanceof Model.Invalid && I18n.error(e).startsWith('Boucle de dépendances'));
+});
+
+test('R-42 cinq niveaux de récapitulatives au plus', () => {
+  const chain = n => Array.from({ length: n }, (_, i) => ({ id: 'S' + i, name: 's', type: 'summary', parent: i ? 'S' + (i - 1) : '' }))
+    .concat([{ id: 'T', name: 't', dur: 2, parent: 'S' + (n - 1) }]);
+  assert.doesNotThrow(() => Model.sanitize({ format: 3, tasks: chain(5) }));
+  assert.throws(() => Model.sanitize({ format: 3, tasks: chain(6) }), e => e instanceof Model.Invalid && /niveaux/.test(I18n.error(e)));
 });

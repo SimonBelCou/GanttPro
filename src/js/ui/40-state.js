@@ -84,7 +84,17 @@ function undoStep(from, to) {
   return true;
 }
 
-const taskById = id => App.project.tasks.find(t => t.id === id);
+/** Index id → tâche valable le temps d'un affichage (les données ne changent pas pendant render). */
+const RenderIndex = (() => {
+  let tasks = null, map = null;
+  return {
+    open(list) { tasks = list; map = new Map(list.map(x => [x.id, x])); },
+    close() { tasks = null; map = null; },
+    get(list, id) { return list === tasks && map ? map.get(id) : undefined; },
+    active(list) { return list === tasks && !!map; },
+  };
+})();
+const taskById = id => (RenderIndex.active(App.project.tasks) ? RenderIndex.get(App.project.tasks, id) : App.project.tasks.find(t => t.id === id));
 const resById = id => App.project.resources.find(r => r.id === id);
 const catById = id => App.project.categories.find(c => c.id === id);
 
@@ -97,8 +107,9 @@ function descendants(id, tasks = App.project.tasks) {
 }
 function ancestorsOf(id, tasks = App.project.tasks) {
   const out = [];
-  let t = tasks.find(x => x.id === id);
-  while (t && t.parent && out.length <= Model.LIMITS.depth) { out.push(t.parent); t = tasks.find(x => x.id === t.parent); }
+  const find = RenderIndex.active(tasks) ? k => RenderIndex.get(tasks, k) : k => tasks.find(x => x.id === k);
+  let t = find(id);
+  while (t && t.parent && out.length <= Model.LIMITS.depth) { out.push(t.parent); t = find(t.parent); }
   return out;
 }
 
@@ -107,3 +118,6 @@ function visibleTasks() {
   const collapsed = new Set(App.project.tasks.filter(t => t.type === 'summary' && t.collapsed).map(t => t.id));
   return App.project.tasks.filter(t => !ancestorsOf(t.id).some(a => collapsed.has(a)));
 }
+
+/** Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7). */
+function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }

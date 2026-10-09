@@ -3,14 +3,16 @@
  * chaque contenu relu du stockage sont des données non fiables : le sommaire est validé champ par
  * champ, chaque projet repasse par Model.parseFile (même contrôle qu'un import). */
 const Library = (() => {
-  const INDEX = 'index', MAX_ENTRIES = 200;
+  // MAX_ENTRIES : 50 entrées au plus, projets et modèles ensemble (3.7) ; la lecture tolère davantage
+  // (sommaire écrit par une version antérieure) sans jamais dépasser READ_MAX.
+  const INDEX = 'index', MAX_ENTRIES = 50, READ_MAX = 200;
 
   function index() {
     let raw;
     try { raw = JSON.parse(Store.read('lib', INDEX) || '[]'); } catch { return []; }
     if (!Array.isArray(raw)) return [];
     const keys = new Set(Store.keys('lib'));
-    return raw.slice(0, MAX_ENTRIES).filter(e => e && typeof e === 'object' && typeof e.key === 'string' && /^[a-z0-9-]{1,40}$/.test(e.key) && e.key !== INDEX && keys.has(e.key)
+    return raw.slice(0, READ_MAX).filter(e => e && typeof e === 'object' && typeof e.key === 'string' && /^[a-z0-9-]{1,40}$/.test(e.key) && e.key !== INDEX && keys.has(e.key)
       && (e.kind === 'project' || e.kind === 'template') && typeof e.name === 'string' && e.name.length <= 200)
       .map(e => ({ key: e.key, kind: e.kind, name: e.name, emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
         date: Number.isFinite(e.date) ? e.date : 0, tasks: Number.isInteger(e.tasks) && e.tasks >= 0 ? e.tasks : 0, enc: e.enc === true, withRes: e.withRes === true }));
@@ -21,9 +23,11 @@ const Library = (() => {
   async function put(entry, project, password) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: entry.kind === 'project' }));
     const data = password ? JSON.stringify(await Secure.encrypt(text, password)) : text;
+    const before = index();
+    if (!before.some(e => e.key === entry.key) && before.length >= MAX_ENTRIES) return 'limit';
     const r = Store.write('lib', entry.key, data);
     if (r !== 'ok') return r;
-    const list = index().filter(e => e.key !== entry.key);
+    const list = before.filter(e => e.key !== entry.key);
     list.unshift({ ...entry, name: project.name, emoji: project.emoji, date: Date.now(), tasks: project.tasks.length, enc: !!password });
     const w = writeIndex(list);
     if (w !== 'ok') Store.remove('lib', entry.key);
@@ -46,7 +50,8 @@ const Library = (() => {
 
   function remove(key) { writeIndex(index().filter(e => e.key !== key)); Store.remove('lib', key); }
   function rename(key, name) { const list = index(); const e = list.find(x => x.key === key); if (e) { e.name = name; writeIndex(list); } }
-  return { index, put, load, remove, rename };
+  const full = () => index().length >= MAX_ENTRIES;
+  return { index, put, load, remove, rename, full, MAX_ENTRIES };
 })();
 
 /** Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce. */
@@ -61,7 +66,7 @@ async function storageNotice() {
 }
 
 function storeFailed(r) {
-  return Dialog.message(t('lib.title'), r === 'full' ? t('store.full') : t('store.off'));
+  return Dialog.message(t('lib.title'), r === 'limit' ? t('lib.limit', { max: Library.MAX_ENTRIES }) : r === 'full' ? t('store.full') : t('store.off'));
 }
 
 /** Mot de passe facultatif pour un enregistrement : '' = sans, null = abandon. */
@@ -139,7 +144,7 @@ function shiftTemplate(p, start) {
   const mv = s => (s ? Dates.toISO(Math.min(Dates.parse('2199-12-31'), Math.max(0, Dates.parse(s) + d))) : s);
   p.projectStart = start;
   for (const x of p.tasks) { x.forcedStart = mv(x.forcedStart); x.notBefore = mv(x.notBefore); x.deadline = mv(x.deadline); }
-  for (const r of p.resources) r.absences = (r.absences || []).map(a => ({ ...a, from: mv(a.from), to: mv(a.to) }));
+  for (const r of p.resources) r.absences = (r.absences || []).map(a => ({ ...a, start: mv(a.start), end: mv(a.end) }));
   return p;
 }
 
@@ -256,6 +261,7 @@ async function openLibrary(focusSel) {
       }
       paint(`#lib-ren-${key}`);
     } else if (cmd === 'dup') {
+      if (Library.full()) { await storeFailed('limit'); paint(`#lib-dup-${key}`); return; }
       const text = Store.read('lib', key);
       const nk = Tabs.newKey();
       const r = text === null ? 'off' : Store.write('lib', nk, text);

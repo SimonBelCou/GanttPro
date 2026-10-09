@@ -3,7 +3,11 @@
 const t = (k, p) => I18n.t(k, p);
 const today = () => Dates.todayDn();
 
+let staticLang = '';
 function applyStaticTexts() {
+  // Les textes du gabarit ne changent qu'avec la langue : inutile de les réécrire à chaque affichage.
+  if (staticLang === I18n.getLang()) return;
+  staticLang = I18n.getLang();
   document.documentElement.lang = I18n.getLang();
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
@@ -57,6 +61,8 @@ function renderTopbar() {
   const links = $('btn-links');
   links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
   links.setAttribute('aria-pressed', String(App.showLinks));
+  // Réordonner et changer de niveau sont indisponibles en vue regroupée (EF-86).
+  for (const id of ['btn-up', 'btn-down', 'btn-indent', 'btn-outdent']) { const b = $(id); if (b) b.disabled = !!App.view.groupBy; }
   const lvl = $('leveling-mode');
   if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
 }
@@ -139,7 +145,16 @@ function groupLabel(g) {
   return { name, totals: t('view.groupTotals', { count: g.count, dur: g.dur, pct: g.pct }) };
 }
 
+/** Cellule de tableau en texte seul (textContent, jamais innerHTML). */
+function textCell(text, cls) {
+  const td = document.createElement('td');
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
 function renderList(items, fl) {
+  const noRes = t('list.noRes');
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
@@ -181,13 +196,16 @@ function renderList(items, fl) {
     if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
     if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    frag.append(h('tr', { draggable: App.view.groupBy ? undefined : 'true', class: [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'], data: { id: task.id } },
-      h('td', { class: 'id' }, crit ? h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }) : '', task.id),
-      nameCell,
-      h('td', { text: durText(task, r) }),
-      h('td', { text: depsText(task) }),
-      h('td', { text: task.type === 'task' ? (resText(task) || t('list.noRes')) : '' }),
-      h('td', { class: 'status ' + (st || ''), text: st ? t('status.' + st) : '' })));
+    // Cellules de texte créées directement (textContent) : même sûreté que h(), plus rapide sur 1 000 lignes (EX-25).
+    const tr = document.createElement('tr');
+    if (!App.view.groupBy) tr.setAttribute('draggable', 'true');
+    tr.className = [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'].filter(Boolean).join(' ');
+    tr.dataset.id = task.id;
+    const idCell = textCell(task.id, 'id');
+    if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
+    tr.append(idCell, nameCell, textCell(durText(task, r)), textCell(depsText(task)),
+      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')));
+    frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
   body.append(frag);
@@ -222,10 +240,13 @@ function renderGantt(items, fl) {
   const { from, to } = gridRange();
   const dayW = 26 * App.zoom / 100 / 7;
   const days = to - from + 1;
-  const width = Math.max(1, Math.round(days * dayW));
+  // Marge à gauche : la poignée de début d'une barre qui commence au premier jour reste atteignable
+  // (elle déborde de 12 px à gauche de la barre).
+  const PAD = 16;
+  const width = Math.max(1, Math.round(days * dayW) + PAD);
   inner.style.setProperty('--grid-w', width + 'px');
-  const x = dn => (dn - from) * dayW;
-  App.grid = { from, dayW };
+  const x = dn => PAD + (dn - from) * dayW;
+  App.grid = { from, dayW, pad: PAD };
 
   // En-tête sur deux lignes : les mois, puis le lundi de chaque semaine (vue semaine) ;
   // sous 60 % de zoom, les mois seuls (RG-21). Les jours fériés sont signalés par semaine (EF-16).
@@ -314,7 +335,7 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
-      el.append(h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -325,17 +346,16 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', isSelected(task.id) && 'selected'],
         aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
         h('span', { class: 'done', aria: { hidden: 'true' } }),
-        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
+        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: (fl.conflict.has(task.id) ? '⚠ ' : '') + task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
-      // Poignées des gestes (EF-74 à EF-77) : décoratives, le clavier a ses équivalents (EF-78).
-      const hp = h('span', { class: 'h-pct', aria: { hidden: 'true' } });
-      hp.style.setProperty('left', pct + '%');
-      el.append(h('span', { class: 'h-end', aria: { hidden: 'true' } }), hp,
-        h('span', { class: 'lk lk-s', aria: { hidden: 'true' } }), h('span', { class: 'lk lk-e', aria: { hidden: 'true' } }));
+      // Poignées des gestes (EF-74 à EF-77) : créées au survol ou au focus (ensureHandles), pour
+      // garder un affichage rapide sur 1 000 tâches (EX-15) ; le clavier a ses équivalents (EF-78).
+      el.dataset.pct = String(pct);
+      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
       // Bande des dates réelles, couleur de la première ressource (EF-21).
       const rs = Dates.parse(task.realStart);
       if (rs != null) {
@@ -354,7 +374,7 @@ function renderGantt(items, fl) {
       const bt = b.tasks.find(x => x.id === task.id);
       if (!bt) return null;
       const a = Dates.parse(bt.start), z = Dates.parse(bt.end);
-      const m = h('div', { class: 'bl', aria: { hidden: 'true' } });
+      const m = h('div', { class: 'bl', aria: { hidden: 'true' }, title: `${b.name} : ${I18n.shortDate(a)} → ${I18n.shortDate(z)}` });
       m.style.setProperty('left', x(a) + 'px');
       m.style.setProperty('width', Math.max(3, (z - a + 1) * dayW) + 'px');
       m.style.setProperty('top', (28 + k * 2) + 'px');
@@ -369,6 +389,8 @@ function renderGantt(items, fl) {
   inner.append(body);
 }
 
+/** Au-delà de ce nombre de lignes, les poignées des gestes ne sont créées qu'à l'approche d'une barre. */
+const HANDLES_EAGER = 300;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style). */
 function svg(tag, attrs = {}, ...children) {
@@ -422,11 +444,22 @@ function renderLegend() {
     h('li', {}, t('legend.forced')), h('li', {}, t('legend.notBefore')), h('li', {}, t('legend.deadline')), h('li', {}, t('legend.milestone')),
     App.project.baselines.some(b => b.shownOnGantt) ? h('li', {}, h('span', { class: 'swatch thin', aria: { hidden: 'true' } }), t('legend.baseline')) : null,
     h('li', {}, h('span', { class: 'swatch today', aria: { hidden: 'true' } }), t('legend.today')),
+    h('li', {}, t('legend.conflict')),
   ];
   box.append(h('ul', {}, items));
+  // Ressources (couleur de la bande des dates réelles et de l'avatar) et statuts, toujours en texte (EF-46).
+  if (App.project.resources.length) box.append(h('ul', { aria: { label: t('legend.resources') } }, h('li', { class: 'strong', text: t('legend.resources') + ' :' }),
+    App.project.resources.map(r => h('li', {}, swatch(r.color), r.name))));
+  box.append(h('ul', { aria: { label: t('legend.statuses') } }, h('li', { class: 'strong', text: t('legend.statuses') + ' :' }),
+    ['done', 'ongoing', 'late', 'notStarted', 'upcoming'].map(k => h('li', { class: 'status-key ' + k, text: t('status.' + k) }))));
 }
 
 function render() {
+  // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
+  RenderIndex.open(App.project.tasks);
+  try { renderAll(); } finally { RenderIndex.close(); }
+}
+function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
   const focusId = document.activeElement && document.activeElement.id;
   Tooltip.hide();

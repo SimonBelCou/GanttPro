@@ -55,3 +55,4 @@ jobs:
           python3 tests/test_gantt.py
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
+          PERF_FACTOR=2 python3 tests/test_v3_recette.py

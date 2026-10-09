@@ -140,8 +140,10 @@
       <button type="submit" class="primary" data-i18n="edit.save"></button>
       <button type="button" data-click="closeEditor" data-i18n="edit.cancel"></button>
       <button type="button" data-click="duplicateTask" data-i18n="edit.duplicate" aria-keyshortcuts="Control+D"></button>
-      <button type="button" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
-      <button type="button" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
+      <button type="button" id="btn-up" data-click="moveTask" data-arg="-1" data-i18n="edit.up"></button>
+      <button type="button" id="btn-down" data-click="moveTask" data-arg="1" data-i18n="edit.down"></button>
+      <button type="button" id="btn-indent" data-click="indent" data-i18n="sel.indent" aria-keyshortcuts="Control+Shift+ArrowRight"></button>
+      <button type="button" id="btn-outdent" data-click="outdent" data-i18n="sel.outdent" aria-keyshortcuts="Control+Shift+ArrowLeft"></button>
       <button type="button" class="danger" data-click="deleteTask" data-i18n="edit.delete"></button>
     </div>
   </form>

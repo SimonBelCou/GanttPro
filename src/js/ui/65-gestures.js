@@ -37,6 +37,18 @@ function endGesture(cancelled) {
   if (cancelled && g.active) announce(t('gst.cancelled'));
 }
 
+/** Poignées d'une barre ou d'un jalon (EF-74 à EF-77), ajoutées à la première approche. */
+function ensureHandles(el) {
+  if (!el || el.querySelector('.lk')) return;
+  const span = cls => h('span', { class: cls, aria: { hidden: 'true' } });
+  if (el.classList.contains('bar')) {
+    const hp = span('h-pct');
+    hp.style.setProperty('left', (Number(el.dataset.pct) || 0) + '%');
+    el.append(span('h-end'), hp);
+  }
+  el.append(span('lk lk-s'), span('lk lk-e'));
+}
+
 function linkType(fromEnd, toEnd) { return fromEnd ? (toEnd ? 'FF' : 'FS') : (toEnd ? 'SF' : 'SS'); }
 
 /** Contrôle d'un nouveau lien pred → succ (EF-76) ; renvoie un message d'erreur ou null. */
@@ -58,6 +70,7 @@ function startGesture(g, ev) {
     const layer = document.querySelector('.g-body');
     g.line = svg('svg', { class: 'g-drag', 'aria-hidden': 'true' }, svg('line', { x1: g.ox, y1: g.oy, x2: g.ox, y2: g.oy }));
     layer.append(g.line);
+    for (const bar of document.querySelectorAll('#gantt .bar, #gantt .ms[data-arg]')) ensureHandles(bar);
     for (const el of document.querySelectorAll('#gantt .lk')) if (el.closest('[data-arg]').dataset.arg !== g.id) el.classList.add('target');
   } else {
     g.ghost = g.el.cloneNode(false);
@@ -79,7 +92,7 @@ function moveGesture(ev) {
     let dn = g.r.startDn + days;
     dn = cal.dnOf(cal.ceil(dn));
     g.value = Dates.toISO(dn);
-    g.ghost.style.setProperty('left', ((dn - App.grid.from) * dayW + (g.task.type === 'milestone' ? dayW / 2 : 0)) + 'px');
+    g.ghost.style.setProperty('left', (App.grid.pad + (dn - App.grid.from) * dayW + (g.task.type === 'milestone' ? dayW / 2 : 0)) + 'px');
     gestureTip(t('gst.moveTo', { date: I18n.date(dn) }), ev.clientX, ev.clientY);
   } else if (g.kind === 'resize') {
     const target = Math.max(g.r.startDn, g.r.endDn + days);
@@ -138,6 +151,9 @@ function finishGesture() {
 
 function initGestures() {
   const grid = $('gantt');
+  const handlesFor = ev => { const el = ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg]'); if (el) ensureHandles(el); };
+  grid.addEventListener('pointerover', handlesFor);
+  grid.addEventListener('focusin', handlesFor);
   grid.addEventListener('pointerdown', ev => {
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
     const el = ev.target.closest('.bar, .ms[data-arg]');

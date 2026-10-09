@@ -82,6 +82,7 @@ function bulkWindow() {
       const trial = clone(App.project);
       apply(trial);
       if (refused.length) return err(t('bulk.refused', { list: refused.join(' ; ') }));
+      if (projectTagCount(trial.tasks) > Model.LIMITS.projectTags) return err(t('err.projectTags', { max: Model.LIMITS.projectTags }));
       try { Schedule.compute(trial); } catch { return err(t('calc.error')); }
       commit(apply);
       announce(t('bulk.done', { count: ids.length }));

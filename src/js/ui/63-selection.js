@@ -117,6 +117,8 @@ function hierarchyChange(mutate, okMsg) {
     Dialog.message(t('sel.hierarchy'), t('sel.linkHierarchy', { a: d.id, b: x.id })); return false;
   }
   commit(p => { mutate(p); });
+  // Fiche ouverte : son champ « Récapitulative parente » suit le changement, sans perdre la saisie.
+  Editor.syncParent();
   announce(okMsg);
   return true;
 }
@@ -320,7 +322,13 @@ function initListKeys() {
       if (b) { b.focus(); b.scrollIntoView({ block: 'nearest' }); }
       return;
     }
-    if ((ev.key === 'Delete' || ev.key === 'Suppr') && selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); return; }
+    if (ev.key === 'Delete' || ev.key === 'Suppr') {
+      // La ligne qui a le focus est celle visée si elle ne fait pas partie de la sélection.
+      const tr = inList && ev.target.closest('tr[data-id]');
+      if (tr && !isSelected(tr.dataset.id)) { App.multi.clear(); App.selected = tr.dataset.id; }
+      if (selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); }
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'a' && !ev.altKey) {
       ev.preventDefault();
       App.multi = new Set(visibleOrder());
