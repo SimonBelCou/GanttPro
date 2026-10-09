@@ -416,3 +416,5 @@ body.dragging { user-select: none; cursor: grabbing; }
 .key-line { display: inline-block; width: 18px; border-top: 2px dashed var(--text); }
 
 .g-absence { position: absolute; top: 4px; bottom: 4px; background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .6; border-radius: 2px; }
+
+.rep-options fieldset .check { display: flex; align-items: center; gap: .3rem; }

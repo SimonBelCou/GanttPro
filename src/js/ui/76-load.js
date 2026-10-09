@@ -76,7 +76,7 @@ function paintLoad(box) {
   for (const r of all.filter(x => Load.res.has(x.id))) {
     const { chart, occ } = loadChart(r, periods);
     const total = occ.reduce((a, o) => a + o.load, 0);
-    box.append(h('section', { class: 'load-res' }, h('h4', { text: `${r.name} — ${t('rs.load', { load: I18n.number(total, total % 1 ? 1 : 0) })} ${t('load.capacity', { cap: r.capacity })}` }),
+    box.append(h('section', { class: 'load-res' }, h('h4', { text: `${r.name} — ${t('rs.load', { load: I18n.number(total, total % 1 ? 1 : 0) }).replace(/\.$/, '')} ${t('load.capacity', { cap: r.capacity })}` }),
       h('div', { class: 'chart-scroll' }, chart)));
     tables.push([r, occ]);
   }
