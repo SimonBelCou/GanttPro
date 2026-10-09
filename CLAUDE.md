@@ -124,27 +124,53 @@ Un prompt guide la génération de code mais ne garantit rien seul. À coupler a
 Application en **un seul fichier** `GanttPro.html` (HTML + CSS + JS vanilla), ouverte en local, sans serveur.
 Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout code produit ou modifié.
 
-## Obligatoire à chaque modification du JavaScript
-1. Lancer `python3 tools/update-csp.py` : la CSP autorise le script par son empreinte SHA-256, elle devient
-   périmée à la moindre modification (la CI échoue sinon). Ne jamais ajouter `'unsafe-inline'` à `script-src`.
-2. Lancer `python3 tests/test_gantt.py` (import malveillant, CSP, parcours clavier/souris, accessibilité).
+## Références
+- Cahier des charges fonctionnel (exigences EF/RG/EX, recette R-01 à R-70, annexes A d'arbitrages) :
+  https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7
+- Guide utilisateur : `docs/guide-utilisateur.md`.
+- Toute fonction ajoutée ou tout arbitrage est reporté dans le cahier des charges (exigence + annexe A) et,
+  s'il change l'usage, dans le guide utilisateur.
+
+## Organisation du code
+- Sources : `src/js/core/` (moteur sans DOM : dates, calendrier, planning, indicateurs, résolution des conflits,
+  validation des fichiers, traductions, échanges CSV/Excel/MS Project, chiffrement), `src/js/ui/` (interface),
+  `src/styles/`, gabarit `src/index.html`.
+- **Ne jamais modifier `GanttPro.html` à la main** : `python3 tools/build.py` l'assemble à partir de `src/` et
+  calcule la CSP (script ET style autorisés par empreinte SHA-256, **aucun `'unsafe-inline'`**).
+  `python3 tools/build.py --check` (CI) échoue si le fichier n'est pas à jour.
+- Le build refuse `eval`, `new Function`, `document.write`, `onclick=`, `style=`, `setAttribute('style'|'on…')`,
+  `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`.
+- `archive/v2.3/` conserve l'ancienne version, pour mémoire : elle n'est plus maintenue ni testée.
+
+## Obligatoire à chaque modification
+1. `python3 tools/build.py`
+2. `node --test tests/core/*.test.mjs` (moteur, scénarios chiffrés de la recette)
+3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`
+   (`npm install --no-save axe-core` pour le contrôle d'accessibilité ; `PERF_FACTOR=2` sur une machine lente).
+4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
 
 ## Règles de code (A03 – Injection)
-- **Aucun gestionnaire inline** (`onclick=`, `onchange=`, `oninput=`…, y compris dans les gabarits JS).
-  Utiliser `data-click` / `data-change` / `data-input` (+ `data-arg`) et déclarer l'action dans la table `ACTIONS`.
-- Toute donnée venant d'un fichier, du stockage ou d'un champ de saisie : `esc()` avant `innerHTML`
-  (ou `textContent`), `safeColor()` avant tout attribut `style`, jamais d'`eval`, `new Function`, `document.write`.
-- Tout import passe par `sanitizeProject()` (liste blanche de champs, types, longueurs, identifiants `[A-Z0-9._-]`).
-- Les identifiants de tâche sont des chaînes : ne jamais les convertir en nombres (`data-arg` brut pour `selectTask`).
-- `goHome()` ne suit que des URL de même origine en http(s)/file.
+- DOM construit avec `h()` : tout texte par `textContent`, **jamais `innerHTML`** ; SVG par `svg()`.
+- Styles calculés par `element.style.setProperty` ; couleurs par `safeColor()` (#rgb ou #rrggbb seulement).
+- **Aucun gestionnaire inline** : `data-click` / `data-change` / `data-input` / `data-submit` (+ `data-arg`) et
+  l'action déclarée par `action('nom', …)` dans la table `ACTIONS`.
+- Tout projet venant d'un fichier, du stockage, d'une page d'accueil ou d'une version passe par
+  `Model.sanitize` / `Model.parseFile` (liste blanche de champs, types, longueurs, identifiants `[A-Z0-9._-]`).
+- Les identifiants de tâche sont des chaînes : ne jamais les convertir en nombres.
+- Toute modification de données passe par `commit()` (un pas d'annulation, indicateur « modifié »).
+- Tout libellé passe par `I18n.t()` avec ses deux entrées, français ET anglais (test de complétude).
+- L'adresse de retour d'une page d'accueil n'est suivie que si elle est de même origine, en http(s) ou file.
 
 ## Accessibilité (WCAG 2.1 AA / RGAA)
 - Tout élément interactif non natif : `role="button"` + `tabindex="0"` ; Entrée/Espace sont gérés globalement.
-- Tout champ ou bouton-icône a un nom accessible ; le nom accessible d'un contrôle doit contenir son texte visible.
-- Texte ≥ 4,5:1 de contraste (`--muted` a été ajusté pour cela) ; pas de `outline:none` ; respecter `prefers-reduced-motion`.
-- Les modales sont gérées par `initDialogs()` (role=dialog, focus, Échap) : ajouter une modale = l'ajouter à `_DIALOG_CLOSERS`.
+- Tout champ ou bouton-icône a un nom accessible qui contient son texte visible.
+- Texte ≥ 4,5:1 de contraste dans les deux thèmes ; pas de `outline:none` ; respecter `prefers-reduced-motion`.
+- Fenêtres : uniquement par `Dialog.open` / `Dialog.message` / `Dialog.confirm` (dialogue natif titré, focus
+  piégé, Échap, focus rendu), jamais `alert` / `confirm` / `prompt`.
+- Chaque nouvelle fenêtre est contrôlée par axe-core dans les tests.
 
 ## Vie privée (RGPD)
 - Aucun appel réseau (`connect-src 'none'`), aucune ressource externe (polices intégrées), aucun cookie/traceur.
 - Les noms de ressources sont des données personnelles potentielles : ne jamais les journaliser ni les envoyer.
+- Stockage local seulement sur geste explicite ou option activée par l'utilisateur, effaçable depuis les réglages.
 - Aucune donnée réelle (noms, projets, chemins, entreprise) dans les fichiers du dépôt, y compris dans les exemples.
