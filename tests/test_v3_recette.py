@@ -16,7 +16,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-HTML = Path(os.environ.get('GANTT_HTML', ROOT / 'dist' / 'GanttPro.html'))
+HTML = Path(os.environ.get('GANTT_HTML', ROOT / 'GanttPro.html'))
 AXE = Path(os.environ.get('AXE_JS', ROOT / 'node_modules' / 'axe-core' / 'axe.min.js'))
 results = []
 # Les objectifs EX-15 / EX-25 valent « sur un ordinateur de bureau courant » ; un serveur d'intégration

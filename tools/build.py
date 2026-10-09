@@ -16,8 +16,8 @@ attribut style="" ou onclick="" injecté est bloqué par le navigateur. Les styl
 (positions des barres, couleurs) sont appliqués par le CSSOM (element.style.setProperty),
 que la CSP n'interdit pas.
 
-    python3 tools/build.py            # écrit dist/GanttPro.html
-    python3 tools/build.py --check    # échoue si dist/GanttPro.html n'est pas à jour (CI)
+    python3 tools/build.py            # écrit GanttPro.html
+    python3 tools/build.py --check    # échoue si GanttPro.html n'est pas à jour (CI)
 """
 import base64
 import hashlib
@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'src'
-OUT = ROOT / 'dist' / 'GanttPro.html'
+OUT = ROOT / 'GanttPro.html'
 
 # Motifs interdits dans les sources (règles A03 de CLAUDE.md) : contrôlés à chaque build.
 FORBIDDEN_JS = [
@@ -117,13 +117,12 @@ def main() -> int:
     html = assemble()
     if '--check' in sys.argv[1:]:
         if not OUT.exists() or OUT.read_text(encoding='utf-8') != html:
-            print("dist/GanttPro.html n'est pas à jour : lancez « python3 tools/build.py » puis recommitez.")
+            print("GanttPro.html n'est pas à jour : lancez « python3 tools/build.py » puis recommitez.")
             return 1
-        print("dist/GanttPro.html à jour.")
+        print("GanttPro.html à jour.")
         return 0
-    OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(html, encoding='utf-8')
-    print(f"dist/GanttPro.html écrit ({len(html.encode('utf-8')) // 1024} Ko).")
+    print(f"GanttPro.html écrit ({len(html.encode('utf-8')) // 1024} Ko).")
     return 0
 
 

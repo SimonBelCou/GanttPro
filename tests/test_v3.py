@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests de bout en bout de GanttPro v3 (dist/GanttPro.html) : Chromium headless, CSP réellement appliquée.
+"""Tests de bout en bout de GanttPro v3 (GanttPro.html) : Chromium headless, CSP réellement appliquée.
 
     python3 tools/build.py
     pip install playwright && python3 -m playwright install chromium
@@ -18,7 +18,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-HTML = Path(os.environ.get('GANTT_HTML', ROOT / 'dist' / 'GanttPro.html'))
+HTML = Path(os.environ.get('GANTT_HTML', ROOT / 'GanttPro.html'))
 AXE = Path(os.environ.get('AXE_JS', ROOT / 'node_modules' / 'axe-core' / 'axe.min.js'))
 
 results = []

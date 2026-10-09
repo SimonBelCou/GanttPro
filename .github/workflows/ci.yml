@@ -24,10 +24,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Content-Security-Policy à jour (empreinte du script)
-        run: python3 tools/update-csp.py --check
+      - name: Fichier assemblé à jour et sans construction interdite (GanttPro.html, CSP par empreinte)
+        run: python3 tools/build.py --check
 
-      - name: Syntaxe JavaScript
+      - name: Syntaxe JavaScript du fichier livré
         run: |
           python3 - <<'PY'
           import re
@@ -36,10 +36,7 @@ jobs:
           PY
           node --check /tmp/app.js
 
-      - name: Refonte v3 — fichier assemblé à jour (dist/GanttPro.html)
-        run: python3 tools/build.py --check
-
-      - name: Refonte v3 — moteur et recette (node --test, sans dépendance)
+      - name: Moteur et scénarios chiffrés de la recette (node --test, sans dépendance)
         run: node --test tests/core/*.test.mjs
 
       - name: Détection de secrets (gitleaks)
@@ -52,7 +49,6 @@ jobs:
           pip install playwright
           python3 -m playwright install --with-deps chromium
           npm install --no-save axe-core
-          python3 tests/test_gantt.py
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
           PERF_FACTOR=2 python3 tests/test_v3_recette.py
