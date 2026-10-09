@@ -9,6 +9,7 @@ Ouvrez le fichier dans votre navigateur et commencez à planifier.
 > des ressources, calendriers FR / Alsace-Moselle / BE / DE, français et anglais, CSP stricte sans `unsafe-inline`.
 > Construction : `python3 tools/build.py` ; tests : `node --test tests/core/*.test.mjs`, `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`
 > et `python3 tests/test_v3_recette.py` (scénarios de recette, temps de réponse, petits écrans).
+> Mode d'emploi complet : [docs/guide-utilisateur.md](docs/guide-utilisateur.md).
 
 ## ✨ Fonctionnalités
 
