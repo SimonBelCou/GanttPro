@@ -78,6 +78,7 @@ function calendarWindow() {
   paintCalendar(body);
   return Dialog.open({
     title: t('cal.title'), body: [body], size: 'wide',
+    guard: () => JSON.stringify(CalWin.draft) !== JSON.stringify(App.project.calendar),
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;

@@ -78,6 +78,7 @@ const I18n = (() => {
     'err.depth': 'La hiérarchie est limitée à {max} niveaux.',
     'err.lastCategory': 'La dernière catégorie ne peut pas être supprimée.',
     // Fenêtres
+    'dlg.discardTitle': 'Fermer sans enregistrer ?', 'dlg.discardText': 'Les modifications saisies dans cette fenêtre seront perdues.', 'dlg.discard': 'Fermer sans enregistrer', 'dlg.keep': 'Continuer la saisie',
     'dlg.close': 'Fermer', 'dlg.cancel': 'Annuler', 'dlg.ok': 'Valider', 'dlg.confirm': 'Confirmer',
     'dlg.deleteTask': 'Supprimer la tâche {id} « {name} » ?',
     'dlg.deleteTaskDeps': { one: '{count} tâche perdra un prédécesseur.', other: '{count} tâches perdront un prédécesseur.' },
@@ -394,6 +395,7 @@ const I18n = (() => {
     'err.nameTaken': '{field}: the name {name} is already taken.', 'err.limit': 'Limit reached: at most {max} {what}. Delete an item to add one.',
     'err.realEndCleared': 'Progress is below 100%: the actual finish has been cleared.', 'err.depth': 'The hierarchy is limited to {max} levels.',
     'err.lastCategory': 'The last category cannot be deleted.',
+    'dlg.discardTitle': 'Close without saving?', 'dlg.discardText': 'The changes entered in this window will be lost.', 'dlg.discard': 'Close without saving', 'dlg.keep': 'Keep editing',
     'dlg.close': 'Close', 'dlg.cancel': 'Cancel', 'dlg.ok': 'OK', 'dlg.confirm': 'Confirm',
     'dlg.deleteTask': 'Delete task {id} “{name}”?',
     'dlg.deleteTaskDeps': { one: '{count} task will lose a predecessor.', other: '{count} tasks will lose a predecessor.' },

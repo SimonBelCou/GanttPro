@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yEiMTUQR3bnkBNpiE3DxP30+6qYT+pej9xrBDaiviW0='; style-src 'sha256-DXTlyiIDnKdZvxH+hqxykiijXjf+EASkcM46tJNiRqY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4ZIiXLDJe8ldj+kOMySTFkd8DT+DIz7p0HcUz5N3c28='; style-src 'sha256-f3gabZbJrzFBUvcI37lw/C2r+7FE00hiY+Df/Ed8LwA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -204,6 +204,9 @@ ul.rows input[type="number"] { width: 5.5rem; }
 dialog.dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); padding: 1.2rem; width: min(520px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; }
 dialog.dialog.wide { width: min(900px, calc(100vw - 2rem)); }
 dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.dialog-head h2 { margin: 0 0 .5rem; flex: 1 1 auto; }
+button.dlg-x { flex: 0 0 auto; min-width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; }
 .dialog-body p { margin: .3rem 0; }
 .dialog-body .strong { font-weight: 700; }
 table.manage { border-collapse: collapse; width: 100%; margin-bottom: .7rem; }
@@ -2075,6 +2078,7 @@ const I18n = (() => {
     'err.depth': 'La hiérarchie est limitée à {max} niveaux.',
     'err.lastCategory': 'La dernière catégorie ne peut pas être supprimée.',
     // Fenêtres
+    'dlg.discardTitle': 'Fermer sans enregistrer ?', 'dlg.discardText': 'Les modifications saisies dans cette fenêtre seront perdues.', 'dlg.discard': 'Fermer sans enregistrer', 'dlg.keep': 'Continuer la saisie',
     'dlg.close': 'Fermer', 'dlg.cancel': 'Annuler', 'dlg.ok': 'Valider', 'dlg.confirm': 'Confirmer',
     'dlg.deleteTask': 'Supprimer la tâche {id} « {name} » ?',
     'dlg.deleteTaskDeps': { one: '{count} tâche perdra un prédécesseur.', other: '{count} tâches perdront un prédécesseur.' },
@@ -2391,6 +2395,7 @@ const I18n = (() => {
     'err.nameTaken': '{field}: the name {name} is already taken.', 'err.limit': 'Limit reached: at most {max} {what}. Delete an item to add one.',
     'err.realEndCleared': 'Progress is below 100%: the actual finish has been cleared.', 'err.depth': 'The hierarchy is limited to {max} levels.',
     'err.lastCategory': 'The last category cannot be deleted.',
+    'dlg.discardTitle': 'Close without saving?', 'dlg.discardText': 'The changes entered in this window will be lost.', 'dlg.discard': 'Close without saving', 'dlg.keep': 'Keep editing',
     'dlg.close': 'Close', 'dlg.cancel': 'Cancel', 'dlg.ok': 'OK', 'dlg.confirm': 'Confirm',
     'dlg.deleteTask': 'Delete task {id} “{name}”?',
     'dlg.deleteTaskDeps': { one: '{count} task will lose a predecessor.', other: '{count} tasks will lose a predecessor.' },
@@ -3691,9 +3696,10 @@ const Dialog = (() => {
    * @param {{label:string, value:string, kind?:string, focus?:boolean}[]} o.actions
    * @param {(value:string, dlg:HTMLDialogElement) => boolean|void} [o.onAction] renvoyer false garde la fenêtre ouverte
    * @param {string} [o.size] 'wide'
+   * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    */
-  function open({ title, body = [], actions = [], onAction, size }) {
+  function open({ title, body = [], actions = [], onAction, size, guard }) {
     const opener = document.activeElement;
     const id = 'dlg-' + (++seq);
     return new Promise(resolve => {
@@ -3701,8 +3707,9 @@ const Dialog = (() => {
         type: a.value === 'cancel' ? 'button' : 'submit', value: a.value, class: a.kind || '',
         data: { dlg: a.value }, autofocus: a.focus ? true : undefined,
       }, a.label));
+      const closeX = h('button', { type: 'button', class: 'dlg-x', aria: { label: I18n.t('dlg.close') }, data: { dlgx: '1' } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
       const form = h('form', { method: 'dialog', novalidate: true },
-        h('h2', { id: id + '-title', text: title }),
+        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }), closeX),
         h('div', { class: 'dialog-body' }, body),
         h('div', { class: 'actions' }, buttons));
       const dlg = h('dialog', { class: ['dialog', size], aria: { labelledby: id + '-title' } }, form);
@@ -3722,10 +3729,27 @@ const Dialog = (() => {
         finish(value);
       });
       for (const b of buttons) if (b.value === 'cancel') b.addEventListener('click', () => finish('cancel'));
-      dlg.addEventListener('cancel', ev => { ev.preventDefault(); finish('cancel'); });
+      // Fermeture demandée (croix ou Échap) : une fenêtre déclarée `guard` dont la saisie serait perdue demande
+      // confirmation ; les fenêtres à effet immédiat ou sans saisie se ferment sans question, et le bouton
+      // « Annuler » ferme toujours directement.
+      let dirty = false, asking = false;
+      form.addEventListener('input', () => { dirty = true; });
+      form.addEventListener('change', () => { dirty = true; });
+      const requestClose = async () => {
+        if (asking || done) return;
+        if (guard && (typeof guard === 'function' ? guard() : dirty)) {
+          asking = true;
+          const discard = await confirm(I18n.t('dlg.discardTitle'), [I18n.t('dlg.discardText')], I18n.t('dlg.discard'), true, I18n.t('dlg.keep'));
+          asking = false;
+          if (!discard) { if (dlg.isConnected) { const f = dlg.querySelector('input, select, textarea') || closeX; f.focus(); } return; }
+        }
+        finish('cancel');
+      };
+      closeX.addEventListener('click', requestClose);
+      dlg.addEventListener('cancel', ev => { ev.preventDefault(); requestClose(); });
       document.body.append(dlg);
       dlg.showModal();
-      const first = dlg.querySelector('[autofocus]') || dlg.querySelector('input, select, textarea, button');
+      const first = dlg.querySelector('[autofocus]') || dlg.querySelector('input, select, textarea, button:not(.dlg-x)') || closeX;
       if (first) first.focus();
     });
   }
@@ -3736,10 +3760,10 @@ const Dialog = (() => {
   }
 
   /** Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé. */
-  async function confirm(title, lines, confirmLabel, danger = true) {
+  async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({
       title, body: lines.filter(Boolean).map(text => h('p', { text })),
-      actions: [{ label: I18n.t('dlg.cancel'), value: 'cancel', focus: true }, { label: confirmLabel, value: 'ok', kind: danger ? 'danger' : 'primary' }],
+      actions: [{ label: cancelLabel || I18n.t('dlg.cancel'), value: 'cancel', focus: true }, { label: confirmLabel, value: 'ok', kind: danger ? 'danger' : 'primary' }],
     });
     return v === 'ok';
   }
@@ -5411,7 +5435,7 @@ function bulkWindow() {
     fld('bk-nb', t('f.notBefore'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })),
     fld('bk-dl', t('f.deadline'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })));
   return Dialog.open({
-    title: t('sel.bulk'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
+    title: t('sel.bulk'), body: [body], guard: true, actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
       const err = msg => { const e = $('bulk-err'); e.textContent = msg; e.hidden = false; announce(msg); return false; };
@@ -6215,6 +6239,7 @@ function calendarWindow() {
   paintCalendar(body);
   return Dialog.open({
     title: t('cal.title'), body: [body], size: 'wide',
+    guard: () => JSON.stringify(CalWin.draft) !== JSON.stringify(App.project.calendar),
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;

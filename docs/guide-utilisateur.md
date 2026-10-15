@@ -23,7 +23,7 @@ GanttPro planifie un projet en jours ouvrés, calcule les dates, le chemin criti
 
 ![Écran principal avec le projet d'exemple Atlas : barre du haut, chiffres, alertes, liste et grille](img/02-principal.png)
 
-Toutes les fenêtres (ressources, calendrier, tableau de bord…) se ferment par Échap ou par leur bouton, et rendent le focus au bouton qui les a ouvertes. Une modification de données s'annule par « Annuler » ou Ctrl + Z, jusqu'à 50 pas en arrière.
+Toutes les fenêtres (ressources, calendrier, tableau de bord…) se ferment par Échap, par la croix « × » en haut à droite ou par leur bouton, et rendent le focus au bouton qui les a ouvertes. Si vous avez commencé une saisie qui serait perdue (modification en masse, calendrier modifié), la croix et Échap demandent d'abord « Fermer sans enregistrer ? » ; « Continuer la saisie » est proposé par défaut, et le bouton « Annuler » ferme directement. Une modification de données s'annule par « Annuler » ou Ctrl + Z, jusqu'à 50 pas en arrière.
 
 ## 2. Créer et régler le projet
 
