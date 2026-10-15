@@ -3,7 +3,7 @@
 GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **un seul fichier HTML** : ouvrez
 `GanttPro.html` dans votre navigateur et planifiez, sans installation, sans compte, sans serveur et sans connexion.
 
-**Mode d'emploi complet : [docs/guide-utilisateur.md](docs/guide-utilisateur.md).**
+**Mode d'emploi complet : [docs/guide-utilisateur.md](docs/guide-utilisateur.md).** Faire créer ou modifier un projet par une IA : [docs/guide-ia-json.md](docs/guide-ia-json.md).
 
 ![Écran principal de GanttPro avec un projet d'exemple](docs/img/02-principal.png)
 
@@ -83,7 +83,7 @@ GanttPro.html             ← Application livrée (assemblée par tools/build.py
 src/                      ← Sources : js/core (moteur), js/ui (interface), styles, index.html
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur et captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), captures d'écran
 archive/v2.3/             ← Ancienne version, pour mémoire (non maintenue)
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de sécurité, d'éthique et de code du projet

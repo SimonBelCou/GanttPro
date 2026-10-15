@@ -215,3 +215,38 @@ test('R-42 cinq niveaux de récapitulatives au plus', () => {
   assert.doesNotThrow(() => Model.sanitize({ format: 3, tasks: chain(5) }));
   assert.throws(() => Model.sanitize({ format: 3, tasks: chain(6) }), e => e instanceof Model.Invalid && /niveaux/.test(I18n.error(e)));
 });
+
+// Guide « IA » (docs/guide-ia-json.md) : l'exemple de fichier doit rester accepté, et les règles citées doivent rester vraies.
+import { readFileSync } from 'node:fs';
+const guideIA = readFileSync(new URL('../../docs/guide-ia-json.md', import.meta.url), 'utf8');
+
+test('guide IA : l\'exemple de fichier est accepté sans champ ignoré ni ressource créée', () => {
+  const m = guideIA.match(/<!-- exemple-valide -->\s*```json\n([\s\S]*?)\n```/);
+  assert.ok(m, 'bloc d\'exemple introuvable');
+  const r = Model.parseFile(m[1]);
+  assert.equal(r.notices.unknown, 0);
+  assert.deepEqual(plain(r.notices.createdResources), []);
+  assert.deepEqual(plain(r.notices.createdCategories), []);
+  assert.equal(r.project.tasks.length, 7);
+  assert.doesNotThrow(() => Schedule.compute(r.project));
+});
+
+test('guide IA : les règles citées correspondent aux contrôles', () => {
+  const ok = JSON.parse(guideIA.match(/<!-- exemple-valide -->\s*```json\n([\s\S]*?)\n```/)[1]);
+  const mut = fn => { const c = JSON.parse(JSON.stringify(ok)); fn(c); return c; };
+  // Chaque ligne du tableau « Erreurs fréquentes » reste refusée.
+  assert.equal(keyOf(mut(c => { c.tasks[1].id = 1; })), 'imp.badId');
+  assert.equal(keyOf(mut(c => { c.tasks[2].deps = ['ZZ']; })), 'imp.missingPred');
+  assert.equal(keyOf(mut(c => { c.tasks[1].deps = ['T2']; })), 'imp.cycle');
+  assert.equal(keyOf(mut(c => { c.tasks[1].deps = ['P2']; })), 'imp.linkSummary');
+  assert.equal(keyOf(mut(c => { c.tasks[0].dur = 3; c.tasks[0].deps = ['T3']; })), 'imp.summaryField');
+  assert.equal(keyOf(mut(c => { c.tasks[1].assign = [{ res: 'Chef de projet', units: 100 }]; })), 'imp.overCapacity');
+  assert.equal(keyOf(mut(c => { c.tasks[2].realEnd = '2026-11-10'; })), 'imp.realEndPct');
+  assert.equal(keyOf(mut(c => { c.calendar.daysWorked = [{ start: '2026-12-24', end: '2026-12-24' }]; })), 'imp.calendarClash');
+  assert.equal(keyOf(mut(c => { c.tasks[1].dur = 1.5; })), 'imp.field');
+  assert.equal(keyOf(mut(c => { c.tasks[0].type = 'milestone'; c.tasks[0].assign = [{ res: 'Dev 1' }]; })), 'imp.milestoneRes');
+  // Un champ inconnu est ignoré et compté ; une ressource inconnue est créée et signalée.
+  const r = imp(mut(c => { c.extra = 1; c.tasks[1].assign = [{ res: 'Nouvelle' }]; }));
+  assert.equal(r.notices.unknown, 1);
+  assert.deepEqual(plain(r.notices.createdResources), ['Nouvelle']);
+});
