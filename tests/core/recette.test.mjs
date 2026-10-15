@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';
 
-const { Schedule, Metrics, Dates } = loadCore();
+const { Schedule, Metrics, Dates, Calendar } = loadCore();
 // Les objets créés dans le contexte isolé ont d'autres prototypes : on compare des copies simples.
 const plain = x => JSON.parse(JSON.stringify(x));
 
@@ -89,6 +89,49 @@ test('R-11 jours fériés 2026', async () => {
   assert.equal(days.filter(d => Dates.weekday(Dates.parse('2026-' + d)) < 5).length, 9);
 });
 
+// Jeux de jours fériés ajoutés le 15/10/2026 (arbitrage A.3 n° 9). Dates de référence : gov.uk/bank-holidays (Angleterre
+// et pays de Galles), opm.gov (jours fédéraux, dates observées), seco.admin.ch (1er août) et jours cantonaux courants.
+const holidayList = (set, y) => [...Calendar.holidaysOf(set, y).keys()].sort((a, b) => a - b).map(dn => iso(dn).slice(0, 10));
+
+test('R-11 bis Royaume-Uni (Angleterre et pays de Galles) 2026 et 2027, avec jours de remplacement', () => {
+  assert.deepEqual(plain(holidayList('GB', 2026)), ['2026-01-01', '2026-04-03', '2026-04-06', '2026-05-04', '2026-05-25', '2026-08-31', '2026-12-25', '2026-12-28']);
+  assert.deepEqual(plain(holidayList('GB', 2027)), ['2027-01-01', '2027-03-26', '2027-03-29', '2027-05-03', '2027-05-31', '2027-08-30', '2027-12-27', '2027-12-28']);
+  // Noël un dimanche et lendemain de Noël un lundi (2022) : Noël est remplacé le mardi ; le 1er janvier un samedi (2022) par le lundi 3.
+  const y22 = holidayList('GB', 2022);
+  assert.ok(y22.includes('2022-12-26') && y22.includes('2022-12-27') && y22.includes('2022-01-03'));
+  assert.ok(!y22.includes('2022-12-25') && !y22.includes('2022-01-01'));
+  assert.equal(Calendar.holidaysOf('GB', 2022).get(Dates.parse('2022-12-27')), 'hol.christmas');
+});
+
+test('R-11 ter États-Unis 2026 et 2027 : jours fédéraux en dates observées', () => {
+  assert.deepEqual(plain(holidayList('US', 2026)), ['2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-10-12', '2026-11-11', '2026-11-26', '2026-12-25']);
+  // 2027 : le 19 juin et Noël tombent un samedi (observés le vendredi), le 4 juillet un dimanche (observé le lundi) ;
+  // le 1er janvier 2028 tombe un samedi : il est observé le vendredi 31 décembre 2027.
+  assert.deepEqual(plain(holidayList('US', 2027)), ['2027-01-01', '2027-01-18', '2027-02-15', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-10-11', '2027-11-11', '2027-11-25', '2027-12-24', '2027-12-31']);
+  // Le 1er janvier 2028 n'est plus férié (observé la veille) ; Juneteenth n'existe pas avant 2021.
+  assert.ok(!holidayList('US', 2028).includes('2028-01-01') && !holidayList('US', 2028).includes('2027-12-31'));
+  assert.ok(!holidayList('US', 2020).some(d => d.endsWith('-06-19')));
+});
+
+test('R-11 quater Suisse 2026 : 1er août et jours observés dans presque tous les cantons', () => {
+  assert.deepEqual(plain(holidayList('CH', 2026)), ['2026-01-01', '2026-04-03', '2026-05-14', '2026-08-01', '2026-12-25']);
+});
+
+test('R-11 quinquies chaque jour férié des nouveaux jeux a un libellé français et anglais', () => {
+  const { I18n } = loadCore();
+  for (const set of ['GB', 'US', 'CH']) {
+    assert.ok(Calendar.HOLIDAY_SETS.includes(set));
+    for (const lang of ['fr', 'en']) {
+      I18n.setLang(lang);
+      assert.notEqual(I18n.t('cal.set.' + set), 'cal.set.' + set, `${set} ${lang} libellé du jeu`);
+      for (let y = 2020; y <= 2035; y++) {
+        for (const key of Calendar.holidaysOf(set, y).values()) assert.notEqual(I18n.t(key), key, `${set} ${y} ${key} ${lang}`);
+      }
+    }
+  }
+  I18n.setLang('fr');
+});
+
 test('R-12 jalon', () => {
   const s = run(project({ tasks: [{ id: 'A' }, { id: 'J', type: 'milestone', dur: 0, deps: ['A'] }, { id: 'B', dur: 2, deps: ['J'] }] }));
   assert.equal(iso(s.tasks.get('J').startDn), '2026-01-09');
@@ -150,18 +193,35 @@ test('R-19 à R-21 écart en jours ouvrés', () => {
   assert.deepEqual(dev({ pct: 40 }), { days: 3, ongoing: true });
 });
 
-test('R-22 avancement global pondéré par la durée', () => {
-  assert.equal(Metrics.globalProgress(project({ tasks: [{ id: 'A', dur: 2, pct: 100 }, { id: 'B', dur: 8 }] })), 20);
+test('R-22 avancement global : moyenne simple, poids 1 par tâche (arbitrage A.3 du 15/10/2026)', () => {
+  // A (2 jours) terminée et B (8 jours) non commencée : 50 %, et non 20 % comme avec un poids égal à la durée.
+  assert.equal(Metrics.globalProgress(project({ tasks: [{ id: 'A', dur: 2, pct: 100 }, { id: 'B', dur: 8 }] })), 50);
 });
 
-test('R-23 courbe en S', () => {
+test('R-23 courbe en S : une tâche terminée vaut 1 point', () => {
   const p = project({ tasks: [{ id: 'T1', pct: 100, realEnd: '2026-01-09' }, { id: 'T2', pct: 40, deps: ['T1'] }] });
   const s = run(p);
   const w = Metrics.sCurve(p, s, TODAY, 'week');
   assert.deepEqual(plain(w.planned), [50, 100]);
-  assert.deepEqual(plain(w.real), [50, 70]);
+  // T1 est terminée le 09/01 (semaine 1) ; T2 à 40 % ne compte pas : l'avancement partiel n'entre pas dans la courbe.
+  assert.deepEqual(plain(w.real), [50, 50]);
   const m = Metrics.sCurve(p, s, TODAY, 'month');
-  assert.deepEqual(plain([m.planned, m.real]), [[100], [70]]);
+  assert.deepEqual(plain([m.planned, m.real]), [[100], [50]]);
+});
+
+test('R-23 bis courbe en S : le poids ne dépend pas de la durée, une tâche à 100 % sans fin réelle compte dans la période en cours', () => {
+  const p = project({ tasks: [{ id: 'A', dur: 1, pct: 100 }, { id: 'B', dur: 9, deps: ['A'] }] });
+  const s = run(p);
+  const w = Metrics.sCurve(p, s, TODAY, 'week');
+  // A finit le 05/01 (semaine 1) : 1 tâche sur 2 = 50 %, et non 10 %. B finit le 16/01 (semaine 2).
+  assert.deepEqual(plain(w.planned), [50, 100]);
+  // Sans fin réelle, A n'est pas comptée dans la semaine passée ; elle l'est dans la semaine en cours.
+  assert.deepEqual(plain(w.real), [0, 50]);
+});
+
+test('R-23 ter récapitulative : avancement = moyenne simple de ses tâches enfants', () => {
+  const p = project({ tasks: [{ id: 'S', type: 'summary' }, { id: 'A', parent: 'S', dur: 2, pct: 100 }, { id: 'B', parent: 'S', dur: 8, pct: 0 }] });
+  assert.equal(run(p).tasks.get('S').pct, 50);
 });
 
 // ── 9.4 Fonctions ajoutées : calcul ──────────────────────────────────────────────────────────
@@ -383,9 +443,10 @@ test('RG-28 rapport : avancement prévu à ce jour, retards triés, échéances 
     { id: 'D', dur: 2, forcedStart: '2026-01-26' }, { id: 'J', type: 'milestone', dur: 0, forcedStart: '2026-01-23' }] });
   const s = run(p);
   const r = Metrics.report(p, s, TODAY, null);
-  // Prévu à ce jour : A 5 + B 3 (12, 13, 14) + C 3 + D 0 = 11 sur 15.
-  assert.equal(Math.round(r.planned * 100) / 100, Math.round(11 / 15 * 10000) / 100);
-  assert.equal(Math.round(r.progress), 33);
+  // Prévu à ce jour, poids 1 par tâche : A 1 + B 3/5 (12, 13, 14) + C 1 + D 0 = 2,6 sur 4 tâches = 65 %.
+  assert.equal(Math.round(r.planned * 100) / 100, 65);
+  // Réel : une tâche sur quatre à 100 % (le jalon ne compte pas) = 25 %.
+  assert.equal(Math.round(r.progress), 25);
   assert.deepEqual(plain(r.late.map(x => [x.id, x.dev])), [['C', 5]]);
   assert.deepEqual(plain(r.soon), ['J', 'D']);
   assert.deepEqual(plain(r.msNext), ['J']);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-G705aoMXTkjFATkJynuGnv+88+VON5FFBGPXTG9ryDo='; style-src 'sha256-DXTlyiIDnKdZvxH+hqxykiijXjf+EASkcM46tJNiRqY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yEiMTUQR3bnkBNpiE3DxP30+6qYT+pej9xrBDaiviW0='; style-src 'sha256-DXTlyiIDnKdZvxH+hqxykiijXjf+EASkcM46tJNiRqY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -645,7 +645,7 @@ const Dates = (() => {
  * ouvrés devient alors une simple soustraction d'index. Les tables s'étendent à la demande,
  * dans la limite de Dates.MIN_DN … Dates.MAX_DN (au-delà : RangeError, signalée à l'utilisateur). */
 const Calendar = (() => {
-  const HOLIDAY_SETS = ['FR', 'FR-AM', 'BE', 'DE', 'NONE'];
+  const HOLIDAY_SETS = ['FR', 'FR-AM', 'BE', 'DE', 'GB', 'US', 'CH', 'NONE'];
   const DEFAULT = Object.freeze({ workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] });
 
   /** Dimanche de Pâques (calendrier grégorien, algorithme de Meeus/Jones/Butcher). */
@@ -658,6 +658,50 @@ const Calendar = (() => {
     return Dates.fromYMD(y, month, day);
   }
 
+  /** n-ième jour de semaine wd (0 = lundi … 6 = dimanche) du mois m de l'année y ; n = −1 pour le dernier. */
+  function nthWeekday(y, m, wd, n) {
+    if (n > 0) { const first = Dates.fromYMD(y, m, 1); return first + ((wd - Dates.weekday(first) + 7) % 7) + 7 * (n - 1); }
+    const last = Dates.fromYMD(y, m + 1, 1) - 1;
+    return last - ((Dates.weekday(last) - wd + 7) % 7);
+  }
+
+  /** Royaume-Uni, Angleterre et pays de Galles (gov.uk) : un férié un week-end est remplacé par le premier jour de semaine libre qui suit. */
+  function holidaysGB(y, E, out) {
+    out.set(E - 2, 'hol.goodFriday');
+    out.set(E + 1, 'hol.easterMonday');
+    out.set(nthWeekday(y, 5, 0, 1), 'hol.earlyMay');
+    out.set(nthWeekday(y, 5, 0, -1), 'hol.springBank');
+    out.set(nthWeekday(y, 8, 0, -1), 'hol.summerBank');
+    const weekend = [];
+    for (const [m, d, key] of [[1, 1, 'hol.newYear'], [12, 25, 'hol.christmas'], [12, 26, 'hol.boxingDay']]) {
+      const dn = Dates.fromYMD(y, m, d);
+      if (Dates.weekday(dn) < 5) out.set(dn, key); else weekend.push([dn, key]);
+    }
+    for (const [dn, key] of weekend) { let s = dn; do { s++; } while (Dates.weekday(s) >= 5 || out.has(s)); out.set(s, key); }
+    return out;
+  }
+
+  /** États-Unis, jours fédéraux (OPM) en dates observées : un samedi devient le vendredi, un dimanche le lundi. */
+  function holidaysUS(y, out) {
+    const observed = dn => { const w = Dates.weekday(dn); return w === 5 ? dn - 1 : w === 6 ? dn + 1 : dn; };
+    const fixed = (m, d, key) => { const dn = observed(Dates.fromYMD(y, m, d)); if (Dates.ymd(dn).y === y) out.set(dn, key); };
+    fixed(1, 1, 'hol.newYear');
+    // Le 1er janvier de l'année suivante, tombant un samedi, est observé le 31 décembre de celle-ci.
+    const nextNewYear = Dates.fromYMD(y + 1, 1, 1);
+    if (Dates.weekday(nextNewYear) === 5) out.set(nextNewYear - 1, 'hol.newYear');
+    if (y >= 1986) out.set(nthWeekday(y, 1, 0, 3), 'hol.mlk');
+    out.set(nthWeekday(y, 2, 0, 3), 'hol.presidents');
+    out.set(nthWeekday(y, 5, 0, -1), 'hol.memorial');
+    if (y >= 2021) fixed(6, 19, 'hol.juneteenth');
+    fixed(7, 4, 'hol.independence');
+    out.set(nthWeekday(y, 9, 0, 1), 'hol.laborDay');
+    out.set(nthWeekday(y, 10, 0, 2), 'hol.columbus');
+    fixed(11, 11, 'hol.veterans');
+    out.set(nthWeekday(y, 11, 3, 4), 'hol.thanksgiving');
+    fixed(12, 25, 'hol.christmas');
+    return out;
+  }
+
   /** Jours fériés d'une année pour un jeu donné : Map dn → clé de libellé (traduite par l'interface). */
   function holidaysOf(set, y) {
     const out = new Map();
@@ -665,6 +709,15 @@ const Calendar = (() => {
     const E = easter(y);
     const add = (dn, key) => out.set(dn, key);
     const fixed = (m, d, key) => add(Dates.fromYMD(y, m, d), key);
+    if (set === 'GB') return holidaysGB(y, E, out);
+    if (set === 'US') return holidaysUS(y, out);
+    if (set === 'CH') {
+      // Seul le 1er août est férié par la loi fédérale ; les autres jours listés sont ceux observés dans presque tous les cantons.
+      // Lundi de Pâques, lundi de Pentecôte, 26 décembre, etc. varient selon le canton : à ajouter dans « Jours chômés ».
+      fixed(1, 1, 'hol.newYear'); add(E - 2, 'hol.goodFriday'); add(E + 39, 'hol.ascension');
+      fixed(8, 1, 'hol.swissNational'); fixed(12, 25, 'hol.christmas');
+      return out;
+    }
     fixed(1, 1, 'hol.newYear');
     if (set === 'DE' || set === 'FR-AM') add(E - 2, 'hol.goodFriday');
     add(E + 1, 'hol.easterMonday');
@@ -950,8 +1003,8 @@ const Schedule = (() => {
         else { const r = out.get(c.id); s = Math.min(s, r.s); e = Math.max(e, r.e); if (!isMilestone(c)) leaves.push(c); }
       }
       leafTasks.set(t.id, leaves);
-      const wsum = leaves.reduce((acc, c) => acc + c.dur, 0);
-      const pct = wsum ? Math.round(leaves.reduce((acc, c) => acc + c.dur * c.pct, 0) / wsum) : 0;
+      // RG-23 : moyenne simple (poids 1 par tâche) de l'avancement des tâches de la descendance.
+      const pct = leaves.length ? Math.round(leaves.reduce((acc, c) => acc + c.pct, 0) / leaves.length) : 0;
       const r = s === Infinity ? { empty: true, s: null, e: null, d: 0, pct } : { s, e, d: e - s + 1, pct };
       out.set(t.id, r);
       return r;
@@ -1101,11 +1154,11 @@ const Metrics = (() => {
 
   const countsInProgress = t => t.type === 'task';
 
-  /** RG-16 : avancement global pondéré par la durée, en pourcentage (non arrondi). */
+  /** RG-16 : avancement global = moyenne simple des avancements des tâches (poids 1 par tâche), en pourcentage (non arrondi). */
   function globalProgress(project) {
-    let w = 0, acc = 0;
-    for (const t of project.tasks) if (countsInProgress(t)) { w += t.dur; acc += t.dur * t.pct; }
-    return w ? acc / w : 0;
+    let n = 0, acc = 0;
+    for (const t of project.tasks) if (countsInProgress(t)) { n++; acc += t.pct; }
+    return n ? acc / n : 0;
   }
 
   /** RG-16 : compteurs par statut (tâches et jalons, hors récapitulatives). */
@@ -1137,38 +1190,40 @@ const Metrics = (() => {
    */
   function sCurve(project, sched, today, unit = 'week') {
     const work = project.tasks.filter(countsInProgress);
-    const total = work.reduce((a, t) => a + t.dur, 0);
+    const total = work.length; // poids 1 par tâche (RG-18)
     let last = sched.projectEndDn;
     const shownBaselines = (project.baselines || []).filter(b => b.shownOnScurve);
     for (const b of shownBaselines) for (const bt of b.tasks) { const e = Dates.parse(bt.end); if (e != null) last = Math.max(last, e); }
     const ps = periods(Dates.parse(project.projectStart), last, unit);
-    // Charge prévue cumulée par jour ouvré (tableau de différences) : O(tâches + jours), pas O(tâches × périodes).
-    const lo = Math.min(0, ...work.map(t => sched.tasks.get(t.id).s));
+    // Tâches dont la fin prévue est atteinte, cumulées par jour ouvré (tableau de comptage) : O(tâches + jours),
+    // pas O(tâches × périodes). Une tâche vaut 1 point, acquis à sa fin prévue (RG-18).
+    const lo = Math.min(0, ...work.map(t => sched.tasks.get(t.id).e));
     const hi = Math.max(0, ...work.map(t => sched.tasks.get(t.id).e));
-    const diff = new Float64Array(hi - lo + 2);
-    for (const t of work) { const r = sched.tasks.get(t.id); diff[r.s - lo] += 1; diff[r.e - lo + 1] -= 1; }
+    const endsAt = new Float64Array(hi - lo + 1);
+    for (const t of work) endsAt[sched.tasks.get(t.id).e - lo] += 1;
     const cumul = new Float64Array(hi - lo + 1);
-    for (let i = 0, running = 0, acc = 0; i <= hi - lo; i++) { running += diff[i]; acc += running; cumul[i] = acc; }
+    for (let i = 0, acc = 0; i <= hi - lo; i++) { acc += endsAt[i]; cumul[i] = acc; }
     const plannedUpTo = dn => { const i = Math.min(sched.cal.floor(dn), hi) - lo; return i < 0 ? 0 : cumul[i]; };
     const planned = ps.map(p => (total ? 100 * plannedUpTo(p.end) / total : 0));
+    // RG-20 : une tâche terminée (100 %) vaut 1 point à sa fin réelle ; sans fin réelle, elle compte dans la période en cours.
     const real = [];
     for (const p of ps) {
       if (p.start > today) break;
       if (!total) { real.push(0); continue; }
-      if (p.end < today) {
-        real.push(100 * work.reduce((a, t) => { const re = Dates.parse(t.realEnd); return a + (re != null && re <= p.end ? t.dur : 0); }, 0) / total);
-      } else {
-        real.push(work.reduce((a, t) => a + t.dur * t.pct, 0) / total);
-      }
+      const current = p.end >= today;
+      real.push(100 * work.reduce((a, t) => {
+        if (t.pct < 100) return a;
+        const re = Dates.parse(t.realEnd);
+        return a + (re != null ? (re <= p.end ? 1 : 0) : (current ? 1 : 0));
+      }, 0) / total);
     }
     const baselines = {};
     for (const b of shownBaselines) {
       const bts = b.tasks.filter(bt => bt.dur > 0);
-      const btotal = bts.reduce((a, bt) => a + bt.dur, 0);
-      baselines[b.id] = ps.map(p => btotal ? 100 * bts.reduce((a, bt) => {
-        const s = Dates.parse(bt.start), e = Dates.parse(bt.end);
-        return a + Math.min(bt.dur, sched.cal.count(s, Math.min(e, p.end)));
-      }, 0) / btotal : 0);
+      baselines[b.id] = ps.map(p => bts.length ? 100 * bts.reduce((a, bt) => {
+        const e = Dates.parse(bt.end);
+        return a + (e != null && e <= p.end ? 1 : 0);
+      }, 0) / bts.length : 0);
     }
     return { periods: ps, planned, real, baselines };
   }
@@ -1205,13 +1260,15 @@ const Metrics = (() => {
     return { light, drift };
   }
 
-  /** RG-28 : avancement prévu à ce jour = jours ouvrés prévus écoulés jusqu'à aujourd'hui / somme des durées. */
+  /** RG-28 : avancement prévu à ce jour = moyenne, sur les tâches, de la part de chacune écoulée (jours ouvrés prévus écoulés / durée). */
   function plannedToDate(project, sched, today) {
     const work = project.tasks.filter(countsInProgress);
-    const total = work.reduce((a, t) => a + t.dur, 0);
-    if (!total) return 0;
+    if (!work.length) return 0;
     const upto = sched.cal.floor(today);
-    return 100 * work.reduce((a, t) => { const r = sched.tasks.get(t.id); return a + Math.max(0, Math.min(upto, r.e) - r.s + 1); }, 0) / total;
+    return 100 * work.reduce((a, t) => {
+      const r = sched.tasks.get(t.id);
+      return a + Math.max(0, Math.min(upto, r.e) - r.s + 1) / Math.max(1, r.e - r.s + 1);
+    }, 0) / work.length;
   }
 
   /** RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant). */
@@ -1910,10 +1967,10 @@ const View = (() => {
   function group(project, sched, ids, by, today = Dates.todayDn()) {
     const groups = new Map();
     const add = (key, label, none, t) => {
-      if (!groups.has(key)) groups.set(key, { key, label, none, ids: [], count: 0, dur: 0, w: 0 });
+      if (!groups.has(key)) groups.set(key, { key, label, none, ids: [], count: 0, dur: 0, n: 0, w: 0 });
       const g = groups.get(key);
       g.ids.push(t.id); g.count++;
-      if (t.type === 'task') { g.dur += t.dur; g.w += t.dur * t.pct; }
+      if (t.type === 'task') { g.dur += t.dur; g.n++; g.w += t.pct; }
     };
     const STATUS_ORDER = ['late', 'ongoing', 'notStarted', 'upcoming', 'done'];
     for (const t of project.tasks) {
@@ -1929,7 +1986,7 @@ const View = (() => {
         add(st, st, false, t);
       }
     }
-    const list = [...groups.values()].map(g => ({ key: g.key, label: g.label, none: g.none, ids: g.ids, count: g.count, dur: g.dur, pct: g.dur ? Math.round(g.w / g.dur) : 0 }));
+    const list = [...groups.values()].map(g => ({ key: g.key, label: g.label, none: g.none, ids: g.ids, count: g.count, dur: g.dur, pct: g.n ? Math.round(g.w / g.n) : 0 }));
     if (by === 'status') return list.sort((a, b) => STATUS_ORDER.indexOf(a.key) - STATUS_ORDER.indexOf(b.key));
     return list.sort((a, b) => (a.none - b.none) || a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
   }
@@ -2085,6 +2142,11 @@ const I18n = (() => {
     'hol.victory': 'Victoire 1945', 'hol.ascension': 'Ascension', 'hol.whitMonday': 'Lundi de Pentecôte', 'hol.bastille': 'Fête nationale',
     'hol.belgium': 'Fête nationale', 'hol.assumption': 'Assomption', 'hol.allSaints': 'Toussaint', 'hol.armistice': 'Armistice 1918',
     'hol.germanUnity': "Jour de l'Unité allemande", 'hol.christmas': 'Noël', 'hol.stStephen': 'Saint-Étienne',
+    'hol.earlyMay': 'Jour férié de début mai (Early May bank holiday)', 'hol.springBank': 'Jour férié de fin mai (Spring bank holiday)',
+    'hol.summerBank': 'Jour férié de fin août (Summer bank holiday)', 'hol.boxingDay': 'Boxing Day (lendemain de Noël)',
+    'hol.mlk': 'Jour de Martin Luther King', 'hol.presidents': 'Jour de Washington (Presidents’ Day)', 'hol.memorial': 'Memorial Day',
+    'hol.juneteenth': 'Juneteenth', 'hol.independence': "Fête de l'Indépendance", 'hol.laborDay': 'Fête du Travail (Labor Day)',
+    'hol.columbus': 'Columbus Day', 'hol.veterans': 'Veterans Day', 'hol.thanksgiving': 'Thanksgiving', 'hol.swissNational': 'Fête nationale suisse',
     'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.category': 'Général',
     'top.leveling': 'Charge des ressources', 'lvl.level': 'Nivellement automatique', 'lvl.smooth': 'Lissage dans la marge', 'lvl.off': 'Sans nivellement',
     'top.resolve': 'Résoudre…',
@@ -2118,7 +2180,9 @@ const I18n = (() => {
     'dash.tracking': 'Tableau de suivi', 'dash.pStart': 'Début prévu', 'dash.pEnd': 'Fin prévue', 'dash.dev': 'Écart', 'dash.ongoing': '(en cours)',
     'dash.vsBl': 'Écart vs baseline', 'dash.vsBlPick': 'Colonne « Écart vs baseline » :', 'dash.noBl': '— aucune —',
     'cal.title': 'Calendrier du projet', 'cal.week': 'Semaine de travail', 'cal.holidays': 'Jours fériés',
-    'cal.set.FR': 'France métropolitaine', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgique', 'cal.set.DE': 'Allemagne (jours nationaux)', 'cal.set.NONE': 'Aucun',
+    'cal.set.FR': 'France métropolitaine', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgique', 'cal.set.DE': 'Allemagne (jours nationaux)',
+    'cal.set.GB': 'Royaume-Uni (Angleterre et pays de Galles)', 'cal.set.US': 'États-Unis (jours fédéraux, dates observées)',
+    'cal.set.CH': 'Suisse (1er août et jours les plus répandus)', 'cal.set.NONE': 'Aucun',
     'cal.daysOff': 'Jours chômés ajoutés', 'cal.daysWorked': 'Jours travaillés exceptionnels', 'cal.from': 'Du', 'cal.to': 'Au (facultatif)', 'cal.label': 'Libellé',
     'cal.add': 'Ajouter', 'cal.addOff': 'Ajouter le jour chômé', 'cal.addWorked': 'Ajouter le jour travaillé', 'cal.none': 'Aucun.',
     'cal.range': 'du {from} au {to}', 'cal.preview': 'Aperçu', 'cal.prev': 'Mois précédent', 'cal.next': 'Mois suivant',
@@ -2143,6 +2207,7 @@ const I18n = (() => {
     'legend.notBefore': 'Ne pas commencer avant (⏳)', 'legend.deadline': 'Échéance (🚩)',
     'sel.label': 'Sélection', 'sel.count': { one: '{count} tâche sélectionnée', other: '{count} tâches sélectionnées' }, 'sel.mark': '(sélectionnée)',
     'sel.bulk': 'Modifier en masse', 'sel.indent': 'Mettre en retrait', 'sel.outdent': "Remonter d'un niveau", 'sel.group': 'Regrouper sous une récapitulative', 'sel.clear': 'Effacer la sélection',
+    'sel.deleteNames': 'Éléments concernés : {names}.', 'sel.deleteMore': { one: 'Et {count} autre.', other: 'Et {count} autres.' },
     'sel.deleteN': { one: 'Supprimer {count} élément ?', other: 'Supprimer {count} éléments ?' }, 'sel.deleted': { one: '{count} élément supprimé.', other: '{count} éléments supprimés.' },
     'sel.keepChildren': 'Conserver les tâches (elles remontent d\'un niveau)', 'sel.deleteAll': { one: 'Supprimer aussi sa tâche', other: 'Supprimer aussi ses {count} tâches' },
     'sel.hierarchy': 'Hiérarchie', 'sel.needSummary': 'Placez d\'abord une récapitulative au-dessus, au même niveau.', 'sel.topLevel': 'Cette tâche est déjà au premier niveau.',
@@ -2372,6 +2437,10 @@ const I18n = (() => {
     'hol.victory': 'Victory in Europe Day', 'hol.ascension': 'Ascension Day', 'hol.whitMonday': 'Whit Monday', 'hol.bastille': 'Bastille Day',
     'hol.belgium': 'Belgian National Day', 'hol.assumption': 'Assumption Day', 'hol.allSaints': "All Saints' Day", 'hol.armistice': 'Armistice Day',
     'hol.germanUnity': 'German Unity Day', 'hol.christmas': 'Christmas Day', 'hol.stStephen': "St Stephen's Day",
+    'hol.earlyMay': 'Early May bank holiday', 'hol.springBank': 'Spring bank holiday', 'hol.summerBank': 'Summer bank holiday',
+    'hol.boxingDay': 'Boxing Day', 'hol.mlk': 'Martin Luther King Jr. Day', 'hol.presidents': 'Washington’s Birthday (Presidents’ Day)',
+    'hol.memorial': 'Memorial Day', 'hol.juneteenth': 'Juneteenth', 'hol.independence': 'Independence Day', 'hol.laborDay': 'Labor Day',
+    'hol.columbus': 'Columbus Day', 'hol.veterans': 'Veterans Day', 'hol.thanksgiving': 'Thanksgiving Day', 'hol.swissNational': 'Swiss National Day',
     'top.baselines': 'Baselines', 'top.dashboard': 'Dashboard',
     'tip.planned': 'Planned', 'tip.real': 'Actual', 'tip.slack': 'Slack (working days)',
     'gantt.baseline': 'baseline {name}: {start} to {end}',
@@ -2388,7 +2457,9 @@ const I18n = (() => {
     'dash.tracking': 'Tracking table', 'dash.pStart': 'Planned start', 'dash.pEnd': 'Planned finish', 'dash.dev': 'Variance', 'dash.ongoing': '(ongoing)',
     'dash.vsBl': 'Variance vs baseline', 'dash.vsBlPick': '“Variance vs baseline” column:', 'dash.noBl': '— none —',
     'cal.title': 'Project calendar', 'cal.week': 'Working week', 'cal.holidays': 'Public holidays',
-    'cal.set.FR': 'Metropolitan France', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgium', 'cal.set.DE': 'Germany (national days)', 'cal.set.NONE': 'None',
+    'cal.set.FR': 'Metropolitan France', 'cal.set.FR-AM': 'France, Alsace-Moselle', 'cal.set.BE': 'Belgium', 'cal.set.DE': 'Germany (national days)',
+    'cal.set.GB': 'United Kingdom (England and Wales)', 'cal.set.US': 'United States (federal holidays, observed dates)',
+    'cal.set.CH': 'Switzerland (1 August and the most widespread days)', 'cal.set.NONE': 'None',
     'cal.daysOff': 'Additional days off', 'cal.daysWorked': 'Extra working days', 'cal.from': 'From', 'cal.to': 'To (optional)', 'cal.label': 'Label',
     'cal.add': 'Add', 'cal.addOff': 'Add day off', 'cal.addWorked': 'Add working day', 'cal.none': 'None.',
     'cal.range': 'from {from} to {to}', 'cal.preview': 'Preview', 'cal.prev': 'Previous month', 'cal.next': 'Next month',
@@ -2413,6 +2484,7 @@ const I18n = (() => {
     'legend.notBefore': 'Start no earlier than (⏳)', 'legend.deadline': 'Deadline (🚩)',
     'sel.label': 'Selection', 'sel.count': { one: '{count} task selected', other: '{count} tasks selected' }, 'sel.mark': '(selected)',
     'sel.bulk': 'Bulk edit', 'sel.indent': 'Indent', 'sel.outdent': 'Outdent', 'sel.group': 'Group under a summary task', 'sel.clear': 'Clear selection',
+    'sel.deleteNames': 'Items concerned: {names}.', 'sel.deleteMore': { one: 'And {count} other.', other: 'And {count} others.' },
     'sel.deleteN': { one: 'Delete {count} item?', other: 'Delete {count} items?' }, 'sel.deleted': { one: '{count} item deleted.', other: '{count} items deleted.' },
     'sel.keepChildren': 'Keep the tasks (they move up one level)', 'sel.deleteAll': { one: 'Also delete its task', other: 'Also delete its {count} tasks' },
     'sel.hierarchy': 'Hierarchy', 'sel.needSummary': 'First place a summary task above, at the same level.', 'sel.topLevel': 'This task is already at the top level.',
@@ -4138,7 +4210,7 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
-      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
+      if (rows.length <= HANDLES_EAGER || isSelected(task.id)) ensureHandles(el);
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -4155,10 +4227,12 @@ function renderGantt(items, fl) {
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
-      // Poignées des gestes (EF-74 à EF-77) : créées au survol ou au focus (ensureHandles), pour
+      // Poignées des gestes (EF-74 à EF-77) : créées au survol, au toucher ou au focus (ensureHandles), pour
       // garder un affichage rapide sur 1 000 tâches (EX-15) ; le clavier a ses équivalents (EF-78).
+      // A-54 (15/10/2026) : une barre sélectionnée a toujours ses poignées, quelle que soit la taille du projet,
+      // pour qu'elles soient visibles et atteignables sur une tablette, où le survol n'existe pas.
       el.dataset.pct = String(pct);
-      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
+      if (rows.length <= HANDLES_EAGER || isSelected(task.id)) ensureHandles(el);
       // Bande des dates réelles, couleur de la première ressource (EF-21).
       const rs = Dates.parse(task.realStart);
       if (rs != null) {
@@ -5010,6 +5084,7 @@ function renderSelbar() {
 action('clearSelection', () => { clearSelection(); render(); $('main').focus(); });
 
 /* ── Suppression (EF-06, EF-63) ─────────────────────────────────────────────────────────── */
+const DELETE_NAMES_SHOWN = 5;
 action('deleteTask', async () => {
   const ids = topSelected();
   if (!ids.length) return;
@@ -5020,6 +5095,12 @@ action('deleteTask', async () => {
   const first = taskById(ids[0]);
   const title = ids.length === 1 ? t('dlg.deleteTask', { id: first.id, name: first.name }) : t('sel.deleteN', { count: ids.length });
   const lines = [losing ? t('dlg.deleteTaskDeps', { count: losing }) : ''];
+  if (ids.length > 1) {
+    // A-55 : la confirmation nomme les éléments concernés (les cinq premiers, puis le nombre des autres).
+    const shown = ids.slice(0, DELETE_NAMES_SHOWN).map(id => `${id} « ${taskById(id).name} »`).join(', ');
+    const more = ids.length - DELETE_NAMES_SHOWN;
+    lines.unshift(t('sel.deleteNames', { names: shown }) + (more > 0 ? ' ' + t('sel.deleteMore', { count: more }) : ''));
+  }
   let keep = false;
   if (summaries.length && desc) {
     lines.unshift(t('dlg.deleteSummary', { count: desc }));
@@ -5267,9 +5348,10 @@ function initListKeys() {
       return;
     }
     if (ev.key === 'Delete' || ev.key === 'Suppr') {
-      // La ligne qui a le focus est celle visée si elle ne fait pas partie de la sélection.
+      // A-55 (15/10/2026) : Suppr agit sur la sélection explicite, jamais en la remplaçant par la ligne qui a le focus.
+      // La ligne qui a le focus n'est visée que s'il n'y a aucune sélection ; la confirmation nomme les tâches concernées.
       const tr = inList && ev.target.closest('tr[data-id]');
-      if (tr && !isSelected(tr.dataset.id)) { App.multi.clear(); App.selected = tr.dataset.id; }
+      if (!selectedIds().length && tr) App.selected = tr.dataset.id;
       if (selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); }
       return;
     }
@@ -5542,6 +5624,7 @@ function initGestures() {
   const grid = $('gantt');
   const handlesFor = ev => { const el = ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg]'); if (el) ensureHandles(el); };
   grid.addEventListener('pointerover', handlesFor);
+  grid.addEventListener('pointerdown', handlesFor, true); // tactile : certains navigateurs n'envoient pas pointerover
   grid.addEventListener('focusin', handlesFor);
   grid.addEventListener('pointerdown', ev => {
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;

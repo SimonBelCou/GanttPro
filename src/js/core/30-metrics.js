@@ -34,11 +34,11 @@ const Metrics = (() => {
 
   const countsInProgress = t => t.type === 'task';
 
-  /** RG-16 : avancement global pondéré par la durée, en pourcentage (non arrondi). */
+  /** RG-16 : avancement global = moyenne simple des avancements des tâches (poids 1 par tâche), en pourcentage (non arrondi). */
   function globalProgress(project) {
-    let w = 0, acc = 0;
-    for (const t of project.tasks) if (countsInProgress(t)) { w += t.dur; acc += t.dur * t.pct; }
-    return w ? acc / w : 0;
+    let n = 0, acc = 0;
+    for (const t of project.tasks) if (countsInProgress(t)) { n++; acc += t.pct; }
+    return n ? acc / n : 0;
   }
 
   /** RG-16 : compteurs par statut (tâches et jalons, hors récapitulatives). */
@@ -70,38 +70,40 @@ const Metrics = (() => {
    */
   function sCurve(project, sched, today, unit = 'week') {
     const work = project.tasks.filter(countsInProgress);
-    const total = work.reduce((a, t) => a + t.dur, 0);
+    const total = work.length; // poids 1 par tâche (RG-18)
     let last = sched.projectEndDn;
     const shownBaselines = (project.baselines || []).filter(b => b.shownOnScurve);
     for (const b of shownBaselines) for (const bt of b.tasks) { const e = Dates.parse(bt.end); if (e != null) last = Math.max(last, e); }
     const ps = periods(Dates.parse(project.projectStart), last, unit);
-    // Charge prévue cumulée par jour ouvré (tableau de différences) : O(tâches + jours), pas O(tâches × périodes).
-    const lo = Math.min(0, ...work.map(t => sched.tasks.get(t.id).s));
+    // Tâches dont la fin prévue est atteinte, cumulées par jour ouvré (tableau de comptage) : O(tâches + jours),
+    // pas O(tâches × périodes). Une tâche vaut 1 point, acquis à sa fin prévue (RG-18).
+    const lo = Math.min(0, ...work.map(t => sched.tasks.get(t.id).e));
     const hi = Math.max(0, ...work.map(t => sched.tasks.get(t.id).e));
-    const diff = new Float64Array(hi - lo + 2);
-    for (const t of work) { const r = sched.tasks.get(t.id); diff[r.s - lo] += 1; diff[r.e - lo + 1] -= 1; }
+    const endsAt = new Float64Array(hi - lo + 1);
+    for (const t of work) endsAt[sched.tasks.get(t.id).e - lo] += 1;
     const cumul = new Float64Array(hi - lo + 1);
-    for (let i = 0, running = 0, acc = 0; i <= hi - lo; i++) { running += diff[i]; acc += running; cumul[i] = acc; }
+    for (let i = 0, acc = 0; i <= hi - lo; i++) { acc += endsAt[i]; cumul[i] = acc; }
     const plannedUpTo = dn => { const i = Math.min(sched.cal.floor(dn), hi) - lo; return i < 0 ? 0 : cumul[i]; };
     const planned = ps.map(p => (total ? 100 * plannedUpTo(p.end) / total : 0));
+    // RG-20 : une tâche terminée (100 %) vaut 1 point à sa fin réelle ; sans fin réelle, elle compte dans la période en cours.
     const real = [];
     for (const p of ps) {
       if (p.start > today) break;
       if (!total) { real.push(0); continue; }
-      if (p.end < today) {
-        real.push(100 * work.reduce((a, t) => { const re = Dates.parse(t.realEnd); return a + (re != null && re <= p.end ? t.dur : 0); }, 0) / total);
-      } else {
-        real.push(work.reduce((a, t) => a + t.dur * t.pct, 0) / total);
-      }
+      const current = p.end >= today;
+      real.push(100 * work.reduce((a, t) => {
+        if (t.pct < 100) return a;
+        const re = Dates.parse(t.realEnd);
+        return a + (re != null ? (re <= p.end ? 1 : 0) : (current ? 1 : 0));
+      }, 0) / total);
     }
     const baselines = {};
     for (const b of shownBaselines) {
       const bts = b.tasks.filter(bt => bt.dur > 0);
-      const btotal = bts.reduce((a, bt) => a + bt.dur, 0);
-      baselines[b.id] = ps.map(p => btotal ? 100 * bts.reduce((a, bt) => {
-        const s = Dates.parse(bt.start), e = Dates.parse(bt.end);
-        return a + Math.min(bt.dur, sched.cal.count(s, Math.min(e, p.end)));
-      }, 0) / btotal : 0);
+      baselines[b.id] = ps.map(p => bts.length ? 100 * bts.reduce((a, bt) => {
+        const e = Dates.parse(bt.end);
+        return a + (e != null && e <= p.end ? 1 : 0);
+      }, 0) / bts.length : 0);
     }
     return { periods: ps, planned, real, baselines };
   }
@@ -138,13 +140,15 @@ const Metrics = (() => {
     return { light, drift };
   }
 
-  /** RG-28 : avancement prévu à ce jour = jours ouvrés prévus écoulés jusqu'à aujourd'hui / somme des durées. */
+  /** RG-28 : avancement prévu à ce jour = moyenne, sur les tâches, de la part de chacune écoulée (jours ouvrés prévus écoulés / durée). */
   function plannedToDate(project, sched, today) {
     const work = project.tasks.filter(countsInProgress);
-    const total = work.reduce((a, t) => a + t.dur, 0);
-    if (!total) return 0;
+    if (!work.length) return 0;
     const upto = sched.cal.floor(today);
-    return 100 * work.reduce((a, t) => { const r = sched.tasks.get(t.id); return a + Math.max(0, Math.min(upto, r.e) - r.s + 1); }, 0) / total;
+    return 100 * work.reduce((a, t) => {
+      const r = sched.tasks.get(t.id);
+      return a + Math.max(0, Math.min(upto, r.e) - r.s + 1) / Math.max(1, r.e - r.s + 1);
+    }, 0) / work.length;
   }
 
   /** RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant). */

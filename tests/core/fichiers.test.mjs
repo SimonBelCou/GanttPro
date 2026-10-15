@@ -98,7 +98,12 @@ test('affectations et capacité', () => {
 
 test('calendrier', () => {
   assert.equal(keyOf({ tasks: [], calendar: { workDays: [0, 0, 0, 0, 0, 0, 0] } }), 'imp.noWorkday');
-  assert.equal(keyOf({ tasks: [], calendar: { holidays: 'US' } }), 'imp.field');
+  assert.equal(keyOf({ tasks: [], calendar: { holidays: 'JP' } }), 'imp.field');
+  // Jeux ajoutés le 15/10/2026 (arbitrage A.3 n° 9) : acceptés à l'import.
+  for (const set of ['GB', 'US', 'CH']) {
+    const r = Model.parseFile(JSON.stringify({ tasks: [], calendar: { holidays: set } }));
+    assert.equal(r.project.calendar.holidays, set);
+  }
   assert.equal(keyOf({ tasks: [], calendar: { daysOff: [{ start: '2026-01-07' }], daysWorked: [{ start: '2026-01-07', end: '2026-01-07' }] } }), 'imp.calendarClash');
   assert.equal(keyOf({ tasks: [], calendar: { daysOff: [{ start: '2026-01-01', end: '2027-12-31' }] } }), 'imp.tooMany');
 });

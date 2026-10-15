@@ -13,7 +13,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 - Tâches, jalons et tâches récapitulatives sur 5 niveaux ; durées en jours ouvrés
 - Liens fin-début, début-début, fin-fin et début-fin, avec délai positif ou négatif ; boucles refusées
 - Date imposée, « ne pas commencer avant », échéance
-- Calendrier du projet : semaine de travail, jours fériés (France, Alsace-Moselle, Belgique, Allemagne), jours chômés
+- Calendrier du projet : semaine de travail, jours fériés (France, Alsace-Moselle, Belgique, Allemagne, Royaume-Uni, États-Unis, Suisse), jours chômés
   et jours travaillés exceptionnels
 - Chemin critique calculé sur le planning réel (liens, ressources, échéances)
 

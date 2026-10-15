@@ -332,6 +332,14 @@ def main():
         pg.click('#task-rows button.select:has-text("Charlie")', modifiers=['Control'])
         pg.click('#task-rows button.select:has-text("Delta")', modifiers=['Control'])
         check('Ctrl + clic : barre de sélection « 2 tâches sélectionnées »', '2 tâches sélectionnées' in pg.inner_text('#selbar'))
+        # A-55 (15/10/2026) : Suppr agit sur la sélection explicite ; la ligne qui a le focus sans être sélectionnée n'est jamais visée à sa place.
+        pg.focus('#task-rows button.select:has-text("Alpha")'); pg.keyboard.press('Delete')
+        atxt = dialog_text()
+        check('A-55 : Suppr avec le focus hors de la sélection vise la sélection (Charlie, Delta), pas la ligne au focus (Alpha)',
+              'Charlie' in atxt and 'Delta' in atxt and 'Alpha' not in atxt and '2 éléments' in atxt, atxt)
+        close_dialog('Annuler')
+        check('A-55 : après « Annuler », la sélection et les tâches sont intactes',
+              '2 tâches sélectionnées' in pg.inner_text('#selbar') and pg.locator('#task-rows tr[data-id="A"]').count() == 1)
         pg.click('#selbar button:has-text("Modifier en masse")')
         pg.select_option('#bk-res-mode', 'add'); pg.select_option('#bk-res', label='Bob'); pg.fill('#bk-units', '50'); pg.fill('#bk-tag-add', 'lot2')
         axe_check(pg, 'modification en masse')

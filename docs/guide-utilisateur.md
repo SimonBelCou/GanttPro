@@ -33,7 +33,7 @@ Un projet se définit par son nom, sa date de début et son calendrier ; tout le
 2. **Début du projet** : champ « Début projet ». Un samedi ou un jour férié est accepté ; les tâches commencent alors au premier jour ouvré suivant, et la date saisie reste affichée.
 3. **Calendrier** : bouton « Calendrier ». Vous y réglez :
    - la semaine de travail (cases du lundi au dimanche, au moins un jour coché) ;
-   - le jeu de jours fériés : France métropolitaine (défaut), France Alsace-Moselle (plus le Vendredi saint et le 26 décembre), Belgique, Allemagne (jours nationaux) ou Aucun ;
+   - le jeu de jours fériés : France métropolitaine (défaut), France Alsace-Moselle (plus le Vendredi saint et le 26 décembre), Belgique, Allemagne (jours nationaux), Royaume-Uni (Angleterre et pays de Galles), États-Unis (jours fédéraux), Suisse ou Aucun. Au Royaume-Uni, un jour férié tombant un week-end est remplacé par le premier jour de semaine libre qui suit, comme le fixe l'administration britannique ; les jours exceptionnels d'une année (couronnement, par exemple) ne sont pas inclus. Aux États-Unis, les dates sont celles « observées » : un férié un samedi est pris le vendredi, un férié un dimanche le lundi. En Suisse, seul le 1er août est férié par la loi fédérale ; le jeu contient aussi les jours observés dans presque tous les cantons (Nouvel An, Vendredi saint, Ascension, Noël). Le lundi de Pâques, le lundi de Pentecôte, le 26 décembre et les autres jours propres à un canton s'ajoutent comme « jours chômés ajoutés » ;
    - les jours chômés ajoutés (pont, fermeture, férié d'un autre pays) et les jours travaillés exceptionnels, en date seule ou en plage, avec un libellé.
 
 L'aperçu mensuel de la fenêtre grise les jours non travaillés et nomme les jours fériés ; rien n'est appliqué avant « Enregistrer ». Une même date ne peut pas être à la fois chômée et travaillée. Un jour travaillé exceptionnel l'emporte sur tout : un samedi déclaré travaillé compte dans les durées.
@@ -84,7 +84,7 @@ Un clic sur le nom d'une ligne, sur sa barre ou son jalon (ou Entrée au clavier
 - **Monter / Descendre** dans l'édition, ou glisser-déposer une ligne de la liste. Une récapitulative se déplace avec tout son contenu. L'ordre compte : à charge égale, la tâche la plus haute passe en premier.
 - **Trier** (barre de recherche) range la liste pour que chaque prédécesseur soit avant ses successeurs, après une confirmation qui rappelle cet effet sur la priorité.
 - **Dupliquer** (Ctrl + D) place une copie « (copie) » juste dessous, sans avancement, dates réelles ni commentaires ; une récapitulative est copiée avec tout son contenu.
-- **Supprimer** (bouton ou Suppr) demande une confirmation qui nomme la tâche et compte les tâches qui perdront un prédécesseur. Pour une récapitulative, vous choisissez de supprimer aussi ses tâches ou de les conserver.
+- **Supprimer** (bouton ou Suppr) demande une confirmation qui nomme la tâche (ou, pour plusieurs, les cinq premières puis le nombre des autres) et compte les tâches qui perdront un prédécesseur. Pour une récapitulative, vous choisissez de supprimer aussi ses tâches ou de les conserver. La touche Suppr agit sur ce qui est **sélectionné** ; la ligne qui a le focus n'est visée que s'il n'y a aucune sélection, et elle ne remplace jamais une sélection existante.
 
 Les lignes « Jalon Début » et « Jalon Fin », en tête et en pied de liste, sont automatiques : elles montrent le début du projet et la fin du planning.
 
@@ -196,6 +196,8 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 | Tirer d'une poignée ronde (début à gauche, fin à droite) vers celle d'une autre barre | Crée un lien : fin → début, début → début, fin → fin ou début → fin selon les poignées |
 | Tirer le petit triangle sous la barre | Règle l'avancement par pas de 5 % (de 1 % avec Maj) |
 
+Dans un projet de plus de 300 lignes, les poignées ne sont pas dessinées d'avance, pour garder un affichage rapide : elles apparaissent au survol ou au focus d'une barre, et **dès qu'une barre est sélectionnée ou touchée**. Sur une tablette, touchez d'abord la barre : ses poignées s'affichent, puis vous les attrapez.
+
 Après chaque geste, un message confirme le résultat avec un bouton **Annuler**. Échap abandonne le geste en cours. Au doigt, un appui de 0,3 seconde saisit la barre. Les gestes sont désactivés en vue mois. Aucun geste n'est indispensable : tout se fait aussi dans l'édition ou au clavier (Alt + flèches pour la date, Alt + Maj + flèches pour la durée).
 
 ### Légende
@@ -242,7 +244,7 @@ Le suivi repose sur deux saisies, l'avancement et les dates réelles ; GanttPro 
 
 **Écart** (tableau de suivi) : nombre de jours ouvrés entre la fin prévue et la fin réelle, « +2 j » pour un retard, « −2 j » pour une avance. Une tâche en retard sans fin réelle a un écart provisoire jusqu'à aujourd'hui, marqué « en cours ».
 
-**Avancement global** (barre de chiffres) : moyenne des avancements pondérée par la durée. Une tâche de 2 jours terminée et une de 8 jours non commencée donnent 20 %, et non 50 %.
+**Avancement global** (barre de chiffres) : moyenne simple des avancements des tâches, chacune comptant pour une, quelle que soit sa durée. Une tâche de 2 jours terminée et une de 8 jours non commencée donnent 50 %. Il en va de même de l'avancement d'une récapitulative (moyenne simple de ses tâches) et de l'avancement prévu à ce jour du rapport d'état (part écoulée de chaque tâche, en moyenne).
 
 **Chemin critique** : la chaîne des tâches sans marge, affichée dans la barre de chiffres sous la forme « A → C → E ». La marge tient compte des liens, des ressources (une tâche que le nivellement a placée après une autre en dépend), des échéances et des dates imposées.
 
@@ -268,7 +270,7 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 ### Tableau de bord, onglet « Synthèse »
 
 - Quatre indicateurs : avancement global, tâches terminées, en cours, en retard.
-- **Courbe en S** : cumul prévu et cumul réel en pourcentage, par semaine ou par mois, avec le repère « Aujourd'hui » et les baselines cochées en pointillé. Les flèches ← / → parcourent les périodes au clavier. « Afficher les valeurs » ouvre le tableau des chiffres de la courbe.
+- **Courbe en S** : cumul prévu et cumul réel en pourcentage, par semaine ou par mois, avec le repère « Aujourd'hui » et les baselines cochées en pointillé. Chaque tâche vaut un point, acquis quand elle est terminée : à sa fin prévue pour la courbe prévue (et celle d'une baseline), à sa fin réelle pour la courbe réelle. Seules les tâches à 100 % comptent dans la courbe réelle ; un avancement partiel n'y figure pas, mais il est dans l'avancement global. Une tâche à 100 % sans fin réelle compte dans la période en cours. Les flèches ← / → parcourent les périodes au clavier. « Afficher les valeurs » ouvre le tableau des chiffres de la courbe.
 - **Tableau de suivi** : une ligne par tâche (avancement, début et fin prévus, dates réelles, écart, statut), triable par un clic sur l'en-tête de colonne. La liste « Écart vs baseline » ajoute la différence de fin avec la baseline choisie.
 
 ### Tableau de bord, onglet « Charge »
@@ -354,7 +356,7 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | Maj + ↑ / ↓ | Étendre la sélection |
 | Entrée | Ouvrir l'édition de la tâche (dans l'édition : enregistrer) |
 | Échap | Fermer la fenêtre, l'édition ou l'infobulle ; abandonner un geste ; vider la recherche |
-| Suppr | Supprimer la ligne qui a le focus ou la sélection (avec confirmation) |
+| Suppr | Supprimer la sélection, ou la ligne qui a le focus s'il n'y a aucune sélection (avec confirmation qui nomme les tâches) |
 | Ctrl + clic, Maj + clic | Sélection multiple |
 | Ctrl + A | Sélectionner toutes les lignes affichées |
 | Ctrl + Z, Ctrl + Y | Annuler, rétablir |
