@@ -340,6 +340,21 @@ def main():
         open_project('big1000.json')
         t1000 = edit_time('T500')
         check(f'EX-15 / R-35 : 1 000 tâches, affichage à jour en moins de 500 ms ({t1000:.0f} ms)', t1000 < 500 * PERF, t1000)
+        # A-54 (15/10/2026) : au-delà de 300 lignes, les poignées ne sont pas créées d'avance (EX-15) ; une barre sélectionnée,
+        # ou touchée, a les siennes, pour qu'elles soient visibles et atteignables au doigt sur une tablette.
+        n_lk = pg.locator('#gantt .lk').count()
+        check(f'A-54 : 1 000 tâches, poignées créées à la demande seulement ({n_lk} sur 2 000 possibles)', n_lk < 100, n_lk)
+        check('A-54 : une barre non sélectionnée n\'a pas encore de poignées', pg.locator('#gantt .bar[data-arg="T77"] .lk').count() == 0)
+        pg.click('#task-rows button.select[data-arg="T77"]')
+        check('A-54 : la barre sélectionnée a ses poignées (lien début et fin, bord droit, avancement)',
+              pg.locator('#gantt .bar[data-arg="T77"] .lk').count() == 2 and pg.locator('#gantt .bar[data-arg="T77"] .h-end').count() == 1
+              and pg.locator('#gantt .bar[data-arg="T77"] .h-pct').count() == 1)
+        # Un toucher sur une autre barre crée ses poignées (événement de pointeur tactile), même sans survol préalable.
+        pg.evaluate("""() => { const b = document.querySelector('#gantt .bar[data-arg="T88"]'); const r = b.getBoundingClientRect();
+            b.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerType: 'touch', pointerId: 7, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, button: 0}));
+            document.dispatchEvent(new PointerEvent('pointercancel', {bubbles: true, pointerType: 'touch', pointerId: 7})); }""")
+        check('A-54 : un toucher sur une barre crée ses poignées', pg.locator('#gantt .bar[data-arg="T88"] .lk').count() == 2)
+        pg.keyboard.press('Escape')
         search = pg.evaluate("""() => { const s = document.getElementById('search'); s.value = 'Tâche 77';
             const t0 = performance.now(); s.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); return performance.now() - t0; }""")
         check(f'EX-25 : recherche sur 1 000 tâches en moins de 100 ms ({search:.0f} ms)', search < 100 * PERF, search)

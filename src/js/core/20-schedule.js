@@ -140,8 +140,8 @@ const Schedule = (() => {
         else { const r = out.get(c.id); s = Math.min(s, r.s); e = Math.max(e, r.e); if (!isMilestone(c)) leaves.push(c); }
       }
       leafTasks.set(t.id, leaves);
-      const wsum = leaves.reduce((acc, c) => acc + c.dur, 0);
-      const pct = wsum ? Math.round(leaves.reduce((acc, c) => acc + c.dur * c.pct, 0) / wsum) : 0;
+      // RG-23 : moyenne simple (poids 1 par tâche) de l'avancement des tâches de la descendance.
+      const pct = leaves.length ? Math.round(leaves.reduce((acc, c) => acc + c.pct, 0) / leaves.length) : 0;
       const r = s === Infinity ? { empty: true, s: null, e: null, d: 0, pct } : { s, e, d: e - s + 1, pct };
       out.set(t.id, r);
       return r;

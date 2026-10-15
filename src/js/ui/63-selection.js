@@ -66,6 +66,7 @@ function renderSelbar() {
 action('clearSelection', () => { clearSelection(); render(); $('main').focus(); });
 
 /* ── Suppression (EF-06, EF-63) ─────────────────────────────────────────────────────────── */
+const DELETE_NAMES_SHOWN = 5;
 action('deleteTask', async () => {
   const ids = topSelected();
   if (!ids.length) return;
@@ -76,6 +77,12 @@ action('deleteTask', async () => {
   const first = taskById(ids[0]);
   const title = ids.length === 1 ? t('dlg.deleteTask', { id: first.id, name: first.name }) : t('sel.deleteN', { count: ids.length });
   const lines = [losing ? t('dlg.deleteTaskDeps', { count: losing }) : ''];
+  if (ids.length > 1) {
+    // A-55 : la confirmation nomme les éléments concernés (les cinq premiers, puis le nombre des autres).
+    const shown = ids.slice(0, DELETE_NAMES_SHOWN).map(id => `${id} « ${taskById(id).name} »`).join(', ');
+    const more = ids.length - DELETE_NAMES_SHOWN;
+    lines.unshift(t('sel.deleteNames', { names: shown }) + (more > 0 ? ' ' + t('sel.deleteMore', { count: more }) : ''));
+  }
   let keep = false;
   if (summaries.length && desc) {
     lines.unshift(t('dlg.deleteSummary', { count: desc }));
@@ -323,9 +330,10 @@ function initListKeys() {
       return;
     }
     if (ev.key === 'Delete' || ev.key === 'Suppr') {
-      // La ligne qui a le focus est celle visée si elle ne fait pas partie de la sélection.
+      // A-55 (15/10/2026) : Suppr agit sur la sélection explicite, jamais en la remplaçant par la ligne qui a le focus.
+      // La ligne qui a le focus n'est visée que s'il n'y a aucune sélection ; la confirmation nomme les tâches concernées.
       const tr = inList && ev.target.closest('tr[data-id]');
-      if (tr && !isSelected(tr.dataset.id)) { App.multi.clear(); App.selected = tr.dataset.id; }
+      if (!selectedIds().length && tr) App.selected = tr.dataset.id;
       if (selectedIds().length) { ev.preventDefault(); ACTIONS.deleteTask(); }
       return;
     }

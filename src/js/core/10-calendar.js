@@ -5,7 +5,7 @@
  * ouvrés devient alors une simple soustraction d'index. Les tables s'étendent à la demande,
  * dans la limite de Dates.MIN_DN … Dates.MAX_DN (au-delà : RangeError, signalée à l'utilisateur). */
 const Calendar = (() => {
-  const HOLIDAY_SETS = ['FR', 'FR-AM', 'BE', 'DE', 'NONE'];
+  const HOLIDAY_SETS = ['FR', 'FR-AM', 'BE', 'DE', 'GB', 'US', 'CH', 'NONE'];
   const DEFAULT = Object.freeze({ workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] });
 
   /** Dimanche de Pâques (calendrier grégorien, algorithme de Meeus/Jones/Butcher). */
@@ -18,6 +18,50 @@ const Calendar = (() => {
     return Dates.fromYMD(y, month, day);
   }
 
+  /** n-ième jour de semaine wd (0 = lundi … 6 = dimanche) du mois m de l'année y ; n = −1 pour le dernier. */
+  function nthWeekday(y, m, wd, n) {
+    if (n > 0) { const first = Dates.fromYMD(y, m, 1); return first + ((wd - Dates.weekday(first) + 7) % 7) + 7 * (n - 1); }
+    const last = Dates.fromYMD(y, m + 1, 1) - 1;
+    return last - ((Dates.weekday(last) - wd + 7) % 7);
+  }
+
+  /** Royaume-Uni, Angleterre et pays de Galles (gov.uk) : un férié un week-end est remplacé par le premier jour de semaine libre qui suit. */
+  function holidaysGB(y, E, out) {
+    out.set(E - 2, 'hol.goodFriday');
+    out.set(E + 1, 'hol.easterMonday');
+    out.set(nthWeekday(y, 5, 0, 1), 'hol.earlyMay');
+    out.set(nthWeekday(y, 5, 0, -1), 'hol.springBank');
+    out.set(nthWeekday(y, 8, 0, -1), 'hol.summerBank');
+    const weekend = [];
+    for (const [m, d, key] of [[1, 1, 'hol.newYear'], [12, 25, 'hol.christmas'], [12, 26, 'hol.boxingDay']]) {
+      const dn = Dates.fromYMD(y, m, d);
+      if (Dates.weekday(dn) < 5) out.set(dn, key); else weekend.push([dn, key]);
+    }
+    for (const [dn, key] of weekend) { let s = dn; do { s++; } while (Dates.weekday(s) >= 5 || out.has(s)); out.set(s, key); }
+    return out;
+  }
+
+  /** États-Unis, jours fédéraux (OPM) en dates observées : un samedi devient le vendredi, un dimanche le lundi. */
+  function holidaysUS(y, out) {
+    const observed = dn => { const w = Dates.weekday(dn); return w === 5 ? dn - 1 : w === 6 ? dn + 1 : dn; };
+    const fixed = (m, d, key) => { const dn = observed(Dates.fromYMD(y, m, d)); if (Dates.ymd(dn).y === y) out.set(dn, key); };
+    fixed(1, 1, 'hol.newYear');
+    // Le 1er janvier de l'année suivante, tombant un samedi, est observé le 31 décembre de celle-ci.
+    const nextNewYear = Dates.fromYMD(y + 1, 1, 1);
+    if (Dates.weekday(nextNewYear) === 5) out.set(nextNewYear - 1, 'hol.newYear');
+    if (y >= 1986) out.set(nthWeekday(y, 1, 0, 3), 'hol.mlk');
+    out.set(nthWeekday(y, 2, 0, 3), 'hol.presidents');
+    out.set(nthWeekday(y, 5, 0, -1), 'hol.memorial');
+    if (y >= 2021) fixed(6, 19, 'hol.juneteenth');
+    fixed(7, 4, 'hol.independence');
+    out.set(nthWeekday(y, 9, 0, 1), 'hol.laborDay');
+    out.set(nthWeekday(y, 10, 0, 2), 'hol.columbus');
+    fixed(11, 11, 'hol.veterans');
+    out.set(nthWeekday(y, 11, 3, 4), 'hol.thanksgiving');
+    fixed(12, 25, 'hol.christmas');
+    return out;
+  }
+
   /** Jours fériés d'une année pour un jeu donné : Map dn → clé de libellé (traduite par l'interface). */
   function holidaysOf(set, y) {
     const out = new Map();
@@ -25,6 +69,15 @@ const Calendar = (() => {
     const E = easter(y);
     const add = (dn, key) => out.set(dn, key);
     const fixed = (m, d, key) => add(Dates.fromYMD(y, m, d), key);
+    if (set === 'GB') return holidaysGB(y, E, out);
+    if (set === 'US') return holidaysUS(y, out);
+    if (set === 'CH') {
+      // Seul le 1er août est férié par la loi fédérale ; les autres jours listés sont ceux observés dans presque tous les cantons.
+      // Lundi de Pâques, lundi de Pentecôte, 26 décembre, etc. varient selon le canton : à ajouter dans « Jours chômés ».
+      fixed(1, 1, 'hol.newYear'); add(E - 2, 'hol.goodFriday'); add(E + 39, 'hol.ascension');
+      fixed(8, 1, 'hol.swissNational'); fixed(12, 25, 'hol.christmas');
+      return out;
+    }
     fixed(1, 1, 'hol.newYear');
     if (set === 'DE' || set === 'FR-AM') add(E - 2, 'hol.goodFriday');
     add(E + 1, 'hol.easterMonday');

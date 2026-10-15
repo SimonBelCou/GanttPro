@@ -153,6 +153,7 @@ function initGestures() {
   const grid = $('gantt');
   const handlesFor = ev => { const el = ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg]'); if (el) ensureHandles(el); };
   grid.addEventListener('pointerover', handlesFor);
+  grid.addEventListener('pointerdown', handlesFor, true); // tactile : certains navigateurs n'envoient pas pointerover
   grid.addEventListener('focusin', handlesFor);
   grid.addEventListener('pointerdown', ev => {
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;

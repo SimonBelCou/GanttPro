@@ -76,10 +76,10 @@ const View = (() => {
   function group(project, sched, ids, by, today = Dates.todayDn()) {
     const groups = new Map();
     const add = (key, label, none, t) => {
-      if (!groups.has(key)) groups.set(key, { key, label, none, ids: [], count: 0, dur: 0, w: 0 });
+      if (!groups.has(key)) groups.set(key, { key, label, none, ids: [], count: 0, dur: 0, n: 0, w: 0 });
       const g = groups.get(key);
       g.ids.push(t.id); g.count++;
-      if (t.type === 'task') { g.dur += t.dur; g.w += t.dur * t.pct; }
+      if (t.type === 'task') { g.dur += t.dur; g.n++; g.w += t.pct; }
     };
     const STATUS_ORDER = ['late', 'ongoing', 'notStarted', 'upcoming', 'done'];
     for (const t of project.tasks) {
@@ -95,7 +95,7 @@ const View = (() => {
         add(st, st, false, t);
       }
     }
-    const list = [...groups.values()].map(g => ({ key: g.key, label: g.label, none: g.none, ids: g.ids, count: g.count, dur: g.dur, pct: g.dur ? Math.round(g.w / g.dur) : 0 }));
+    const list = [...groups.values()].map(g => ({ key: g.key, label: g.label, none: g.none, ids: g.ids, count: g.count, dur: g.dur, pct: g.n ? Math.round(g.w / g.n) : 0 }));
     if (by === 'status') return list.sort((a, b) => STATUS_ORDER.indexOf(a.key) - STATUS_ORDER.indexOf(b.key));
     return list.sort((a, b) => (a.none - b.none) || a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
   }

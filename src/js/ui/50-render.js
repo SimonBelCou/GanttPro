@@ -335,7 +335,7 @@ function renderGantt(items, fl) {
       el = h('div', { ...common, class: ['ms', pct >= 100 && 'reached', r.critical && 'critical', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.milestone', { id: task.id, name: task.name, date: I18n.date(r.startDn), status: t('status.' + st) }) } });
       el.style.setProperty('left', x(r.startDn + 0.5) + 'px');
-      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
+      if (rows.length <= HANDLES_EAGER || isSelected(task.id)) ensureHandles(el);
     } else if (task.type === 'summary') {
       el = h('div', { ...common, class: ['sbar', App.selected === task.id && 'selected'],
         aria: { label: t('gantt.summary', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), pct }) } });
@@ -352,10 +352,12 @@ function renderGantt(items, fl) {
       el.style.setProperty('--c', color);
       el.style.setProperty('--ink', inkOn(color));
       el.firstChild.style.setProperty('width', pct + '%');
-      // Poignées des gestes (EF-74 à EF-77) : créées au survol ou au focus (ensureHandles), pour
+      // Poignées des gestes (EF-74 à EF-77) : créées au survol, au toucher ou au focus (ensureHandles), pour
       // garder un affichage rapide sur 1 000 tâches (EX-15) ; le clavier a ses équivalents (EF-78).
+      // A-54 (15/10/2026) : une barre sélectionnée a toujours ses poignées, quelle que soit la taille du projet,
+      // pour qu'elles soient visibles et atteignables sur une tablette, où le survol n'existe pas.
       el.dataset.pct = String(pct);
-      if (rows.length <= HANDLES_EAGER) ensureHandles(el);
+      if (rows.length <= HANDLES_EAGER || isSelected(task.id)) ensureHandles(el);
       // Bande des dates réelles, couleur de la première ressource (EF-21).
       const rs = Dates.parse(task.realStart);
       if (rs != null) {
