@@ -229,7 +229,7 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 120], name: [120, 400], dur: [50, 140], deps: [60, 300], res: [80, 300], status: [70, 200] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500] };
 App.colWidths = {};
 function applyColWidths() {
   const table = $('tasks-table');
@@ -245,6 +245,7 @@ function applyColWidths() {
     const w = Math.round(App.colWidths[k] || th.getBoundingClientRect().width);
     sep.setAttribute('aria-valuenow', String(Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], w))));
   }
+  if (typeof applyFreeze === 'function') applyFreeze();
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
@@ -257,10 +258,12 @@ function initColumns() {
     th.append(sep);
     const set = w => { App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
     sep.addEventListener('keydown', ev => {
+      if (ev.key === 'Home') { ev.preventDefault(); delete App.colWidths[k]; applyColWidths(); return; }
       if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
       ev.preventDefault();
       set((App.colWidths[k] || th.getBoundingClientRect().width) + (ev.key === 'ArrowRight' ? 10 : -10));
     });
+    sep.addEventListener('dblclick', () => { delete App.colWidths[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
     sep.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       sep.setPointerCapture(ev.pointerId);

@@ -476,6 +476,7 @@ function renderAll() {
   renderListToggle();
   renderList(items, fl);
   renderGantt(items, fl);
+  refreshLayout();
   renderLegend();
   Tabs.paint();
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();

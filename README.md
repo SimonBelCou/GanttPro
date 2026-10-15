@@ -26,6 +26,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 ### ✏️ Édition
 - Gestes sur la grille : déplacer, allonger, lier, régler l'avancement ; équivalents clavier
+- Mise en page : séparateur liste/Gantt réglable, colonnes redimensionnables et figeables, plein écran du Gantt
 - Sélection multiple, modification en masse, copier-coller (y compris depuis un tableur)
 - Recherche sans accents, filtres combinables, regroupement par ressource, catégorie ou statut
 - Annuler / rétablir sur 50 pas ; notes, commentaires datés, étiquettes

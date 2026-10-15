@@ -185,7 +185,12 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 
 - Zoom de 20 à 300 % : boutons − et +, ↺ pour revenir à 100 %, touches + et −, ou Ctrl + molette sur la grille. Au-dessous de 60 %, la grille passe en vue mois.
 - **Liens : ON / OFF** affiche ou masque les flèches.
-- **Replier la liste** donne toute la largeur à la grille ; les colonnes de la liste se règlent en tirant leur bord, ou au clavier avec les flèches sur la poignée.
+- **Replier la liste** donne toute la largeur à la grille.
+- **Largeur de la liste.** Tirez la barre verticale qui sépare la liste du Gantt (au doigt, elle est plus large), ou placez-vous dessus et utilisez les flèches gauche et droite (Maj : par pas de 100 px). Un double-clic, ou la touche Début, rétablit la largeur automatique. La liste garde au moins 200 px, le Gantt aussi.
+- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit cette colonne ; **Colonnes par défaut** rétablit toutes les colonnes.
+- **Figer des colonnes.** Le choix **Figer** de la barre de recherche garde à l'écran l'identifiant, ou l'identifiant et le nom, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
+- **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière et le bouton **Quitter le plein écran** (ou Échap). Le reste de la page est désactivé pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
+- Ces réglages valent pour la session : ils ne sont pas enregistrés dans le projet ni dans le navigateur.
 
 ### Gestes
 
@@ -356,7 +361,7 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | ↑ / ↓ | Changer de tâche dans la liste |
 | Maj + ↑ / ↓ | Étendre la sélection |
 | Entrée | Ouvrir l'édition de la tâche (dans l'édition : enregistrer) |
-| Échap | Fermer la fenêtre, l'édition ou l'infobulle ; abandonner un geste ; vider la recherche |
+| Échap | Fermer la fenêtre, l'édition ou l'infobulle ; abandonner un geste ; vider la recherche ; quitter le plein écran du Gantt |
 | Suppr | Supprimer la sélection, ou la ligne qui a le focus s'il n'y a aucune sélection (avec confirmation qui nomme les tâches) |
 | Ctrl + clic, Maj + clic | Sélection multiple |
 | Ctrl + A | Sélectionner toutes les lignes affichées |
