@@ -50,14 +50,23 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   seulement si au moins un montant est saisi.
 - Rapport d'état : bloc « Budget » activable ; baselines : colonne « BAC » dans la fenêtre des baselines.
 - Export, impression, rapport, copie : case « Inclure les montants », **décochée par défaut**.
-- À préciser à la rédaction des exigences : le masquage à l'écran s'applique-t-il aussi à la fiche de tâche, aux
-  infobulles, au tableau de valeurs et au rapport ? Une valeur masquée doit rester annoncée comme « masquée »
-  aux lecteurs d'écran (pas un blanc silencieux).
+- Portée du masquage : tranchée (voir le tableau ci-dessus). Le stockage de son état passe par
+  `src/js/ui/10-storage.js` et reste effaçable depuis les réglages.
 
-**Non tranché, valeurs recommandées retenues par défaut** (à confirmer au premier échange utile) :
-étapes A puis B ; coût réel cumulé par tâche ; valeur acquise (EV) proportionnelle à l'avancement ;
-une devise par projet ; récapitulative = somme de ses enfants ; seuils CPI/SPI vert ≥ 1, orange 0,9 à 1,
-rouge < 0,9 ; estimation à terminaison par défaut BAC/CPI ; points de situation de l'étape B.
+**Valeurs par défaut confirmées par l'utilisateur le 16 octobre 2026** :
+
+| Sujet | Décision |
+|---|---|
+| Ordre de livraison | Étape A puis étape B. |
+| Coût réel | Cumulé par tâche, un champ ; il accepte l'engagé (paiements faits, en cours, factures engagées), à dire dans l'aide du champ. |
+| Valeur acquise (EV) | Proportionnelle à l'avancement (exemple du cours : 40 % de 200 = 80). |
+| Devise | Une par projet. |
+| Récapitulative | Somme de ses enfants, en lecture seule. |
+| Seuils CPI/SPI | Vert ≥ 1, orange de 0,9 à 1, rouge < 0,9, **réglables par projet**. Le texte (« en dépassement », « en retard ») accompagne toujours la couleur. Le 0,9 n'est pas dans les cours (ils disent seulement « sous 1 »). |
+| Estimation à terminaison (EAC) | Les trois hypothèses du cours affichées ; **BAC/CPI en valeur principale** ; champ ETC facultatif qui active l'hypothèse AC + ETC. Aide : ces indicateurs sont moins pertinents en fin de projet. |
+| Points de situation | Étape B, enregistrés sur geste explicite (jamais automatiquement). |
+| Provision et BAC | BAC affiché **avec et sans provision** ; EV, PV, CPI et SPI calculés sur le **budget des tâches seul** (la provision n'est pas du travail réalisé). |
+| Masquage à l'écran | Option 1 : **partout à l'écran** (liste, fiche, infobulles, onglet Budget, axes et valeurs de la courbe, tableau de valeurs, rapport). CPI et SPI ne sont pas des montants et restent visibles. Une valeur masquée est annoncée « montant masqué » aux lecteurs d'écran. Le masquage est **mémorisé** après rechargement. L'impression et l'export dépendent de la case « Inclure les montants ». |
 
 ## 4. Périmètre (détails dans le cadrage)
 
@@ -85,7 +94,7 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 ## 6. Ordre de travail proposé pour la conversation neuve
 
 1. Lire ce fichier, `CLAUDE.md`, le cadrage (section 8 incluse) et l'annexe A du cahier des charges.
-2. Demander à l'utilisateur de confirmer ou corriger les valeurs « par défaut » du paragraphe 3 (une seule question).
+2. (Fait le 16 octobre 2026 : toutes les valeurs du paragraphe 3 sont confirmées.)
 3. Écrire dans le cahier des charges : exigences EF (étape A), règles de gestion, scénarios chiffrés de recette,
    annexe A (arbitrages ci-dessus).
 4. Développer l'étape A : modèle et moteur d'abord (tests `tests/core/`), puis interface, traductions, exports,
