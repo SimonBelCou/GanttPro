@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yEiMTUQR3bnkBNpiE3DxP30+6qYT+pej9xrBDaiviW0='; style-src 'sha256-DXTlyiIDnKdZvxH+hqxykiijXjf+EASkcM46tJNiRqY='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/GdqMNlNXTPN4DfaxRO0c7PUinsvHKJLhonGCzqsxbU='; style-src 'sha256-L6S/N0p3cBxbV+R+1Vlj0RcUYzp8cSa/0zxMCleMqbU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -91,8 +91,8 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 /* Planning : liste + grille, défilement vertical commun */
 
-.planner { display: grid; grid-template-columns: minmax(520px, 56%) 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
-.list { background: var(--panel); border-right: 1px solid var(--line); overflow-x: auto; }
+.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
+.list { background: var(--panel); overflow-x: auto; }
 table.tasks { border-collapse: collapse; width: 100%; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
@@ -204,6 +204,9 @@ ul.rows input[type="number"] { width: 5.5rem; }
 dialog.dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); padding: 1.2rem; width: min(520px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; }
 dialog.dialog.wide { width: min(900px, calc(100vw - 2rem)); }
 dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.dialog-head h2 { margin: 0 0 .5rem; flex: 1 1 auto; }
+button.dlg-x { flex: 0 0 auto; min-width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; }
 .dialog-body p { margin: .3rem 0; }
 .dialog-body .strong { font-weight: 700; }
 table.manage { border-collapse: collapse; width: 100%; margin-bottom: .7rem; }
@@ -233,7 +236,8 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 /* Écrans étroits (4.4) */
 @media (max-width: 900px) {
   .planner { grid-template-columns: 1fr; max-height: none; }
-  .list { border-right: 0; overflow-x: auto; }
+  .splitter { display: none; }
+  .list { overflow-x: auto; }
   .editor { width: 100vw; }
 }
 
@@ -382,11 +386,12 @@ ul.comments li { align-items: flex-start; }
 .selbar { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; padding: .4rem 1rem; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); border-bottom: 1px solid var(--accent); }
 .tasks thead th { position: sticky; }
 .tasks th { position: relative; }
-.col-resize { position: absolute; right: 0; top: 4px; bottom: 4px; width: 8px; cursor: col-resize; border-right: 2px solid var(--line); }
+.col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
 table.tasks.fixed { table-layout: fixed; }
 table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
-.planner.list-collapsed { grid-template-columns: 1fr; }
+.planner.list-collapsed { grid-template-columns: 0 0 1fr; }
+.planner.list-collapsed .splitter { display: none; }
 .tasks tr[draggable="true"] td.id { cursor: grab; }
 
 /* Gestes (EF-74 à EF-77) */
@@ -432,6 +437,22 @@ body.dragging { user-select: none; cursor: grabbing; }
 .g-absence { position: absolute; top: 4px; bottom: 4px; background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .6; border-radius: 2px; }
 
 .rep-options fieldset .check { display: flex; align-items: center; gap: .3rem; }
+
+/* Mise en page de la vue principale (EF-108 à EF-111) */
+.splitter { background: var(--line); cursor: col-resize; touch-action: none; position: relative; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.splitter::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 36px; margin: -18px 0 0 -2px; border-radius: 2px; background: var(--muted); }
+.splitter:hover, .splitter:focus-visible { background: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+@media (pointer: coarse) { .planner { grid-template-columns: var(--list-w, minmax(520px, 56%)) 24px 1fr; } }
+.tasks.frz-1 :is(th, td):nth-child(1), .tasks.frz-2 :is(th, td):nth-child(-n+2) { position: sticky; left: 0; z-index: 1; background: var(--panel); }
+.tasks.frz-2 :is(th, td):nth-child(2) { left: var(--frz-w1, 60px); }
+.tasks.frz-1 :is(th, td):nth-child(1), .tasks.frz-2 :is(th, td):nth-child(2) { box-shadow: 2px 0 0 var(--line); }
+.tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
+.tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
+body.planner-full .planner { position: fixed; inset: 0; z-index: 4; max-height: none; min-height: 0; background: var(--bg); border-bottom: 0; }
+body.planner-full { overflow: hidden; }
+.full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.full-bar[hidden] { display: none; }
 
 </style>
 </head>
@@ -534,6 +555,14 @@ body.dragging { user-select: none; cursor: grabbing; }
       <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
       <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
       <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
+      <label for="freeze-cols" data-i18n="lay.freeze"></label>
+      <select id="freeze-cols" data-change="freezeCols">
+        <option value="0" data-i18n="lay.freeze.0"></option>
+        <option value="1" data-i18n="lay.freeze.1"></option>
+        <option value="2" data-i18n="lay.freeze.2"></option>
+      </select>
+      <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+      <button type="button" id="btn-full" data-click="toggleFull" aria-pressed="false" aria-keyshortcuts="Escape" data-i18n="lay.full"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>
     <div id="view-chips" class="chips"></div>
@@ -551,9 +580,15 @@ body.dragging { user-select: none; cursor: grabbing; }
         <tbody id="task-rows"></tbody>
       </table>
     </section>
+    <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="list" data-i18n-label="lay.splitter"></div>
     <section class="gantt" id="gantt" data-i18n-label="gantt.label" aria-label="Diagramme de Gantt" tabindex="0">
       <div class="gantt-inner" id="gantt-inner"></div>
     </section>
+  </div>
+  <div class="full-bar" id="full-bar" hidden>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
 </main>
@@ -2075,6 +2110,7 @@ const I18n = (() => {
     'err.depth': 'La hiérarchie est limitée à {max} niveaux.',
     'err.lastCategory': 'La dernière catégorie ne peut pas être supprimée.',
     // Fenêtres
+    'dlg.discardTitle': 'Fermer sans enregistrer ?', 'dlg.discardText': 'Les modifications saisies dans cette fenêtre seront perdues.', 'dlg.discard': 'Fermer sans enregistrer', 'dlg.keep': 'Continuer la saisie',
     'dlg.close': 'Fermer', 'dlg.cancel': 'Annuler', 'dlg.ok': 'Valider', 'dlg.confirm': 'Confirmer',
     'dlg.deleteTask': 'Supprimer la tâche {id} « {name} » ?',
     'dlg.deleteTaskDeps': { one: '{count} tâche perdra un prédécesseur.', other: '{count} tâches perdront un prédécesseur.' },
@@ -2217,7 +2253,9 @@ const I18n = (() => {
     'sel.grouped': { one: 'Récapitulative {id} créée avec {count} élément.', other: 'Récapitulative {id} créée avec {count} éléments.' }, 'sel.moved': '{id} placée avant {target}.',
     'view.showTags': 'Étiquettes', 'view.collapseAll': 'Tout replier', 'view.expandAll': 'Tout déplier', 'view.sort': 'Trier', 'view.listHide': 'Replier la liste', 'view.listShow': 'Afficher la liste',
     'sort.warn': "Les tâches seront rangées pour que chaque prédécesseur soit avant ses successeurs. L'ordre de la liste fixe la priorité du nivellement : le planning peut changer.", 'sort.done': 'Liste triée selon les dépendances.',
-    'col.resize': 'Largeur de la colonne {col} (flèches gauche et droite)',
+    'col.resize': 'Largeur de la colonne {col} (flèches gauche et droite ; Début pour rétablir)',
+    'lay.splitter': 'Largeur de la liste des tâches (flèches gauche et droite ; Début pour rétablir)', 'lay.freeze': 'Figer', 'lay.freeze.0': 'Aucune colonne', 'lay.freeze.1': "L'identifiant", 'lay.freeze.2': "L'identifiant et le nom",
+    'lay.colsReset': 'Colonnes par défaut', 'lay.colsResetDone': 'Largeurs de colonnes rétablies.', 'lay.full': 'Plein écran du Gantt', 'lay.fullExit': 'Quitter le plein écran', 'lay.fullOn': 'Plein écran du Gantt. Échap pour quitter.', 'lay.fullOff': 'Plein écran quitté.',
     'bulk.intro': { one: '{count} tâche ou jalon. Seuls les champs remplis sont appliqués.', other: '{count} tâches ou jalons. Seuls les champs remplis sont appliqués.' },
     'bulk.keep': '— ne pas changer —', 'bulk.keepShort': 'inchangé', 'bulk.resMode': 'Ressource', 'bulk.resAdd': 'Ajouter', 'bulk.resReplace': 'Remplacer toutes les ressources par', 'bulk.resRemove': 'Retirer',
     'bulk.tagAdd': 'Ajouter l\'étiquette', 'bulk.tagRemove': 'Retirer l\'étiquette', 'bulk.shift': 'Décaler les dates imposées de (jours ouvrés)', 'bulk.apply': 'Appliquer',
@@ -2391,6 +2429,7 @@ const I18n = (() => {
     'err.nameTaken': '{field}: the name {name} is already taken.', 'err.limit': 'Limit reached: at most {max} {what}. Delete an item to add one.',
     'err.realEndCleared': 'Progress is below 100%: the actual finish has been cleared.', 'err.depth': 'The hierarchy is limited to {max} levels.',
     'err.lastCategory': 'The last category cannot be deleted.',
+    'dlg.discardTitle': 'Close without saving?', 'dlg.discardText': 'The changes entered in this window will be lost.', 'dlg.discard': 'Close without saving', 'dlg.keep': 'Keep editing',
     'dlg.close': 'Close', 'dlg.cancel': 'Cancel', 'dlg.ok': 'OK', 'dlg.confirm': 'Confirm',
     'dlg.deleteTask': 'Delete task {id} “{name}”?',
     'dlg.deleteTaskDeps': { one: '{count} task will lose a predecessor.', other: '{count} tasks will lose a predecessor.' },
@@ -2494,7 +2533,9 @@ const I18n = (() => {
     'sel.grouped': { one: 'Summary task {id} created with {count} item.', other: 'Summary task {id} created with {count} items.' }, 'sel.moved': '{id} moved before {target}.',
     'view.showTags': 'Tags', 'view.collapseAll': 'Collapse all', 'view.expandAll': 'Expand all', 'view.sort': 'Sort', 'view.listHide': 'Hide the list', 'view.listShow': 'Show the list',
     'sort.warn': 'Tasks will be ordered so that each predecessor comes before its successors. The list order sets the levelling priority: the schedule may change.', 'sort.done': 'List sorted by dependencies.',
-    'col.resize': 'Width of column {col} (left and right arrows)',
+    'col.resize': 'Width of column {col} (left and right arrows; Home to reset)',
+    'lay.splitter': 'Width of the task list (left and right arrows; Home to reset)', 'lay.freeze': 'Freeze', 'lay.freeze.0': 'No column', 'lay.freeze.1': 'The identifier', 'lay.freeze.2': 'The identifier and the name',
+    'lay.colsReset': 'Default columns', 'lay.colsResetDone': 'Column widths reset.', 'lay.full': 'Full-screen Gantt', 'lay.fullExit': 'Exit full screen', 'lay.fullOn': 'Full-screen Gantt. Press Escape to exit.', 'lay.fullOff': 'Full screen closed.',
     'bulk.intro': { one: '{count} task or milestone. Only filled fields are applied.', other: '{count} tasks or milestones. Only filled fields are applied.' },
     'bulk.keep': '— no change —', 'bulk.keepShort': 'unchanged', 'bulk.resMode': 'Resource', 'bulk.resAdd': 'Add', 'bulk.resReplace': 'Replace all resources with', 'bulk.resRemove': 'Remove',
     'bulk.tagAdd': 'Add tag', 'bulk.tagRemove': 'Remove tag', 'bulk.shift': 'Shift fixed dates by (working days)', 'bulk.apply': 'Apply',
@@ -3691,9 +3732,10 @@ const Dialog = (() => {
    * @param {{label:string, value:string, kind?:string, focus?:boolean}[]} o.actions
    * @param {(value:string, dlg:HTMLDialogElement) => boolean|void} [o.onAction] renvoyer false garde la fenêtre ouverte
    * @param {string} [o.size] 'wide'
+   * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    */
-  function open({ title, body = [], actions = [], onAction, size }) {
+  function open({ title, body = [], actions = [], onAction, size, guard }) {
     const opener = document.activeElement;
     const id = 'dlg-' + (++seq);
     return new Promise(resolve => {
@@ -3701,8 +3743,9 @@ const Dialog = (() => {
         type: a.value === 'cancel' ? 'button' : 'submit', value: a.value, class: a.kind || '',
         data: { dlg: a.value }, autofocus: a.focus ? true : undefined,
       }, a.label));
+      const closeX = h('button', { type: 'button', class: 'dlg-x', aria: { label: I18n.t('dlg.close') }, data: { dlgx: '1' } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
       const form = h('form', { method: 'dialog', novalidate: true },
-        h('h2', { id: id + '-title', text: title }),
+        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }), closeX),
         h('div', { class: 'dialog-body' }, body),
         h('div', { class: 'actions' }, buttons));
       const dlg = h('dialog', { class: ['dialog', size], aria: { labelledby: id + '-title' } }, form);
@@ -3722,10 +3765,27 @@ const Dialog = (() => {
         finish(value);
       });
       for (const b of buttons) if (b.value === 'cancel') b.addEventListener('click', () => finish('cancel'));
-      dlg.addEventListener('cancel', ev => { ev.preventDefault(); finish('cancel'); });
+      // Fermeture demandée (croix ou Échap) : une fenêtre déclarée `guard` dont la saisie serait perdue demande
+      // confirmation ; les fenêtres à effet immédiat ou sans saisie se ferment sans question, et le bouton
+      // « Annuler » ferme toujours directement.
+      let dirty = false, asking = false;
+      form.addEventListener('input', () => { dirty = true; });
+      form.addEventListener('change', () => { dirty = true; });
+      const requestClose = async () => {
+        if (asking || done) return;
+        if (guard && (typeof guard === 'function' ? guard() : dirty)) {
+          asking = true;
+          const discard = await confirm(I18n.t('dlg.discardTitle'), [I18n.t('dlg.discardText')], I18n.t('dlg.discard'), true, I18n.t('dlg.keep'));
+          asking = false;
+          if (!discard) { if (dlg.isConnected) { const f = dlg.querySelector('input, select, textarea') || closeX; f.focus(); } return; }
+        }
+        finish('cancel');
+      };
+      closeX.addEventListener('click', requestClose);
+      dlg.addEventListener('cancel', ev => { ev.preventDefault(); requestClose(); });
       document.body.append(dlg);
       dlg.showModal();
-      const first = dlg.querySelector('[autofocus]') || dlg.querySelector('input, select, textarea, button');
+      const first = dlg.querySelector('[autofocus]') || dlg.querySelector('input, select, textarea, button:not(.dlg-x)') || closeX;
       if (first) first.focus();
     });
   }
@@ -3736,10 +3796,10 @@ const Dialog = (() => {
   }
 
   /** Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé. */
-  async function confirm(title, lines, confirmLabel, danger = true) {
+  async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({
       title, body: lines.filter(Boolean).map(text => h('p', { text })),
-      actions: [{ label: I18n.t('dlg.cancel'), value: 'cancel', focus: true }, { label: confirmLabel, value: 'ok', kind: danger ? 'danger' : 'primary' }],
+      actions: [{ label: cancelLabel || I18n.t('dlg.cancel'), value: 'cancel', focus: true }, { label: confirmLabel, value: 'ok', kind: danger ? 'danger' : 'primary' }],
     });
     return v === 'ok';
   }
@@ -4351,6 +4411,7 @@ function renderAll() {
   renderListToggle();
   renderList(items, fl);
   renderGantt(items, fl);
+  refreshLayout();
   renderLegend();
   Tabs.paint();
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
@@ -5247,7 +5308,7 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 120], name: [120, 400], dur: [50, 140], deps: [60, 300], res: [80, 300], status: [70, 200] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500] };
 App.colWidths = {};
 function applyColWidths() {
   const table = $('tasks-table');
@@ -5263,6 +5324,7 @@ function applyColWidths() {
     const w = Math.round(App.colWidths[k] || th.getBoundingClientRect().width);
     sep.setAttribute('aria-valuenow', String(Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], w))));
   }
+  if (typeof applyFreeze === 'function') applyFreeze();
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
@@ -5275,10 +5337,12 @@ function initColumns() {
     th.append(sep);
     const set = w => { App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
     sep.addEventListener('keydown', ev => {
+      if (ev.key === 'Home') { ev.preventDefault(); delete App.colWidths[k]; applyColWidths(); return; }
       if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
       ev.preventDefault();
       set((App.colWidths[k] || th.getBoundingClientRect().width) + (ev.key === 'ArrowRight' ? 10 : -10));
     });
+    sep.addEventListener('dblclick', () => { delete App.colWidths[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
     sep.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       sep.setPointerCapture(ev.pointerId);
@@ -5411,7 +5475,7 @@ function bulkWindow() {
     fld('bk-nb', t('f.notBefore'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })),
     fld('bk-dl', t('f.deadline'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })));
   return Dialog.open({
-    title: t('sel.bulk'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
+    title: t('sel.bulk'), body: [body], guard: true, actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
       const err = msg => { const e = $('bulk-err'); e.textContent = msg; e.hidden = false; announce(msg); return false; };
@@ -5659,6 +5723,113 @@ function initGestures() {
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && Gesture.g) { ev.preventDefault(); ev.stopPropagation(); endGesture(true); } }, true);
   // Un clic qui termine un geste ne sélectionne pas la tâche.
   document.addEventListener('click', ev => { if (Gesture.suppressClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+}
+
+// ── js/ui/66-layout.js ──
+/* Mise en page de la vue principale (EF-108 à EF-111) : séparateur réglable entre la liste et le Gantt,
+ * colonnes figées, plein écran du Gantt. Aucune de ces réglages n'est enregistrée : ils valent pour la
+ * session (stockage local seulement sur geste explicite, SECURITY.md). Tout se fait aussi au clavier. */
+const LIST_MIN = 200, GANTT_MIN = 200, SPLIT_STEP = 20;
+App.listW = null;   // largeur imposée de la liste en px ; null = automatique
+App.freeze = 0;     // 0, 1 (identifiant) ou 2 (identifiant et nom)
+App.full = false;   // plein écran du Gantt
+
+function listBounds() {
+  const total = $('planner').clientWidth - 10;
+  return { min: LIST_MIN, max: Math.max(LIST_MIN, total - GANTT_MIN) };
+}
+
+function applyListWidth() {
+  const planner = $('planner');
+  if (App.listW == null) planner.style.removeProperty('--list-w'); else planner.style.setProperty('--list-w', App.listW + 'px');
+}
+
+/** Valeur annoncée par le séparateur : lue à la demande (focus, geste) pour ne pas forcer la mise en page à chaque rendu. */
+function updateSplitterValue() {
+  const sep = $('splitter');
+  const b = listBounds();
+  const w = Math.round($('list').getBoundingClientRect().width);
+  sep.setAttribute('aria-valuemin', String(b.min));
+  sep.setAttribute('aria-valuemax', String(b.max));
+  sep.setAttribute('aria-valuenow', String(Math.max(b.min, Math.min(b.max, w))));
+}
+
+function setListWidth(w) {
+  const b = listBounds();
+  App.listW = w == null ? null : Math.max(b.min, Math.min(b.max, Math.round(w)));
+  applyListWidth();
+  updateSplitterValue();
+}
+
+function applyFreeze() {
+  const table = $('tasks-table');
+  table.classList.toggle('frz-1', App.freeze === 1);
+  table.classList.toggle('frz-2', App.freeze === 2);
+  if (App.freeze === 2) {
+    const first = table.querySelector('thead th');
+    if (first) table.style.setProperty('--frz-w1', Math.round(first.getBoundingClientRect().width) + 'px');
+  } else table.style.removeProperty('--frz-w1');
+  $('freeze-cols').value = String(App.freeze);
+}
+
+/** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
+function refreshLayout() {
+  applyListWidth();
+  applyFreeze();
+}
+
+action('freezeCols', (arg, el) => { App.freeze = Number(el.value) || 0; applyFreeze(); });
+action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze(); announce(t('lay.colsResetDone')); });
+
+const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar', 'legend'];
+function setFull(on) {
+  if (App.full === on) return;
+  App.full = on;
+  document.body.classList.toggle('planner-full', on);
+  for (const id of FULL_LOCKED) $(id).inert = on;
+  document.querySelector('header.topbar').inert = on;
+  $('full-bar').hidden = !on;
+  const btn = $('btn-full');
+  btn.setAttribute('aria-pressed', String(on));
+  announce(t(on ? 'lay.fullOn' : 'lay.fullOff'));
+  refreshLayout();
+  updateSplitterValue();
+  (on ? $('btn-full-exit') : btn).focus();
+}
+action('toggleFull', () => setFull(!App.full));
+
+function initLayout() {
+  const sep = $('splitter');
+  sep.addEventListener('keydown', ev => {
+    const cur = Math.round($('list').getBoundingClientRect().width);
+    const step = ev.shiftKey ? SPLIT_STEP * 5 : SPLIT_STEP;
+    if (ev.key === 'ArrowLeft') setListWidth(cur - step);
+    else if (ev.key === 'ArrowRight') setListWidth(cur + step);
+    else if (ev.key === 'Home') setListWidth(null);
+    else return;
+    ev.preventDefault();
+  });
+  sep.addEventListener('dblclick', () => setListWidth(null));
+  sep.addEventListener('focus', updateSplitterValue);
+  sep.addEventListener('pointerdown', ev => {
+    if (ev.button !== 0 && ev.pointerType === 'mouse') return;
+    ev.preventDefault();
+    sep.setPointerCapture(ev.pointerId);
+    const x0 = ev.clientX, w0 = $('list').getBoundingClientRect().width;
+    const move = e => setListWidth(w0 + e.clientX - x0);
+    const up = () => { sep.removeEventListener('pointermove', move); sep.removeEventListener('pointerup', up); sep.removeEventListener('pointercancel', up); };
+    sep.addEventListener('pointermove', move);
+    sep.addEventListener('pointerup', up);
+    sep.addEventListener('pointercancel', up);
+  });
+  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
+      ev.preventDefault(); setFull(false);
+    }
+  });
+  refreshLayout();
+  updateSplitterValue();
 }
 
 // ── js/ui/70-windows.js ──
@@ -6215,6 +6386,7 @@ function calendarWindow() {
   paintCalendar(body);
   return Dialog.open({
     title: t('cal.title'), body: [body], size: 'wide',
+    guard: () => JSON.stringify(CalWin.draft) !== JSON.stringify(App.project.calendar),
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -8158,6 +8330,7 @@ function init() {
   initRowDrag();
   initListKeys();
   initGestures();
+  initLayout();
   initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   Tabs.init();

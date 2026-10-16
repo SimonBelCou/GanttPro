@@ -35,7 +35,7 @@ function bulkWindow() {
     fld('bk-nb', t('f.notBefore'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })),
     fld('bk-dl', t('f.deadline'), h('input', { type: 'date', min: '1970-01-01', max: '2199-12-31' })));
   return Dialog.open({
-    title: t('sel.bulk'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
+    title: t('sel.bulk'), body: [body], guard: true, actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('bulk.apply'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
       const err = msg => { const e = $('bulk-err'); e.textContent = msg; e.hidden = false; announce(msg); return false; };

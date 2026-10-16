@@ -143,6 +143,7 @@ function init() {
   initRowDrag();
   initListKeys();
   initGestures();
+  initLayout();
   initClipboard();
   loadProject(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
   Tabs.init();

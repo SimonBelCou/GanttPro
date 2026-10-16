@@ -77,8 +77,8 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 /* Planning : liste + grille, défilement vertical commun */
 
-.planner { display: grid; grid-template-columns: minmax(520px, 56%) 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
-.list { background: var(--panel); border-right: 1px solid var(--line); overflow-x: auto; }
+.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
+.list { background: var(--panel); overflow-x: auto; }
 table.tasks { border-collapse: collapse; width: 100%; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
@@ -190,6 +190,9 @@ ul.rows input[type="number"] { width: 5.5rem; }
 dialog.dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); padding: 1.2rem; width: min(520px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; }
 dialog.dialog.wide { width: min(900px, calc(100vw - 2rem)); }
 dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.dialog-head h2 { margin: 0 0 .5rem; flex: 1 1 auto; }
+button.dlg-x { flex: 0 0 auto; min-width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; }
 .dialog-body p { margin: .3rem 0; }
 .dialog-body .strong { font-weight: 700; }
 table.manage { border-collapse: collapse; width: 100%; margin-bottom: .7rem; }
@@ -219,7 +222,8 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 /* Écrans étroits (4.4) */
 @media (max-width: 900px) {
   .planner { grid-template-columns: 1fr; max-height: none; }
-  .list { border-right: 0; overflow-x: auto; }
+  .splitter { display: none; }
+  .list { overflow-x: auto; }
   .editor { width: 100vw; }
 }
 
@@ -368,11 +372,12 @@ ul.comments li { align-items: flex-start; }
 .selbar { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; padding: .4rem 1rem; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); border-bottom: 1px solid var(--accent); }
 .tasks thead th { position: sticky; }
 .tasks th { position: relative; }
-.col-resize { position: absolute; right: 0; top: 4px; bottom: 4px; width: 8px; cursor: col-resize; border-right: 2px solid var(--line); }
+.col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
 table.tasks.fixed { table-layout: fixed; }
 table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
-.planner.list-collapsed { grid-template-columns: 1fr; }
+.planner.list-collapsed { grid-template-columns: 0 0 1fr; }
+.planner.list-collapsed .splitter { display: none; }
 .tasks tr[draggable="true"] td.id { cursor: grab; }
 
 /* Gestes (EF-74 à EF-77) */
@@ -418,3 +423,19 @@ body.dragging { user-select: none; cursor: grabbing; }
 .g-absence { position: absolute; top: 4px; bottom: 4px; background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .6; border-radius: 2px; }
 
 .rep-options fieldset .check { display: flex; align-items: center; gap: .3rem; }
+
+/* Mise en page de la vue principale (EF-108 à EF-111) */
+.splitter { background: var(--line); cursor: col-resize; touch-action: none; position: relative; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.splitter::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 36px; margin: -18px 0 0 -2px; border-radius: 2px; background: var(--muted); }
+.splitter:hover, .splitter:focus-visible { background: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+@media (pointer: coarse) { .planner { grid-template-columns: var(--list-w, minmax(520px, 56%)) 24px 1fr; } }
+.tasks.frz-1 :is(th, td):nth-child(1), .tasks.frz-2 :is(th, td):nth-child(-n+2) { position: sticky; left: 0; z-index: 1; background: var(--panel); }
+.tasks.frz-2 :is(th, td):nth-child(2) { left: var(--frz-w1, 60px); }
+.tasks.frz-1 :is(th, td):nth-child(1), .tasks.frz-2 :is(th, td):nth-child(2) { box-shadow: 2px 0 0 var(--line); }
+.tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
+.tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
+body.planner-full .planner { position: fixed; inset: 0; z-index: 4; max-height: none; min-height: 0; background: var(--bg); border-bottom: 0; }
+body.planner-full { overflow: hidden; }
+.full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.full-bar[hidden] { display: none; }

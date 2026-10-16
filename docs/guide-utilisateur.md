@@ -23,7 +23,7 @@ GanttPro planifie un projet en jours ouvrés, calcule les dates, le chemin criti
 
 ![Écran principal avec le projet d'exemple Atlas : barre du haut, chiffres, alertes, liste et grille](img/02-principal.png)
 
-Toutes les fenêtres (ressources, calendrier, tableau de bord…) se ferment par Échap ou par leur bouton, et rendent le focus au bouton qui les a ouvertes. Une modification de données s'annule par « Annuler » ou Ctrl + Z, jusqu'à 50 pas en arrière.
+Toutes les fenêtres (ressources, calendrier, tableau de bord…) se ferment par Échap, par la croix « × » en haut à droite ou par leur bouton, et rendent le focus au bouton qui les a ouvertes. Si vous avez commencé une saisie qui serait perdue (modification en masse, calendrier modifié), la croix et Échap demandent d'abord « Fermer sans enregistrer ? » ; « Continuer la saisie » est proposé par défaut, et le bouton « Annuler » ferme directement. Une modification de données s'annule par « Annuler » ou Ctrl + Z, jusqu'à 50 pas en arrière.
 
 ## 2. Créer et régler le projet
 
@@ -185,7 +185,12 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 
 - Zoom de 20 à 300 % : boutons − et +, ↺ pour revenir à 100 %, touches + et −, ou Ctrl + molette sur la grille. Au-dessous de 60 %, la grille passe en vue mois.
 - **Liens : ON / OFF** affiche ou masque les flèches.
-- **Replier la liste** donne toute la largeur à la grille ; les colonnes de la liste se règlent en tirant leur bord, ou au clavier avec les flèches sur la poignée.
+- **Replier la liste** donne toute la largeur à la grille.
+- **Largeur de la liste.** Tirez la barre verticale qui sépare la liste du Gantt (au doigt, elle est plus large), ou placez-vous dessus et utilisez les flèches gauche et droite (Maj : par pas de 100 px). Un double-clic, ou la touche Début, rétablit la largeur automatique. La liste garde au moins 200 px, le Gantt aussi.
+- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit cette colonne ; **Colonnes par défaut** rétablit toutes les colonnes.
+- **Figer des colonnes.** Le choix **Figer** de la barre de recherche garde à l'écran l'identifiant, ou l'identifiant et le nom, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
+- **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière et le bouton **Quitter le plein écran** (ou Échap). Le reste de la page est désactivé pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
+- Ces réglages valent pour la session : ils ne sont pas enregistrés dans le projet ni dans le navigateur.
 
 ### Gestes
 
@@ -324,6 +329,7 @@ Options : **Exporter sans noms de personnes** remplace les ressources par « Res
 - Pour un projet, un aperçu montre nom, nombre de tâches, ressources, catégories, baselines, début et avancement moyen. Vous l'ouvrez dans un nouvel onglet, ou il remplace le projet courant (avec une confirmation de plus si celui-ci a des modifications non enregistrées).
 - Un fichier invalide est refusé en entier, avec la raison (par exemple « Tâche n° 12 : identifiant invalide ») : le projet ouvert reste intact. Taille maximale : 5 Mo.
 - Un **tableur** passe par un assistant en trois étapes : la feuille et la ligne d'en-tête ; l'association des colonnes, proposée automatiquement ; l'aperçu des lignes valides et des erreurs ligne par ligne. Vous choisissez d'ajouter les tâches au projet ou de les remplacer. Une durée s'écrit « 5 », « 5j » ou « 5 j » ; des prédécesseurs « A; B DD+2; C FF-1 » ; des ressources « Alice 50 %; Bob ». Une colonne « N° » sert de référence aux liens s'il n'y a pas d'identifiant.
+- Pour **faire créer ou modifier un projet par une IA** (à partir de notes ou après une réunion), le [guide « IA »](guide-ia-json.md) fournit deux prompts prêts à l'emploi, le format attendu et les erreurs fréquentes. Le fichier produit passe par le même contrôle qu'un import : s'il est incorrect, il est refusé en entier avec la raison.
 - Depuis **MS Project**, les durées en heures sont converties à 8 heures par jour, arrondies au jour supérieur ; ce qui n'a pas d'équivalent (coûts, heures de travail, calendriers de ressources) est listé puis ignoré.
 
 ## 13. Plusieurs projets : onglets, bibliothèque, modèles, sauvegarde automatique
@@ -355,7 +361,7 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | ↑ / ↓ | Changer de tâche dans la liste |
 | Maj + ↑ / ↓ | Étendre la sélection |
 | Entrée | Ouvrir l'édition de la tâche (dans l'édition : enregistrer) |
-| Échap | Fermer la fenêtre, l'édition ou l'infobulle ; abandonner un geste ; vider la recherche |
+| Échap | Fermer la fenêtre, l'édition ou l'infobulle ; abandonner un geste ; vider la recherche ; quitter le plein écran du Gantt |
 | Suppr | Supprimer la sélection, ou la ligne qui a le focus s'il n'y a aucune sélection (avec confirmation qui nomme les tâches) |
 | Ctrl + clic, Maj + clic | Sélection multiple |
 | Ctrl + A | Sélectionner toutes les lignes affichées |

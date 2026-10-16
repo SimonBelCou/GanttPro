@@ -108,6 +108,14 @@
       <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
       <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
       <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
+      <label for="freeze-cols" data-i18n="lay.freeze"></label>
+      <select id="freeze-cols" data-change="freezeCols">
+        <option value="0" data-i18n="lay.freeze.0"></option>
+        <option value="1" data-i18n="lay.freeze.1"></option>
+        <option value="2" data-i18n="lay.freeze.2"></option>
+      </select>
+      <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+      <button type="button" id="btn-full" data-click="toggleFull" aria-pressed="false" aria-keyshortcuts="Escape" data-i18n="lay.full"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>
     <div id="view-chips" class="chips"></div>
@@ -125,9 +133,15 @@
         <tbody id="task-rows"></tbody>
       </table>
     </section>
+    <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="list" data-i18n-label="lay.splitter"></div>
     <section class="gantt" id="gantt" data-i18n-label="gantt.label" aria-label="Diagramme de Gantt" tabindex="0">
       <div class="gantt-inner" id="gantt-inner"></div>
     </section>
+  </div>
+  <div class="full-bar" id="full-bar" hidden>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
 </main>
