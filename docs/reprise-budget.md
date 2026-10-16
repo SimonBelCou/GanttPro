@@ -5,10 +5,10 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
 ## 1. Où en est-on (16 octobre 2026)
 
-- Dépôt `SimonBelCou/GanttPro`, branche de travail `arbitrages-v3`, PR n° 7 ouverte vers `main`.
-  La fusion de la PR est la décision de l'utilisateur, pas la vôtre.
-- Dernier commit : « Ergonomie de la vue principale » (EF-108 à EF-111). Tests au vert :
-  moteur 79, `test_v3` 179/179, espace 52/52, recette 87/87.
+- Dépôt `SimonBelCou/GanttPro`. Toutes les branches de travail sont fusionnées dans `main` (PR n° 7, 8 et 9).
+  La fusion d'une PR reste la décision de l'utilisateur, pas la vôtre.
+- Dernier état de `main` (commit 3700477, 16 octobre) : ergonomie de la vue principale (EF-108 à EF-111) incluse.
+  Tests au vert : moteur 79, `test_v3` 179/179, espace 52/52, recette 87/87.
 - Le budget est **cadré, pas développé**. Aucun code n'a été écrit pour lui.
 - Cadrage : Claude Doc « GanttPro — Cadrage de la gestion du budget »
   (https://claude.ai/code/artifact/5a393a3b-48d1-41d0-8751-f884c55e284a), sections 1 à 8.
@@ -37,6 +37,22 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 | Historique | Le budget est capturé avec la baseline (budgets des tâches, provision, BAC). |
 | Montants | Entiers en centimes, plafonds à fixer. |
 | Surpromesse | Rien à ajouter (mention dans le guide : l'outil ne remplace pas une comptabilité projet). |
+| Colonne « Budget » dans la liste | Ajoutée dès l'étape A, **non masquable** au départ (accepté : elle alourdit la liste pour tous). Le **choix des colonnes et leur ordre** sera proposé ensuite, et rendra la colonne facultative. |
+| Courbe en S des coûts | Dans l'**onglet « Budget »** du tableau de bord, pas superposée à la courbe d'avancement. Accompagnée d'un tableau de valeurs. |
+| Masquer les montants à l'écran | **Oui** : interrupteur dans la barre d'outils. |
+
+### Interface retenue (16 octobre 2026)
+
+- Fiche de tâche : groupe « Budget » (budget, coût réel cumulé) ; récapitulative = somme des enfants en lecture seule.
+- Réglages du projet : devise (une par projet) et provision globale.
+- Modification en masse : budget ajouté aux champs modifiables.
+- Tableau de bord : onglet « Budget » (BAC, coût réel, reste, tableau par catégorie, courbe en S des coûts), visible
+  seulement si au moins un montant est saisi.
+- Rapport d'état : bloc « Budget » activable ; baselines : colonne « BAC » dans la fenêtre des baselines.
+- Export, impression, rapport, copie : case « Inclure les montants », **décochée par défaut**.
+- À préciser à la rédaction des exigences : le masquage à l'écran s'applique-t-il aussi à la fiche de tâche, aux
+  infobulles, au tableau de valeurs et au rapport ? Une valeur masquée doit rester annoncée comme « masquée »
+  aux lecteurs d'écran (pas un blanc silencieux).
 
 **Non tranché, valeurs recommandées retenues par défaut** (à confirmer au premier échange utile) :
 étapes A puis B ; coût réel cumulé par tâche ; valeur acquise (EV) proportionnelle à l'avancement ;
@@ -79,6 +95,6 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 ## 7. Autres restes à faire (hors budget)
 
 - Fiche de recette manuelle EX-16 (Firefox, Safari, tablette) et plan d'audit RGAA EX-05 dans `docs/`.
-- Mémorisation facultative de la mise en page, choix et ordre des colonnes, hauteur réglable de la zone.
+- Mémorisation facultative de la mise en page, **choix et ordre des colonnes** (à proposer après l'étape A : il
+  rendra la colonne « Budget » facultative), hauteur réglable de la zone.
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.
-- PR n° 7 en attente de relecture par l'utilisateur.
