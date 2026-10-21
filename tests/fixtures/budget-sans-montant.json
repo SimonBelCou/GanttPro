@@ -1,0 +1,33 @@
+{
+  "format": 3,
+  "name": "Projet fictif sans montant",
+  "projectStart": "2025-03-03",
+  "provision": 0,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Tache un",
+      "dur": 3
+    },
+    {
+      "id": "T2",
+      "name": "Tache deux",
+      "dur": 2,
+      "deps": [
+        "T1"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}

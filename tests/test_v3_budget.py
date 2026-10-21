@@ -271,6 +271,38 @@ def main():
         check('anglais : bouton « Hide amounts »', 'Hide amounts' in pg.inner_text('#btn-mask'))
         pg.click('#btn-lang')
 
+        # ── Fichiers d'essai de la recette manuelle (docs/recette-manuelle.md) ────────────────────
+        fx = Path(__file__).resolve().parent / 'fixtures'
+        def load_fx(name):
+            pg.set_input_files('#file-input', str(fx / name))
+            pg.wait_for_selector('dialog[open]')
+            for _ in range(2):
+                b = pg.locator('dialog[open]').last.locator('button:has-text("Remplacer le projet ouvert")')
+                if b.count():
+                    b.first.click()
+                    pg.wait_for_timeout(120)
+            pg.wait_for_timeout(150)
+        load_fx('budget-base.json')
+        check('recette : budget-base.json', cell('T1') == '100,00 € / 90,00 €' and cell('T2') == '300,00 € / 100,00 €' and cell('J') == '', (cell('T1'), cell('T2')))
+        load_fx('budget-montants-geants.json')
+        check('recette : montants géants en forme compacte', [cell(i) for i in ['T1', 'T2', 'T3', 'T4', 'T5']] ==
+              ['999 999,99 € / 0,00 €', '1 M € / 1,23 M €', '1,23 M € / 0,00 €', '2,5 Md € / 0,00 €', '50 Md € / 50 Md €'], [cell(i) for i in ['T1', 'T2', 'T3', 'T4', 'T5']])
+        load_fx('budget-avec-baseline.json')
+        pg.click('button[data-click="openBaselines"]')
+        bl = sp(pg.inner_text('#bl-win'))
+        check('recette : budget-avec-baseline.json (BAC 400,00 et 450,00)', '400,00 €' in bl and '450,00 €' in bl, bl)
+        esc()
+        load_fx('budget-sans-montant.json')
+        pg.click('button[data-click="openDashboard"]')
+        check('recette : budget-sans-montant.json sans onglet Budget', pg.locator('#dtab-budget').count() == 0)
+        esc()
+        for name, needle in [('refus-montant-negatif.json', 'budget'), ('refus-montant-trop-grand.json', 'budget'), ('refus-jalon-avec-montant.json', 'jalon')]:
+            pg.set_input_files('#file-input', str(fx / name)); pg.wait_for_selector('dialog[open]')
+            msg = sp(pg.locator('dialog[open]').last.inner_text())
+            check(f'recette : {name} refusé', needle in msg and 'Tâche n° 1' in msg, msg)
+            while pg.locator('dialog[open]').count():
+                esc()
+
         check('aucune erreur JavaScript ni violation CSP', not errors, errors)
         browser.close()
 

@@ -1,0 +1,26 @@
+{
+  "format": 3,
+  "name": "Projet fictif budget",
+  "projectStart": "2025-03-03",
+  "provision": 4000,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "A",
+      "name": "Tache",
+      "dur": 2,
+      "budget": -500
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}
