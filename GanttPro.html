@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/GdqMNlNXTPN4DfaxRO0c7PUinsvHKJLhonGCzqsxbU='; style-src 'sha256-L6S/N0p3cBxbV+R+1Vlj0RcUYzp8cSa/0zxMCleMqbU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K2hwhK9HSAzEIOaEAc0vVirBtqelCHZhzksVWUCb/QQ='; style-src 'sha256-L6S/N0p3cBxbV+R+1Vlj0RcUYzp8cSa/0zxMCleMqbU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -1469,6 +1469,9 @@ const Model = (() => {
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
     comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
+    // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
+    amount: 5000000000000, currency: 5,
   });
   const ID_RE = /^[A-Z0-9._-]{1,12}$/;
   const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -1506,6 +1509,13 @@ const Model = (() => {
         if (!present(k)) return def;
         const v = src[k];
         if (!Number.isInteger(v) || v < min || v > max) err(k, 'rule.int', { min, max });
+        return v;
+      },
+      /** Montant en centimes (RG-35) : entier de 0 à LIMITS.amount, jamais un nombre à virgule. */
+      amount(k) {
+        if (!present(k)) return 0;
+        const v = src[k];
+        if (!Number.isSafeInteger(v) || v < 0 || v > LIMITS.amount) err(k, 'rule.amount', { min: 0, max: LIMITS.amount });
         return v;
       },
       num(k, { def = 0 } = {}) {
@@ -1620,7 +1630,7 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -1642,7 +1652,11 @@ const Model = (() => {
       // Lissage par défaut : l'utilisateur arbitre lui-même les surcharges (A.3). Un fichier 2.3
       // (sans champ format) garde le nivellement automatique pour retrouver ses dates d'origine.
       leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], has(raw, 'format') ? 'smooth' : 'level'),
+      // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
+      currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
+      provision: P.amount('provision'),
     };
+    if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
     // Ressources et catégories : identités internes neuves ; les noms doivent être uniques (casse ignorée).
@@ -1699,7 +1713,7 @@ const Model = (() => {
       const where = { obj: 'task', n: i + 1 };
       if (!isObj(t)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
       const f = reader(t, where, ['id', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'assign', 'cat', 'pct', 'forcedStart', 'notBefore',
-        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed'], stats);
+        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed', 'budget', 'actual'], stats);
       if (typeof t.id !== 'string' || !ID_RE.test(t.id)) fail('imp.badId', { n: i + 1 });
       if (ids.has(t.id)) fail('imp.dupId', { id: t.id });
       ids.add(t.id);
@@ -1743,6 +1757,10 @@ const Model = (() => {
         return { res: r.id, units: a.units };
       });
 
+      // Un jalon et une récapitulative n'ont aucun montant propre (RG-36) : un montant non nul est refusé.
+      const budget = f.amount('budget'), actual = f.amount('actual');
+      if (!isTask && (budget || actual)) fail('imp.noAmount', { n: i + 1, id: t.id });
+
       const catName = f.text('cat', { max: 100, trim: true });
       const cat = catName ? resolveCat(catName).id : '';
 
@@ -1750,7 +1768,7 @@ const Model = (() => {
         id: t.id, name: f.text('name', { min: 1, max: 200, trim: true }), type, parent: f.text('parent', { max: 12 }), dur, deps, assign, cat, pct,
         forcedStart: f.date('forcedStart'), notBefore: f.date('notBefore'), deadline: f.date('deadline'),
         realStart: f.date('realStart'), realEnd: f.date('realEnd'),
-        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false,
+        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false, budget, actual,
       };
       if (task.realStart && task.realEnd && task.realEnd < task.realStart) fail('imp.realOrder', { n: i + 1 });
       if (task.realEnd && task.pct < 100 && type !== 'summary') fail('imp.realEndPct', { n: i + 1 });
@@ -1804,17 +1822,17 @@ const Model = (() => {
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
-        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [],
+        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
-        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end'], stats);
+        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end', 'budget'], stats);
         if (typeof bt.id !== 'string' || !ID_RE.test(bt.id)) fail('imp.badId', { n: j + 1 });
         const start = g.date('start', { required: true }), end = g.date('end', { required: true });
         if (end < start) fail('imp.rangeOrder', { ...w, field: 'end' });
@@ -1823,7 +1841,7 @@ const Model = (() => {
           if (typeof did !== 'string' || !ID_RE.test(did)) fail('imp.field', { ...w, field: 'deps', rule: 'rule.link' });
           return did;
         });
-        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end };
+        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end, budget: g.amount('budget') };
       });
       return bl;
     });
@@ -1863,7 +1881,7 @@ const Model = (() => {
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
 
   /** Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51). */
-  function serialize(project, { anonymize = false, withVersions = true } = {}) {
+  function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
@@ -1872,6 +1890,8 @@ const Model = (() => {
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
       leveling: project.leveling || 'level',
+      currency: project.currency || '€',
+      provision: project.provision || 0,
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1880,16 +1900,31 @@ const Model = (() => {
         cat: catName(t.cat), pct: t.pct,
         forcedStart: t.forcedStart, notBefore: t.notBefore, deadline: t.deadline, realStart: t.realStart, realEnd: t.realEnd,
         tags: t.tags.slice(), notes: t.notes, comments: t.comments.map(c => ({ ts: c.ts, text: c.text })), collapsed: t.collapsed,
+        // Un jalon et une récapitulative n'ont aucun montant propre (RG-36).
+        ...(t.type === 'task' ? { budget: t.budget || 0, actual: t.actual || 0 } : {}),
       })),
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
-      baselines: project.baselines.map(b => ({ ...b, tasks: b.tasks.map(bt => ({ ...bt, deps: bt.deps.slice() })) })),
+      baselines: project.baselines.map(b => ({ ...b, provision: b.provision || 0, tasks: b.tasks.map(bt => ({ ...bt, budget: bt.budget || 0, deps: bt.deps.slice() })) })),
     };
     // Les versions contiennent des noms : elles ne sont pas exportées dans un fichier anonymisé.
     if (withVersions) file.versions = anonymize ? [] : (project.versions || []).map(v => ({ id: v.id, label: v.label, ts: v.ts, state: v.state }));
+    // Export « sans montants » (EF-124) : ni budget, ni coût réel, ni provision, y compris dans les baselines et
+    // dans chaque version ; la devise reste.
+    if (!amounts) stripAmounts(file);
+    return file;
+  }
+
+  /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
+  function stripAmounts(file) {
+    delete file.provision;
+    for (const t of file.tasks) { delete t.budget; delete t.actual; }
+    for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
+    if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
   }
 
@@ -1909,8 +1944,9 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
+      currency: '€', provision: 0,
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
-        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
+        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
       categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
@@ -1920,7 +1956,183 @@ const Model = (() => {
   /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
   const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
 
-  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
+})();
+
+// ── js/core/42-budget.js ──
+/* Budget, étape A (EF-112 à EF-127, RG-35 à RG-43).
+ *
+ * Tout montant est un ENTIER de centimes (RG-35) : aucune somme ni différence n'est faite en nombres à virgule.
+ * Avec au plus 1 000 tâches de 50 000 000 000,00 chacune plus la provision, un total reste sous 5,01e15, donc
+ * sous la limite des entiers exacts du moteur. Moteur sans DOM : l'affichage reçoit la langue en paramètre. */
+const Budget = (() => {
+  const NBSP = ' ', NNBSP = ' ', MINUS = '−';
+  const MAX = Model.LIMITS.amount;
+  const COMPACT_FROM = 100000000; // 1 000 000,00 en centimes (RG-43)
+
+  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0);
+
+  /**
+   * Saisie d'un montant en unités (EF-112) : virgule ou point décimal, espaces ignorés, au plus deux décimales.
+   * Les espaces et le symbole de la devise éventuel sont ignorés (RG-42) ; une saisie vide vaut 0.
+   * @returns {{ok:true, cents:number}|{ok:false, reason:'format'|'negative'|'decimals'|'max'}}
+   */
+  function parse(text, symbol = '') {
+    let s = String(text == null ? '' : text);
+    if (symbol) s = s.split(symbol).join('');
+    s = s.replace(/[\s  ]/g, '');
+    if (s === '') return { ok: true, cents: 0 };
+    if (s[0] === '-' || s[0] === '−') return /^[-−]\d+([.,]\d*)?$/.test(s) ? { ok: false, reason: 'negative' } : { ok: false, reason: 'format' };
+    const m = /^(\d+)(?:([.,])(\d*))?$/.exec(s);
+    if (!m) return { ok: false, reason: 'format' };
+    const frac = m[3] || '';
+    if (frac.length > 2) return { ok: false, reason: 'decimals' };
+    const intPart = m[1].replace(/^0+(?=\d)/, '');
+    if (intPart.length > 12) return { ok: false, reason: 'max' };
+    const cents = Number(intPart) * 100 + Number(frac.padEnd(2, '0'));
+    if (cents > MAX) return { ok: false, reason: 'max' };
+    return { ok: true, cents };
+  }
+
+  /** Texte d'un champ de saisie (sans groupement, avec le séparateur de la langue) : 123450 → « 1234,5 » (fr). */
+  function toInput(cents, lang) {
+    const c = amt(cents);
+    const frac = String(c % 100).padStart(2, '0').replace(/0+$/, '');
+    const sep = lang === 'fr' ? ',' : '.';
+    return Math.floor(c / 100) + (frac ? sep + frac : '');
+  }
+
+  const groupInt = (n, lang) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? NNBSP : ',');
+
+  /** Place le symbole de la devise : après le montant en français (« 1 234,56 € »), avant en anglais (« €1,234.56 »). */
+  function withSymbol(body, symbol, lang, negative) {
+    const sign = negative ? MINUS : '';
+    if (!symbol) return sign + body;
+    return lang === 'fr' ? `${sign}${body}${NBSP}${symbol}` : `${sign}${symbol}${body}`;
+  }
+
+  /** Montant complet : « 1 234,56 € » (fr) / « €1,234.56 » (en). Accepte une valeur négative (reste, écart). */
+  function format(cents, { lang = 'fr', symbol = '' } = {}) {
+    const neg = cents < 0, c = Math.abs(cents);
+    const body = groupInt(Math.floor(c / 100), lang) + (lang === 'fr' ? ',' : '.') + String(c % 100).padStart(2, '0');
+    return withSymbol(body, symbol, lang, neg);
+  }
+
+  /**
+   * Montant compact (RG-43) : en entier sous 1 000 000,00 ; au-delà, en millions (M), ou en milliards (Md en français,
+   * B en anglais) dès que l'arrondi atteint 1 000 M. Deux décimales au plus, moitié vers le haut, calculées sur des
+   * entiers ; les zéros de fin sont retirés. Valeur négative acceptée.
+   */
+  function formatCompact(cents, { lang = 'fr', symbol = '' } = {}) {
+    const neg = cents < 0, c = Math.abs(cents);
+    if (c < COMPACT_FROM) return format(cents, { lang, symbol });
+    let h = Math.floor((c + 500000) / 1000000); // centièmes de million
+    let suffix = 'M';
+    if (h >= 100000) { h = Math.floor((c + 500000000) / 1000000000); suffix = lang === 'fr' ? 'Md' : 'B'; } // centièmes de milliard
+    const whole = Math.floor(h / 100), frac = String(h % 100).padStart(2, '0').replace(/0+$/, '');
+    const body = whole + (frac ? (lang === 'fr' ? ',' : '.') + frac : '');
+    return withSymbol(lang === 'fr' ? `${body}${NBSP}${suffix}` : body + suffix, symbol, lang, neg);
+  }
+
+  /**
+   * Montants propres et cumulés de chaque ligne (RG-36) : une tâche porte les siens, un jalon vaut 0, une
+   * récapitulative est la somme de sa descendance. @returns {Map<id, {budget, actual}>}
+   */
+  function amounts(project) {
+    const out = new Map();
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    for (const t of project.tasks) out.set(t.id, { budget: 0, actual: 0 });
+    for (const t of project.tasks) {
+      if (t.type !== 'task') continue;
+      const b = amt(t.budget), a = amt(t.actual);
+      let cur = t, guard = 0;
+      while (cur && guard++ <= Model.LIMITS.depth + 1) {
+        const o = out.get(cur.id);
+        o.budget += b; o.actual += a;
+        cur = cur.parent ? byId.get(cur.parent) : null;
+      }
+    }
+    return out;
+  }
+
+  /** Totaux du projet (RG-37) : BAC, provision, budget total, coût réel total, reste (négatif = dépassement). */
+  function totals(project) {
+    let bac = 0, actual = 0;
+    for (const t of project.tasks) if (t.type === 'task') { bac += amt(t.budget); actual += amt(t.actual); }
+    const provision = amt(project.provision);
+    const total = bac + provision;
+    return { bac, provision, total, actual, remaining: total - actual };
+  }
+
+  /** Une présence d'au moins un montant (EF-117 : l'onglet Budget n'apparaît qu'à partir de là). */
+  function hasAmounts(project) {
+    return amt(project.provision) > 0 || project.tasks.some(t => t.type === 'task' && (amt(t.budget) > 0 || amt(t.actual) > 0));
+  }
+
+  /**
+   * Tableau par catégorie (RG-40) : une ligne par catégorie qui a au moins une tâche (hors récapitulatives), classée par
+   * ordre alphabétique, « sans catégorie » (id '') en dernier ; écart = budget moins coût réel ; total en pied.
+   */
+  function byCategory(project) {
+    const rows = new Map();
+    for (const t of project.tasks) {
+      if (t.type === 'summary') continue;
+      const key = project.categories.some(c => c.id === t.cat) ? t.cat : '';
+      if (!rows.has(key)) rows.set(key, { id: key, name: key ? project.categories.find(c => c.id === key).name : '', budget: 0, actual: 0 });
+      const r = rows.get(key);
+      if (t.type === 'task') { r.budget += amt(t.budget); r.actual += amt(t.actual); }
+    }
+    const list = [...rows.values()].sort((a, b) => (a.id === '') - (b.id === '') || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    list.forEach(r => { r.gap = r.budget - r.actual; });
+    const total = list.reduce((a, r) => ({ budget: a.budget + r.budget, actual: a.actual + r.actual }), { budget: 0, actual: 0 });
+    return { rows: list, total: { ...total, gap: total.budget - total.actual } };
+  }
+
+  /** BAC d'une baseline (RG-39) : somme des budgets capturés. */
+  function baselineBac(baseline) {
+    return baseline.tasks.reduce((a, bt) => a + amt(bt.budget), 0);
+  }
+
+  /** Variation du BAC (RG-39) : BAC du projet moins celui de la baseline. */
+  function bacVariation(project, baseline) {
+    return totals(project).bac - baselineBac(baseline);
+  }
+
+  /**
+   * Courbe en S des coûts (RG-38, RG-39), en centimes cumulés, sur la grille de périodes de RG-17.
+   * planned : budget des tâches dont la fin prévue est au plus tard le dernier jour de la période.
+   * real : coût réel des tâches terminées (100 %) dont la fin réelle est dans la période ou avant ; une tâche à 100 %
+   * sans fin réelle compte dans la période en cours ; s'arrête à la période qui contient aujourd'hui.
+   * La provision et le coût réel des tâches non terminées n'y figurent pas.
+   */
+  function costCurve(project, sched, today, unit = 'week') {
+    const work = project.tasks.filter(t => t.type === 'task');
+    let last = sched.projectEndDn;
+    const shown = (project.baselines || []).filter(b => b.shownOnScurve);
+    for (const b of shown) for (const bt of b.tasks) { const e = Dates.parse(bt.end); if (e != null) last = Math.max(last, e); }
+    const ps = Metrics.periods(Dates.parse(project.projectStart), last, unit);
+    const planned = ps.map(p => work.reduce((a, t) => a + (sched.tasks.get(t.id).endDn <= p.end ? amt(t.budget) : 0), 0));
+    const real = [];
+    for (const p of ps) {
+      if (p.start > today) break;
+      const current = p.end >= today;
+      real.push(work.reduce((a, t) => {
+        if (t.pct < 100) return a;
+        const re = Dates.parse(t.realEnd);
+        return a + (re != null ? (re <= p.end ? amt(t.actual) : 0) : (current ? amt(t.actual) : 0));
+      }, 0));
+    }
+    const baselines = {};
+    for (const b of shown) {
+      baselines[b.id] = ps.map(p => b.tasks.reduce((a, bt) => {
+        const e = Dates.parse(bt.end);
+        return a + (e != null && e <= p.end ? amt(bt.budget) : 0);
+      }, 0));
+    }
+    return { periods: ps, planned, real, baselines };
+  }
+
+  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();
 
 // ── js/core/45-view.js ──
@@ -2149,6 +2361,7 @@ const I18n = (() => {
     'imp.overCapacity': 'Tâche n° {n} : le taux de {units} % dépasse la capacité de {capacity} % de {name}.',
     'imp.milestoneRes': "Tâche n° {n} : un jalon n'a pas de ressource.",
     'imp.summaryField': "Tâche n° {n} : une récapitulative n'a ni lien, ni affectation, ni date imposée, ni contrainte.",
+    'imp.noAmount': "Tâche n° {n} : un jalon ou une récapitulative n'a ni budget ni coût réel propre.",
     'imp.realOrder': 'Tâche n° {n} : la fin réelle précède le début réel.',
     'imp.realEndPct': "Tâche n° {n} : une fin réelle impose un avancement de 100 %.",
     'imp.badParent': "Tâche n° {n} : le parent {parent} n'est pas une récapitulative.",
@@ -2164,7 +2377,7 @@ const I18n = (() => {
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
     'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
-    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif',
+    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
@@ -2457,6 +2670,7 @@ const I18n = (() => {
     'imp.dupCategory': 'Two categories are named {name}.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
     'imp.overCapacity': 'Task #{n}: {units}% exceeds the {capacity}% capacity of {name}.', 'imp.milestoneRes': 'Task #{n}: a milestone has no resource.',
     'imp.summaryField': 'Task #{n}: a summary task has no link, assignment, fixed date or constraint.',
+    'imp.noAmount': 'Task #{n}: a milestone or summary task has no budget or actual cost of its own.',
     'imp.realOrder': 'Task #{n}: actual finish is before actual start.', 'imp.realEndPct': 'Task #{n}: an actual finish requires 100% progress.',
     'imp.badParent': 'Task #{n}: parent {parent} is not a summary task.', 'imp.parentCycle': 'Circular hierarchy around {id}.',
     'imp.tooDeep': 'Task {id} exceeds {max} levels of summary tasks.', 'imp.missingPred': 'Task #{n}: predecessor {pred} does not exist.',
@@ -2465,7 +2679,7 @@ const I18n = (() => {
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
     'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
-    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number',
+    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
@@ -2711,6 +2925,7 @@ const I18n = (() => {
     const p = { ...e.params };
     if (p.obj) p.obj = t('obj.' + p.obj);
     if (p.n === undefined) p.n = '';
+    if (p.rule === 'rule.amount') { p.min = group(p.min); p.max = group(p.max); }
     if (p.rule) p.rule = t(p.rule, p);
     if (p.inner) p.inner = error(p.inner);
     return t(e.key, p);
@@ -2735,6 +2950,11 @@ const I18n = (() => {
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
+  /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
+  function group(n) {
+    const s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? '\u202f' : ',');
+    return n < 0 ? '\u2212' + s : s;
+  }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
     return lang === 'fr' ? s.replace('.', ',') : s;
@@ -2742,7 +2962,7 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, group, CATALOGS };
 })();
 
 // ── js/core/60-xml.js ──

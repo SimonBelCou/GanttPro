@@ -117,6 +117,7 @@ const I18n = (() => {
     'imp.overCapacity': 'Tâche n° {n} : le taux de {units} % dépasse la capacité de {capacity} % de {name}.',
     'imp.milestoneRes': "Tâche n° {n} : un jalon n'a pas de ressource.",
     'imp.summaryField': "Tâche n° {n} : une récapitulative n'a ni lien, ni affectation, ni date imposée, ni contrainte.",
+    'imp.noAmount': "Tâche n° {n} : un jalon ou une récapitulative n'a ni budget ni coût réel propre.",
     'imp.realOrder': 'Tâche n° {n} : la fin réelle précède le début réel.',
     'imp.realEndPct': "Tâche n° {n} : une fin réelle impose un avancement de 100 %.",
     'imp.badParent': "Tâche n° {n} : le parent {parent} n'est pas une récapitulative.",
@@ -132,7 +133,7 @@ const I18n = (() => {
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
     'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
-    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif',
+    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
@@ -425,6 +426,7 @@ const I18n = (() => {
     'imp.dupCategory': 'Two categories are named {name}.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
     'imp.overCapacity': 'Task #{n}: {units}% exceeds the {capacity}% capacity of {name}.', 'imp.milestoneRes': 'Task #{n}: a milestone has no resource.',
     'imp.summaryField': 'Task #{n}: a summary task has no link, assignment, fixed date or constraint.',
+    'imp.noAmount': 'Task #{n}: a milestone or summary task has no budget or actual cost of its own.',
     'imp.realOrder': 'Task #{n}: actual finish is before actual start.', 'imp.realEndPct': 'Task #{n}: an actual finish requires 100% progress.',
     'imp.badParent': 'Task #{n}: parent {parent} is not a summary task.', 'imp.parentCycle': 'Circular hierarchy around {id}.',
     'imp.tooDeep': 'Task {id} exceeds {max} levels of summary tasks.', 'imp.missingPred': 'Task #{n}: predecessor {pred} does not exist.',
@@ -433,7 +435,7 @@ const I18n = (() => {
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
     'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
-    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number',
+    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
@@ -679,6 +681,7 @@ const I18n = (() => {
     const p = { ...e.params };
     if (p.obj) p.obj = t('obj.' + p.obj);
     if (p.n === undefined) p.n = '';
+    if (p.rule === 'rule.amount') { p.min = group(p.min); p.max = group(p.max); }
     if (p.rule) p.rule = t(p.rule, p);
     if (p.inner) p.inner = error(p.inner);
     return t(e.key, p);
@@ -703,6 +706,11 @@ const I18n = (() => {
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
+  /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
+  function group(n) {
+    const s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? '\u202f' : ',');
+    return n < 0 ? '\u2212' + s : s;
+  }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
     return lang === 'fr' ? s.replace('.', ',') : s;
@@ -710,5 +718,5 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, group, CATALOGS };
 })();

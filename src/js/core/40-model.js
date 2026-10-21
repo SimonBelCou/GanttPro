@@ -12,6 +12,9 @@ const Model = (() => {
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
     comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
+    // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
+    amount: 5000000000000, currency: 5,
   });
   const ID_RE = /^[A-Z0-9._-]{1,12}$/;
   const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -49,6 +52,13 @@ const Model = (() => {
         if (!present(k)) return def;
         const v = src[k];
         if (!Number.isInteger(v) || v < min || v > max) err(k, 'rule.int', { min, max });
+        return v;
+      },
+      /** Montant en centimes (RG-35) : entier de 0 à LIMITS.amount, jamais un nombre à virgule. */
+      amount(k) {
+        if (!present(k)) return 0;
+        const v = src[k];
+        if (!Number.isSafeInteger(v) || v < 0 || v > LIMITS.amount) err(k, 'rule.amount', { min: 0, max: LIMITS.amount });
         return v;
       },
       num(k, { def = 0 } = {}) {
@@ -163,7 +173,7 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -185,7 +195,11 @@ const Model = (() => {
       // Lissage par défaut : l'utilisateur arbitre lui-même les surcharges (A.3). Un fichier 2.3
       // (sans champ format) garde le nivellement automatique pour retrouver ses dates d'origine.
       leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], has(raw, 'format') ? 'smooth' : 'level'),
+      // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
+      currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
+      provision: P.amount('provision'),
     };
+    if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
     // Ressources et catégories : identités internes neuves ; les noms doivent être uniques (casse ignorée).
@@ -242,7 +256,7 @@ const Model = (() => {
       const where = { obj: 'task', n: i + 1 };
       if (!isObj(t)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
       const f = reader(t, where, ['id', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'assign', 'cat', 'pct', 'forcedStart', 'notBefore',
-        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed'], stats);
+        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed', 'budget', 'actual'], stats);
       if (typeof t.id !== 'string' || !ID_RE.test(t.id)) fail('imp.badId', { n: i + 1 });
       if (ids.has(t.id)) fail('imp.dupId', { id: t.id });
       ids.add(t.id);
@@ -286,6 +300,10 @@ const Model = (() => {
         return { res: r.id, units: a.units };
       });
 
+      // Un jalon et une récapitulative n'ont aucun montant propre (RG-36) : un montant non nul est refusé.
+      const budget = f.amount('budget'), actual = f.amount('actual');
+      if (!isTask && (budget || actual)) fail('imp.noAmount', { n: i + 1, id: t.id });
+
       const catName = f.text('cat', { max: 100, trim: true });
       const cat = catName ? resolveCat(catName).id : '';
 
@@ -293,7 +311,7 @@ const Model = (() => {
         id: t.id, name: f.text('name', { min: 1, max: 200, trim: true }), type, parent: f.text('parent', { max: 12 }), dur, deps, assign, cat, pct,
         forcedStart: f.date('forcedStart'), notBefore: f.date('notBefore'), deadline: f.date('deadline'),
         realStart: f.date('realStart'), realEnd: f.date('realEnd'),
-        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false,
+        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false, budget, actual,
       };
       if (task.realStart && task.realEnd && task.realEnd < task.realStart) fail('imp.realOrder', { n: i + 1 });
       if (task.realEnd && task.pct < 100 && type !== 'summary') fail('imp.realEndPct', { n: i + 1 });
@@ -347,17 +365,17 @@ const Model = (() => {
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
-        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [],
+        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
-        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end'], stats);
+        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end', 'budget'], stats);
         if (typeof bt.id !== 'string' || !ID_RE.test(bt.id)) fail('imp.badId', { n: j + 1 });
         const start = g.date('start', { required: true }), end = g.date('end', { required: true });
         if (end < start) fail('imp.rangeOrder', { ...w, field: 'end' });
@@ -366,7 +384,7 @@ const Model = (() => {
           if (typeof did !== 'string' || !ID_RE.test(did)) fail('imp.field', { ...w, field: 'deps', rule: 'rule.link' });
           return did;
         });
-        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end };
+        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end, budget: g.amount('budget') };
       });
       return bl;
     });
@@ -406,7 +424,7 @@ const Model = (() => {
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
 
   /** Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51). */
-  function serialize(project, { anonymize = false, withVersions = true } = {}) {
+  function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
@@ -415,6 +433,8 @@ const Model = (() => {
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
       leveling: project.leveling || 'level',
+      currency: project.currency || '€',
+      provision: project.provision || 0,
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -423,16 +443,31 @@ const Model = (() => {
         cat: catName(t.cat), pct: t.pct,
         forcedStart: t.forcedStart, notBefore: t.notBefore, deadline: t.deadline, realStart: t.realStart, realEnd: t.realEnd,
         tags: t.tags.slice(), notes: t.notes, comments: t.comments.map(c => ({ ts: c.ts, text: c.text })), collapsed: t.collapsed,
+        // Un jalon et une récapitulative n'ont aucun montant propre (RG-36).
+        ...(t.type === 'task' ? { budget: t.budget || 0, actual: t.actual || 0 } : {}),
       })),
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
-      baselines: project.baselines.map(b => ({ ...b, tasks: b.tasks.map(bt => ({ ...bt, deps: bt.deps.slice() })) })),
+      baselines: project.baselines.map(b => ({ ...b, provision: b.provision || 0, tasks: b.tasks.map(bt => ({ ...bt, budget: bt.budget || 0, deps: bt.deps.slice() })) })),
     };
     // Les versions contiennent des noms : elles ne sont pas exportées dans un fichier anonymisé.
     if (withVersions) file.versions = anonymize ? [] : (project.versions || []).map(v => ({ id: v.id, label: v.label, ts: v.ts, state: v.state }));
+    // Export « sans montants » (EF-124) : ni budget, ni coût réel, ni provision, y compris dans les baselines et
+    // dans chaque version ; la devise reste.
+    if (!amounts) stripAmounts(file);
+    return file;
+  }
+
+  /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
+  function stripAmounts(file) {
+    delete file.provision;
+    for (const t of file.tasks) { delete t.budget; delete t.actual; }
+    for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
+    if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
   }
 
@@ -452,8 +487,9 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
+      currency: '€', provision: 0,
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
-        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
+        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
       categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
@@ -463,5 +499,5 @@ const Model = (() => {
   /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
   const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
 
-  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
 })();
