@@ -3,16 +3,23 @@
 Document de passage pour démarrer une conversation neuve. Lisez-le en entier avant de coder.
 Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
-## 1. Où en est-on (16 octobre 2026)
+## 1. Où en est-on (21 octobre 2026)
 
-- Dépôt `SimonBelCou/GanttPro`. Toutes les branches de travail sont fusionnées dans `main` (PR n° 7, 8 et 9).
-  La fusion d'une PR reste la décision de l'utilisateur, pas la vôtre.
-- Dernier état de `main` (commit 3700477, 16 octobre) : ergonomie de la vue principale (EF-108 à EF-111) incluse.
-  Tests au vert : moteur 79, `test_v3` 179/179, espace 52/52, recette 87/87.
-- Le budget est **cadré, pas développé**. Aucun code n'a été écrit pour lui.
-- Cadrage : Claude Doc « GanttPro — Cadrage de la gestion du budget »
-  (https://claude.ai/code/artifact/5a393a3b-48d1-41d0-8751-f884c55e284a), sections 1 à 8.
-  Cahier des charges : https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7.
+- Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est développée sur la branche `budget-etape-a-moteur` (PR
+  ouverte vers `main`). La fusion reste la décision de l'utilisateur, après sa recette manuelle.
+- Étape A faite : budget et coût réel par tâche, devise, provision, BAC, baselines, courbe en S des coûts, onglet
+  Budget du tableau de bord, bloc du rapport, export et impression « sans montants », masquage à l'écran, affichage
+  compact (M, Md en français ; M, B en anglais), import de tableurs avec montants.
+- Reste à faire : étape B (valeur acquise, PV, EV, CV, SV, CPI, SPI, EAC ; décisions en A.8 lignes 5, 6 et 12) puis
+  étape C (taux de ressource) ; options de colonnes de la liste ; nouvelle tâche « versionnement ».
+- Référence : cahier des charges
+  (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-127 (5.21), règles
+  RG-35 à RG-43 (6.8), recette R-71 à R-84 (9.7), décisions en annexe A.8, exigence EX-28 (recette manuelle).
+- Recette : `docs/recette-manuelle.md` (partie A, tout l'outil ; partie B, budget) et les faux projets de
+  `tests/fixtures/`. Tests : `tests/test_v3_budget.py`, `tests/core/budget.test.mjs`.
+- Le cadrage d'origine (Claude Doc « GanttPro — Cadrage de la gestion du budget »,
+  https://claude.ai/code/artifact/5a393a3b-48d1-41d0-8751-f884c55e284a) est antérieur au développement : il parle
+  d'un « format 4 » ; le choix retenu est de rester en format 3 avec des champs facultatifs (A.8).
 
 ## 2. Règles à respecter (résumé, la référence reste `CLAUDE.md` et `SECURITY.md`)
 
