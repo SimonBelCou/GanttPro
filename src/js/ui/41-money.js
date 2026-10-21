@@ -12,6 +12,10 @@ const Money = (() => {
     if (masked()) return DOTS;
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
+  /** Texte d'une SORTIE (copie, impression) : jamais masqué, le masquage ne concerne que l'écran (RG-41). */
+  function plain(cents, { compact = false } = {}) {
+    return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+  }
   /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
   const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
@@ -33,7 +37,7 @@ const Money = (() => {
     return wrap;
   }
 
-  return { DOTS, symbol, masked, text, spoken, node, pair };
+  return { DOTS, symbol, masked, text, plain, spoken, node, pair };
 })();
 
 action('toggleMask', () => {

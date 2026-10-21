@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OK5EIKwPxWTOS/3DybgKz5ouRRyKf373rLD45ez96m8='; style-src 'sha256-l0+gVUecm/RlgpZSOzLpRYkanxp54YF4gaa8fnYe5gc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hvvHJoGhm4ASdsswW+EI0ZA4rRsV8SgAJn70YDq8c+0='; style-src 'sha256-bZrb3lvJ/yj7r9X9KqGLCaBpBx1Qlb1+PBOC9oWeaxc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -97,7 +97,7 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
-.tasks td.money { font-variant-numeric: tabular-nums; text-align: right; }
+.tasks td.money { font-variant-numeric: tabular-nums; text-align: right; position: relative; }
 .money { font-variant-numeric: tabular-nums; }
 .tasks td.name { padding-left: calc(.45rem + var(--depth, 0) * 1.1rem); max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.select { background: transparent; border: 0; padding: 0 .2rem; min-height: 28px; text-align: left; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
@@ -455,6 +455,7 @@ body.planner-full .planner { position: fixed; inset: 0; z-index: 4; max-height: 
 body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 </style>
 </head>
@@ -2387,6 +2388,34 @@ const I18n = (() => {
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
     'rule.milestonePct': '0 ou 100 pour un jalon', 'rule.absent': 'champ interdit ici',
     'calc.error': 'Le planning ne peut pas être calculé : une date dépasse 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Montants ignorés (les lignes sont importées sans ce montant)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Inclure les montants',
+    'out.amountsHint': 'Décochée à chaque ouverture : sans cette case, rien de ce qui sort (fichier, impression, copie) ne contient de montant.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'Variation du BAC avec {name} : {value}',
+    'rep.budgetOff': 'Le bloc Budget n\'apparaît que si « Inclure les montants » est coché.',
+    'print.colMoney': 'Budget / Réel (si les montants sont inclus)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (budget des tâches)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Budget total',
+    'bud.actual': 'Coût réel total',
+    'bud.remaining': 'Reste',
+    'bud.overrun': 'dépassement de',
+    'bud.byCat': 'Budget par catégorie',
+    'bud.cat': 'Catégorie',
+    'bud.gap': 'Écart',
+    'bud.sum': 'Total',
+    'bud.curve': 'Courbe en S des coûts',
+    'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
+    'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'BAC du projet (budget des tâches, provision exclue) :',
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'montant masqué',
     'top.mask': 'Masquer les montants',
@@ -2706,6 +2735,34 @@ const I18n = (() => {
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
     'rule.absent': 'field not allowed here', 'calc.error': 'The schedule cannot be computed: a date goes beyond 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Ignored amounts (the rows are imported without that amount)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Include amounts',
+    'out.amountsHint': 'Unchecked every time this window opens: without this box, nothing that leaves the app (file, print, copy) contains an amount.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'BAC variation against {name}: {value}',
+    'rep.budgetOff': 'The Budget block only appears when “Include amounts” is checked.',
+    'print.colMoney': 'Budget / Actual (if amounts are included)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (task budgets)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Total budget',
+    'bud.actual': 'Total actual cost',
+    'bud.remaining': 'Remaining',
+    'bud.overrun': 'overrun of',
+    'bud.byCat': 'Budget by category',
+    'bud.cat': 'Category',
+    'bud.gap': 'Variance',
+    'bud.sum': 'Total',
+    'bud.curve': 'Cost S-curve',
+    'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
+    'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'Project BAC (task budgets, provision excluded):',
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'amount hidden',
     'top.mask': 'Hide amounts',
@@ -4237,6 +4294,10 @@ const Money = (() => {
     if (masked()) return DOTS;
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
+  /** Texte d'une SORTIE (copie, impression) : jamais masqué, le masquage ne concerne que l'écran (RG-41). */
+  function plain(cents, { compact = false } = {}) {
+    return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+  }
   /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
   const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
@@ -4258,7 +4319,7 @@ const Money = (() => {
     return wrap;
   }
 
-  return { DOTS, symbol, masked, text, spoken, node, pair };
+  return { DOTS, symbol, masked, text, plain, spoken, node, pair };
 })();
 
 action('toggleMask', () => {
@@ -5851,6 +5912,10 @@ function bulkWindow() {
       fld('bk-res', t('col.res'), h('select', {}, p.resources.map(r => opt(r.id, r.name)))),
       fld('bk-units', t('rs.units') + ' (%)', h('input', { type: 'number', min: 1, max: 100, step: 1, value: 100, inputmode: 'numeric' }))),
     fld('bk-pct', t('f.pct'), h('input', { type: 'number', min: 0, max: 100, step: 1, inputmode: 'numeric', placeholder: t('bulk.keepShort') })),
+    h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+      Money.masked() ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+      fld('bk-budget', `${t('f.budget')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') })),
+      fld('bk-actual', `${t('f.actual')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') }))),
     fld('bk-tag-add', t('bulk.tagAdd'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-tag-remove', t('bulk.tagRemove'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-shift', t('bulk.shift'), h('input', { type: 'number', min: -365, max: 365, step: 1, inputmode: 'numeric', placeholder: '0' })),
@@ -5867,6 +5932,15 @@ function bulkWindow() {
       if (pctRaw !== '' && !(Number.isInteger(Number(pctRaw)) && Number(pctRaw) >= 0 && Number(pctRaw) <= 100)) return err(t('err.int', { field: t('f.pct'), min: 0, max: 100 }));
       if (shiftRaw !== '' && !(Number.isInteger(Number(shiftRaw)) && Math.abs(Number(shiftRaw)) <= 365)) return err(t('err.int', { field: t('bulk.shift'), min: -365, max: 365 }));
       if (mode && mode !== 'remove' && !(Number.isInteger(units) && units >= 1 && units <= 100)) return err(t('err.int', { field: t('rs.units'), min: 1, max: 100 }));
+      // Budget et coût réel (EF-116) : valeur vide = on garde ; seules les tâches reçoivent un montant (RG-36).
+      const money = {};
+      for (const k of ['budget', 'actual']) {
+        const raw = val('bk-' + k);
+        if (raw.trim() === '' || $('bk-' + k).disabled) continue;
+        const r = Budget.parse(raw);
+        if (!r.ok) return err(t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) }));
+        money[k] = r.cents;
+      }
       const refused = [];
       const apply = pr => {
         const r = pr.resources.find(x => x.id === res);
@@ -5897,6 +5971,7 @@ function bulkWindow() {
             const cal = App.sched.cal;
             x.forcedStart = Dates.toISO(cal.dnOf(cal.ceil(Dates.parse(x.forcedStart)) + Number(shiftRaw)));
           }
+          if (x.type === 'task') for (const k of Object.keys(money)) x[k] = money[k];
           if (nb) x.notBefore = nb;
           if (dl) x.deadline = dl;
         }
@@ -6632,9 +6707,10 @@ function captureBaseline(p, sched, name, color) {
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
     id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
-      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn) };
+      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn), budget: x.type === 'task' ? x.budget || 0 : 0 };
     }),
   };
 }
@@ -6659,11 +6735,13 @@ function baselinesWindow() {
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
             h('label', { for: 'bls-' + b.id, text: ' ' + t('bl.onScurve') })),
           h('td', { text: t('bl.captured', { date: I18n.date(Dates.todayDn(new Date(b.createdAt || 0))), count: b.tasks.length }) }),
+          h('td', {}, Money.node(Budget.baselineBac(b)), h('span', { class: 'sr-only', text: ' ' + t('proj.provision') + ' : ' }), h('span', { class: 'hint' }, ' + ', Money.node(b.provision || 0))),
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
     }
+    if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
   };
   baselinesWindow.paint = paint;
@@ -6836,22 +6914,27 @@ action('calAdd', kind => {
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
-function sCurveChart(curve) {
+/** Réglages de la courbe d'avancement : une échelle de 0 à 100 %. */
+const PCT_CHART = {
+  max: 100, ticks: [0, 25, 50, 75, 100], axis: v => `${v} %`, fmt: fmtPct, fmtFull: fmtPct, title: 'dash.curve',
+  desc: (curve, last) => t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }),
+};
+
+function sCurveChart(curve, o = PCT_CHART) {
   const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
   const n = curve.periods.length;
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
-  const py = v => m.t + (1 - v / 100) * (H - m.t - m.b);
+  const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
   const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
   const last = a => (a.length ? a[a.length - 1] : 0);
-  chart.append(svg('title', { id: 'sc-title', text: t('dash.curve') }),
-    svg('desc', { id: 'sc-desc', text: t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }) }));
-  for (const v of [0, 25, 50, 75, 100]) {
+  chart.append(svg('title', { id: 'sc-title', text: t(o.title) }), svg('desc', { id: 'sc-desc', text: o.desc(curve, last) }));
+  for (const v of o.ticks) {
     chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
-      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: `${v} %` }));
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: o.axis(v) }));
   }
   const step = Math.max(1, Math.ceil(n / 8));
   curve.periods.forEach((p, i) => {
@@ -6871,12 +6954,12 @@ function sCurveChart(curve) {
   const labels = [];
   for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
     line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${fmtPct(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${o.fmt(last(curve.baselines[b.id] || []))}`, i: n - 1 });
   }
   line(curve.planned, 'planned');
   line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${fmtPct(last(curve.planned))}`, i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${fmtPct(last(curve.real))}`, i: curve.real.length - 1 });
+  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${o.fmt(last(curve.planned))}`, i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${o.fmt(last(curve.real))}`, i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
   let prev = -Infinity;
@@ -6896,9 +6979,9 @@ function sCurveChart(curve) {
     cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
     const p = curve.periods[idx];
     const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
-      `${t('dash.planned')} ${fmtPct(curve.planned[idx])}`];
-    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${fmtPct(curve.real[idx])}`);
-    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${fmtPct((curve.baselines[b.id] || [])[idx] || 0)}`);
+      `${t('dash.planned')} ${o.fmtFull(curve.planned[idx])}`];
+    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${o.fmtFull(curve.real[idx])}`);
+    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${o.fmtFull((curve.baselines[b.id] || [])[idx] || 0)}`);
     tip.textContent = parts.join(' · ');
     tip.hidden = false;
   };
@@ -6930,15 +7013,15 @@ function curveLegend() {
     App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
 }
 
-function curveTable(curve) {
+function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
   const bls = App.project.baselines.filter(b => b.shownOnScurve);
-  return h('table', { class: 'manage values', id: 'sc-values' },
-    h('caption', { text: t('dash.valuesCaption') }),
+  return h('table', { class: 'manage values', id },
+    h('caption', { text: t(caption) }),
     h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
     h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
       h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
-      h('td', { text: fmtPct(curve.planned[i]) }), h('td', { text: i < curve.real.length ? fmtPct(curve.real[i]) : '—' }),
-      bls.map(b => h('td', { text: fmtPct((curve.baselines[b.id] || [])[i] || 0) }))))));
+      cell(curve.planned[i]), i < curve.real.length ? cell(curve.real[i]) : h('td', { text: '—' }),
+      bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
 }
 
 function trackingRows() {
@@ -6980,17 +7063,26 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+function dashTabs() {
+  const tabs = ['summary', 'load'];
+  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
+  return tabs;
+}
+
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
   // Onglets « Synthèse » et « Charge » (motif ARIA tabs : flèches gauche/droite).
-  const tabs = ['summary', 'load'];
+  const tabs = dashTabs();
   body.append(h('div', { role: 'tablist', class: 'tabs', aria: { label: t('top.dashboard') } }, tabs.map(k => h('button', {
     type: 'button', role: 'tab', id: 'dtab-' + k, tabindex: Dash.tab === k ? '0' : '-1', aria: { selected: String(Dash.tab === k), controls: 'dpanel' },
     data: { click: 'dashTab', arg: k } }, t('dash.tab.' + k)))));
   const panel = h('div', { role: 'tabpanel', id: 'dpanel', aria: { labelledby: 'dtab-' + Dash.tab }, tabindex: '0' });
   body.append(panel);
   if (Dash.tab === 'load') { paintLoad(panel); return; }
+  if (Dash.tab === 'budget') { paintBudget(panel); return; }
   body = panel;
   const today = Dates.todayDn();
   const c = Metrics.counters(App.project, App.sched, today);
@@ -7033,20 +7125,77 @@ function repaintDashboard(focusSel) {
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
-action('dashTab', k => { Dash.tab = k === 'load' ? 'load' : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
+action('dashTab', k => { Dash.tab = ['load', 'budget'].includes(k) ? k : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
 document.addEventListener('keydown', ev => {
   const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
   if (!tab || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
   ev.preventDefault();
-  ACTIONS.dashTab(Dash.tab === 'load' ? 'summary' : 'load');
+  const tabs = dashTabs(), at = tabs.indexOf(Dash.tab);
+  ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
 action('dashSort', k => {
   Dash.sort = Dash.sort.key === k ? { key: k, dir: -Dash.sort.dir } : { key: k, dir: 1 };
   repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
 });
+
+// ── js/ui/76-budget.js ──
+/* Onglet « Budget » du tableau de bord (EF-117 à EF-119, RG-37 à RG-40) : indicateurs, tableau par catégorie,
+ * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
+
+/** Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries. */
+function costScale(curve) {
+  const all = [...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()];
+  const max = Math.max(0, ...all);
+  if (max <= 0) return { max: 10000, ticks: [0, 10000] };
+  const raw = max / 4, mag = Math.max(1, 10 ** Math.floor(Math.log10(raw))), norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const top = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = 0; v <= top; v += step) ticks.push(v);
+  return { max: top, ticks };
+}
+
+function paintBudget(panel) {
+  const P = App.project, tot = Budget.totals(P);
+  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+  const remaining = tot.remaining < 0
+    ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
+    : [Money.node(tot.remaining)];
+  panel.append(h('dl', { class: 'tiles', id: 'bud-tiles' },
+    tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
+    tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
+
+  // Tableau par catégorie (RG-40).
+  const cats = Budget.byCategory(P);
+  const num = c => h('td', { class: 'num' }, Money.node(c));
+  panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-cat-h' } },
+    h('h3', { id: 'bud-cat-h', text: t('bud.byCat') }),
+    h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-cats' },
+      h('thead', {}, h('tr', {}, [t('bud.cat'), t('f.budget'), t('f.actual'), t('bud.gap')].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
+
+  // Courbe en S des coûts (RG-38, RG-39).
+  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit);
+  const scale = costScale(curve);
+  const opts = {
+    max: scale.max, ticks: scale.ticks, axis: v => Money.text(v, { compact: true }), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
+  };
+  const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+    ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
+      h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
+  const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values' } },
+    t(Dash.showCostValues ? 'dash.hideValues' : 'dash.showValues'));
+  panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
+    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, toggle),
+    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t('bud.note') }),
+    Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+}
 
 // ── js/ui/76-load.js ──
 /* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à
@@ -7146,8 +7295,8 @@ action('loadValues', () => { Load.showValues = !Load.showValues; repaintDashboar
 // ── js/ui/77-report.js ──
 /* Rapport d'état (EF-88, RG-28) : aperçu, choix des blocs, note, impression ou PDF, texte brut.
  * Le voyant est toujours écrit en toutes lettres (jamais la couleur seule, EX-03). */
-const Report = { blocks: { kpis: true, curve: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
-const REPORT_BLOCKS = ['kpis', 'curve', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
+const Report = { amounts: false, blocks: { kpis: true, curve: true, budget: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
+const REPORT_BLOCKS = ['kpis', 'curve', 'budget', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
 
 function reportData() {
   const today = Dates.todayDn();
@@ -7157,6 +7306,16 @@ function reportData() {
 const taskLabel = id => { const x = taskById(id); return x ? `${id} ${x.name}` : id; };
 
 /** Contenu du rapport sous forme de sections {title, lines[]} : sert à l'aperçu ET au texte brut. */
+/** Une ligne du rapport est un texte, ou {label, cents, signed} pour un montant (masquable à l'écran, jamais dans une sortie). */
+function lineText(l) {
+  if (typeof l === 'string') return l;
+  return l.label + (l.signed && l.cents > 0 ? '+' : '') + Money.plain(l.cents);
+}
+function lineNode(l, out) {
+  if (typeof l === 'string' || out) return lineText(l);
+  return [l.label + (l.signed && l.cents > 0 ? '+' : ''), Money.node(l.cents)];
+}
+
 function reportSections() {
   const { today, bl, r } = reportData();
   const s = App.sched;
@@ -7172,6 +7331,14 @@ function reportSections() {
     t('rep.end', { date: I18n.date(s.projectEndDn) }),
   ] });
   if (B.curve) out.push({ key: 'curve', title: t('dash.curve'), lines: [], chart: true });
+  // Bloc Budget (EF-120) : seulement si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Report.amounts) {
+    const tot = Budget.totals(App.project), L = (k, c) => ({ label: t(k) + ' : ', cents: c });
+    const lines = [L('bud.bac', tot.bac), L('bud.provision', tot.provision), L('bud.total', tot.total), L('bud.actual', tot.actual),
+      tot.remaining < 0 ? { label: `${t('bud.remaining')} : ${t('bud.overrun')} `, cents: -tot.remaining } : L('bud.remaining', tot.remaining)];
+    if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
+    out.push({ key: 'budget', title: t('rep.b.budget'), lines });
+  }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });
   if (B.milestones) out.push({ key: 'milestones', title: t('rep.milestones'), lines: [
@@ -7185,7 +7352,7 @@ function reportSections() {
   return out;
 }
 
-function reportArticle() {
+function reportArticle(out = false) {
   const art = h('article', { class: 'report-page', id: 'report-preview', aria: { label: t('rep.preview') } });
   const { r } = reportData();
   for (const sec of reportSections()) {
@@ -7198,14 +7365,14 @@ function reportArticle() {
       c.removeAttribute('tabindex');
       el.append(c);
     }
-    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', { text: l }))));
+    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', {}, lineNode(l, out)))));
     art.append(el);
   }
   return art;
 }
 
 function reportText() {
-  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? l : `- ${l}`))].join('\n')).join('\n');
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
 }
 
 function paintReport(body, focusSel) {
@@ -7214,6 +7381,8 @@ function paintReport(body, focusSel) {
     h('fieldset', { class: 'sub' }, h('legend', { text: t('rep.blocks') }),
       REPORT_BLOCKS.map(k => h('div', { class: 'check' }, h('input', { type: 'checkbox', id: 'rb-' + k, checked: Report.blocks[k], data: { change: 'repBlock', arg: k } }),
         h('label', { for: 'rb-' + k, text: t('rep.b.' + k) })))),
+    h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'rep-amounts', checked: Report.amounts, data: { change: 'repAmounts' } }),
+      h('label', { for: 'rep-amounts', text: t('out.amounts') }), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('div', { class: 'field' }, h('label', { for: 'rep-bl', text: t('rep.baseline') }),
       h('select', { id: 'rep-bl', data: { change: 'repBaseline' } }, h('option', { value: '' }, t('dash.noBl')),
         App.project.baselines.map(b => h('option', { value: b.id, selected: Report.baseline === b.id }, b.name)))),
@@ -7230,6 +7399,7 @@ function paintReport(body, focusSel) {
 function reportWindow() {
   if (!App.sched) return;
   if (Report.baseline && !App.project.baselines.some(b => b.id === Report.baseline)) Report.baseline = '';
+  Report.amounts = false; // décochée à chaque ouverture (EF-124)
   const body = h('div', { id: 'rep-win' });
   reportWindow.body = body;
   paintReport(body);
@@ -7277,16 +7447,17 @@ function copyText(text) {
 
 action('openReport', () => reportWindow());
 action('repBlock', (k, el) => { Report.blocks[k] = el.checked; paintReport(reportWindow.body, '#rb-' + k); });
+action('repAmounts', (a, el) => { Report.amounts = el.checked; paintReport(reportWindow.body, '#rep-amounts'); });
 action('repBaseline', (a, el) => { Report.baseline = el.value; paintReport(reportWindow.body, '#rep-bl'); });
 action('repNote', (a, el) => { const v = el.value.slice(0, 2000); if (v !== App.project.reportNote) commit(p => { p.reportNote = v; }); paintReport(reportWindow.body, '#rep-note'); });
-action('repPrint', () => printNode(reportArticle(), 'print-report', 'A4 portrait'));
+action('repPrint', () => printNode(reportArticle(true), 'print-report', 'A4 portrait'));
 action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });
 
 // ── js/ui/78-print.js ──
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
  * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -7299,9 +7470,11 @@ function buildPrintGantt() {
   }
   const days = to - from + 1;
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
+  if (PrintOpt.amounts) cols.push('money'); // colonne Budget / Réel : seulement si les montants sont inclus (EF-124)
+  const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm) moins les colonnes.
   const pageW = PrintOpt.orient === 'landscape' ? 1045 : 715;
-  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80 };
+  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80, money: 110 };
   const ganttW = PrintOpt.scale === 'fit' ? Math.max(200, pageW - cols.reduce((a, k) => a + colW[k], 0)) : Math.round(days * 26 * App.zoom / 100 / 7);
   const dayW = ganttW / days;
   const x = dn => (dn - from) * dayW;
@@ -7313,7 +7486,7 @@ function buildPrintGantt() {
     c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
     head.append(c);
   }
-  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status') };
+  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
   const table = h('table', { class: 'print-gantt' },
     h('caption', { text: `${App.project.emoji} ${App.project.name} — ${I18n.date(from)} → ${I18n.date(to)}` }),
     h('thead', {}, h('tr', {}, cols.map(k => h('th', { scope: 'col', text: labels[k] })), h('th', { scope: 'col', class: 'pg-timecell' }, head))));
@@ -7325,6 +7498,7 @@ function buildPrintGantt() {
     const cells = {
       id: task.id, name: task.name, dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
       status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
+      money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
     };
     const lane = h('div', { class: 'pg-lane' });
     lane.style.setProperty('width', ganttW + 'px');
@@ -7349,6 +7523,7 @@ function buildPrintGantt() {
 
 function printWindow() {
   if (!App.sched) return;
+  PrintOpt.amounts = false; // décochée à chaque ouverture (EF-124)
   const chk = (id, label, checked, arg) => h('span', { class: 'check' }, h('input', { type: 'checkbox', id, checked, data: { change: 'printOpt', arg } }), h('label', { for: id, text: label }));
   const radio = (name, value, label, checked) => h('span', { class: 'check' }, h('input', { type: 'radio', name, id: `pr-${name}-${value}`, value, checked, data: { change: 'printOpt', arg: name } }), h('label', { for: `pr-${name}-${value}`, text: label }));
   const body = h('div', { id: 'print-win' },
@@ -7359,6 +7534,7 @@ function printWindow() {
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.orient') }), radio('orient', 'landscape', t('print.landscape'), PrintOpt.orient === 'landscape'), radio('orient', 'portrait', t('print.portrait'), PrintOpt.orient === 'portrait')),
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.cols') }), Object.keys(PrintOpt.cols).map(k => chk('pr-col-' + k, t('col.' + k), PrintOpt.cols[k], 'col:' + k))),
     chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
+    h('div', {}, chk('pr-amounts', t('out.amounts'), PrintOpt.amounts, 'amounts'), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('p', { class: 'hint', text: t('print.hint') }));
   return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
@@ -7368,6 +7544,7 @@ action('printOpt', (arg, el) => {
   if (arg === 'period' || arg === 'scale' || arg === 'orient') PrintOpt[arg] = el.value;
   else if (arg === 'from' || arg === 'to') { PrintOpt[arg] = Dates.parse(el.value) != null ? el.value : ''; PrintOpt.period = 'range'; }
   else if (arg === 'legend') PrintOpt.legend = el.checked;
+  else if (arg === 'amounts') PrintOpt.amounts = el.checked;
   else if (arg.startsWith('col:')) PrintOpt.cols[arg.slice(4)] = el.checked;
 });
 
@@ -7453,7 +7630,7 @@ function download(data, filename, type) {
 }
 
 /* ── Export (EF-92) ─────────────────────────────────────────────────────────────────────── */
-const ExportOpt = { format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
+const ExportOpt = { amounts: false, format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
 const FORMATS = ['json', 'xlsx', 'csv', 'msp', 'png'];
 
 function exportBody() {
@@ -7464,6 +7641,8 @@ function exportBody() {
   const box = h('div', { id: 'exp-win' }, h('fieldset', { class: 'sub' }, h('legend', { text: t('exp.format') }), FORMATS.map(radio)));
   box.append(h('p', { class: 'field-error', id: 'exp-err', role: 'alert', hidden: true }));
   if (o.format !== 'png') box.append(chk('exp-anon', 'anonymize', t('exp.anonymize')));
+  // Rien ne sort sans geste volontaire (EF-124) : la case est décochée à chaque ouverture. Le format MS Project n'emporte aucun montant.
+  if (['json', 'xlsx', 'csv'].includes(o.format)) box.append(chk('exp-amounts', 'amounts', t('out.amounts')), h('p', { class: 'hint', text: t('out.amountsHint') }));
   if (o.format === 'json') {
     box.append(h('p', { class: 'hint', text: t('exp.notice') }), chk('exp-protect', 'protect', t('exp.protect')));
     if (o.protect) box.append(
@@ -7488,6 +7667,7 @@ function exportBody() {
 }
 
 function exportWindow() {
+  ExportOpt.amounts = false;
   const holder = h('div', {}, exportBody());
   exportWindow.holder = holder;
   return Dialog.open({
@@ -7516,7 +7696,7 @@ async function doExport() {
   if (!s) { err(t('calc.error')); return; }
   try {
     if (o.format === 'json') {
-      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize }), null, 2);
+      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize, amounts: o.amounts }), null, 2);
       if (o.protect) {
         const a = $('exp-pwd').value, b = $('exp-pwd2').value;
         if (!Secure.passwordOk(a)) { err(t('pwd.short', { min: Secure.MIN_PASSWORD })); $('exp-pwd').focus(); return; }
@@ -7526,8 +7706,8 @@ async function doExport() {
         download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
       } else download(text, exportFileName(p.name), 'application/json');
       if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
-    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
-    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
+    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     else if (o.format === 'msp') {
       const q = o.anonymize ? Model.sanitize(Model.serialize(p, { anonymize: true })).project : p;
       download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
@@ -7719,6 +7899,10 @@ async function sheetWizard(src) {
       if (r.errors.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage' }, h('caption', { text: t('wiz.errors') }),
         h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
         h('tbody', {}, r.errors.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
+      // RG-42 : un montant invalide est signalé et ignoré, la ligne reste importée.
+      if (r.warnings && r.warnings.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'wiz-warnings' }, h('caption', { text: t('wiz.warnings') }),
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
+        h('tbody', {}, r.warnings.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
       body.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('wiz.mode') }),
         ['add', 'replace'].map(m => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'wiz-mode', id: 'wiz-m-' + m, value: m, checked: W.mode === m }), h('label', { for: 'wiz-m-' + m, text: t('wiz.m.' + m) })))));
     }
@@ -7754,7 +7938,7 @@ async function sheetWizard(src) {
       if (W.step === 1) { W.step = 2; paint(); return false; }
       if (W.step === 2) {
         if (W.map.name === undefined) return err(t('wiz.needName'));
-        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
         W.step = 3; paint(); return false;
       }
       if (!W.result.rows.length) return err(t('wiz.none'));

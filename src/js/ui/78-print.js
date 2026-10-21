@@ -1,7 +1,7 @@
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
  * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -14,9 +14,11 @@ function buildPrintGantt() {
   }
   const days = to - from + 1;
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
+  if (PrintOpt.amounts) cols.push('money'); // colonne Budget / Réel : seulement si les montants sont inclus (EF-124)
+  const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm) moins les colonnes.
   const pageW = PrintOpt.orient === 'landscape' ? 1045 : 715;
-  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80 };
+  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80, money: 110 };
   const ganttW = PrintOpt.scale === 'fit' ? Math.max(200, pageW - cols.reduce((a, k) => a + colW[k], 0)) : Math.round(days * 26 * App.zoom / 100 / 7);
   const dayW = ganttW / days;
   const x = dn => (dn - from) * dayW;
@@ -28,7 +30,7 @@ function buildPrintGantt() {
     c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
     head.append(c);
   }
-  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status') };
+  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
   const table = h('table', { class: 'print-gantt' },
     h('caption', { text: `${App.project.emoji} ${App.project.name} — ${I18n.date(from)} → ${I18n.date(to)}` }),
     h('thead', {}, h('tr', {}, cols.map(k => h('th', { scope: 'col', text: labels[k] })), h('th', { scope: 'col', class: 'pg-timecell' }, head))));
@@ -40,6 +42,7 @@ function buildPrintGantt() {
     const cells = {
       id: task.id, name: task.name, dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
       status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
+      money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
     };
     const lane = h('div', { class: 'pg-lane' });
     lane.style.setProperty('width', ganttW + 'px');
@@ -64,6 +67,7 @@ function buildPrintGantt() {
 
 function printWindow() {
   if (!App.sched) return;
+  PrintOpt.amounts = false; // décochée à chaque ouverture (EF-124)
   const chk = (id, label, checked, arg) => h('span', { class: 'check' }, h('input', { type: 'checkbox', id, checked, data: { change: 'printOpt', arg } }), h('label', { for: id, text: label }));
   const radio = (name, value, label, checked) => h('span', { class: 'check' }, h('input', { type: 'radio', name, id: `pr-${name}-${value}`, value, checked, data: { change: 'printOpt', arg: name } }), h('label', { for: `pr-${name}-${value}`, text: label }));
   const body = h('div', { id: 'print-win' },
@@ -74,6 +78,7 @@ function printWindow() {
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.orient') }), radio('orient', 'landscape', t('print.landscape'), PrintOpt.orient === 'landscape'), radio('orient', 'portrait', t('print.portrait'), PrintOpt.orient === 'portrait')),
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.cols') }), Object.keys(PrintOpt.cols).map(k => chk('pr-col-' + k, t('col.' + k), PrintOpt.cols[k], 'col:' + k))),
     chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
+    h('div', {}, chk('pr-amounts', t('out.amounts'), PrintOpt.amounts, 'amounts'), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('p', { class: 'hint', text: t('print.hint') }));
   return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
@@ -83,5 +88,6 @@ action('printOpt', (arg, el) => {
   if (arg === 'period' || arg === 'scale' || arg === 'orient') PrintOpt[arg] = el.value;
   else if (arg === 'from' || arg === 'to') { PrintOpt[arg] = Dates.parse(el.value) != null ? el.value : ''; PrintOpt.period = 'range'; }
   else if (arg === 'legend') PrintOpt.legend = el.checked;
+  else if (arg === 'amounts') PrintOpt.amounts = el.checked;
   else if (arg.startsWith('col:')) PrintOpt.cols[arg.slice(4)] = el.checked;
 });
