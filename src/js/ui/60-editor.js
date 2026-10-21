@@ -68,6 +68,22 @@ const Editor = (() => {
     return box;
   }
 
+  /** Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112). */
+  function budgetEditor() {
+    const lang = I18n.getLang(), masked = Money.masked();
+    const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
+    const mk = (name, label, cents, raw, hint) => {
+      const inp = input('text', masked ? Money.DOTS : (raw ?? Budget.toInput(cents || 0, lang)), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', disabled: masked, maxlength: 20 });
+      return field(name, `${label} (${Money.symbol()})`, inp, hint);
+    };
+    if (masked) box.append(h('p', { class: 'note', text: t('f.maskedFields') }));
+    box.append(mk('budget', t('f.budget'), draft.budget, draft.budgetRaw, t('f.amountHint', { symbol: Money.symbol() })));
+    box.append(mk('actual', t('f.actual'), draft.actual, draft.actualRaw, t('f.actualHelp')));
+    return box;
+  }
+
+  function summaryText(a) { return t('f.summaryAmounts', { budget: Money.text(a.budget), actual: Money.text(a.actual) }); }
+
   function build() {
     const box = clear($('edit-fields'));
     const d = draft;
@@ -122,6 +138,12 @@ const Editor = (() => {
       box.append(field('realStart', t('f.realStart'), input('date', d.realStart, { min: '1970-01-01', max: '2199-12-31' })));
       box.append(field('realEnd', t('f.realEnd'), input('date', d.realEnd, { min: '1970-01-01', max: '2199-12-31' })));
     }
+    if (d.type === 'task') box.append(budgetEditor());
+    else if (d.type === 'summary') {
+      // EF-113, RG-36 : une récapitulative affiche les sommes de ses enfants, sans saisie.
+      const a = Budget.amounts(App.project).get(originalId) || { budget: 0, actual: 0 };
+      box.append(h('p', { class: 'note', id: 'edit-sums', text: summaryText(a) }));
+    }
     // EF-91 : étiquettes avec suggestions tirées du projet.
     const tagField = field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 }));
     const current = new Set((d.tagsRaw ?? d.tags.join(',')).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
@@ -154,6 +176,8 @@ const Editor = (() => {
     if (f.pct) d.pctRaw = val('pct');
     if (f.reached) d.pct = f.reached.checked ? 100 : 0;
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) if (f[k]) d[k] = val(k);
+    if (f.budget && !f.budget.disabled) d.budgetRaw = val('budget');
+    if (f.actual && !f.actual.disabled) d.actualRaw = val('actual');
     d.tagsRaw = val('tags') || '';
     d.notes = val('notes') || '';
   }
@@ -205,6 +229,14 @@ const Editor = (() => {
       const pct = intIn(d.pctRaw, 0, 100);
       if (pct == null) e.pct = t('err.int', { field: t('f.pct'), min: 0, max: 100 }); else d.pct = pct;
     }
+    if (d.type === 'task' && !Money.masked()) {
+      for (const k of ['budget', 'actual']) {
+        if (d[k + 'Raw'] === undefined) continue;
+        const r = Budget.parse(d[k + 'Raw']);
+        if (!r.ok) e[k] = t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) });
+        else d[k] = r.cents;
+      }
+    }
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) {
       if (d[k] && Dates.parse(d[k]) == null) e[k] = t('err.date', { field: t('f.' + ({ forcedStart: 'forced' }[k] || k)) });
     }
@@ -246,6 +278,7 @@ const Editor = (() => {
       forcedStart: d.type === 'summary' ? '' : d.forcedStart, notBefore: d.type === 'summary' ? '' : d.notBefore, deadline: d.type === 'summary' ? '' : d.deadline,
       realStart: d.type === 'task' ? d.realStart : '', realEnd: d.type === 'task' ? d.realEnd : '',
       tags: d.tags, notes: d.notes, comments: d.comments, collapsed: d.collapsed,
+      budget: d.type === 'task' ? d.budget || 0 : 0, actual: d.type === 'task' ? d.actual || 0 : 0,
     };
     // Simulation : le planning doit rester calculable (dates ≤ 2199).
     const trial = clone(App.project);

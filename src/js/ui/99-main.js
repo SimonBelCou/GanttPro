@@ -134,6 +134,7 @@ function init() {
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();
+  App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
   initKeyboard();
   Tooltip.init();

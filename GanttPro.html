@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PtEUPe5RtU1Hk27AwOC/4yrqeH8UyNhuKjACme7okf0='; style-src 'sha256-L6S/N0p3cBxbV+R+1Vlj0RcUYzp8cSa/0zxMCleMqbU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OK5EIKwPxWTOS/3DybgKz5ouRRyKf373rLD45ez96m8='; style-src 'sha256-l0+gVUecm/RlgpZSOzLpRYkanxp54YF4gaa8fnYe5gc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -97,6 +97,8 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
+.tasks td.money { font-variant-numeric: tabular-nums; text-align: right; }
+.money { font-variant-numeric: tabular-nums; }
 .tasks td.name { padding-left: calc(.45rem + var(--depth, 0) * 1.1rem); max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.select { background: transparent; border: 0; padding: 0 .2rem; min-height: 28px; text-align: left; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.toggle { background: transparent; border: 0; min-height: 26px; min-width: 26px; }
@@ -489,6 +491,7 @@ body.planner-full { overflow: hidden; }
       <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
+      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
     </div>
     <div class="group">
       <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
@@ -572,10 +575,11 @@ body.planner-full { overflow: hidden; }
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="money"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
+          <th scope="col"><span data-i18n="col.money"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -2383,6 +2387,24 @@ const I18n = (() => {
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
     'rule.milestonePct': '0 ou 100 pour un jalon', 'rule.absent': 'champ interdit ici',
     'calc.error': 'Le planning ne peut pas être calculé : une date dépasse 2199.',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'montant masqué',
+    'top.mask': 'Masquer les montants',
+    'col.money': 'Budget / Réel',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Coût réel cumulé',
+    'f.actualHelp': 'Paiements faits, paiements en cours et factures engagées.',
+    'f.amountHint': 'Montant en {symbol}, deux décimales au plus (ex. 1 234,56).',
+    'f.summaryAmounts': 'Somme des tâches de cette récapitulative : budget {budget}, coût réel {actual}.',
+    'f.maskedFields': 'Les montants sont masqués : désactivez « Masquer les montants » pour les modifier.',
+    'err.amount.format': '{field} : écrire un montant comme « 1 234,56 ».',
+    'err.amount.negative': '{field} : le montant ne peut pas être négatif.',
+    'err.amount.decimals': '{field} : deux décimales au plus.',
+    'err.amount.max': '{field} : au plus {max}.',
+    'proj.currency': 'Symbole de la devise (1 à 5 caractères)',
+    'proj.provision': 'Provision globale',
+    'proj.budgetNote': 'Une seule devise pour tout le projet, sans conversion. L\'outil ne remplace pas une comptabilité de projet.',
     // Divers
     'undo.done': 'Modification annulée.', 'redo.done': 'Modification rétablie.', 'saved': 'Tâche {id} enregistrée.', 'deleted': 'Tâche {id} supprimée.',
     'added': 'Tâche {id} ajoutée.', 'newTask': 'Nouvelle tâche', 'newMilestone': 'Nouveau jalon', 'newSummary': 'Nouvelle récapitulative',
@@ -2684,6 +2706,24 @@ const I18n = (() => {
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
     'rule.absent': 'field not allowed here', 'calc.error': 'The schedule cannot be computed: a date goes beyond 2199.',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'amount hidden',
+    'top.mask': 'Hide amounts',
+    'col.money': 'Budget / Actual',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Cumulative actual cost',
+    'f.actualHelp': 'Payments made, payments in progress and committed invoices.',
+    'f.amountHint': 'Amount in {symbol}, at most two decimals (e.g. 1,234.56).',
+    'f.summaryAmounts': 'Total of the tasks in this summary task: budget {budget}, actual cost {actual}.',
+    'f.maskedFields': 'Amounts are hidden: turn off “Hide amounts” to edit them.',
+    'err.amount.format': '{field}: write an amount such as “1,234.56”.',
+    'err.amount.negative': '{field}: the amount cannot be negative.',
+    'err.amount.decimals': '{field}: at most two decimals.',
+    'err.amount.max': '{field}: at most {max}.',
+    'proj.currency': 'Currency symbol (1 to 5 characters)',
+    'proj.provision': 'Overall provision',
+    'proj.budgetNote': 'One currency for the whole project, no conversion. The tool does not replace project accounting.',
     'undo.done': 'Change undone.', 'redo.done': 'Change redone.', 'saved': 'Task {id} saved.', 'deleted': 'Task {id} deleted.', 'added': 'Task {id} added.',
     'newTask': 'New task', 'newMilestone': 'New milestone', 'newSummary': 'New summary task', 'unsaved.leave': 'Some changes were not exported.',
     'hol.newYear': "New Year's Day", 'hol.goodFriday': 'Good Friday', 'hol.easterMonday': 'Easter Monday', 'hol.labour': 'Labour Day',
@@ -3832,7 +3872,7 @@ function announce(msg) {
  * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'] };
 
   function get(key) {
     try {
@@ -4072,6 +4112,7 @@ const App = {
   undo: [],
   redo: [],
   dirty: false,
+  maskAmounts: false, // masquage des montants à l'écran (EF-125) : réglage de l'appareil, relu au démarrage
 };
 const UNDO_MAX = 50;
 
@@ -4181,6 +4222,53 @@ function visibleTasks() {
 /** Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7). */
 function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }
 
+// ── js/ui/41-money.js ──
+/* Affichage des montants à l'écran (EF-112, EF-125, EF-127, RG-41, RG-43).
+ * Un montant est affiché en entier ou en forme compacte selon l'endroit ; le masquage remplace tout montant par
+ * « •••• » (nom accessible « montant masqué »), sans toucher aux données ni aux fichiers (RG-41). */
+const Money = (() => {
+  const DOTS = '••••';
+  const symbol = () => (App.project && App.project.currency) || '€';
+  const masked = () => !!App.maskAmounts;
+  const opts = () => ({ lang: I18n.getLang(), symbol: symbol() });
+
+  /** Texte brut (infobulles, annonces) : « •••• » si masqué. */
+  function text(cents, { compact = false } = {}) {
+    if (masked()) return DOTS;
+    return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+  }
+  /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
+  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
+
+  /**
+   * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
+   * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
+   */
+  function node(cents, { compact = false, cls = '' } = {}) {
+    if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
+    const shown = compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+    if (!compact || Math.abs(cents) < 100000000) return h('span', { class: ['money', cls], text: shown });
+    return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
+  }
+
+  /** Cellule « Budget / Réel » de la liste : budget puis coût réel, en forme compacte (EF-115). */
+  function pair(amounts) {
+    const wrap = h('span', { class: 'money-pair' });
+    wrap.append(node(amounts.budget, { compact: true }), h('span', { class: 'sr-only', text: ` ${I18n.t('f.actual')} : ` }), h('span', { 'aria-hidden': 'true', text: ' / ' }), node(amounts.actual, { compact: true }));
+    return wrap;
+  }
+
+  return { DOTS, symbol, masked, text, spoken, node, pair };
+})();
+
+action('toggleMask', () => {
+  App.maskAmounts = !App.maskAmounts;
+  Settings.set('mask', App.maskAmounts ? 'on' : 'off');
+  render();
+  announce(t('top.mask') + ' : ' + t(App.maskAmounts ? 'state.on' : 'state.off'));
+  const b = $('btn-mask'); if (b) b.focus();
+});
+
 // ── js/ui/50-render.js ──
 /* Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches). */
@@ -4242,6 +4330,8 @@ function renderTopbar() {
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const mask = $('btn-mask');
+  mask.setAttribute('aria-pressed', String(!!App.maskAmounts));
   const links = $('btn-links');
   links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
   links.setAttribute('aria-pressed', String(App.showLinks));
@@ -4337,19 +4427,28 @@ function textCell(text, cls) {
   return td;
 }
 
+/** Cellule « Budget / Réel » (EF-115, EF-127) : forme compacte ; vide pour un jalon. */
+function moneyCell(task, amts) {
+  const td = document.createElement('td');
+  td.className = 'money';
+  if (task.type !== 'milestone') td.append(Money.pair(amts.get(task.id) || { budget: 0, actual: 0 }));
+  return td;
+}
+
 function renderList(items, fl) {
   const noRes = t('list.noRes');
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
+  const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 6 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 7 },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -4388,7 +4487,8 @@ function renderList(items, fl) {
     const idCell = textCell(task.id, 'id');
     if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
     tr.append(idCell, nameCell, textCell(durText(task, r)), textCell(depsText(task)),
-      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')));
+      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
+      moneyCell(task, amts));
     frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
@@ -4965,6 +5065,22 @@ const Editor = (() => {
     return box;
   }
 
+  /** Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112). */
+  function budgetEditor() {
+    const lang = I18n.getLang(), masked = Money.masked();
+    const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
+    const mk = (name, label, cents, raw, hint) => {
+      const inp = input('text', masked ? Money.DOTS : (raw ?? Budget.toInput(cents || 0, lang)), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', disabled: masked, maxlength: 20 });
+      return field(name, `${label} (${Money.symbol()})`, inp, hint);
+    };
+    if (masked) box.append(h('p', { class: 'note', text: t('f.maskedFields') }));
+    box.append(mk('budget', t('f.budget'), draft.budget, draft.budgetRaw, t('f.amountHint', { symbol: Money.symbol() })));
+    box.append(mk('actual', t('f.actual'), draft.actual, draft.actualRaw, t('f.actualHelp')));
+    return box;
+  }
+
+  function summaryText(a) { return t('f.summaryAmounts', { budget: Money.text(a.budget), actual: Money.text(a.actual) }); }
+
   function build() {
     const box = clear($('edit-fields'));
     const d = draft;
@@ -5019,6 +5135,12 @@ const Editor = (() => {
       box.append(field('realStart', t('f.realStart'), input('date', d.realStart, { min: '1970-01-01', max: '2199-12-31' })));
       box.append(field('realEnd', t('f.realEnd'), input('date', d.realEnd, { min: '1970-01-01', max: '2199-12-31' })));
     }
+    if (d.type === 'task') box.append(budgetEditor());
+    else if (d.type === 'summary') {
+      // EF-113, RG-36 : une récapitulative affiche les sommes de ses enfants, sans saisie.
+      const a = Budget.amounts(App.project).get(originalId) || { budget: 0, actual: 0 };
+      box.append(h('p', { class: 'note', id: 'edit-sums', text: summaryText(a) }));
+    }
     // EF-91 : étiquettes avec suggestions tirées du projet.
     const tagField = field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 }));
     const current = new Set((d.tagsRaw ?? d.tags.join(',')).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
@@ -5051,6 +5173,8 @@ const Editor = (() => {
     if (f.pct) d.pctRaw = val('pct');
     if (f.reached) d.pct = f.reached.checked ? 100 : 0;
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) if (f[k]) d[k] = val(k);
+    if (f.budget && !f.budget.disabled) d.budgetRaw = val('budget');
+    if (f.actual && !f.actual.disabled) d.actualRaw = val('actual');
     d.tagsRaw = val('tags') || '';
     d.notes = val('notes') || '';
   }
@@ -5102,6 +5226,14 @@ const Editor = (() => {
       const pct = intIn(d.pctRaw, 0, 100);
       if (pct == null) e.pct = t('err.int', { field: t('f.pct'), min: 0, max: 100 }); else d.pct = pct;
     }
+    if (d.type === 'task' && !Money.masked()) {
+      for (const k of ['budget', 'actual']) {
+        if (d[k + 'Raw'] === undefined) continue;
+        const r = Budget.parse(d[k + 'Raw']);
+        if (!r.ok) e[k] = t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) });
+        else d[k] = r.cents;
+      }
+    }
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) {
       if (d[k] && Dates.parse(d[k]) == null) e[k] = t('err.date', { field: t('f.' + ({ forcedStart: 'forced' }[k] || k)) });
     }
@@ -5143,6 +5275,7 @@ const Editor = (() => {
       forcedStart: d.type === 'summary' ? '' : d.forcedStart, notBefore: d.type === 'summary' ? '' : d.notBefore, deadline: d.type === 'summary' ? '' : d.deadline,
       realStart: d.type === 'task' ? d.realStart : '', realEnd: d.type === 'task' ? d.realEnd : '',
       tags: d.tags, notes: d.notes, comments: d.comments, collapsed: d.collapsed,
+      budget: d.type === 'task' ? d.budget || 0 : 0, actual: d.type === 'task' ? d.actual || 0 : 0,
     };
     // Simulation : le planning doit rester calculable (dates ≤ 2199).
     const trial = clone(App.project);
@@ -5557,7 +5690,7 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
 App.colWidths = {};
 function applyColWidths() {
   const table = $('tasks-table');
@@ -5577,7 +5710,7 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status'];
+  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status', 'money'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
@@ -6092,10 +6225,19 @@ async function editProjectWindow() {
     Model.EMOJIS.map((e, i) => h('span', { class: 'emoji-opt' },
       h('input', { type: 'radio', id: 'p-emo-' + i, name: 'p-emoji', value: e, checked: e === p.emoji }),
       h('label', { for: 'p-emo-' + i, text: e }))));
+  // Budget (EF-114) : symbole de la devise, unique pour le projet et sans conversion, et provision globale.
+  const masked = Money.masked();
+  const currency = h('input', { type: 'text', id: 'p-currency', value: p.currency || '€', maxlength: Model.LIMITS.currency, autocomplete: 'off', aria: { describedby: 'p-currency-err' } });
+  const provision = h('input', { type: 'text', id: 'p-provision', value: masked ? Money.DOTS : Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-provision-err' } });
+  const budgetBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+    h('p', { class: 'hint', text: t('proj.budgetNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
+    masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+    h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -6106,9 +6248,27 @@ async function editProjectWindow() {
         name.setAttribute('aria-invalid', 'true'); name.focus();
         return false;
       }
+      const cur = currency.value.trim();
+      if (!cur || cur.length > Model.LIMITS.currency || /[\u0000-\u001f\u007f]/.test(cur)) {
+        const err = $('p-currency-err');
+        err.textContent = t('err.text', { field: t('proj.currency'), min: 1, max: Model.LIMITS.currency }); err.hidden = false;
+        currency.setAttribute('aria-invalid', 'true'); currency.focus();
+        return false;
+      }
+      let prov = p.provision || 0;
+      if (!masked) {
+        const r = Budget.parse(provision.value);
+        if (!r.ok) {
+          const err = $('p-provision-err');
+          err.textContent = t('err.amount.' + r.reason, { field: t('proj.provision'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+          provision.setAttribute('aria-invalid', 'true'); provision.focus();
+          return false;
+        }
+        prov = r.cents;
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
       return true;
     },
   });
@@ -8570,6 +8730,7 @@ function init() {
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();
+  App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
   initKeyboard();
   Tooltip.init();
