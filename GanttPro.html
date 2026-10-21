@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hvvHJoGhm4ASdsswW+EI0ZA4rRsV8SgAJn70YDq8c+0='; style-src 'sha256-bZrb3lvJ/yj7r9X9KqGLCaBpBx1Qlb1+PBOC9oWeaxc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vjhSZLp5WgQK2kB1FLxTdlsv9akU3DA0t8Mz8DxY5ZM='; style-src 'sha256-bZrb3lvJ/yj7r9X9KqGLCaBpBx1Qlb1+PBOC9oWeaxc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -5014,6 +5014,11 @@ const Tooltip = (() => {
     const tip = $('tooltip');
     clear(tip);
     for (const l of lines(task)) tip.append(h('div', { text: l }));
+    // Budget et coût réel en entier (EF-125 : masqués à l'écran quand le masquage est actif).
+    if (task.type !== 'milestone' && Budget.hasAmounts(App.project)) {
+      const a = Budget.amounts(App.project).get(task.id) || { budget: 0, actual: 0 };
+      tip.append(h('div', {}, `${t('col.money')} : `, Money.node(a.budget), ' / ', Money.node(a.actual)));
+    }
     tip.hidden = false;
     const r = el.getBoundingClientRect();
     const w = tip.offsetWidth, hgt = tip.offsetHeight;

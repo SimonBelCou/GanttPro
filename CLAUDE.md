@@ -145,7 +145,7 @@ Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout cod
 ## Obligatoire à chaque modification
 1. `python3 tools/build.py`
 2. `node --test tests/core/*.test.mjs` (moteur, scénarios chiffrés de la recette)
-3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`
+3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`
    (`npm install --no-save axe-core` pour le contrôle d'accessibilité ; `PERF_FACTOR=2` sur une machine lente).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
 5. **Recette manuelle** : toute évolution visible par l'utilisateur ajoute ou met à jour, dans

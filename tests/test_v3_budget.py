@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""Tests de bout en bout du budget, étape A (EF-112 à EF-127, RG-35 à RG-43, recette R-71 à R-84).
+
+    python3 tools/build.py && python3 tests/test_v3_budget.py
+
+Toutes les données sont fictives (EX-12).
+"""
+import json
+import sys
+import tempfile
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_v3 import HTML, axe_check, check, results  # noqa: E402
+
+
+def sp(s):
+    """Espaces insécables et fines normalisés, pour comparer les textes affichés."""
+    return (s or '').replace(' ', ' ').replace(' ', ' ')
+
+
+def budget_project(**over):
+    """Données de R-74 : T1 terminée, T2 à 40 %, provision 40,00, aujourd'hui = 14/01/2026."""
+    p = {
+        'format': 3, 'name': 'Projet budget', 'projectStart': '2026-01-05', 'provision': 4000,
+        'tasks': [
+            {'id': 'T1', 'name': 'Etude', 'dur': 5, 'pct': 100, 'realEnd': '2026-01-09', 'cat': 'Etudes', 'budget': 10000, 'actual': 9000},
+            {'id': 'T2', 'name': 'Realisation', 'dur': 5, 'deps': ['T1'], 'pct': 40, 'cat': 'Etudes', 'budget': 30000, 'actual': 10000},
+            {'id': 'J', 'name': 'Jalon', 'type': 'milestone', 'dur': 0, 'deps': ['T2']},
+        ],
+        'resources': [{'name': 'Alice'}], 'categories': [{'name': 'Etudes', 'color': '#4d9fff'}],
+    }
+    p.update(over)
+    return p
+
+
+def main():
+    tmp = Path(tempfile.mkdtemp())
+    files = {}
+
+    def write(name, obj):
+        f = tmp / name
+        f.write_text(obj if isinstance(obj, str) else json.dumps(obj), encoding='utf-8')
+        files[name] = str(f)
+
+    write('budget.json', budget_project())
+    write('neg.json', budget_project(tasks=[{'id': 'A', 'name': 'x', 'dur': 2, 'budget': -5}]))
+    write('milestone.json', budget_project(tasks=[{'id': 'M', 'name': 'j', 'type': 'milestone', 'dur': 0, 'budget': 100}]))
+    write('sheet.csv', 'Nom;Durée;Budget;Coût réel\nUn;3;1 234,56;10\nDeux;2;abc;\nTrois;4;250,5;99,999\n')
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(args=['--no-sandbox'])
+        ctx = browser.new_context(viewport={'width': 1500, 'height': 950}, locale='fr-FR', accept_downloads=True)
+        pg = ctx.new_page()
+        errors = []
+        pg.on('pageerror', lambda e: errors.append(str(e)))
+        pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' or 'Content Security Policy' in m.text else None)
+        pg.clock.set_fixed_time('2026-01-14T10:00:00')
+        pg.goto(HTML.as_uri())
+        pg.wait_for_selector('#task-rows tr')
+
+        def btn(label, scope='dialog[open]'):
+            pg.locator(scope).last.locator(f'button:has-text("{label}")').first.click()
+            pg.wait_for_timeout(80)
+
+        def load(name):
+            pg.set_input_files('#file-input', files[name])
+            pg.wait_for_selector('dialog[open]')
+            # EF-52 : remplacer un projet modifié demande une confirmation de plus.
+            for _ in range(2):
+                b = pg.locator('dialog[open]').last.locator('button:has-text("Remplacer le projet ouvert")')
+                if b.count():
+                    b.first.click()
+                    pg.wait_for_timeout(120)
+            pg.wait_for_timeout(150)
+
+        def cell(id_):
+            # Texte visible seulement : le texte réservé aux lecteurs d'écran (.sr-only) est exclu.
+            return sp(pg.evaluate("""id => {
+              const td = document.querySelector('#task-rows tr[data-id="' + id + '"] td.money').cloneNode(true);
+              td.querySelectorAll('.sr-only').forEach(n => n.remove());
+              return td.textContent.trim();
+            }""", id_))
+
+        def open_task(id_):
+            pg.click(f'#task-rows tr[data-id="{id_}"] button.select')
+            pg.wait_for_selector('#editor:not([hidden])')
+
+        def esc():
+            pg.keyboard.press('Escape')
+            pg.wait_for_timeout(80)
+
+        # ── Projet vide : pas d'onglet Budget (EF-117) ────────────────────────────────────────
+        check('colonne « Budget / Réel » dans l\'en-tête de la liste', 'Budget / Réel' in pg.inner_text('#tasks-table thead'))
+        pg.click('button[data-click="openDashboard"]')
+        check('sans montant, pas d\'onglet Budget', pg.locator('#dash-win [role="tab"]').count() == 2)
+        esc()
+
+        # ── R-74 : colonne, fiche, onglet ────────────────────────────────────────────────────
+        load('budget.json')
+        check('colonne : budget puis coût réel de T1', '100,00 € / 90,00 €' in cell('T1'), cell('T1'))
+        check('colonne : un jalon n\'a aucun montant', cell('J') == '')
+
+        open_task('T1')
+        check('fiche : budget et coût réel en unités', pg.input_value('#f-budget') == '100' and pg.input_value('#f-actual') == '90')
+        check('fiche : le coût réel explique ce qu\'il compte', 'factures engagées' in pg.inner_text('#editor'))
+        axe_check(pg, 'fiche de tâche avec le groupe Budget')
+
+        # R-71 : saisies refusées avec la limite, acceptées en centimes
+        for raw, msg in [('12,345', 'deux décimales'), ('-5', 'négatif'), ('50 000 000 000,01', '50 000 000 000,00'), ('abc', 'écrire un montant')]:
+            pg.fill('#f-budget', raw)
+            pg.click('#edit-form button[type=submit]')
+            err = sp(pg.inner_text('#f-budget-err'))
+            check(f'R-71 : « {raw} » refusé avec un message ({msg})', msg in err and pg.is_visible('#editor') and pg.get_attribute('#f-budget', 'aria-invalid') == 'true', err)
+        pg.fill('#f-budget', '1 234,56')
+        pg.fill('#f-actual', '1234.5')
+        pg.click('#edit-form button[type=submit]')
+        check('R-71 : « 1 234,56 » et « 1234.5 » enregistrés', '1 234,56 € / 1 234,50 €' in cell('T1'), cell('T1'))
+        pg.click('#btn-undo')
+        check('annuler rétablit les montants', '100,00 € / 90,00 €' in cell('T1'), cell('T1'))
+
+        open_task('J')
+        check('fiche d\'un jalon : aucun champ de montant', pg.locator('#f-budget').count() == 0)
+        esc()
+
+        # ── Onglet Budget (EF-117, EF-118, R-72, R-74) ────────────────────────────────────────
+        pg.click('button[data-click="openDashboard"]')
+        check('avec des montants, l\'onglet Budget apparaît', pg.locator('#dtab-budget').count() == 1)
+        pg.click('#dtab-budget')
+        tiles = sp(pg.inner_text('#bud-tiles'))
+        for needle in ['400,00 €', '40,00 €', '440,00 €', '190,00 €', '250,00 €']:
+            check(f'onglet Budget : indicateur {needle}', needle in tiles, tiles)
+        cats = sp(pg.inner_text('#bud-cats'))
+        check('tableau par catégorie : Etudes 400,00 € / 190,00 € / 210,00 €', 'Etudes' in cats and '400,00 €' in cats and '210,00 €' in cats, cats)
+        check('courbe des coûts présente, avec un titre', pg.locator('#dpanel svg.scurve').count() == 1)
+        pg.click('button[data-click="dashCostValues"]')
+        vals = sp(pg.inner_text('#bud-values'))
+        check('R-74 : tableau des valeurs, semaine 1 prévu 100,00 réel 90,00', '100,00 €' in vals and '90,00 €' in vals and '400,00 €' in vals, vals)
+        axe_check(pg, 'onglet Budget du tableau de bord')
+        pg.click('#sc-month')
+        check('R-74 : par mois, une seule période', pg.locator('#bud-values tbody tr').count() == 1)
+        esc()
+
+        # ── Fenêtre du projet : devise et provision (EF-114) ──────────────────────────────────
+        pg.click('#project-label')
+        check('fenêtre du projet : devise et provision', pg.input_value('#p-currency') == '€' and pg.input_value('#p-provision') == '40')
+        axe_check(pg, 'fenêtre du projet avec devise et provision')
+        pg.fill('#p-currency', '')
+        btn('Enregistrer')
+        check('devise vide refusée', pg.is_visible('#p-currency-err'))
+        pg.fill('#p-currency', 'CHF'); pg.fill('#p-provision', '12,5')
+        btn('Enregistrer')
+        check('devise CHF : affichée après le montant', 'CHF' in cell('T1'), cell('T1'))
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget')
+        check('provision 12,50 dans l\'onglet Budget', '12,50 CHF' in sp(pg.inner_text('#bud-tiles')), sp(pg.inner_text('#bud-tiles')))
+        esc()
+        pg.click('#project-label'); pg.fill('#p-currency', '€'); pg.fill('#p-provision', '40'); btn('Enregistrer')
+
+        # ── R-83 : affichage compact ─────────────────────────────────────────────────────────
+        open_task('T2'); pg.fill('#f-budget', '1234567,89'); pg.click('#edit-form button[type=submit]')
+        check('R-83 : 1 234 567,89 s\'affiche « 1,23 M € » dans la colonne', '1,23 M €' in cell('T2'), cell('T2'))
+        check('R-84 : le lecteur d\'écran lit le montant complet', '1 234 567,89 €' in sp(pg.evaluate("document.querySelector('#task-rows tr[data-id=\"T2\"] td.money .sr-only').textContent")))
+        open_task('T2')
+        check('R-84 : la fiche affiche le montant complet', pg.input_value('#f-budget') == '1234567,89')
+        esc()
+        pg.click('#btn-undo')
+
+        # ── R-78 : masquage ──────────────────────────────────────────────────────────────────
+        pg.click('#btn-mask')
+        check('masquage : bouton à bascule enfoncé', pg.get_attribute('#btn-mask', 'aria-pressed') == 'true')
+        check('masquage : « •••• » dans la colonne, sans montant', '••••' in cell('T1') and '100' not in cell('T1'), cell('T1'))
+        check('masquage : nom accessible « montant masqué »', 'montant masqué' in pg.evaluate("document.querySelector('#task-rows tr[data-id=\"T1\"] td.money').textContent"))
+        open_task('T1')
+        check('masquage : champs de la fiche désactivés', pg.is_disabled('#f-budget') and pg.is_disabled('#f-actual'))
+        axe_check(pg, 'fiche de tâche, montants masqués')
+        esc()
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget')
+        check('masquage : onglet Budget masqué', '€' not in sp(pg.inner_text('#bud-tiles')) and '••••' in pg.inner_text('#bud-tiles'))
+        check('masquage : tableau des catégories masqué', '400' not in sp(pg.inner_text('#bud-cats')))
+        axe_check(pg, 'onglet Budget, montants masqués')
+        esc()
+        pg.reload(); pg.wait_for_selector('#task-rows tr')
+        check('masquage mémorisé après rechargement', pg.get_attribute('#btn-mask', 'aria-pressed') == 'true')
+        pg.click('#btn-mask')
+        load('budget.json')
+        check('démasqué : les montants reviennent', '100,00 € / 90,00 €' in cell('T1'), cell('T1'))
+
+        # ── Baselines (EF-121, R-75) ─────────────────────────────────────────────────────────
+        pg.click('button[data-click="openBaselines"]'); btn('Capturer')
+        esc()
+        open_task('T2'); pg.fill('#f-budget', '350'); pg.click('#edit-form button[type=submit]')
+        pg.click('button[data-click="openBaselines"]')
+        bl = sp(pg.inner_text('#bl-win'))
+        check('R-75 : BAC de la baseline 400,00 € et BAC du projet 450,00 €', '400,00 €' in bl and '450,00 €' in bl, bl)
+        axe_check(pg, 'fenêtre des baselines avec la colonne BAC')
+        esc()
+
+        # ── Rapport (EF-120, EF-124) ─────────────────────────────────────────────────────────
+        pg.click('button[data-click="openReport"]')
+        check('rapport : la case « Inclure les montants » est décochée', not pg.is_checked('#rep-amounts'))
+        check('rapport : sans la case, aucun bloc Budget', pg.locator('#report-preview .rep-budget').count() == 0)
+        pg.check('#rep-amounts')
+        rep = sp(pg.inner_text('#report-preview .rep-budget'))
+        check('rapport : BAC, provision, budget total, coût réel, reste', all(x in rep for x in ['450,00 €', '40,00 €', '490,00 €', '190,00 €', '300,00 €']), rep)
+        pg.select_option('#rep-bl', 'B1')
+        check('rapport : variation du BAC avec la baseline (+50,00 €)', '+50,00 €' in sp(pg.inner_text('#report-preview .rep-budget')), sp(pg.inner_text('#report-preview .rep-budget')))
+        axe_check(pg, 'rapport avec le bloc Budget')
+        esc()
+        pg.click('button[data-click="openReport"]')
+        check('rapport rouvert : case décochée de nouveau', not pg.is_checked('#rep-amounts'))
+        esc()
+
+        # ── Export sans montants (EF-124, R-76) ──────────────────────────────────────────────
+        def export(fmt, amounts):
+            pg.click('button[data-click="exportFile"]')
+            pg.check(f'#exp-f-{fmt}')
+            check(f'R-76 : case « Inclure les montants » décochée à l\'ouverture ({fmt}, {"cochée" if amounts else "défaut"})', not pg.is_checked('#exp-amounts'))
+            if amounts:
+                pg.check('#exp-amounts')
+            with pg.expect_download() as dl:
+                btn('Exporter')
+            path = dl.value.path()
+            return Path(path).read_bytes() if fmt == 'xlsx' else Path(path).read_text(encoding='utf-8')
+
+        pg.click('button[data-click="exportFile"]')
+        axe_check(pg, "fenêtre d'export avec « Inclure les montants »")
+        esc()
+        j0 = export('json', False)
+        check('R-76 : JSON sans montants : aucun champ budget, actual, provision', not any(k in j0 for k in ['"budget"', '"actual"', '"provision"']) and '"currency"' in j0)
+        j1 = json.loads(export('json', True))
+        check('R-76 : JSON avec montants : en centimes', j1['provision'] == 4000 and j1['tasks'][0]['budget'] == 10000 and j1['tasks'][1]['budget'] == 35000, j1['tasks'][0])
+        c0 = export('csv', False)
+        check('R-76 : CSV sans montants : aucune colonne', 'Budget' not in c0 and 'Coût réel' not in c0)
+        c1 = export('csv', True)
+        check('R-76 : CSV avec montants : deux décimales', 'Budget;Coût réel' in c1 and '100.00;90.00' in c1, c1[:300])
+
+        # ── Import d'un tableur (RG-42) ──────────────────────────────────────────────────────
+        pg.set_input_files('#file-input', files['sheet.csv']); pg.wait_for_selector('#wiz-header')
+        btn('Suivant')
+        check('assistant : colonnes Budget et Coût réel reconnues', pg.input_value('#wiz-map-budget') == '2' and pg.input_value('#wiz-map-actual') == '3')
+        btn('Suivant')
+        warn = sp(pg.inner_text('#wiz-warnings'))
+        check('assistant : montants invalides signalés (abc, 99,999)', 'abc' in warn and '99,999' in warn, warn)
+        axe_check(pg, "assistant d'import avec montants ignorés")
+        btn('Importer')
+        pg.wait_for_timeout(200)
+        un = [r for r in pg.query_selector_all('#task-rows tr[data-id]') if 'Un' in r.inner_text()]
+        check('import : « 1 234,56 » lu en centimes', un and '1 234,56 €' in sp(un[0].query_selector('td.money').inner_text()) and '10,00 €' in sp(un[0].query_selector('td.money').inner_text()), [sp(r.inner_text()) for r in un])
+
+        # ── Modification en masse (EF-116) ───────────────────────────────────────────────────
+        load('budget.json')
+        pg.click('#task-rows tr[data-id="T1"] button.select', modifiers=['Control'])
+        pg.click('#task-rows tr[data-id="T2"] button.select', modifiers=['Control'])
+        pg.click('#selbar button:has-text("Modifier en masse")')
+        pg.fill('#bk-budget', '10'); btn('Appliquer')
+        check('masse : budget fixé pour les tâches sélectionnées', '10,00 € /' in cell('T1') and '10,00 € /' in cell('T2'), (cell('T1'), cell('T2')))
+
+        # ── Fichiers refusés (R-77) ──────────────────────────────────────────────────────────
+        before = cell('T1')
+        for name in ['neg.json', 'milestone.json']:
+            pg.set_input_files('#file-input', files[name]); pg.wait_for_timeout(300)
+            msg = sp(pg.locator('dialog[open]').last.inner_text()) if pg.locator('dialog[open]').count() else ''
+            check(f'R-77 : {name} refusé, projet ouvert intact', ('Tâche n° 1' in msg) and cell('T1') == before, msg)
+            while pg.locator('dialog[open]').count():
+                esc()
+
+        # ── Anglais ──────────────────────────────────────────────────────────────────────────
+        pg.click('#btn-lang'); pg.wait_for_timeout(150)
+        check('anglais : symbole avant le montant et séparateurs anglais', '€10.00 / €' in cell('T1'), cell('T1'))
+        check('anglais : bouton « Hide amounts »', 'Hide amounts' in pg.inner_text('#btn-mask'))
+        pg.click('#btn-lang')
+
+        check('aucune erreur JavaScript ni violation CSP', not errors, errors)
+        browser.close()
+
+    ok = sum(1 for _, v in results if v)
+    print(f'\n{ok}/{len(results)} vérifications réussies.')
+    sys.exit(0 if ok == len(results) else 1)
+
+
+if __name__ == '__main__':
+    main()
