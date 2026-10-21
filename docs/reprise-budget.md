@@ -103,7 +103,9 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 
 ## 7. Autres restes à faire (hors budget)
 
-- Fiche de recette manuelle EX-16 (Firefox, Safari, tablette) et plan d'audit RGAA EX-05 dans `docs/`.
+- Guide de recette manuelle `docs/recette-manuelle.md` + faux projets JSON dans `tests/fixtures/` (règle 5 de `CLAUDE.md`) :
+  à rédiger en commençant par le budget étape A (R-71 à R-84) ; il absorbe la fiche EX-16 (Firefox, Safari, tablette).
+- Plan d'audit RGAA EX-05 dans `docs/`.
 - Mémorisation facultative de la mise en page, **choix et ordre des colonnes** (à proposer après l'étape A : il
   rendra la colonne « Budget » facultative), hauteur réglable de la zone.
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.

@@ -148,6 +148,13 @@ Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout cod
 3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`
    (`npm install --no-save axe-core` pour le contrôle d'accessibilité ; `PERF_FACTOR=2` sur une machine lente).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
+5. **Recette manuelle** : toute évolution visible par l'utilisateur ajoute ou met à jour, dans
+   `docs/recette-manuelle.md`, un parcours pas à pas (état de départ, actions numérotées, résultat attendu après
+   chaque action, case à cocher), à suivre par le propriétaire du produit pour valider la mise à jour. Les projets
+   d'essai à ouvrir sont des fichiers JSON de faux projets dans `tests/fixtures/` (aucune donnée réelle, ouvrables
+   par « Ouvrir » ; un fichier par situation utile, nommé pour ce qu'il montre). Une mise à jour n'est livrée qu'avec
+   son parcours à jour et ses fichiers d'essai ; le parcours renvoie aux exigences et aux scénarios R-xx du cahier
+   des charges.
 
 ## Règles de code (A03 – Injection)
 - DOM construit avec `h()` : tout texte par `textContent`, **jamais `innerHTML`** ; SVG par `svg()`.
