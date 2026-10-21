@@ -37,6 +37,7 @@ comportement existant.
 | `projet-exemple.json` | Deux phases, tâches, jalon, liens avec délai, échéance, notes, étiquettes, deux ressources | G2 à G11, G14 |
 | `projet-surcharge.json` | Une ressource surchargée et absente, sans nivellement : un conflit | G5, G6 |
 | `projet-retard.json` | Projet daté d'août 2026, en retard : tâche critique, échéance dépassée, voyant ROUGE | G9, G11 |
+| `projet-atlas-budget.json` | Projet complet de 49 éléments avec budgets, coûts réels, provision, un montant en millions, une baseline prise avant des dépassements, 4 conflits voulus | B13, et tout parcours sur un grand projet |
 | `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
 
 ### Quand rejouer quoi
@@ -460,6 +461,28 @@ Départ : `budget-base.json` ouvert.
 
 - [ ] 1. Survolez la barre d'Etude. *Attendu :* l'infobulle contient une ligne avec budget et coût réel.
 - [ ] 2. Activez le masquage et survolez de nouveau. *Attendu :* `••••` à la place des montants.
+
+### Budget 13 — Un projet complet avec budget (EF-112 à EF-127, R-72, R-75, R-83)
+
+Départ : importez `projet-atlas-budget.json` (49 éléments, 6 ressources, provision de 15 000,00 €, une baseline
+« Baseline initiale »). Ce projet a aussi 4 conflits de ressources voulus : ils n'ont pas de lien avec le budget.
+
+- [ ] 1. Colonne **Budget / Réel**. *Attendu :* « Recueil des besoins » (A2) `8 000,00 € / 9 200,00 €` (coût réel
+  au-dessus du budget) ; « API réservations » (C3) `29 000,00 € / 0,00 €` ; « Infrastructure de production » (F1)
+  `1,5 M € / 0,00 €` (forme abrégée) ; les jalons sont vides.
+- [ ] 2. Les récapitulatives affichent la somme de leurs tâches : « Cadrage » (P1) `19 300,00 € / 18 800,00 €`,
+  « Développement » (P3) `189 000,00 € / 0,00 €`. Une récapitulative n'a pas de champ de montant dans sa fiche.
+- [ ] 3. Tableau de bord, onglet **Budget**. *Attendu :* BAC `1 836 700,00 €`, provision `15 000,00 €`, budget total
+  `1 851 700,00 €`, coût réel total `26 100,00 €`, reste `1 825 600,00 €`.
+- [ ] 4. Tableau par catégorie. *Attendu :* Ops `1 506 500,00 €` de budget (la catégorie qui pèse le plus à cause de
+  l'infrastructure), Études `30 100,00 €` budget / `19 200,00 €` réel, total `1 836 700,00 €` / `26 100,00 €`.
+- [ ] 5. **Baselines**. *Attendu :* « Baseline initiale », BAC `1 831 700,00 €`, provision `15 000,00 €` ; BAC du projet
+  `1 836 700,00 €`, soit **+5 000,00 €** (C3 et E2 ont augmenté, G2 a diminué depuis la capture).
+- [ ] 6. Ouvrez **Rapport d'état**, cochez **Inclure les montants** et choisissez la baseline : la variation du BAC
+  `+5 000,00 €` figure dans le bloc Budget.
+- [ ] 7. Activez **Masquer les montants** puis ouvrez les trois endroits ci-dessus : aucun montant visible.
+- [ ] 8. Exportez en Excel avec puis sans montants : sans, aucune colonne de montant dans la feuille Tâches ni dans
+  Baselines ; avec, les montants sont en unités à deux décimales.
 
 ### Contrôle final de la mise à jour
 
