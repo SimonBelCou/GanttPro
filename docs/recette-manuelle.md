@@ -1,32 +1,323 @@
 # Recette manuelle de GanttPro
 
-Ce document guide, pas à pas, la validation d'une mise à jour par le propriétaire du produit. Il est complété à
-chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son parcours à jour et
-ses fichiers d'essai**.
+Ce document guide, pas à pas, la validation de **tout l'outil** par le propriétaire du produit.
+
+- **Partie A — Recette générale** : les parcours G1 à G15 couvrent l'ensemble des fonctions. On les rejoue en entier
+  avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
+  l'indique).
+- **Partie B — Mises à jour** : un chapitre par évolution (Budget étape A pour l'instant), à suivre pour valider cette
+  évolution seule.
+
+Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son
+parcours à jour et ses fichiers d'essai**, et les parcours généraux sont adaptés si la mise à jour change un
+comportement existant.
 
 ## Comment l'utiliser
 
 1. Ouvrez `GanttPro.html` (double-clic, aucun serveur nécessaire) dans un navigateur récent. Langue : français,
    sauf indication contraire.
 2. Les projets d'essai sont dans `tests/fixtures/`. Ce sont de **faux projets** : aucune donnée réelle. On les ouvre
-   par le bouton **Ouvrir** de la barre du haut. Si un projet est déjà ouvert et modifié, choisissez
-   **Remplacer le projet ouvert** dans la fenêtre d'aperçu.
+   par le bouton **Importer** de la barre du haut. L'aperçu propose de les ouvrir dans un nouvel onglet ou de
+   **Remplacer le projet ouvert** (avec une confirmation de plus si celui-ci est modifié).
 3. Chaque parcours indique l'état de départ, des actions numérotées et le résultat attendu. Cochez la case quand le
-   résultat constaté est conforme. En cas d'écart, notez le numéro de l'étape et ce que vous voyez.
+   résultat constaté est conforme. En cas d'écart, notez le numéro de l'étape, ce que vous voyez et le navigateur.
 4. Les références (EF, RG, R-xx) renvoient au cahier des charges
-   (<https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7>).
-5. Les montants s'écrivent en unités, avec deux décimales au plus (`1 234,56` ou `1234.56`). Les espaces entre les
-   groupes de chiffres sont des espaces insécables : ne cherchez pas à les reproduire à l'identique.
+   (<https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7>). Le détail des fonctions est dans le
+   guide utilisateur (`docs/guide-utilisateur.md`), dont les sections sont citées « (§ n) ».
+5. **Les statuts dépendent de la date du jour** (Terminé, En retard, À venir…). Quand un attendu en dépend, le
+   parcours l'indique ; sinon il ne repose que sur les dates prévues, le chemin critique et les conflits, qui ne
+   dépendent pas de la date du jour.
+6. Les espaces entre les groupes de chiffres des montants sont des espaces insécables : ne cherchez pas à les
+   reproduire à l'identique.
+
+### Projets d'essai
+
+| Fichier | Ce qu'il montre | Parcours |
+| --- | --- | --- |
+| `projet-exemple.json` | Deux phases, tâches, jalon, liens avec délai, échéance, notes, étiquettes, deux ressources | G2 à G11, G14 |
+| `projet-surcharge.json` | Une ressource surchargée et absente, sans nivellement : un conflit | G5, G6 |
+| `projet-retard.json` | Projet daté d'août 2026, en retard : tâche critique, échéance dépassée, voyant ROUGE | G9, G11 |
+| `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
+
+### Quand rejouer quoi
+
+| La mise à jour touche… | Rejouer au minimum |
+| --- | --- |
+| Le calcul des dates, des liens, du calendrier | G2, G4, G9 |
+| Les ressources, la charge, le nivellement | G5, G6 |
+| La liste, la grille, les gestes | G3, G6, G7 |
+| Les fichiers (export, import, chiffrement) | G12, G13 |
+| Le tableau de bord, le rapport, l'impression | G10, G11 |
+| L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
 
 ---
 
-## Mise à jour : Budget, étape A
+## Partie A — Recette générale
+
+### G1 — Premier lancement et nouveau projet (§ 1, § 2)
+
+Départ : ouvrez `GanttPro.html` dans une fenêtre de navigation privée (aucun réglage mémorisé).
+
+- [ ] 1. *Attendu :* un projet « Nouveau projet » commence à la date du jour, avec une tâche A de 10 jours
+  « Renommer cette tâche… », une ressource et une catégorie « Général ». Les zones de l'écran décrites au § 1 sont
+  présentes (onglets, barre du haut, barre de chiffres, liste et grille, légende).
+- [ ] 2. Cliquez sur l'étiquette du projet, saisissez un nom de 61 caractères. *Attendu :* refus avec un message
+  (60 caractères au plus) ; le nom de 60 caractères est accepté.
+- [ ] 3. Choisissez un emoji au clavier (Tab puis flèches), enregistrez. *Attendu :* l'emoji précède le nom.
+- [ ] 4. Cliquez sur **Nouveau**. *Attendu :* un second onglet s'ouvre ; le premier est conservé.
+
+### G2 — Début du projet et calendrier (§ 2, R-02, R-06 à R-11, R-48 à R-51)
+
+Départ : importez `projet-exemple.json`.
+
+- [ ] 1. Lisez la barre de chiffres. *Attendu :* le jalon « Fin » est au **lundi 30 novembre 2026** ; la durée de
+  « Phase 1 — Cadrage » est 5 j et celle de « Phase 2 — Réalisation » 14 j.
+- [ ] 2. Mettez **Début projet** au samedi 7 novembre 2026. *Attendu :* la date saisie reste affichée ; les tâches
+  commencent le premier jour ouvré suivant (lundi 9 novembre).
+- [ ] 3. Annulez (**Annuler**). *Attendu :* retour au 2 novembre et à la fin du 30 novembre.
+- [ ] 4. Ouvrez **Calendrier**. *Attendu :* semaine lundi–vendredi cochée, jeu « France métropolitaine » ; l'aperçu
+  du mois grise les week-ends et nomme le 11 novembre.
+- [ ] 5. Décochez tous les jours de la semaine. *Attendu :* refus (au moins un jour travaillé).
+- [ ] 6. Ajoutez un jour chômé le mardi 3 novembre 2026 avec un libellé, enregistrez. *Attendu :* les tâches
+  s'allongent d'un jour ouvré ; la fin dépasse le 30 novembre. Ajoutez la même date en jour travaillé : refus
+  (une date ne peut pas être chômée et travaillée).
+- [ ] 7. Changez le jeu de jours fériés pour « Aucun » : la fin avance d'un jour par férié retiré. Remettez
+  « France métropolitaine ». (Facultatif : « France Alsace-Moselle » ajoute le Vendredi saint et le 26 décembre.)
+- [ ] 8. Annulez tout (Annuler autant de fois que nécessaire) pour revenir à l'état de départ.
+
+### G3 — Tâches, jalons et récapitulatives (§ 3, R-24, R-31, R-41, R-42)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. **+ Ajouter tâche**. *Attendu :* une ligne apparaît, l'édition s'ouvre, le nom est prêt à être saisi ;
+  l'identifiant proposé est libre (A).
+- [ ] 2. Saisissez une durée `0` puis **Enregistrer**. *Attendu :* refus avec le message « Durée (jours ouvrés) :
+  entier de 1 à 3 650. » sous le champ ; le curseur y va ; rien n'est enregistré.
+- [ ] 3. Mettez durée `4`, nom « Tâche d'essai », **Enregistrer**. *Attendu :* la ligne est mise à jour.
+- [ ] 4. Renommez l'identifiant de T3 en `T3B`. *Attendu :* le lien de T4 vers T3 devient T3B.
+- [ ] 5. Sélectionnez « Tâche d'essai » et cliquez **Mettre en retrait** : elle devient enfant de la
+  récapitulative située au-dessus ; **Remonter d'un niveau** l'en sort.
+- [ ] 6. Repliez « Phase 1 — Cadrage » (chevron ▸). *Attendu :* ses enfants disparaissent, ses dates et son
+  avancement restent. Dépliez.
+- [ ] 7. Ctrl + D sur « Tâche d'essai ». *Attendu :* « Tâche d'essai (copie) » juste dessous, sans avancement.
+- [ ] 8. Supprimez la copie. *Attendu :* confirmation qui nomme la tâche ; après validation elle disparaît.
+- [ ] 9. Supprimez T1 : la confirmation dit combien de tâches perdent un prédécesseur. **Annuler** les rétablit
+  avec leur lien.
+- [ ] 10. Imbriquez des récapitulatives jusqu'au sixième niveau. *Attendu :* refus avec un message (cinq niveaux).
+
+### G4 — Liens, contraintes et chemin critique (§ 4, R-01, R-05, R-12 à R-14, R-36 à R-44, R-55)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. Lisez la colonne Dépendances. *Attendu :* T3 : `M1 FD+1` ; T4 : `T3`.
+- [ ] 2. Ouvrez T3 : le lien vers M1 est de type fin → début avec délai +1. Passez le délai à `-1` puis `0` :
+  T3 se rapproche d'un jour à chaque fois. Revenez à `+1`.
+- [ ] 3. Ouvrez T1, ajoutez le prédécesseur T4. *Attendu :* refus avec le chemin de la boucle
+  (« Cette dépendance créerait la boucle … »).
+- [ ] 4. Ajoutez à T2 un prédécesseur de type début → début sur T1 : T2 peut démarrer avec T1. Supprimez-le.
+- [ ] 5. Ouvrez la fiche de la récapitulative P1. *Attendu :* durée et avancement « calculés », aucun champ de lien.
+- [ ] 6. Donnez à T3 une **date imposée** au 4 novembre 2026. *Attendu :* 📌 sur la ligne, ⚠ et une alerte,
+  car la date précède la fin de M1 ; le bandeau nomme les dates. Retirez la date imposée.
+- [ ] 7. Ajoutez « Ne pas commencer avant » le 30 novembre sur T3 : ⏳ ; T3 et T4 se décalent. Retirez-le.
+- [ ] 8. Mettez l'échéance de T4 au 20 novembre 2026. *Attendu :* le drapeau 🚩 passe au rouge, la ligne indique
+  « échéance dépassée », une alerte s'affiche, T4 reste critique. Remettez le 18 décembre.
+- [ ] 9. Vérifiez le **chemin critique** (barre de chiffres) : T1 → T2 → M1 → T3 → T4. Les lignes critiques
+  portent ● et le mot « critique ».
+
+### G5 — Ressources, absences et charge (§ 5, R-16, R-25, R-32, R-45 à R-47, R-52, R-65 à R-70)
+
+Départ : importez `projet-surcharge.json` (mode « Sans nivellement »).
+
+- [ ] 1. *Attendu :* le badge **1 conflit** apparaît ; les lignes A et B portent ⚠ « en conflit » (Alice affectée à
+  100 % sur deux tâches en même temps, et en absence les 9 et 10 novembre).
+- [ ] 2. Cliquez sur le badge : le bandeau explique chaque conflit avec les dates et les tâches.
+- [ ] 3. **Résoudre…** *Attendu :* pour chaque conflit, des propositions déjà simulées, classées de la plus efficace
+  à la plus coûteuse, avec leur effet (conflits restants, décalage de la fin). Rien ne change avant **Appliquer**.
+- [ ] 4. Appliquez « faire passer A avant B ». *Attendu :* B reçoit un lien fin → début A → B, visible dans sa fiche.
+  **Annuler** le retire.
+- [ ] 5. Changez **Charge des ressources** pour « Nivellement automatique ». *Attendu :* plus de conflit, une tâche
+  porte un message de décalage (« j de décalage (Alice : surcharge) ») et la fin du projet peut reculer.
+- [ ] 6. Passez en « Lissage dans la marge » : la fin du projet ne bouge pas d'elle-même ; un éventuel conflit
+  restant est signalé « ne tient pas dans sa marge ».
+- [ ] 7. **Ressources** : ajoutez « alice » → refus (nom déjà pris, casse ignorée). Renommez Alice en « Alice M. » :
+  les deux tâches restent affectées.
+- [ ] 8. Supprimez Alice : la confirmation annonce « 2 tâches deviendront sans ressource » ; annulez la suppression.
+- [ ] 9. Ouvrez la **Fiche** de Bob : ses tâches, sa charge en jours-personne, sa capacité, ses absences.
+- [ ] 10. Dans une tâche, affectez Bob avec un taux de 150 %. *Attendu :* refus (jamais plus que sa capacité).
+- [ ] 11. Remettez le mode « Sans nivellement » (état de départ) : le conflit réapparaît.
+
+### G6 — La grille de Gantt et ses gestes (§ 6, R-33, R-34, R-55)
+
+Départ : `projet-exemple.json` ouvert, puis `projet-surcharge.json` pour les conflits.
+
+- [ ] 1. Repérez : barres colorées par catégorie, barres critiques rouges avec ● sur la ligne, losange ◆ du jalon,
+  crochet des récapitulatives, ligne rouge « Aujourd'hui » (si la date du jour est dans la grille), week-ends et
+  jours fériés grisés (11 novembre).
+- [ ] 2. Survolez ou mettez au focus une barre. *Attendu :* infobulle (dates, durée, avancement, statut,
+  prédécesseurs, ressources, marge). Échap la ferme.
+- [ ] 3. Zoom : boutons −, +, ↺, touches + et −, Ctrl + molette. *Attendu :* 20 à 300 % ; sous 60 %, vue mois.
+- [ ] 4. **Liens : ON / OFF** masque et affiche les flèches ; les flèches entre tâches critiques sont rouges.
+- [ ] 5. Glissez la barre de T2 de deux jours vers la droite. *Attendu :* date imposée 📌 ; un message de
+  confirmation avec **Annuler**. Annulez.
+- [ ] 6. Tirez le bord droit de la barre de T2 : la durée change. Annulez.
+- [ ] 7. Reliez deux barres par leurs poignées rondes : un lien est créé. Essayez de créer une boucle : refus.
+- [ ] 8. Tirez le triangle sous une barre : l'avancement change par pas de 5 %. Annulez.
+- [ ] 9. Tirez la séparation liste / Gantt ; double-clic dessus : la largeur par défaut revient. Tirez le bord d'un
+  en-tête de colonne ; **Colonnes par défaut** rétablit.
+- [ ] 10. **Figer** l'identifiant et le nom, défilez la liste vers la droite : ils restent visibles.
+- [ ] 11. **Plein écran du Gantt**, puis Échap. *Attendu :* le reste de la page est désactivé pendant le plein
+  écran ; le focus revient au bouton à la sortie.
+- [ ] 12. Même geste au clavier uniquement : Alt + → sur une tâche sélectionnée déplace sa date imposée d'un jour.
+
+### G7 — Sélection multiple, modification en masse, copier-coller (§ 7, R-54)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. Maj + clic de T1 à T2, puis Ctrl + clic sur T4. *Attendu :* la barre « 3 tâches sélectionnées »
+  apparaît avec Modifier en masse, Dupliquer, Mettre en retrait… ; Ctrl + A sélectionne toutes les lignes affichées.
+- [ ] 2. **Modifier en masse** : catégorie « Réalisation », **Appliquer**. *Attendu :* la catégorie change sur les
+  trois tâches seulement. **Annuler** une seule fois revient sur les trois.
+- [ ] 3. Ctrl + C puis Ctrl + V. *Attendu :* trois nouvelles tâches avec des identifiants libres et leurs liens
+  internes ; **Annuler** les retire d'un coup.
+- [ ] 4. Dans un tableur, copiez deux lignes (Nom, Durée), collez dans la liste : les colonnes sont reconnues avec
+  une ligne d'en-tête.
+- [ ] 5. **Regrouper sous une récapitulative** : un groupe est créé au-dessus des tâches choisies.
+- [ ] 6. Échap ou « Effacer la sélection » vide la sélection.
+
+### G8 — Rechercher, filtrer, regrouper, trier (§ 8, R-53)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. **Rechercher** « lot » : seules les tâches correspondantes restent visibles (T3, T4) ; **Surligner** les
+  met en évidence sans masquer les autres.
+- [ ] 2. **Filtres** par catégorie « Conception » : seules T1 et T2 restent.
+- [ ] 3. **Grouper par** ressource : des en-têtes de groupe avec totaux (« n élément(s), x j ») ; le groupe peut
+  se replier.
+- [ ] 4. **Étiquettes** : afficher les étiquettes ; filtrer sur « lot 1 ».
+- [ ] 5. **Tout replier** puis **Tout déplier**.
+- [ ] 6. **Trier** : une confirmation rappelle l'effet sur la priorité ; après validation chaque prédécesseur est
+  avant ses successeurs.
+- [ ] 7. Effacez tous les filtres : la liste est complète.
+
+### G9 — Suivre l'avancement (§ 9, R-18 à R-23)
+
+Départ : importez `projet-retard.json` (daté d'août 2026, donc en retard à toute date de recette après le
+23 septembre 2026).
+
+- [ ] 1. *Attendu* (barre de chiffres) : avancement global **43 %** ; la fin prévue est le **mercredi
+  23 septembre 2026** ; chemin critique A → B → C → M.
+- [ ] 2. Statuts : A « Terminé » ; B, C et M « En retard ».
+- [ ] 3. Alerte : C signale « échéance dépassée » (drapeau rouge, bandeau avec les dates).
+- [ ] 4. Ouvrez B : mettez l'avancement à 100 %. *Attendu :* l'avancement global augmente ; B devient « Terminé ».
+- [ ] 5. Saisissez une fin réelle sur C. *Attendu :* l'avancement de C passe à 100 %. Ramenez-le à 50 % :
+  la fin réelle est effacée, avec un message.
+- [ ] 6. Saisissez une fin réelle antérieure au début réel. *Attendu :* refus.
+- [ ] 7. Ouvrez le tableau de bord, « Tableau de suivi » : colonne Écart en jours ouvrés (+ pour un retard) ;
+  tri par un clic sur un en-tête.
+- [ ] 8. Annulez toutes les modifications.
+
+### G10 — Baselines et versions (§ 10, R-33, R-34)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. **Baselines** → **Capturer une baseline**. *Attendu :* « Baseline 1 » est créée avec sa date et le nombre
+  de tâches ; deux cases (Sur le Gantt, Sur la courbe en S) cochées par défaut.
+- [ ] 2. Allongez T3 de 3 jours. *Attendu :* la baseline ne bouge pas ; une fine barre sous T3 montre l'ancienne
+  position ; son nom apparaît au survol.
+- [ ] 3. Tableau de bord : choisissez la colonne « Écart vs baseline » : la différence de fin apparaît.
+- [ ] 4. Renommez la baseline, changez sa couleur ; capturez-en trois en tout, la quatrième est refusée.
+- [ ] 5. **Versions** : nommez « V1 », **Enregistrer l'état actuel**. Modifiez le projet, puis **Restaurer** :
+  confirmation, projet remis dans l'état de V1 ; **Annuler** annule la restauration.
+
+### G11 — Tableau de bord, rapport d'état, impression (§ 11, R-32, R-56)
+
+Départ : importez `projet-retard.json`.
+
+- [ ] 1. **Tableau de bord**, onglet **Synthèse** : quatre indicateurs (avancement global 43 %, terminées 1, en
+  cours 0, en retard 3) et la courbe en S (prévu / réel, semaines / mois). Flèches ← / → parcourent les
+  périodes ; **Afficher les valeurs** ouvre le tableau des chiffres.
+- [ ] 2. Onglet **Charge** (si le projet a des ressources) : barres d'occupation par ressource ; la surcharge est
+  rouge et marquée ▲. Importez `projet-surcharge.json` pour la voir.
+- [ ] 3. **Rapport d'état** (avec `projet-retard.json`). *Attendu :* voyant **ROUGE** écrit en toutes lettres
+  (tâche critique en retard) ; indicateurs, retards, échéances, alertes.
+- [ ] 4. Décochez des blocs : ils disparaissent de l'aperçu. Saisissez une note : elle reste dans le projet.
+- [ ] 5. **Copier le texte** : collez dans un éditeur de texte, le contenu est lisible.
+- [ ] 6. Avec `projet-exemple.json`, le voyant dépend de la date du jour : ROUGE si une tâche critique est en
+  retard, ORANGE pour un autre retard, VERT sinon.
+- [ ] 7. **Imprimer le Gantt** : choisissez période, échelle, orientation, colonnes ; l'aperçu d'impression
+  répète l'en-tête du temps, remplace les couleurs par des motifs noir et blanc, numérote les pages.
+
+### G12 — Exporter et importer (§ 12, R-26 à R-29, R-57 à R-61)
+
+Départ : `projet-exemple.json` ouvert.
+
+- [ ] 1. **Exporter** en JSON, puis **Importer** ce fichier. *Attendu :* un projet identique (mêmes tâches, liens,
+  dates).
+- [ ] 2. Exportez en **Excel (.xlsx)** : ouvrez dans un tableur, feuilles Tâches, Ressources, Absences, Calendrier,
+  Baselines, en-tête figée.
+- [ ] 3. Exportez en **CSV** puis réimportez via l'assistant (trois étapes) : les tâches reviennent.
+- [ ] 4. Exportez en **MS Project (.xml)** puis réimportez : tâches, hiérarchie, liens et durées conservés.
+- [ ] 5. Exportez l'**Image du Gantt (.png)** : le fichier s'ouvre et reproduit la grille.
+- [ ] 6. **Exporter sans noms de personnes** (JSON) : les ressources deviennent « Ressource 1 », « Ressource 2 ».
+- [ ] 7. Avec `projet-surcharge.json`, créez une tâche nommée `=1+1` puis exportez en CSV et Excel et ouvrez dans un
+  tableur : le texte reste du texte (apostrophe), aucune formule ne s'exécute.
+- [ ] 8. Créez un fichier JSON invalide (supprimez une accolade) et importez-le. *Attendu :* refus en entier avec
+  la raison ; le projet ouvert est intact.
+- [ ] 9. Un fichier de plus de 5 Mo est refusé.
+
+### G13 — Onglets, bibliothèque, modèles, sauvegarde automatique, protection par mot de passe (§ 13, R-30, R-61)
+
+- [ ] 1. Ouvrez trois projets d'essai dans trois onglets : chacun garde son zoom, ses filtres, sa sélection et son
+  historique d'annulation. Un point ● signale les modifications non enregistrées.
+- [ ] 2. Fermez un onglet modifié (✕) : confirmation. Fermez la fenêtre du navigateur avec un onglet modifié :
+  avertissement. Après un export, plus d'avertissement ; sélectionner, zoomer ou changer de thème n'en déclenche pas.
+- [ ] 3. Ctrl + S : première fois, un message explique où sont gardées les données. Le projet figure dans la
+  **Bibliothèque** (ouvrir, renommer, dupliquer, supprimer).
+- [ ] 4. **Enregistrer comme modèle** (avec puis sans ressources), puis **Nouveau projet à partir d'un modèle** :
+  nom et date de début demandés ; avancement, dates réelles, commentaires, baselines et versions absents.
+  Les deux modèles fournis (« Projet en 5 phases », « Événement ») s'ouvrent.
+- [ ] 5. **Exporter** en JSON avec un mot de passe de 12 caractères au moins : le fichier est illisible dans un
+  éditeur ; l'import demande le mot de passe ; un mauvais mot de passe est refusé ; un fichier altéré est refusé.
+- [ ] 6. **Réglages** : activez la sauvegarde automatique, modifiez un projet, attendez 5 secondes : l'indicateur
+  « Sauvegardé sur cet appareil à … » apparaît. Fermez et rouvrez : GanttPro propose de restaurer. Désactivez
+  l'option et effacez les données depuis les réglages.
+
+### G14 — Réglages, langue, thème, aide, raccourcis (§ 14, § 15)
+
+- [ ] 1. Bouton de langue : toute l'interface passe en anglais (barre, fenêtres, messages, dates, légende), puis
+  revient en français sans perte.
+- [ ] 2. Bouton de thème : système → clair → sombre ; les textes restent lisibles dans les deux thèmes.
+- [ ] 3. `?` ouvre l'aide ; Échap la ferme et rend le focus.
+- [ ] 4. Raccourcis : Ctrl + Z / Ctrl + Y, Ctrl + D, Ctrl + S, + / −, Alt + flèches, Ctrl + Maj + flèches,
+  Suppr, comme listés dans la section 15 du guide.
+- [ ] 5. **Réglages** : les options de stockage sont décochées par défaut et chacune est effaçable.
+
+### G15 — Accessibilité, vie privée, sécurité, performance (§ 16, R-34, EX)
+
+- [ ] 1. Au clavier seul (sans souris), faites : ajouter une tâche, la modifier, la lier, ouvrir chaque fenêtre.
+  *Attendu :* tout est atteignable, le focus est toujours visible, Échap ferme et rend le focus au bon bouton.
+- [ ] 2. Avec un lecteur d'écran (si disponible) : chaque barre porte un nom complet ; statuts, criticité et
+  conflits sont dits en toutes lettres, jamais par la seule couleur.
+- [ ] 3. Zoomez le navigateur à 200 % puis réduisez la fenêtre à la largeur d'un téléphone : rien n'est coupé ni
+  inaccessible.
+- [ ] 4. Activez « réduire les animations » dans le système : les animations s'arrêtent.
+- [ ] 5. Ouvrez les outils de développement du navigateur, onglet Réseau, puis utilisez l'application pendant
+  quelques minutes : **aucune requête** n'est émise ; la console ne signale aucune violation de politique de
+  sécurité ; aucun cookie n'est créé.
+- [ ] 6. Importez un fichier JSON dont un nom de tâche est `<img src=x onerror=alert(1)>` : le texte s'affiche tel
+  quel, aucune alerte ne se déclenche.
+- [ ] 7. Générez un projet de 1 000 tâches (collez-en plusieurs fois par Ctrl + C / Ctrl + V) : l'affichage reste
+  fluide, les gestes restent utilisables.
+
+---
+
+## Partie B — Mises à jour : Budget, étape A
 
 Exigences : EF-112 à EF-127, RG-35 à RG-43. Scénarios : R-71 à R-84.
-Fichiers : `budget-base.json`, `budget-avec-baseline.json`, `budget-montants-geants.json`, `budget-sans-montant.json`,
+Fichiers (dans `tests/fixtures/`) : `budget-base.json`, `budget-avec-baseline.json`, `budget-montants-geants.json`, `budget-sans-montant.json`,
 `refus-montant-negatif.json`, `refus-montant-trop-grand.json`, `refus-jalon-avec-montant.json`, `tableur-montants.csv`.
 
-### Parcours 1 — Un projet sans montant ne montre pas de budget (EF-117)
+### Budget 1 — Un projet sans montant ne montre pas de budget (EF-117)
 
 Départ : ouvrez `budget-sans-montant.json`.
 
@@ -34,7 +325,7 @@ Départ : ouvrez `budget-sans-montant.json`.
 - [ ] 2. Ouvrez **Tableau de bord**. *Attendu :* seulement deux onglets, **Synthèse** et **Charge** (pas d'onglet
   Budget). Fermez avec Échap.
 
-### Parcours 2 — Saisir et lire les montants d'une tâche (EF-112, EF-113, EF-115, RG-35, RG-36, R-71)
+### Budget 2 — Saisir et lire les montants d'une tâche (EF-112, EF-113, EF-115, RG-35, RG-36, R-71)
 
 Départ : ouvrez `budget-base.json`. Il contient deux tâches (Etude, Realisation) et un jalon.
 
@@ -52,7 +343,7 @@ Départ : ouvrez `budget-base.json`. Il contient deux tâches (Etude, Realisatio
 - [ ] 6. Cliquez **Annuler** (barre du haut). *Attendu :* retour à `100,00 € / 90,00 €`.
 - [ ] 7. Ouvrez la fiche du jalon. *Attendu :* aucun champ de budget ni de coût réel.
 
-### Parcours 3 — L'onglet Budget et la courbe des coûts (EF-117, EF-118, EF-119, RG-37 à RG-40, R-72, R-74)
+### Budget 3 — L'onglet Budget et la courbe des coûts (EF-117, EF-118, EF-119, RG-37 à RG-40, R-72, R-74)
 
 Départ : `budget-base.json` ouvert. La date du jour importe peu pour les chiffres ci-dessous (tuiles et catégories).
 
@@ -66,7 +357,7 @@ Départ : `budget-base.json` ouvert. La date du jour importe peu pour les chiffr
   Passez en **mois** : une seule ligne si le projet tient sur un mois.
 - [ ] 5. Naviguez au clavier (Tab, Entrée) : tous les boutons de l'onglet sont atteignables, le focus est visible.
 
-### Parcours 4 — Devise et provision (EF-114, RG-35)
+### Budget 4 — Devise et provision (EF-114, RG-35)
 
 Départ : `budget-base.json` ouvert.
 
@@ -77,7 +368,7 @@ Départ : `budget-base.json` ouvert.
   (symbole **après** le montant en français). L'onglet Budget indique `12,50 CHF` de provision.
 - [ ] 4. Remettez `€` et `40`.
 
-### Parcours 5 — Affichage compact des grands montants (EF-125, RG-43, R-83, R-84)
+### Budget 5 — Affichage compact des grands montants (EF-125, RG-43, R-83, R-84)
 
 Départ : ouvrez `budget-montants-geants.json` (cinq tâches, du petit montant au plafond).
 
@@ -93,7 +384,7 @@ Départ : ouvrez `budget-montants-geants.json` (cinq tâches, du petit montant a
 - [ ] 5. (Facultatif, lecteur d'écran) Sur une ligne abrégée, le lecteur annonce le montant abrégé puis le
   montant complet entre parenthèses.
 
-### Parcours 6 — Masquer les montants à l'écran (EF-126, RG-41, R-78)
+### Budget 6 — Masquer les montants à l'écran (EF-126, RG-41, R-78)
 
 Départ : `budget-base.json` ouvert.
 
@@ -106,7 +397,7 @@ Départ : `budget-base.json` ouvert.
 - [ ] 5. Cliquez de nouveau sur le bouton. *Attendu :* les montants reviennent. Le masquage n'a modifié aucune
   donnée (le bouton **Annuler** reste grisé).
 
-### Parcours 7 — Baselines et BAC (EF-121, RG-39, R-75)
+### Budget 7 — Baselines et BAC (EF-121, RG-39, R-75)
 
 Départ : ouvrez `budget-avec-baseline.json` (une baseline à 400,00 €, le budget courant de Realisation passé à
 350,00 €).
@@ -115,7 +406,7 @@ Départ : ouvrez `budget-avec-baseline.json` (une baseline à 400,00 €, le bud
   « BAC du projet » indique `450,00 €`.
 - [ ] 2. Capturez une nouvelle baseline. *Attendu :* son BAC est `450,00 €` ; la précédente reste inchangée.
 
-### Parcours 8 — Rapport, impression et exports : « Inclure les montants » (EF-120, EF-124, RG-41, R-76)
+### Budget 8 — Rapport, impression et exports : « Inclure les montants » (EF-120, EF-124, RG-41, R-76)
 
 Départ : `budget-avec-baseline.json` ouvert.
 
@@ -133,7 +424,7 @@ Départ : `budget-avec-baseline.json` ouvert.
 - [ ] 8. Activez **Masquer les montants**, exportez avec la case cochée. *Attendu :* le fichier contient bien les
   montants (le masquage ne concerne que l'écran).
 
-### Parcours 9 — Importer un tableur avec montants (RG-42, R-77)
+### Budget 9 — Importer un tableur avec montants (RG-42, R-77)
 
 Départ : un projet quelconque ouvert.
 
@@ -144,7 +435,7 @@ Départ : un projet quelconque ouvert.
 - [ ] 3. Importez. *Attendu :* les trois tâches importées affichent `1 234,56 € / 10,00 €`, `0,00 € / 0,00 €`
   (montant invalide ignoré) et `250,50 € / 0,00 €` (le coût réel `99,999` est ignoré).
 
-### Parcours 10 — Fichiers refusés (RG-37, R-77)
+### Budget 10 — Fichiers refusés (RG-37, R-77)
 
 Départ : `budget-base.json` ouvert.
 
@@ -154,7 +445,7 @@ Départ : `budget-base.json` ouvert.
 - [ ] 3. Même chose avec `refus-jalon-avec-montant.json` (« un jalon ou une récapitulative n'a ni budget ni coût
   réel propre »).
 
-### Parcours 11 — Modification en masse (EF-116)
+### Budget 11 — Modification en masse (EF-116)
 
 Départ : `budget-base.json` ouvert.
 
@@ -163,7 +454,7 @@ Départ : `budget-base.json` ouvert.
 - [ ] 2. Budget `10`, **Appliquer**. *Attendu :* `10,00 €` en budget sur les deux lignes, coûts réels inchangés.
 - [ ] 3. **Annuler** : un seul pas ramène aux montants d'origine.
 
-### Parcours 12 — Infobulle des barres (EF-115)
+### Budget 12 — Infobulle des barres (EF-115)
 
 Départ : `budget-base.json` ouvert.
 

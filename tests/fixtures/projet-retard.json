@@ -1,0 +1,81 @@
+{
+  "format": 3,
+  "name": "Projet fictif en retard",
+  "projectStart": "2026-08-31",
+  "calendar": {
+    "workDays": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0
+    ],
+    "holidays": "FR",
+    "daysOff": [],
+    "daysWorked": []
+  },
+  "leveling": "smooth",
+  "resources": [
+    {
+      "name": "Alice",
+      "capacity": 100
+    }
+  ],
+  "categories": [
+    {
+      "name": "Conception",
+      "color": "#4d9fff"
+    },
+    {
+      "name": "Réalisation",
+      "color": "#36d9a0"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "A",
+      "name": "Tâche terminée",
+      "dur": 5,
+      "pct": 100,
+      "realStart": "2026-08-31",
+      "realEnd": "2026-09-04",
+      "cat": "Conception"
+    },
+    {
+      "id": "B",
+      "name": "Tâche critique en retard",
+      "dur": 10,
+      "deps": [
+        "A"
+      ],
+      "pct": 30,
+      "cat": "Réalisation",
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Tâche avec échéance",
+      "dur": 3,
+      "deps": [
+        "B"
+      ],
+      "deadline": "2026-09-18",
+      "cat": "Réalisation"
+    },
+    {
+      "id": "M",
+      "name": "Fin du projet",
+      "type": "milestone",
+      "deps": [
+        "C"
+      ]
+    }
+  ]
+}
