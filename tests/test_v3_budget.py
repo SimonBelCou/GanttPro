@@ -271,6 +271,15 @@ def main():
         check('anglais : bouton « Hide amounts »', 'Hide amounts' in pg.inner_text('#btn-mask'))
         pg.click('#btn-lang')
 
+        # ── Dupliquer conserve les montants (la copie en texte n'en contient pas) ─────────────────
+        load('budget.json')
+        pg.click('#task-rows tr[data-id="T1"] button.select'); pg.keyboard.press('Escape')
+        pg.focus('#task-rows tr[data-id="T1"] button.select')
+        pg.keyboard.press('Control+d')
+        pg.wait_for_timeout(200)
+        n = pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id] td.money')].filter(td => td.textContent.replace(/\\u00a0/g, ' ').startsWith('100,00 €') && td.textContent.includes('90,00')).length")
+        check('dupliquer une tâche conserve son budget et son coût réel', n == 2, n)
+
         # ── Fichiers d'essai de la recette manuelle (docs/recette-manuelle.md) ────────────────────
         fx = Path(__file__).resolve().parent / 'fixtures'
         def load_fx(name):
