@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';
 
-const { Budget, Model, Schedule, Dates, I18n } = loadCore();
+const { Budget, Model, Schedule, Dates, I18n, Exchange, Csv, Xlsx } = loadCore();
 const plain = x => JSON.parse(JSON.stringify(x));
 const eur = x => Math.round(x * 100); // euros d'exemple -> centimes
 
@@ -205,4 +205,85 @@ test('plus grand total possible : exact (1 000 tâches au plafond + provision)',
   assert.equal(t.bac, 5000000000000000);
   assert.equal(t.total, 5005000000000000);
   assert.ok(Number.isSafeInteger(t.total));
+});
+
+// ── Échanges Excel et CSV (EF-123, EF-124, RG-42) ─────────────────────────────────────────────
+const TODAY = Dates.parse('2026-01-14');
+
+function withSummary() {
+  const p = project([{ id: 'S', type: 'summary', dur: 0 }, { id: 'A', parent: 'S', budget: 12345, actual: 600 }, { id: 'B', parent: 'S', budget: eur(250.5), actual: 0 },
+    { id: 'M', type: 'milestone', dur: 0 }]);
+  p.currency = '€';
+  return p;
+}
+
+test('R-76 CSV : colonnes de montants seulement si demandées, deux décimales, somme pour la récapitulative', () => {
+  I18n.setLang('fr');
+  const p = withSummary(), s = Schedule.compute(p);
+  const without = Exchange.csv(p, s, TODAY, { amounts: false });
+  assert.ok(!/Budget|Coût réel/.test(without), 'aucune colonne de montant par défaut');
+  assert.ok(!/123\.45|250\.50/.test(without));
+  const rows = Csv.parse(Exchange.csv(p, s, TODAY, { amounts: true })).rows;
+  const hb = rows[0].indexOf('Budget'), ha = rows[0].indexOf('Coût réel');
+  assert.ok(hb > 0 && ha === hb + 1);
+  const row = id => rows.find(r => r[1] === id);
+  assert.deepEqual([row('A')[hb], row('A')[ha]], ['123.45', '6.00']);
+  assert.deepEqual([row('S')[hb], row('S')[ha]], ['373.95', '6.00']); // RG-36 : somme des enfants
+  assert.deepEqual([row('M')[hb], row('M')[ha]], ['0.00', '0.00']);
+});
+
+test('R-76 Excel : montants en nombres, sans colonne par défaut', async () => {
+  I18n.setLang('en');
+  const p = withSummary(), s = Schedule.compute(p);
+  const tasks = async bytes => (await Xlsx.read(bytes))[0].rows;
+  const none = await tasks(Exchange.xlsx(p, s, TODAY, {}));
+  assert.ok(!none[0].includes('Budget'));
+  const rows = await tasks(Exchange.xlsx(p, s, TODAY, { amounts: true }));
+  const hb = rows[0].indexOf('Budget');
+  assert.ok(hb > 0 && rows[0][hb + 1] === 'Actual cost');
+  const a = rows.find(r => r[1] === 'A');
+  assert.equal(a[hb], 123.45);
+  assert.equal(typeof a[hb], 'number');
+  I18n.setLang('fr');
+});
+
+test('RG-42 import d\'un tableur : colonnes reconnues, montants lus, valeurs invalides signalées et ignorées', () => {
+  I18n.setLang('fr');
+  const rows = [['Nom', 'BUDGET', 'Coût réel'],
+    ['Un', '1 234,56 €', '10'], ['Deux', 'abc', ''], ['Trois', '12,345', '-5'], ['Quatre', 250.5, 99.999],
+    ['Cinq', '50 000 000 000,01', '1.5'], ['Jalon', '100', '100']];
+  rows[6][0] = 'Jalon'; // type renseigné par une colonne dédiée ci-dessous
+  const header = [...rows[0], 'Type'];
+  const data = rows.slice(1).map((r, i) => [...r, i === 5 ? 'Jalon' : '']);
+  const map = Exchange.guessMapping(header);
+  assert.equal(map.budget, 1);
+  assert.equal(map.actual, 2);
+  const res = Exchange.rowsToTasks([header, ...data], map, [], { symbol: '€' });
+  assert.deepEqual(plain(res.errors), []);
+  assert.equal(res.rows.length, 6); // toutes les lignes sont gardées
+  const by = n => res.rows.find(r => r.name === n);
+  assert.deepEqual([by('Un').budget, by('Un').actual], [123456, 1000]);
+  assert.deepEqual([by('Deux').budget, by('Deux').actual], [0, 0]); // invalide ignoré, vide = 0
+  assert.deepEqual([by('Trois').budget, by('Trois').actual], [0, 0]);
+  assert.deepEqual([by('Quatre').budget, by('Quatre').actual], [25050, 0]); // 99,999 : plus de deux décimales
+  assert.deepEqual([by('Cinq').budget, by('Cinq').actual], [0, 150]);
+  assert.deepEqual([by('Jalon').budget, by('Jalon').actual], [0, 0]); // un jalon n'a aucun montant
+  assert.deepEqual(plain(res.warnings.map(w => w.line)), [3, 4, 4, 5, 6]);
+  assert.match(res.warnings[0].msg, /^Budget : « abc »/);
+  // Fusion : les montants arrivent dans le projet, contrôlés par sanitize.
+  const empty = Model.sanitize({ format: 3, projectStart: '2026-01-05', tasks: [] }).project;
+  const merged = Exchange.mergeRows(empty, res.rows, 'replace').project;
+  assert.deepEqual(plain(merged.tasks.map(t => [t.name, t.budget, t.actual]).slice(0, 2)), [['Un', 123456, 1000], ['Deux', 0, 0]]);
+});
+
+test('R-76 bis : export avec montants puis réimport à l\'identique', () => {
+  I18n.setLang('fr');
+  const p = withSummary(), s = Schedule.compute(p);
+  const { rows } = Csv.parse(Exchange.csv(p, s, TODAY, { amounts: true }));
+  const res = Exchange.rowsToTasks(rows, Exchange.guessMapping(rows[0]), []);
+  const empty = Model.sanitize({ format: 3, projectStart: '2026-01-05', tasks: [] }).project;
+  const merged = Exchange.mergeRows(empty, res.rows, 'replace').project;
+  const t = id => merged.tasks.find(x => x.id === id);
+  assert.deepEqual([t('A').budget, t('A').actual, t('B').budget], [12345, 600, 25050]);
+  assert.equal(Budget.totals(merged).bac, 37395); // la somme de la récapitulative n'est pas comptée deux fois
 });
