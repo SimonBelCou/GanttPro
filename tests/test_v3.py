@@ -300,7 +300,7 @@ def main():
         pg.wait_for_selector('#dash-win')
         dash = pg.inner_text('#dash-win')
         check('tableau de bord : indicateurs', 'Avancement global' in dash and 'Tâches terminées' in dash)
-        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
+        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve > title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
         pg.click('#dash-win button:has-text("Afficher les valeurs")')
         check('équivalent texte de la courbe', pg.locator('#sc-values tbody tr').count() >= 2 and pg.get_attribute('[data-click="dashValues"]', 'aria-expanded') == 'true')
         pg.focus('#dash-win .chart-box'); pg.keyboard.press('ArrowRight')

@@ -316,7 +316,7 @@ Une case **Inclure les montants**, décochée à chaque ouverture, ajoute le blo
 
 ### Imprimer le Gantt
 
-Choisissez la période (tout le planning ou du… au…), l'échelle (ajuster à la largeur de la page ou zoom actuel), l'orientation, les colonnes de la liste et la légende. L'en-tête du temps se répète sur chaque page, les couleurs sont remplacées par des motifs noir et blanc, et le pied de page numérote les pages. Seules les lignes affichées (filtres compris) sont imprimées. Une colonne de montants n'est imprimée que si **Inclure les montants** est coché (décoché à chaque ouverture). Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d'impression du navigateur.
+Choisissez la période (tout le planning ou du… au…), l'échelle (ajuster à la largeur de la page ou zoom actuel), l'orientation, les colonnes de la liste et la légende. Les colonnes Début, Fin et Dépendances sont proposées avec les autres, et aucun texte n'est coupé (les noms longs passent à la ligne). Avec **Ajuster**, tout le planning tient sur la largeur d'une page ; avec **Zoom actuel**, il est découpé en bandes de semaines entières (« partie 1 sur N »), chacune imprimée sur de nouvelles pages et répétant les colonnes de texte, pour que rien ne sorte de la page. L'en-tête du temps se répète sur chaque page, les couleurs sont remplacées par des motifs noir et blanc, et le pied de page numérote les pages. Seules les lignes affichées (filtres compris) sont imprimées. Une colonne de montants n'est imprimée que si **Inclure les montants** est coché (décoché à chaque ouverture). Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d'impression du navigateur.
 
 ## 12. Fichiers : exporter et importer
 

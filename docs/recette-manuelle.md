@@ -169,6 +169,11 @@ Départ : `projet-exemple.json` ouvert, puis `projet-surcharge.json` pour les co
 - [ ] 11. **Plein écran du Gantt**, puis Échap. *Attendu :* le reste de la page est désactivé pendant le plein
   écran ; le focus revient au bouton à la sortie.
 - [ ] 12. Même geste au clavier uniquement : Alt + → sur une tâche sélectionnée déplace sa date imposée d'un jour.
+- [ ] 13. **Barres de défilement** (EX-29). Ouvrez `projet-atlas-budget.json` (projet long), la page étant en haut.
+  *Attendu :* sous la liste **et** sous le Gantt, une barre de défilement horizontale est visible tout de suite, sans
+  avoir à descendre dans la page ; la liste et le Gantt défilent verticalement ensemble (défilez l'un, l'autre suit) ;
+  l'en-tête (colonnes, échelle de temps) reste en haut pendant le défilement. Réduisez la fenêtre : les barres
+  restent visibles.
 
 ### G7 — Sélection multiple, modification en masse, copier-coller (§ 7, R-54)
 
@@ -245,8 +250,12 @@ Départ : importez `projet-retard.json`.
 - [ ] 5. **Copier le texte** : collez dans un éditeur de texte, le contenu est lisible.
 - [ ] 6. Avec `projet-exemple.json`, le voyant dépend de la date du jour : ROUGE si une tâche critique est en
   retard, ORANGE pour un autre retard, VERT sinon.
-- [ ] 7. **Imprimer le Gantt** : choisissez période, échelle, orientation, colonnes ; l'aperçu d'impression
-  répète l'en-tête du temps, remplace les couleurs par des motifs noir et blanc, numérote les pages.
+- [ ] 7. **Imprimer le Gantt** (EF-89, EX-26, EX-30), avec `projet-atlas-budget.json` : choisissez période, échelle,
+  orientation, colonnes ; l'aperçu d'impression répète l'en-tête du temps, remplace les couleurs par des motifs noir
+  et blanc, numérote les pages. *Attendu :* aucun texte n'est coupé (les noms longs passent à la ligne) ; les colonnes
+  Début, Fin et Dépendances sont proposées et cochées ; avec **Ajuster à la largeur de la page** tout le planning tient
+  sur la largeur d'une page ; avec **Zoom actuel** le planning est découpé en bandes (« partie 1 sur N »), chacune sur
+  de nouvelles pages et répétant les colonnes de texte, sans rien perdre sur le bord droit.
 
 ### G12 — Exporter et importer (§ 12, R-26 à R-29, R-57 à R-61)
 
@@ -474,6 +483,8 @@ Départ : importez `projet-atlas-budget.json` (49 éléments, 6 ressources, prov
   « Développement » (P3) `189 000,00 € / 0,00 €`. Une récapitulative n'a pas de champ de montant dans sa fiche.
 - [ ] 3. Tableau de bord, onglet **Budget**. *Attendu :* BAC `1 836 700,00 €`, provision `15 000,00 €`, budget total
   `1 851 700,00 €`, coût réel total `26 100,00 €`, reste `1 825 600,00 €`.
+  Aucun montant ne déborde de sa tuile ni du graphique (EX-04) ; réduisez la fenêtre et rouvrez l'onglet, puis
+  recommencez avec `budget-montants-geants.json` : les montants restent dans leur tuile, en plus petit.
 - [ ] 4. Tableau par catégorie. *Attendu :* Ops `1 506 500,00 €` de budget (la catégorie qui pèse le plus à cause de
   l'infrastructure), Études `30 100,00 €` budget / `19 200,00 €` réel, total `1 836 700,00 €` / `26 100,00 €`.
 - [ ] 5. **Baselines**. *Attendu :* « Baseline initiale », BAC `1 831 700,00 €`, provision `15 000,00 €` ; BAC du projet

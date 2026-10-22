@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vjhSZLp5WgQK2kB1FLxTdlsv9akU3DA0t8Mz8DxY5ZM='; style-src 'sha256-bZrb3lvJ/yj7r9X9KqGLCaBpBx1Qlb1+PBOC9oWeaxc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-athg1WOGmZrx+bMDsMnZPiZdr28vCxwX6RsttkghtMY='; style-src 'sha256-OYr0JuHVh37cIEf6TM1JSQQQ+07kFfvKbggU9W5zzig='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -91,8 +91,11 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 /* Planning : liste + grille, défilement vertical commun */
 
-.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
-.list { background: var(--panel); overflow-x: auto; }
+.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; border-bottom: 1px solid var(--line); }
+/* Chaque colonne défile seule dans les deux sens : sa barre horizontale reste toujours visible au bas de la zone (EX-29) ;
+   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. */
+.list, .gantt { max-height: var(--planner-h, calc(100vh - 210px)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
+.list { background: var(--panel); }
 table.tasks { border-collapse: collapse; width: 100%; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
@@ -117,9 +120,9 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks td.status.late { color: var(--critical); font-weight: 600; }
 .tasks td.status.done { color: var(--ok); }
 
-.gantt { overflow-x: auto; overflow-y: hidden; background: var(--panel); }
+.gantt { background: var(--panel); }
 .gantt-inner { position: relative; width: var(--grid-w); min-width: 100%; }
-.g-head { position: relative; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.g-head { position: sticky; top: 0; z-index: 3; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
 .g-col { position: absolute; border-left: 1px solid var(--line); font-size: .72rem; line-height: 17px; color: var(--muted); padding: 0 .2rem; overflow: hidden; white-space: nowrap; }
 .g-col.month { top: 0; height: 17px; font-weight: 600; }
 .g-col.month.full { height: 100%; line-height: var(--head); }
@@ -237,9 +240,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 
 /* Écrans étroits (4.4) */
 @media (max-width: 900px) {
-  .planner { grid-template-columns: 1fr; max-height: none; }
+  .planner { grid-template-columns: 1fr; }
+  .list, .gantt { max-height: none; min-height: 0; }
   .splitter { display: none; }
-  .list { overflow-x: auto; }
   .editor { width: 100vw; }
 }
 
@@ -268,10 +271,13 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
   .rep-sec { break-inside: avoid; }
   .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
   .scurve .grid { stroke: #bbb !important; } .scurve text { fill: #000 !important; }
-  table.print-gantt { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table.print-gantt { border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
+  table.print-gantt + table.print-gantt { break-before: page; margin-top: 0; }
   table.print-gantt caption { text-align: left; font-weight: 700; margin-bottom: 4pt; }
   table.print-gantt thead { display: table-header-group; }
-  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: nowrap; overflow: hidden; }
+  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: normal; overflow-wrap: break-word; vertical-align: top; }
+  table.print-gantt th { font-size: 7.5pt; }
+  table.print-gantt td.pg-timecell, table.print-gantt th.pg-timecell { overflow: hidden; white-space: nowrap; }
   table.print-gantt tr { break-inside: avoid; }
   .pg-timecell { padding: 0 !important; }
   .pg-time, .pg-lane { position: relative; height: 16pt; }
@@ -304,9 +310,11 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; } }
 :root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
-.tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; min-width: 0; container-type: inline-size; }
 .tile dt { color: var(--muted); font-size: .85rem; }
-.tile dd { margin: .2rem 0 0; font-size: 1.6rem; font-weight: 700; }
+/* Un montant ne déborde jamais de sa tuile : sa taille suit la largeur de la tuile (EX-04). */
+.tile dd { margin: .2rem 0 0; font-size: clamp(1rem, 9.5cqi, 1.6rem); font-weight: 700; white-space: nowrap; overflow-wrap: normal; }
+.tiles.amounts { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
 .dash-section { margin: 1rem 0; }
 .dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .dash-section .row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: .5rem; }
@@ -451,7 +459,8 @@ body.dragging { user-select: none; cursor: grabbing; }
 .tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
 .tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
 .tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
-body.planner-full .planner { position: fixed; inset: 0; z-index: 4; max-height: none; min-height: 0; background: var(--bg); border-bottom: 0; }
+body.planner-full .planner { position: fixed; inset: 0; z-index: 4; grid-template-rows: minmax(0, 1fr); background: var(--bg); border-bottom: 0; }
+body.planner-full .list, body.planner-full .gantt { max-height: none; min-height: 0; }
 body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
@@ -2275,7 +2284,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -2547,7 +2556,7 @@ const I18n = (() => {
     'top.print': 'Imprimer le Gantt', 'top.versions': 'Versions',
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
-    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Le navigateur propose aussi « Enregistrer en PDF ».", 'print.go': 'Imprimer',
+    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
     'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
@@ -2658,7 +2667,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -2874,7 +2883,7 @@ const I18n = (() => {
     'top.print': 'Print the Gantt', 'top.versions': 'Versions',
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
-    'print.hint': 'The printed rows are those displayed (filters included). The browser also offers “Save as PDF”.', 'print.go': 'Print',
+    'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
     'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
@@ -3040,6 +3049,13 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  function numDate(dn) {
+    if (dn == null) return '';
+    const { y, m, d } = Dates.ymd(dn);
+    const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    return lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+  }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
@@ -3059,7 +3075,7 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, group, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, number, group, CATALOGS };
 })();
 
 // ── js/core/60-xml.js ──
@@ -6235,7 +6251,24 @@ function applyFreeze() {
 }
 
 /** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
+/** Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
+ *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page. */
+function applyPlannerHeight() {
+  const pl = $('planner');
+  const top = pl.getBoundingClientRect().top + window.scrollY;
+  pl.style.setProperty('--planner-h', Math.max(300, Math.round(window.innerHeight - top - 12)) + 'px');
+}
+
+let plannerHeightPending = false;
+/** Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25). */
+function schedulePlannerHeight() {
+  if (plannerHeightPending) return;
+  plannerHeightPending = true;
+  requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
+}
+
 function refreshLayout() {
+  schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
@@ -6284,7 +6317,11 @@ function initLayout() {
     sep.addEventListener('pointerup', up);
     sep.addEventListener('pointercancel', up);
   });
-  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  // Défilement vertical commun : la liste et le Gantt défilent chacun dans leur zone (barres horizontales toujours visibles).
+  const list = $('list'), gantt = $('gantt');
+  const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
+  mirror(list, gantt); mirror(gantt, list);
+  window.addEventListener('resize', () => { applyPlannerHeight(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);
@@ -6930,7 +6967,7 @@ const PCT_CHART = {
 };
 
 function sCurveChart(curve, o = PCT_CHART) {
-  const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
+  const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
   const n = curve.periods.length;
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
   const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
@@ -6959,19 +6996,24 @@ function sCurveChart(curve, o = PCT_CHART) {
   const labels = [];
   for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
     line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${o.fmt(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
   }
   line(curve.planned, 'planned');
   line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${o.fmt(last(curve.planned))}`, i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${o.fmt(last(curve.real))}`, i: curve.real.length - 1 });
+  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
+  // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
+  // à 18 caractères (le nom entier reste dans <title>, l'infobulle et les tableaux).
   let prev = -Infinity;
   for (const l of labels) {
-    const y = Math.max(py(l.v) + 4, prev + 14);
+    const y = Math.max(py(l.v) + 4, prev + 28);
     prev = y;
-    chart.append(svg('text', { x: px(l.i) + 6, y, class: 'label', text: l.text }));
+    const short = l.name.length > 18 ? l.name.slice(0, 17) + '…' : l.name;
+    const el = svg('text', { x: px(l.i) + 6, y, class: 'label' });
+    el.append(svg('title', { text: `${l.name} ${l.value}` }), svg('tspan', { x: px(l.i) + 6, text: short }), svg('tspan', { x: px(l.i) + 6, dy: 13, text: l.value }));
+    chart.append(el);
   }
   // Réticule au survol et au clavier (flèches gauche/droite).
   const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'cross', visibility: 'hidden' });
@@ -7170,7 +7212,7 @@ function paintBudget(panel) {
   const remaining = tot.remaining < 0
     ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
     : [Money.node(tot.remaining)];
-  panel.append(h('dl', { class: 'tiles', id: 'bud-tiles' },
+  panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
     tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
     tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
 
@@ -7188,7 +7230,7 @@ function paintBudget(panel) {
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit);
   const scale = costScale(curve);
   const opts = {
-    max: scale.max, ticks: scale.ticks, axis: v => Money.text(v, { compact: true }), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
     title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
   };
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
@@ -7462,7 +7504,7 @@ action('repCopy', async () => { const ok = await copyText(reportText()); announc
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
  * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -7477,51 +7519,70 @@ function buildPrintGantt() {
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
   if (PrintOpt.amounts) cols.push('money'); // colonne Budget / Réel : seulement si les montants sont inclus (EF-124)
   const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
-  // Largeur imprimable approximative en px CSS (A4, marges 12 mm) moins les colonnes.
-  const pageW = PrintOpt.orient === 'landscape' ? 1045 : 715;
-  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80, money: 110 };
-  const ganttW = PrintOpt.scale === 'fit' ? Math.max(200, pageW - cols.reduce((a, k) => a + colW[k], 0)) : Math.round(days * 26 * App.zoom / 100 / 7);
-  const dayW = ganttW / days;
-  const x = dn => (dn - from) * dayW;
-  const head = h('div', { class: 'pg-time' });
-  head.style.setProperty('width', ganttW + 'px');
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    const c = h('div', { class: 'pg-col', text: dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) });
-    c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
-    head.append(c);
-  }
-  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
-  const table = h('table', { class: 'print-gantt' },
-    h('caption', { text: `${App.project.emoji} ${App.project.name} — ${I18n.date(from)} → ${I18n.date(to)}` }),
-    h('thead', {}, h('tr', {}, cols.map(k => h('th', { scope: 'col', text: labels[k] })), h('th', { scope: 'col', class: 'pg-timecell' }, head))));
-  const tb = h('tbody');
+  // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
+  // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
+  const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
+  const base = { id: 36, name: 150, start: 72, end: 72, dur: 46, deps: 80, res: 86, status: 70, money: 100 };
+  const baseTotal = cols.reduce((a, k) => a + base[k], 0);
+  const shrink = Math.min(1, (pageW - 200) / Math.max(1, baseTotal));
+  const colW = Object.fromEntries(cols.map(k => [k, Math.floor(base[k] * shrink)]));
+  const colsW = cols.reduce((a, k) => a + colW[k], 0);
+  const availW = Math.max(200, pageW - colsW);
+  // « Ajuster » : tout le planning sur la largeur d'une page. « Zoom actuel » : à l'échelle de l'écran, découpé en bandes
+  // de semaines entières, une par page en largeur, chacune répétant les colonnes de texte (aucune information perdue).
+  const fit = PrintOpt.scale === 'fit';
+  const dayW = fit ? availW / days : 26 * App.zoom / 100 / 7;
+  const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
+  const slices = [];
+  for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
+  const labels = { id: t('col.id'), name: t('col.name'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
   const fl = flags();
-  for (const task of tasks) {
-    const r = s.tasks.get(task.id);
-    const st = statusOf(task);
-    const cells = {
-      id: task.id, name: task.name, dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
-      status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
-      money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
-    };
-    const lane = h('div', { class: 'pg-lane' });
-    lane.style.setProperty('width', ganttW + 'px');
-    if (r && !r.empty && r.endDn >= from && r.startDn <= to) {
-      const a = Math.max(r.startDn, from), b = Math.min(r.endDn, to);
-      const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
-      el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
-      if (task.type !== 'milestone') {
-        el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
-        const pct = Metrics.pctOf(task, s);
-        const done = h('span', { class: 'pg-done' }); done.style.setProperty('width', pct + '%'); el.append(done);
-      }
-      lane.append(el);
+  const wrap = h('div', { class: 'print-wrap' });
+  slices.forEach((sl, idx) => {
+    const x = dn => (dn - sl.a) * dayW;
+    const laneW = (sl.b - sl.a + 1) * dayW;
+    const head = h('div', { class: 'pg-time' });
+    head.style.setProperty('width', laneW + 'px');
+    for (const p of Metrics.periods(sl.a, sl.b, dayW * 7 < 36 ? 'month' : 'week')) {
+      const a = Math.max(p.start, sl.a), b = Math.min(p.end, sl.b);
+      const c = h('div', { class: 'pg-col', text: dayW * 7 < 36 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) });
+      c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
+      head.append(c);
     }
-    tb.append(h('tr', { class: task.type }, cols.map(k => h('td', { class: 'pg-' + k, text: cells[k] })), h('td', { class: 'pg-timecell' }, lane)));
-  }
-  table.append(tb);
-  const wrap = h('div', { class: 'print-wrap' }, table);
+    const caption = `${App.project.emoji} ${App.project.name} — ${I18n.date(sl.a)} → ${I18n.date(sl.b)}` + (slices.length > 1 ? ` — ${t('print.part', { n: idx + 1, m: slices.length })}` : '');
+    const heads = cols.map(k => { const th = h('th', { scope: 'col', text: labels[k] }); th.style.setProperty('width', colW[k] + 'px'); return th; });
+    const timeTh = h('th', { scope: 'col', class: 'pg-timecell' }, head);
+    timeTh.style.setProperty('width', laneW + 'px');
+    const table = h('table', { class: 'print-gantt' }, h('caption', { text: caption }), h('thead', {}, h('tr', {}, heads, timeTh)));
+    table.style.setProperty('width', (colsW + laneW) + 'px');
+    const tb = h('tbody');
+    for (const task of tasks) {
+      const r = s.tasks.get(task.id);
+      const st = statusOf(task);
+      const cells = {
+        id: task.id, name: task.name, start: r && !r.empty ? I18n.numDate(r.startDn) : '', end: r && !r.empty ? I18n.numDate(r.endDn) : '',
+        dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
+        status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
+        money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
+      };
+      const lane = h('div', { class: 'pg-lane' });
+      lane.style.setProperty('width', laneW + 'px');
+      if (r && !r.empty && r.endDn >= sl.a && r.startDn <= sl.b) {
+        const a = Math.max(r.startDn, sl.a), b = Math.min(r.endDn, sl.b);
+        const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
+        el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
+        if (task.type !== 'milestone') {
+          el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
+          const pct = Metrics.pctOf(task, s);
+          const done = h('span', { class: 'pg-done' }); done.style.setProperty('width', pct + '%'); el.append(done);
+        }
+        lane.append(el);
+      }
+      tb.append(h('tr', { class: task.type }, cols.map(k => h('td', { class: 'pg-' + k, text: cells[k] })), h('td', { class: 'pg-timecell' }, lane)));
+    }
+    table.append(tb);
+    wrap.append(table);
+  });
   if (PrintOpt.legend) wrap.append(h('p', { class: 'pg-legend', text: t('print.legend') }));
   return wrap;
 }

@@ -13,7 +13,7 @@ const PCT_CHART = {
 };
 
 function sCurveChart(curve, o = PCT_CHART) {
-  const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
+  const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
   const n = curve.periods.length;
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
   const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
@@ -42,19 +42,24 @@ function sCurveChart(curve, o = PCT_CHART) {
   const labels = [];
   for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
     line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${o.fmt(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
   }
   line(curve.planned, 'planned');
   line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${o.fmt(last(curve.planned))}`, i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${o.fmt(last(curve.real))}`, i: curve.real.length - 1 });
+  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
+  // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
+  // à 18 caractères (le nom entier reste dans <title>, l'infobulle et les tableaux).
   let prev = -Infinity;
   for (const l of labels) {
-    const y = Math.max(py(l.v) + 4, prev + 14);
+    const y = Math.max(py(l.v) + 4, prev + 28);
     prev = y;
-    chart.append(svg('text', { x: px(l.i) + 6, y, class: 'label', text: l.text }));
+    const short = l.name.length > 18 ? l.name.slice(0, 17) + '…' : l.name;
+    const el = svg('text', { x: px(l.i) + 6, y, class: 'label' });
+    el.append(svg('title', { text: `${l.name} ${l.value}` }), svg('tspan', { x: px(l.i) + 6, text: short }), svg('tspan', { x: px(l.i) + 6, dy: 13, text: l.value }));
+    chart.append(el);
   }
   // Réticule au survol et au clavier (flèches gauche/droite).
   const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'cross', visibility: 'hidden' });

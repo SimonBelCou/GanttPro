@@ -26,7 +26,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -298,7 +298,7 @@ const I18n = (() => {
     'top.print': 'Imprimer le Gantt', 'top.versions': 'Versions',
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
-    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Le navigateur propose aussi « Enregistrer en PDF ».", 'print.go': 'Imprimer',
+    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
     'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
@@ -409,7 +409,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -625,7 +625,7 @@ const I18n = (() => {
     'top.print': 'Print the Gantt', 'top.versions': 'Versions',
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
-    'print.hint': 'The printed rows are those displayed (filters included). The browser also offers “Save as PDF”.', 'print.go': 'Print',
+    'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
     'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
@@ -791,6 +791,13 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  function numDate(dn) {
+    if (dn == null) return '';
+    const { y, m, d } = Dates.ymd(dn);
+    const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    return lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+  }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
@@ -810,5 +817,5 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, group, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, number, group, CATALOGS };
 })();

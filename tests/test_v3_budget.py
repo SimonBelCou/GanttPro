@@ -322,6 +322,72 @@ def main():
             while pg.locator('dialog[open]').count():
                 esc()
 
+        # ── Aucun montant ne déborde dans l'onglet Budget, à toutes les largeurs (EX-04) ──────────
+        OVERFLOW = """() => {
+          const bad = [];
+          document.querySelectorAll('#bud-tiles .tile').forEach(t => {
+            const dd = t.querySelector('dd');
+            if (dd.scrollWidth > dd.clientWidth + 1 || dd.getBoundingClientRect().right > t.getBoundingClientRect().right + 1) bad.push(t.querySelector('dt').textContent);
+          });
+          const svg = document.querySelector('svg.scurve'), vb = svg.viewBox.baseVal;
+          svg.querySelectorAll('text').forEach(n => { const b = n.getBBox(); if (b.x < -0.5 || b.x + b.width > vb.width + 0.5) bad.push(n.textContent); });
+          const dlg = document.querySelector('dialog[open]');
+          if (dlg.scrollWidth > dlg.clientWidth + 1) bad.push('fenêtre');
+          return bad;
+        }"""
+        for fx_name in ['projet-atlas-budget.json', 'budget-montants-geants.json']:
+            load_fx(fx_name)
+            for width in [1500, 900, 600, 380]:
+                pg.set_viewport_size({'width': width, 'height': 900})
+                pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget')
+                bad = pg.evaluate(OVERFLOW)
+                check(f'EX-04 : onglet Budget sans débordement ({fx_name}, {width} px)', not bad, bad)
+                esc()
+        pg.set_viewport_size({'width': 1500, 'height': 950})
+
+        # EX-29 : barres de défilement horizontales toujours visibles, défilement vertical commun.
+        load_fx('projet-atlas-budget.json')
+        pg.evaluate('window.scrollTo(0, 0)')
+        geo = pg.evaluate("""() => { const f = id => { const e = document.getElementById(id), r = e.getBoundingClientRect();
+          return { bottom: Math.round(r.bottom), ox: getComputedStyle(e).overflowX, tall: e.scrollHeight > e.clientHeight }; };
+          return { list: f('list'), gantt: f('gantt'), vh: innerHeight }; }""")
+        check('EX-29 : le bas de la liste et du Gantt (barres horizontales) est visible en haut de page',
+              geo['list']['bottom'] <= geo['vh'] and geo['gantt']['bottom'] <= geo['vh'], geo)
+        check('EX-29 : défilement horizontal toujours proposé sur la liste et sur le Gantt', geo['list']['ox'] == 'scroll' and geo['gantt']['ox'] == 'scroll', geo)
+        pg.evaluate("document.getElementById('list').scrollTop = 150")
+        pg.wait_for_timeout(150)
+        check('EX-29 : le Gantt suit le défilement vertical de la liste', pg.evaluate("document.getElementById('gantt').scrollTop") == 150)
+        pg.evaluate("document.getElementById('gantt').scrollTop = 60")
+        pg.wait_for_timeout(150)
+        check('EX-29 : la liste suit le défilement vertical du Gantt', pg.evaluate("document.getElementById('list').scrollTop") == 60)
+        head_top = pg.evaluate("document.querySelector('#gantt .g-head').getBoundingClientRect().top - document.getElementById('gantt').getBoundingClientRect().top")
+        check("EX-29 : l'en-tête du Gantt reste en haut pendant le défilement", abs(head_top) <= 1, head_top)
+        pg.evaluate("document.getElementById('list').scrollTop = 0")
+
+        # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
+        pg.evaluate('window.print = () => {}')
+        for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:
+            pg.click('button[data-click="openPrint"]')
+            pg.check(f'#pr-scale-{scale}'); pg.check(f'#pr-orient-{orient}')
+            pg.click('dialog[open] button:has-text("Imprimer")')
+            pg.wait_for_timeout(200)
+            pg.emulate_media(media='print')
+            info = pg.evaluate("""() => { const ts = [...document.querySelectorAll('#print-area table.print-gantt')]; const bad = [];
+              ts.forEach(t => t.querySelectorAll('td, th').forEach(c => { if (c.scrollWidth > c.clientWidth + 1) bad.push(c.textContent.slice(0, 20)); }));
+              return { n: ts.length, heads: [...ts[0].querySelectorAll('thead th')].map(x => x.textContent), caps: ts.map(t => t.querySelector('caption').textContent),
+                rows: ts.map(t => t.querySelectorAll('tbody tr').length), bad }; }""")
+            pg.emulate_media(media='screen')
+            tag = f'{scale}, {orient}'
+            check(f'EX-30 : colonnes Début, Fin et Dépendances imprimées ({tag})', all(x in sp(' '.join(info['heads'])) for x in ['Début', 'Fin', 'Dépendances']), info['heads'])
+            check(f'EX-30 : aucun texte coupé à l\'impression ({tag})', not info['bad'], info['bad'])
+            check(f'EX-30 : toutes les lignes sur chaque bande ({tag})', len(set(info['rows'])) == 1 and info['rows'][0] >= 40, info['rows'])
+            if scale == 'fit':
+                check('EX-30 : « Ajuster » = une seule bande', info['n'] == 1, info['n'])
+            else:
+                check(f'EX-30 : « Zoom actuel » découpé en bandes numérotées ({tag})', info['n'] > 1 and all(f'partie {i + 1} sur {info["n"]}' in c for i, c in enumerate(info['caps'])), info['caps'])
+            pg.wait_for_timeout(1800)
+            check(f'EX-30 : nettoyage après impression ({tag})', pg.evaluate("!document.body.classList.contains('printing')"))
+
         check('aucune erreur JavaScript ni violation CSP', not errors, errors)
         browser.close()
 

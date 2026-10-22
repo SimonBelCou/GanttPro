@@ -45,7 +45,24 @@ function applyFreeze() {
 }
 
 /** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
+/** Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
+ *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page. */
+function applyPlannerHeight() {
+  const pl = $('planner');
+  const top = pl.getBoundingClientRect().top + window.scrollY;
+  pl.style.setProperty('--planner-h', Math.max(300, Math.round(window.innerHeight - top - 12)) + 'px');
+}
+
+let plannerHeightPending = false;
+/** Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25). */
+function schedulePlannerHeight() {
+  if (plannerHeightPending) return;
+  plannerHeightPending = true;
+  requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
+}
+
 function refreshLayout() {
+  schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
@@ -94,7 +111,11 @@ function initLayout() {
     sep.addEventListener('pointerup', up);
     sep.addEventListener('pointercancel', up);
   });
-  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  // Défilement vertical commun : la liste et le Gantt défilent chacun dans leur zone (barres horizontales toujours visibles).
+  const list = $('list'), gantt = $('gantt');
+  const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
+  mirror(list, gantt); mirror(gantt, list);
+  window.addEventListener('resize', () => { applyPlannerHeight(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);

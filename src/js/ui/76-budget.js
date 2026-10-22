@@ -20,7 +20,7 @@ function paintBudget(panel) {
   const remaining = tot.remaining < 0
     ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
     : [Money.node(tot.remaining)];
-  panel.append(h('dl', { class: 'tiles', id: 'bud-tiles' },
+  panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
     tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
     tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
 
@@ -38,7 +38,7 @@ function paintBudget(panel) {
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit);
   const scale = costScale(curve);
   const opts = {
-    max: scale.max, ticks: scale.ticks, axis: v => Money.text(v, { compact: true }), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
     title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
   };
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
