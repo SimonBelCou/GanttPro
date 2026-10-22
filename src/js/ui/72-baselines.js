@@ -5,9 +5,10 @@ function captureBaseline(p, sched, name, color) {
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
     id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
-      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn) };
+      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn), budget: x.type === 'task' ? x.budget || 0 : 0 };
     }),
   };
 }
@@ -32,11 +33,13 @@ function baselinesWindow() {
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
             h('label', { for: 'bls-' + b.id, text: ' ' + t('bl.onScurve') })),
           h('td', { text: t('bl.captured', { date: I18n.date(Dates.todayDn(new Date(b.createdAt || 0))), count: b.tasks.length }) }),
+          h('td', {}, Money.node(Budget.baselineBac(b)), h('span', { class: 'sr-only', text: ' ' + t('proj.provision') + ' : ' }), h('span', { class: 'hint' }, ' + ', Money.node(b.provision || 0))),
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
     }
+    if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
   };
   baselinesWindow.paint = paint;

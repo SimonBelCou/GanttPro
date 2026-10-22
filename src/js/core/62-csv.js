@@ -11,6 +11,7 @@ const Csv = (() => {
   function write(rows, sep = ';', bom = true) {
     const cell = v => {
       if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
+      if (v && typeof v === 'object' && typeof v.n === 'number') return v.n.toFixed(2); // montant : deux décimales (EF-123)
       const s = neutralize(v);
       return /["\n\r]/.test(s) || s.includes(sep) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };

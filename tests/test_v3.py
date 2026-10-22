@@ -231,7 +231,7 @@ def main():
 
         # ── Annuler / rétablir ───────────────────────────────────────────────────────────────
         pg.click('#btn-undo')
-        check('annuler retire la tâche C', pg.query_selector('#task-rows tr[data-id="C"] td:nth-child(4)') is None or 'B' not in pg.inner_text('#task-rows tr[data-id="C"]'))
+        check('annuler retire la tâche C', pg.query_selector('#task-rows tr[data-id="C"] td:nth-child(8)') is None or 'B' not in pg.inner_text('#task-rows tr[data-id="C"]'))
         pg.click('#btn-redo')
         check('rétablir remet le lien de C', 'B' in pg.inner_text('#task-rows tr[data-id="C"]'))
 
@@ -300,7 +300,7 @@ def main():
         pg.wait_for_selector('#dash-win')
         dash = pg.inner_text('#dash-win')
         check('tableau de bord : indicateurs', 'Avancement global' in dash and 'Tâches terminées' in dash)
-        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
+        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve > title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
         pg.click('#dash-win button:has-text("Afficher les valeurs")')
         check('équivalent texte de la courbe', pg.locator('#sc-values tbody tr').count() >= 2 and pg.get_attribute('[data-click="dashValues"]', 'aria-expanded') == 'true')
         pg.focus('#dash-win .chart-box'); pg.keyboard.press('ArrowRight')
@@ -449,7 +449,7 @@ def main():
         pg.mouse.move(src['x'] + 40, src['y'] + 40, steps=4)
         dst = pg.locator('.bar[data-arg="B"] .lk-s').bounding_box()
         pg.mouse.move(dst['x'] + 5, dst['y'] + 5, steps=6); pg.mouse.up()
-        check('tirer un lien fin → début crée « C → B »', 'C' in pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)'), pg.inner_text('#task-rows tr[data-id="B"]'))
+        check('tirer un lien fin → début crée « C → B »', 'C' in pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)'), pg.inner_text('#task-rows tr[data-id="B"]'))
         pg.mouse.move(dst['x'] + 5, dst['y'] + 5); pg.mouse.down(); pg.mouse.move(src['x'] + 5, src['y'] + 5, steps=6); pg.mouse.up()
         check('lien qui créerait une boucle : refusé avec message', 'boucle' in pg.inner_text('#toast'), pg.inner_text('#toast'))
         # Commentaires et étiquettes (EF-90, EF-91)

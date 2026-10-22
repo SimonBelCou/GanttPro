@@ -13,6 +13,7 @@ const Xlsx = (() => {
     const data = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => {
       const ref = colName(ci) + (ri + 1), st = ri === 0 ? ' s="1"' : '';
       if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'object' && typeof v.n === 'number') return `<c r="${ref}" s="2"><v>${v.n}</v></c>`; // montant : format 0,00 (EF-123)
       if (typeof v === 'number' && Number.isFinite(v)) return `<c r="${ref}"${st}><v>${v}</v></c>`;
       return `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${esc(Csv.neutralize(v))}</t></is></c>`;
     }).join('')}</row>`).join('');
@@ -28,7 +29,7 @@ const Xlsx = (() => {
     const names = sheets.map((s, i) => sheetName(s.name, i));
     const widthsOf = rows => {
       const n = Math.max(0, ...rows.map(r => r.length));
-      return Array.from({ length: n }, (_, c) => Math.min(60, Math.max(8, ...rows.slice(0, 500).map(r => String(r[c] ?? '').length + 2))));
+      return Array.from({ length: n }, (_, c) => Math.min(60, Math.max(8, ...rows.slice(0, 500).map(r => String(r[c] && typeof r[c] === 'object' ? r[c].n : r[c] ?? '').length + 2))));
     };
     const files = [
       { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -50,7 +51,7 @@ const Xlsx = (() => {
         '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
         '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
         '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-        '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+        '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
         '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
       ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s.rows, widthsOf(s.rows)) })),
     ];

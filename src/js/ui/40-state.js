@@ -13,6 +13,7 @@ const App = {
   undo: [],
   redo: [],
   dirty: false,
+  maskAmounts: false, // masquage des montants à l'écran (EF-125) : réglage de l'appareil, relu au démarrage
 };
 const UNDO_MAX = 50;
 

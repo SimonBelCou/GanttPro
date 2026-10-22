@@ -42,6 +42,7 @@
       <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
+      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
     </div>
     <div class="group">
       <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
@@ -125,10 +126,12 @@
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="money"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
+          <th scope="col"><span data-i18n="col.money"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>

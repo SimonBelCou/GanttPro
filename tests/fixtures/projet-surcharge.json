@@ -1,0 +1,100 @@
+{
+  "format": 3,
+  "name": "Projet fictif surcharge",
+  "projectStart": "2026-11-02",
+  "calendar": {
+    "workDays": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0
+    ],
+    "holidays": "FR",
+    "daysOff": [],
+    "daysWorked": []
+  },
+  "leveling": "off",
+  "resources": [
+    {
+      "name": "Alice",
+      "capacity": 100,
+      "absences": [
+        {
+          "start": "2026-11-09",
+          "end": "2026-11-10",
+          "label": "Absence fictive"
+        }
+      ]
+    },
+    {
+      "name": "Bob",
+      "capacity": 100
+    }
+  ],
+  "categories": [
+    {
+      "name": "Conception",
+      "color": "#4d9fff"
+    },
+    {
+      "name": "Réalisation",
+      "color": "#36d9a0"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "A",
+      "name": "Tâche Alice un",
+      "dur": 5,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ],
+      "cat": "Conception"
+    },
+    {
+      "id": "B",
+      "name": "Tâche Alice deux",
+      "dur": 5,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ],
+      "cat": "Réalisation"
+    },
+    {
+      "id": "C",
+      "name": "Tâche Bob",
+      "dur": 4,
+      "assign": [
+        {
+          "res": "Bob",
+          "units": 50
+        }
+      ],
+      "cat": "Réalisation"
+    },
+    {
+      "id": "D",
+      "name": "Tâche suivante",
+      "dur": 3,
+      "deps": [
+        "A"
+      ],
+      "assign": [
+        {
+          "res": "Bob",
+          "units": 50
+        }
+      ],
+      "cat": "Réalisation"
+    }
+  ]
+}

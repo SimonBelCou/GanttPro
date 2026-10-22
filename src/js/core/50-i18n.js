@@ -26,7 +26,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -117,6 +117,7 @@ const I18n = (() => {
     'imp.overCapacity': 'Tâche n° {n} : le taux de {units} % dépasse la capacité de {capacity} % de {name}.',
     'imp.milestoneRes': "Tâche n° {n} : un jalon n'a pas de ressource.",
     'imp.summaryField': "Tâche n° {n} : une récapitulative n'a ni lien, ni affectation, ni date imposée, ni contrainte.",
+    'imp.noAmount': "Tâche n° {n} : un jalon ou une récapitulative n'a ni budget ni coût réel propre.",
     'imp.realOrder': 'Tâche n° {n} : la fin réelle précède le début réel.',
     'imp.realEndPct': "Tâche n° {n} : une fin réelle impose un avancement de 100 %.",
     'imp.badParent': "Tâche n° {n} : le parent {parent} n'est pas une récapitulative.",
@@ -132,12 +133,58 @@ const I18n = (() => {
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
     'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
-    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif',
+    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
     'rule.milestonePct': '0 ou 100 pour un jalon', 'rule.absent': 'champ interdit ici',
     'calc.error': 'Le planning ne peut pas être calculé : une date dépasse 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Montants ignorés (les lignes sont importées sans ce montant)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Inclure les montants',
+    'out.amountsHint': 'Décochée à chaque ouverture : sans cette case, rien de ce qui sort (fichier, impression, copie) ne contient de montant.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'Variation du BAC avec {name} : {value}',
+    'rep.budgetOff': 'Le bloc Budget n\'apparaît que si « Inclure les montants » est coché.',
+    'print.colMoney': 'Budget / Réel (si les montants sont inclus)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (budget des tâches)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Budget total',
+    'bud.actual': 'Coût réel total',
+    'bud.remaining': 'Reste',
+    'bud.overrun': 'dépassement de',
+    'bud.byCat': 'Budget par catégorie',
+    'bud.cat': 'Catégorie',
+    'bud.gap': 'Écart',
+    'bud.sum': 'Total',
+    'bud.curve': 'Courbe en S des coûts',
+    'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
+    'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'BAC du projet (budget des tâches, provision exclue) :',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'montant masqué',
+    'top.mask': 'Masquer les montants',
+    'col.money': 'Budget / Réel',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Coût réel cumulé',
+    'f.actualHelp': 'Paiements faits, paiements en cours et factures engagées.',
+    'f.amountHint': 'Montant en {symbol}, deux décimales au plus (ex. 1 234,56).',
+    'f.summaryAmounts': 'Somme des tâches de cette récapitulative : budget {budget}, coût réel {actual}.',
+    'f.maskedFields': 'Les montants sont masqués : désactivez « Masquer les montants » pour les modifier.',
+    'err.amount.format': '{field} : écrire un montant comme « 1 234,56 ».',
+    'err.amount.negative': '{field} : le montant ne peut pas être négatif.',
+    'err.amount.decimals': '{field} : deux décimales au plus.',
+    'err.amount.max': '{field} : au plus {max}.',
+    'proj.currency': 'Symbole de la devise (1 à 5 caractères)',
+    'proj.provision': 'Provision globale',
+    'proj.budgetNote': 'Une seule devise pour tout le projet, sans conversion. L\'outil ne remplace pas une comptabilité de projet.',
     // Divers
     'undo.done': 'Modification annulée.', 'redo.done': 'Modification rétablie.', 'saved': 'Tâche {id} enregistrée.', 'deleted': 'Tâche {id} supprimée.',
     'added': 'Tâche {id} ajoutée.', 'newTask': 'Nouvelle tâche', 'newMilestone': 'Nouveau jalon', 'newSummary': 'Nouvelle récapitulative',
@@ -251,7 +298,7 @@ const I18n = (() => {
     'top.print': 'Imprimer le Gantt', 'top.versions': 'Versions',
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
-    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Le navigateur propose aussi « Enregistrer en PDF ».", 'print.go': 'Imprimer',
+    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
     'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
@@ -259,9 +306,9 @@ const I18n = (() => {
     'xp.outline': 'N°', 'xp.id': 'Identifiant', 'xp.name': 'Nom', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Durée', 'xp.start': 'Début', 'xp.end': 'Fin',
     'xp.deps': 'Prédécesseurs', 'xp.res': 'Ressources', 'xp.cat': 'Catégorie', 'xp.pct': 'Avancement', 'xp.status': 'Statut', 'xp.critical': 'Critique', 'xp.slack': 'Marge',
     'xp.realStart': 'Début réel', 'xp.realEnd': 'Fin réelle', 'xp.forced': 'Début imposé', 'xp.notBefore': 'Ne pas commencer avant', 'xp.deadline': 'Échéance',
-    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
+    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Coût réel', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
     'xp.sheet.tasks': 'Tâches', 'xp.sheet.resources': 'Ressources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendrier', 'xp.sheet.baselines': 'Baselines',
-    'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable',
+    'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable', 'imp.amountIgnored': '« {value} » n\'est pas un montant valide : valeur ignorée',
     'imp.resFormat': '« {value} » ne se lit pas (ex. « Alice 50 %; Bob »)',
     'msp.ign.calendars': 'calendriers secondaires', 'msp.ign.constraint': 'contrainte de type {n}', 'msp.ign.cost': 'coûts', 'msp.ign.work': 'heures de travail',
     'msp.ign.resCalendars': 'calendriers des ressources', 'msp.ign.units': 'taux d\'affectation ramenés à la capacité de la ressource',
@@ -283,7 +330,7 @@ const I18n = (() => {
     'wiz.needName': 'Associez au moins la colonne du nom.', 'wiz.none': 'Aucune ligne valide à importer.', 'wiz.imported': { one: '{count} tâche importée.', other: '{count} tâches importées.' },
     'wiz.importValid': { one: 'Importer la ligne valide', other: 'Importer les {count} lignes valides' },
     'wiz.f.id': 'Identifiant', 'wiz.f.num': 'N° (référence des liens)', 'wiz.f.name': 'Nom', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Durée', 'wiz.f.deps': 'Prédécesseurs', 'wiz.f.res': 'Ressources',
-    'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
+    'wiz.f.budget': 'Budget', 'wiz.f.actual': 'Coût réel', 'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
     'clip.copied': { one: '{count} tâche copiée.', other: '{count} tâches copiées.' }, 'clip.pasted': { one: '{count} tâche collée.', other: '{count} tâches collées.' }, 'clip.paste': 'Coller',
     'png.legend': 'Barre : tâche (partie sombre = réalisé) ; contour rouge : critique ; losange : jalon ; trait rouge : aujourd\'hui.',
     'tabs.label': 'Projets ouverts', 'tabs.title': 'Onglets', 'tabs.max': 'Dix projets au plus peuvent être ouverts ({max}) : fermez un onglet pour en ouvrir un autre.',
@@ -362,7 +409,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -425,6 +472,7 @@ const I18n = (() => {
     'imp.dupCategory': 'Two categories are named {name}.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
     'imp.overCapacity': 'Task #{n}: {units}% exceeds the {capacity}% capacity of {name}.', 'imp.milestoneRes': 'Task #{n}: a milestone has no resource.',
     'imp.summaryField': 'Task #{n}: a summary task has no link, assignment, fixed date or constraint.',
+    'imp.noAmount': 'Task #{n}: a milestone or summary task has no budget or actual cost of its own.',
     'imp.realOrder': 'Task #{n}: actual finish is before actual start.', 'imp.realEndPct': 'Task #{n}: an actual finish requires 100% progress.',
     'imp.badParent': 'Task #{n}: parent {parent} is not a summary task.', 'imp.parentCycle': 'Circular hierarchy around {id}.',
     'imp.tooDeep': 'Task {id} exceeds {max} levels of summary tasks.', 'imp.missingPred': 'Task #{n}: predecessor {pred} does not exist.',
@@ -433,11 +481,57 @@ const I18n = (() => {
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
     'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
-    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number',
+    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
     'rule.absent': 'field not allowed here', 'calc.error': 'The schedule cannot be computed: a date goes beyond 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Ignored amounts (the rows are imported without that amount)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Include amounts',
+    'out.amountsHint': 'Unchecked every time this window opens: without this box, nothing that leaves the app (file, print, copy) contains an amount.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'BAC variation against {name}: {value}',
+    'rep.budgetOff': 'The Budget block only appears when “Include amounts” is checked.',
+    'print.colMoney': 'Budget / Actual (if amounts are included)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (task budgets)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Total budget',
+    'bud.actual': 'Total actual cost',
+    'bud.remaining': 'Remaining',
+    'bud.overrun': 'overrun of',
+    'bud.byCat': 'Budget by category',
+    'bud.cat': 'Category',
+    'bud.gap': 'Variance',
+    'bud.sum': 'Total',
+    'bud.curve': 'Cost S-curve',
+    'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
+    'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'Project BAC (task budgets, provision excluded):',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'amount hidden',
+    'top.mask': 'Hide amounts',
+    'col.money': 'Budget / Actual',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Cumulative actual cost',
+    'f.actualHelp': 'Payments made, payments in progress and committed invoices.',
+    'f.amountHint': 'Amount in {symbol}, at most two decimals (e.g. 1,234.56).',
+    'f.summaryAmounts': 'Total of the tasks in this summary task: budget {budget}, actual cost {actual}.',
+    'f.maskedFields': 'Amounts are hidden: turn off “Hide amounts” to edit them.',
+    'err.amount.format': '{field}: write an amount such as “1,234.56”.',
+    'err.amount.negative': '{field}: the amount cannot be negative.',
+    'err.amount.decimals': '{field}: at most two decimals.',
+    'err.amount.max': '{field}: at most {max}.',
+    'proj.currency': 'Currency symbol (1 to 5 characters)',
+    'proj.provision': 'Overall provision',
+    'proj.budgetNote': 'One currency for the whole project, no conversion. The tool does not replace project accounting.',
     'undo.done': 'Change undone.', 'redo.done': 'Change redone.', 'saved': 'Task {id} saved.', 'deleted': 'Task {id} deleted.', 'added': 'Task {id} added.',
     'newTask': 'New task', 'newMilestone': 'New milestone', 'newSummary': 'New summary task', 'unsaved.leave': 'Some changes were not exported.',
     'hol.newYear': "New Year's Day", 'hol.goodFriday': 'Good Friday', 'hol.easterMonday': 'Easter Monday', 'hol.labour': 'Labour Day',
@@ -531,7 +625,7 @@ const I18n = (() => {
     'top.print': 'Print the Gantt', 'top.versions': 'Versions',
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
-    'print.hint': 'The printed rows are those displayed (filters included). The browser also offers “Save as PDF”.', 'print.go': 'Print',
+    'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
     'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
@@ -539,9 +633,9 @@ const I18n = (() => {
     'xp.outline': 'No.', 'xp.id': 'ID', 'xp.name': 'Name', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Duration', 'xp.start': 'Start', 'xp.end': 'Finish',
     'xp.deps': 'Predecessors', 'xp.res': 'Resources', 'xp.cat': 'Category', 'xp.pct': 'Progress', 'xp.status': 'Status', 'xp.critical': 'Critical', 'xp.slack': 'Slack',
     'xp.realStart': 'Actual start', 'xp.realEnd': 'Actual finish', 'xp.forced': 'Fixed start date', 'xp.notBefore': 'Start no earlier than', 'xp.deadline': 'Deadline',
-    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
+    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Actual cost', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
     'xp.sheet.tasks': 'Tasks', 'xp.sheet.resources': 'Resources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendar', 'xp.sheet.baselines': 'Baselines',
-    'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found',
+    'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found', 'imp.amountIgnored': '“{value}” is not a valid amount: value ignored',
     'imp.resFormat': '“{value}” cannot be read (e.g. “Alice 50 %; Bob”)',
     'msp.ign.calendars': 'secondary calendars', 'msp.ign.constraint': 'constraint of type {n}', 'msp.ign.cost': 'costs', 'msp.ign.work': 'work hours',
     'msp.ign.resCalendars': 'resource calendars', 'msp.ign.units': 'assignment units reduced to the resource capacity',
@@ -563,7 +657,7 @@ const I18n = (() => {
     'wiz.needName': 'Match at least the name column.', 'wiz.none': 'No valid row to import.', 'wiz.imported': { one: '{count} task imported.', other: '{count} tasks imported.' },
     'wiz.importValid': { one: 'Import the valid row', other: 'Import the {count} valid rows' },
     'wiz.f.id': 'ID', 'wiz.f.num': 'No. (link reference)', 'wiz.f.name': 'Name', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Duration', 'wiz.f.deps': 'Predecessors', 'wiz.f.res': 'Resources',
-    'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
+    'wiz.f.budget': 'Budget', 'wiz.f.actual': 'Actual cost', 'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
     'clip.copied': { one: '{count} task copied.', other: '{count} tasks copied.' }, 'clip.pasted': { one: '{count} task pasted.', other: '{count} tasks pasted.' }, 'clip.paste': 'Paste',
     'png.legend': 'Bar: task (dark part = done); red outline: critical; diamond: milestone; red line: today.',
     'tabs.label': 'Open projects', 'tabs.title': 'Tabs', 'tabs.max': 'At most ten projects can be open ({max}): close a tab to open another one.',
@@ -679,6 +773,7 @@ const I18n = (() => {
     const p = { ...e.params };
     if (p.obj) p.obj = t('obj.' + p.obj);
     if (p.n === undefined) p.n = '';
+    if (p.rule === 'rule.amount') { p.min = group(p.min); p.max = group(p.max); }
     if (p.rule) p.rule = t(p.rule, p);
     if (p.inner) p.inner = error(p.inner);
     return t(e.key, p);
@@ -696,13 +791,42 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
+  function numDate(dn) {
+    if (dn == null) return '';
+    const key = lang === 'fr' ? dn : -dn - 1;
+    let v = numDateCache.get(key);
+    if (v === undefined) {
+      const { y, m, d } = Dates.ymd(dn);
+      const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+      v = lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+      if (numDateCache.size > 20000) numDateCache.clear();
+      numDateCache.set(key, v);
+    }
+    return v;
+  }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
     const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
+  /** Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ». */
+  function monthLabelFit(dn, width) {
+    const { y, m } = Dates.ymd(dn), yy = String(y % 100).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    if (width >= 80) return `${MONTHS[lang][m - 1]} ${y}`;
+    if (width >= 62) return `${MONTHS[lang][m - 1]} ${yy}`;
+    if (width >= 40) return `${mm}/${yy}`;
+    if (width >= 20) return mm;
+    return '';
+  }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
+  /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
+  function group(n) {
+    const s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? '\u202f' : ',');
+    return n < 0 ? '\u2212' + s : s;
+  }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
     return lang === 'fr' ? s.replace('.', ',') : s;
@@ -710,5 +834,5 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();

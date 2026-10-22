@@ -1,7 +1,7 @@
 /* Rapport d'état (EF-88, RG-28) : aperçu, choix des blocs, note, impression ou PDF, texte brut.
  * Le voyant est toujours écrit en toutes lettres (jamais la couleur seule, EX-03). */
-const Report = { blocks: { kpis: true, curve: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
-const REPORT_BLOCKS = ['kpis', 'curve', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
+const Report = { amounts: false, blocks: { kpis: true, curve: true, budget: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
+const REPORT_BLOCKS = ['kpis', 'curve', 'budget', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
 
 function reportData() {
   const today = Dates.todayDn();
@@ -11,6 +11,16 @@ function reportData() {
 const taskLabel = id => { const x = taskById(id); return x ? `${id} ${x.name}` : id; };
 
 /** Contenu du rapport sous forme de sections {title, lines[]} : sert à l'aperçu ET au texte brut. */
+/** Une ligne du rapport est un texte, ou {label, cents, signed} pour un montant (masquable à l'écran, jamais dans une sortie). */
+function lineText(l) {
+  if (typeof l === 'string') return l;
+  return l.label + (l.signed && l.cents > 0 ? '+' : '') + Money.plain(l.cents);
+}
+function lineNode(l, out) {
+  if (typeof l === 'string' || out) return lineText(l);
+  return [l.label + (l.signed && l.cents > 0 ? '+' : ''), Money.node(l.cents)];
+}
+
 function reportSections() {
   const { today, bl, r } = reportData();
   const s = App.sched;
@@ -26,6 +36,14 @@ function reportSections() {
     t('rep.end', { date: I18n.date(s.projectEndDn) }),
   ] });
   if (B.curve) out.push({ key: 'curve', title: t('dash.curve'), lines: [], chart: true });
+  // Bloc Budget (EF-120) : seulement si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Report.amounts) {
+    const tot = Budget.totals(App.project), L = (k, c) => ({ label: t(k) + ' : ', cents: c });
+    const lines = [L('bud.bac', tot.bac), L('bud.provision', tot.provision), L('bud.total', tot.total), L('bud.actual', tot.actual),
+      tot.remaining < 0 ? { label: `${t('bud.remaining')} : ${t('bud.overrun')} `, cents: -tot.remaining } : L('bud.remaining', tot.remaining)];
+    if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
+    out.push({ key: 'budget', title: t('rep.b.budget'), lines });
+  }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });
   if (B.milestones) out.push({ key: 'milestones', title: t('rep.milestones'), lines: [
@@ -39,7 +57,7 @@ function reportSections() {
   return out;
 }
 
-function reportArticle() {
+function reportArticle(out = false) {
   const art = h('article', { class: 'report-page', id: 'report-preview', aria: { label: t('rep.preview') } });
   const { r } = reportData();
   for (const sec of reportSections()) {
@@ -52,14 +70,14 @@ function reportArticle() {
       c.removeAttribute('tabindex');
       el.append(c);
     }
-    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', { text: l }))));
+    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', {}, lineNode(l, out)))));
     art.append(el);
   }
   return art;
 }
 
 function reportText() {
-  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? l : `- ${l}`))].join('\n')).join('\n');
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
 }
 
 function paintReport(body, focusSel) {
@@ -68,6 +86,8 @@ function paintReport(body, focusSel) {
     h('fieldset', { class: 'sub' }, h('legend', { text: t('rep.blocks') }),
       REPORT_BLOCKS.map(k => h('div', { class: 'check' }, h('input', { type: 'checkbox', id: 'rb-' + k, checked: Report.blocks[k], data: { change: 'repBlock', arg: k } }),
         h('label', { for: 'rb-' + k, text: t('rep.b.' + k) })))),
+    h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'rep-amounts', checked: Report.amounts, data: { change: 'repAmounts' } }),
+      h('label', { for: 'rep-amounts', text: t('out.amounts') }), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('div', { class: 'field' }, h('label', { for: 'rep-bl', text: t('rep.baseline') }),
       h('select', { id: 'rep-bl', data: { change: 'repBaseline' } }, h('option', { value: '' }, t('dash.noBl')),
         App.project.baselines.map(b => h('option', { value: b.id, selected: Report.baseline === b.id }, b.name)))),
@@ -84,6 +104,7 @@ function paintReport(body, focusSel) {
 function reportWindow() {
   if (!App.sched) return;
   if (Report.baseline && !App.project.baselines.some(b => b.id === Report.baseline)) Report.baseline = '';
+  Report.amounts = false; // décochée à chaque ouverture (EF-124)
   const body = h('div', { id: 'rep-win' });
   reportWindow.body = body;
   paintReport(body);
@@ -131,7 +152,8 @@ function copyText(text) {
 
 action('openReport', () => reportWindow());
 action('repBlock', (k, el) => { Report.blocks[k] = el.checked; paintReport(reportWindow.body, '#rb-' + k); });
+action('repAmounts', (a, el) => { Report.amounts = el.checked; paintReport(reportWindow.body, '#rep-amounts'); });
 action('repBaseline', (a, el) => { Report.baseline = el.value; paintReport(reportWindow.body, '#rep-bl'); });
 action('repNote', (a, el) => { const v = el.value.slice(0, 2000); if (v !== App.project.reportNote) commit(p => { p.reportNote = v; }); paintReport(reportWindow.body, '#rep-note'); });
-action('repPrint', () => printNode(reportArticle(), 'print-report', 'A4 portrait'));
+action('repPrint', () => printNode(reportArticle(true), 'print-report', 'A4 portrait'));
 action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });

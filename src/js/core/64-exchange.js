@@ -23,13 +23,17 @@ const Exchange = (() => {
   }
 
   /** Lignes du tableau des tâches (EF-93) : en-tête puis une ligne par tâche. */
-  function taskRows(project, sched, today, { anonymize = false } = {}) {
+  function taskRows(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
-      'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes'].map(k => t(k));
+      'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
+      ...(amounts ? ['xp.budget', 'xp.actual'] : [])].map(k => t(k));
+    // Budget et coût réel (EF-123) : seulement si l'export les inclut (EF-124) ; une récapitulative donne la somme de ses enfants.
+    const sums = amounts ? Budget.amounts(project) : null;
+    const money = c => ({ n: c / 100 });
     const rows = [head];
     for (const x of project.tasks) {
       const r = sched.tasks.get(x.id);
@@ -40,6 +44,7 @@ const Exchange = (() => {
         x.assign.map(a => resName(a.res) + (a.units !== 100 ? ` ${a.units} %` : '')).join('; '), cat(x.cat), Metrics.pctOf(x, sched),
         st ? t('status.' + st) : '', r && r.critical && x.type !== 'summary' ? t('xp.yes') : '', x.type !== 'summary' && r ? r.slack : '',
         x.realStart, x.realEnd, x.forcedStart, x.notBefore, x.deadline, x.tags.join('; '), x.notes,
+        ...(amounts ? [money(sums.get(x.id).budget), money(sums.get(x.id).actual)] : []),
       ]);
     }
     return rows;
@@ -47,13 +52,14 @@ const Exchange = (() => {
 
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
+
   /** Classeur de cinq feuilles (EF-94). */
-  function xlsx(project, sched, today, { anonymize = false } = {}) {
+  function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
     return Xlsx.build([
-      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize }) },
+      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
       { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd')],
         ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10])] },
       { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
@@ -226,7 +232,7 @@ const Exchange = (() => {
   }
 
   /* ── Import de tâches depuis un tableau (EF-96, RG-30) ─────────────────────────────────── */
-  const FIELDS = ['id', 'num', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'cat', 'pct', 'tags', 'notes', 'forcedStart', 'notBefore', 'deadline'];
+  const FIELDS = ['id', 'num', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'cat', 'pct', 'tags', 'notes', 'forcedStart', 'notBefore', 'deadline', 'budget', 'actual'];
   const SYN = {
     id: ['identifiant', 'id', 'code'], num: ['n°', 'n', 'no', 'numero', 'num', 'number', 'ligne', 'row', '#', 'wbs', 'edt'], name: ['nom', 'name', 'activite', 'activity', 'tache', 'task', 'libelle'],
     type: ['type'], parent: ['parent', 'recapitulative', 'summary'], dur: ['duree', 'duration', 'jours', 'days'],
@@ -234,6 +240,7 @@ const Exchange = (() => {
     cat: ['categorie', 'category'], pct: ['avancement', 'progress', '% acheve', 'percent complete'], tags: ['etiquettes', 'tags', 'etiquette'],
     notes: ['notes', 'note', 'commentaire'], forcedStart: ['debut impose', 'date imposee', 'fixed start date', 'fixed start', 'must start on'],
     notBefore: ['ne pas commencer avant', 'start no earlier than', 'pas avant'], deadline: ['echeance', 'deadline'],
+    budget: ['budget'], actual: ['cout reel', 'cout reel cumule', 'actual cost', 'actual', 'reel'],
   };
   const norm = s => View.fold(String(s)).replace(/[^a-z0-9%° ]/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -245,6 +252,17 @@ const Exchange = (() => {
       for (const f of FIELDS) if (map[f] === undefined && SYN[f].includes(n)) { map[f] = i; break; }
     });
     return map;
+  }
+
+  /** Cellule de montant d'un tableur (RG-42) : nombre Excel ou texte ; renvoie {ok, cents}. */
+  function amountCell(v, symbol) {
+    if (typeof v === 'number') {
+      const c = Math.round(v * 100);
+      if (!Number.isFinite(v) || v < 0 || Math.abs(v * 100 - c) > 1e-6 || c > Budget.MAX) return { ok: false };
+      return { ok: true, cents: c };
+    }
+    const r = Budget.parse(v, symbol);
+    return r.ok ? r : { ok: false };
   }
 
   function parseDate(v) {
@@ -264,18 +282,18 @@ const Exchange = (() => {
    * d'identifiant, une colonne « N° » sert de référence pour les liens et les parents : les tâches
    * reçoivent alors de nouveaux identifiants et les liens suivent.
    */
-  function rowsToTasks(rows, map, existing, { skipHeader = true } = {}) {
+  function rowsToTasks(rows, map, existing, { skipHeader = true, symbol = '' } = {}) {
     const data = rows.slice(skipHeader ? 1 : 0);
     if (data.length > 1000) throw new Model.Invalid('imp.tooMany', { what: 'lignes', max: 1000 });
     const get = (r, f) => (map[f] === undefined ? '' : r[map[f]] ?? '');
-    const errors = [], out = [];
+    const errors = [], warnings = [], out = [];
     const fileIds = new Set();
     const refOf = r => String(get(r, 'id')).trim().toUpperCase() || String(get(r, 'num')).trim().toUpperCase();
     for (const r of data) { const id = refOf(r); if (Model.ID_RE.test(id)) fileIds.add(id); }
     const known = new Set([...fileIds, ...existing]);
     data.forEach((r, k) => {
       const line = k + (skipHeader ? 2 : 1);
-      const LABEL = { name: 'xp.name', dur: 'xp.dur', pct: 'xp.pct', deps: 'xp.deps', res: 'xp.res', forcedStart: 'xp.forced', notBefore: 'xp.notBefore', deadline: 'xp.deadline' };
+      const LABEL = { name: 'xp.name', dur: 'xp.dur', pct: 'xp.pct', deps: 'xp.deps', res: 'xp.res', forcedStart: 'xp.forced', notBefore: 'xp.notBefore', deadline: 'xp.deadline', budget: 'xp.budget', actual: 'xp.actual' };
       const fail = (field, msg) => errors.push({ line, msg: `${t(LABEL[field])} : ${msg}` });
       const before = errors.length;
       const name = String(get(r, 'name')).trim();
@@ -313,14 +331,22 @@ const Exchange = (() => {
       for (const f of ['forcedStart', 'notBefore', 'deadline']) { const v = parseDate(get(r, f)); if (v === null) fail(f, t('rule.date')); else dates[f] = v; }
       const tags = String(get(r, 'tags')).split(/[;,]/).map(x => x.trim()).filter(Boolean).slice(0, Model.LIMITS.tags).map(x => x.slice(0, 30));
       if (errors.length > before) return;
+      // Montants (RG-42) : une valeur invalide est signalée et ignorée (la ligne est gardée) ; une cellule vide vaut 0 ;
+      // un jalon et une récapitulative n'ont aucun montant propre.
+      const amountsOf = {};
+      for (const f of ['budget', 'actual']) {
+        const v = type === 'task' ? amountCell(get(r, f), symbol) : { ok: true, cents: 0 };
+        if (v.ok) amountsOf[f] = v.cents;
+        else { amountsOf[f] = 0; warnings.push({ line, msg: `${t(LABEL[f])} : ${t('imp.amountIgnored', { value: String(get(r, f)).slice(0, 40) })}` }); }
+      }
       out.push({
         fileId: String(get(r, 'id')).trim().toUpperCase(), ref: refOf(r), name, type, parent: String(get(r, 'parent')).trim().toUpperCase(),
         dur: type === 'task' ? dur : 0, pct: type === 'milestone' ? (pct >= 100 ? 100 : 0) : type === 'summary' ? 0 : pct,
         deps: type === 'summary' ? [] : deps, assign: type === 'task' ? assign : [], cat: String(get(r, 'cat')).trim().slice(0, 100),
-        tags, notes: String(get(r, 'notes')).slice(0, 2000), ...dates, line,
+        tags, notes: String(get(r, 'notes')).slice(0, 2000), ...dates, ...amountsOf, line,
       });
     });
-    return { rows: out, errors, total: data.length };
+    return { rows: out, errors, warnings, total: data.length };
   }
 
   /**
@@ -344,6 +370,7 @@ const Exchange = (() => {
       id: ids[i], name: r.name, type: r.type, parent: r.parent ? fix(r.parent) : '', dur: r.dur, pct: r.pct,
       deps: r.deps.map(d => ({ id: fix(d.id), type: d.type, lag: d.lag })), assign: r.assign, cat: r.cat, tags: r.tags, notes: r.notes,
       forcedStart: r.forcedStart || '', notBefore: r.notBefore || '', deadline: r.deadline || '',
+      ...(r.type === 'task' ? { budget: r.budget || 0, actual: r.actual || 0 } : {}),
     }));
     const { project: p } = Model.sanitize(file);
     return { project: p, added: ids };

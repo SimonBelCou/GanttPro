@@ -11,7 +11,7 @@
  * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'] };
 
   function get(key) {
     try {

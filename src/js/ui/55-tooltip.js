@@ -28,6 +28,11 @@ const Tooltip = (() => {
     const tip = $('tooltip');
     clear(tip);
     for (const l of lines(task)) tip.append(h('div', { text: l }));
+    // Budget et coût réel en entier (EF-125 : masqués à l'écran quand le masquage est actif).
+    if (task.type !== 'milestone' && Budget.hasAmounts(App.project)) {
+      const a = Budget.amounts(App.project).get(task.id) || { budget: 0, actual: 0 };
+      tip.append(h('div', {}, `${t('col.money')} : `, Money.node(a.budget), ' / ', Money.node(a.actual)));
+    }
     tip.hidden = false;
     const r = el.getBoundingClientRect();
     const w = tip.offsetWidth, hgt = tip.offsetHeight;
