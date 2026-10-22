@@ -104,7 +104,17 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 8. Supprimez la copie. *Attendu :* confirmation qui nomme la tâche ; après validation elle disparaît.
 - [ ] 9. Supprimez T1 : la confirmation dit combien de tâches perdent un prédécesseur. **Annuler** les rétablit
   avec leur lien.
-- [ ] 10. Imbriquez des récapitulatives jusqu'au sixième niveau. *Attendu :* refus avec un message (cinq niveaux).
+- [ ] 10. Imbriquez des récapitulatives les unes sous les autres (sélectionnez la dernière créée, puis **+ Ajouter
+  récapitulative**, de nouveau). *Attendu :* quand la limite de cinq niveaux est atteinte, un message de refus
+  s'affiche et **aucune ligne n'est créée** (la nouvelle ligne ne retombe plus au premier niveau).
+- [ ] 11. **Saisie.** Ouvrez la fiche d'une tâche et cliquez dans le champ « Nom » (ou tabulez jusqu'à lui).
+  *Attendu :* tout le texte existant est sélectionné ; taper un premier caractère le remplace, sans avoir à
+  effacer l'ancien nom. Même comportement pour la durée et les autres champs texte ou nombre.
+- [ ] 12. **Colonnes de dates.** Dans la liste, repérez les colonnes **Début**, **Fin**, **Début réel** et
+  **Fin réel** (après Durée). *Attendu :* pour chaque tâche les dates prévues (calculées) ; les dates réelles sont
+  vides tant qu'elles ne sont pas saisies dans la fiche ; une récapitulative affiche ses dates prévues. Ouvrez
+  `projet-atlas-budget.json` : A1 affiche 07/09/2026, 08/09/2026, 07/09/2026, 08/09/2026 ; A2 n'a pas de début
+  réel mais une fin réelle 21/09/2026. Les largeurs de ces colonnes se règlent comme les autres.
 
 ### G4 — Liens, contraintes et chemin critique (§ 4, R-01, R-05, R-12 à R-14, R-36 à R-44, R-55)
 
@@ -156,7 +166,9 @@ Départ : `projet-exemple.json` ouvert, puis `projet-surcharge.json` pour les co
   jours fériés grisés (11 novembre).
 - [ ] 2. Survolez ou mettez au focus une barre. *Attendu :* infobulle (dates, durée, avancement, statut,
   prédécesseurs, ressources, marge). Échap la ferme.
-- [ ] 3. Zoom : boutons −, +, ↺, touches + et −, Ctrl + molette. *Attendu :* 20 à 300 % ; sous 60 %, vue mois.
+- [ ] 3. Zoom : boutons −, +, ↺, touches + et −, Ctrl + molette. *Attendu :* 20 à 400 % (le bouton + s'arrête à 400 %) ; sous 60 %, vue mois ; à tout niveau de zoom, les libellés
+  de mois de l'en-tête sont lisibles et jamais coupés : « nov. 2026 », puis « nov. 26 », « 11/26 », enfin « 11 »
+  quand la place diminue (le nom complet reste dans l'infobulle).
 - [ ] 4. **Liens : ON / OFF** masque et affiche les flèches ; les flèches entre tâches critiques sont rouges.
 - [ ] 5. Glissez la barre de T2 de deux jours vers la droite. *Attendu :* date imposée 📌 ; un message de
   confirmation avec **Annuler**. Annulez.

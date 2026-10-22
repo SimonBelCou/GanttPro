@@ -229,7 +229,7 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], start: [70, 200], end: [70, 200], rstart: [70, 200], rend: [70, 200], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
 App.colWidths = {};
 function applyColWidths() {
   const table = $('tasks-table');
@@ -249,7 +249,7 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status', 'money'];
+  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'money'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },

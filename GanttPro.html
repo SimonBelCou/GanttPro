@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-athg1WOGmZrx+bMDsMnZPiZdr28vCxwX6RsttkghtMY='; style-src 'sha256-OYr0JuHVh37cIEf6TM1JSQQQ+07kFfvKbggU9W5zzig='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GxD8jzSK4in5j/0ujdCsTQI7JTTzqpT1GGXiT8KRJmI='; style-src 'sha256-FqaOy2nQm6FSuKTTaR1Oo19J7P3yngA2Rv2nhI9uIQ4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -124,7 +124,7 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .gantt-inner { position: relative; width: var(--grid-w); min-width: 100%; }
 .g-head { position: sticky; top: 0; z-index: 3; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
 .g-col { position: absolute; border-left: 1px solid var(--line); font-size: .72rem; line-height: 17px; color: var(--muted); padding: 0 .2rem; overflow: hidden; white-space: nowrap; }
-.g-col.month { top: 0; height: 17px; font-weight: 600; }
+.g-col.month { top: 0; height: 17px; font-weight: 600; padding: 0 2px; }
 .g-col.month.full { height: 100%; line-height: var(--head); }
 .g-col.week { top: 17px; height: 17px; border-top: 1px solid var(--line); text-align: center; padding: 0; }
 .g-col.has-holiday { background: color-mix(in srgb, var(--warning) 14%, transparent); }
@@ -585,9 +585,10 @@ body.planner-full { overflow: hidden; }
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="money"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="money"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
           <th scope="col"><span data-i18n="col.money"></span></th>
         </tr></thead>
@@ -2284,7 +2285,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -2667,7 +2668,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -3050,17 +3051,34 @@ const I18n = (() => {
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
   /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
   function numDate(dn) {
     if (dn == null) return '';
-    const { y, m, d } = Dates.ymd(dn);
-    const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
-    return lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+    const key = lang === 'fr' ? dn : -dn - 1;
+    let v = numDateCache.get(key);
+    if (v === undefined) {
+      const { y, m, d } = Dates.ymd(dn);
+      const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+      v = lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+      if (numDateCache.size > 20000) numDateCache.clear();
+      numDateCache.set(key, v);
+    }
+    return v;
   }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
     const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  /** Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ». */
+  function monthLabelFit(dn, width) {
+    const { y, m } = Dates.ymd(dn), yy = String(y % 100).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    if (width >= 80) return `${MONTHS[lang][m - 1]} ${y}`;
+    if (width >= 62) return `${MONTHS[lang][m - 1]} ${yy}`;
+    if (width >= 40) return `${mm}/${yy}`;
+    if (width >= 20) return mm;
+    return '';
   }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
   /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
@@ -3075,7 +3093,7 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, number, group, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();
 
 // ── js/core/60-xml.js ──
@@ -4519,13 +4537,13 @@ function renderList(items, fl) {
   const frag = document.createDocumentFragment();
   const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 7 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 11 },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -4563,7 +4581,10 @@ function renderList(items, fl) {
     tr.dataset.id = task.id;
     const idCell = textCell(task.id, 'id');
     if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
-    tr.append(idCell, nameCell, textCell(durText(task, r)), textCell(depsText(task)),
+    const rs = Dates.parse(task.realStart), re = Dates.parse(task.realEnd);
+    tr.append(idCell, nameCell, textCell(durText(task, r)),
+      textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
+      textCell(rs != null ? I18n.numDate(rs) : '', 'date'), textCell(re != null ? I18n.numDate(re) : '', 'date'), textCell(depsText(task)),
       textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
       moneyCell(task, amts));
     frag.append(tr);
@@ -4621,7 +4642,7 @@ function renderGantt(items, fl) {
   };
   for (const p of Metrics.periods(from, to, 'month')) {
     const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : '');
+    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, I18n.monthLabelFit(p.start, (b - a + 1) * dayW), I18n.monthLabel(p.start));
     mc.setAttribute('aria-hidden', 'true');
     head.append(mc);
   }
@@ -5772,7 +5793,7 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], start: [70, 200], end: [70, 200], rstart: [70, 200], rend: [70, 200], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
 App.colWidths = {};
 function applyColWidths() {
   const table = $('tasks-table');
@@ -5792,7 +5813,7 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status', 'money'];
+  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'money'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
@@ -8862,7 +8883,7 @@ action('addTask', type => {
   const id = Model.nextTaskId(App.project.tasks.map(x => x.id));
   const sel = App.selected && taskById(App.selected);
   let parent = sel && sel.type === 'summary' ? sel.id : (sel ? sel.parent : '');
-  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) parent = '';
+  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) { Dialog.message(t('top.addTask'), t('err.depth', { max: Model.LIMITS.depth })); return; }
   const name = t(type === 'milestone' ? 'newMilestone' : type === 'summary' ? 'newSummary' : 'newTask');
   commit(p => p.tasks.push({
     id, name, type, parent, dur: type === 'task' ? 5 : 0, deps: [], assign: [], cat: type === 'summary' ? '' : (p.categories[0] ? p.categories[0].id : ''),
@@ -8905,7 +8926,7 @@ action('redo', () => { if (undoStep(App.redo, App.undo)) announce(t('redo.done')
 
 action('zoom', step => {
   const s = Number(step);
-  App.zoom = s === 0 ? 100 : Math.min(300, Math.max(20, App.zoom + 20 * s));
+  App.zoom = s === 0 ? 100 : Math.min(400, Math.max(20, App.zoom + 20 * s));
   render();
   announce(t('top.zoom', { pct: App.zoom }));
 });
@@ -8999,6 +9020,12 @@ function init() {
     Recovery.flushSync();
     if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
   });
+  // Champs de saisie : le texte existant est sélectionné à l'arrivée, le premier caractère tapé le remplace (aucune
+  // sélection à faire à la main). Le clic de souris ne doit pas défaire cette sélection.
+  let pickedInput = null;
+  const isTextField = el => el instanceof HTMLInputElement && ['text', 'search', 'number', 'email', 'url', 'tel', ''].includes(el.type) && !el.readOnly && !el.disabled;
+  document.addEventListener('focusin', ev => { if (isTextField(ev.target)) { ev.target.select(); pickedInput = ev.target; } });
+  document.addEventListener('mouseup', ev => { if (pickedInput && ev.target === pickedInput) ev.preventDefault(); pickedInput = null; }, true);
   // Import par glisser-déposer (EF-52).
   document.addEventListener('dragover', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) ev.preventDefault(); });
   document.addEventListener('drop', async ev => {

@@ -110,7 +110,7 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .gantt-inner { position: relative; width: var(--grid-w); min-width: 100%; }
 .g-head { position: sticky; top: 0; z-index: 3; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
 .g-col { position: absolute; border-left: 1px solid var(--line); font-size: .72rem; line-height: 17px; color: var(--muted); padding: 0 .2rem; overflow: hidden; white-space: nowrap; }
-.g-col.month { top: 0; height: 17px; font-weight: 600; }
+.g-col.month { top: 0; height: 17px; font-weight: 600; padding: 0 2px; }
 .g-col.month.full { height: 100%; line-height: var(--head); }
 .g-col.week { top: 17px; height: 17px; border-top: 1px solid var(--line); text-align: center; padding: 0; }
 .g-col.has-holiday { background: color-mix(in srgb, var(--warning) 14%, transparent); }

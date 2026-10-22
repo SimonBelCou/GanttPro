@@ -26,7 +26,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -409,7 +409,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -792,17 +792,34 @@ const I18n = (() => {
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
   /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
   function numDate(dn) {
     if (dn == null) return '';
-    const { y, m, d } = Dates.ymd(dn);
-    const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
-    return lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+    const key = lang === 'fr' ? dn : -dn - 1;
+    let v = numDateCache.get(key);
+    if (v === undefined) {
+      const { y, m, d } = Dates.ymd(dn);
+      const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+      v = lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+      if (numDateCache.size > 20000) numDateCache.clear();
+      numDateCache.set(key, v);
+    }
+    return v;
   }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
     const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  /** Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ». */
+  function monthLabelFit(dn, width) {
+    const { y, m } = Dates.ymd(dn), yy = String(y % 100).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    if (width >= 80) return `${MONTHS[lang][m - 1]} ${y}`;
+    if (width >= 62) return `${MONTHS[lang][m - 1]} ${yy}`;
+    if (width >= 40) return `${mm}/${yy}`;
+    if (width >= 20) return mm;
+    return '';
   }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
   /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
@@ -817,5 +834,5 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, number, group, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();

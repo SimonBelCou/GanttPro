@@ -364,6 +364,64 @@ def main():
         check("EX-29 : l'en-tête du Gantt reste en haut pendant le défilement", abs(head_top) <= 1, head_top)
         pg.evaluate("document.getElementById('list').scrollTop = 0")
 
+        # Remarques de recette G1 à G6 : colonnes de dates, sélection à la saisie, niveaux, zoom.
+        heads = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(x => x.textContent.trim())")
+        check('colonnes Début, Fin, Début réel et Fin réel dans la liste', all(x in heads for x in ['Début', 'Fin', 'Début réel', 'Fin réel']), heads)
+        cells = pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id=\"A1\"] td')].map(x => x.textContent.replace(/\\s+/g, ' ').trim())")
+        i0 = heads.index('Début')
+        check('A1 : dates prévues et réelles affichées', cells[i0:i0 + 4] == ['07/09/2026', '08/09/2026', '07/09/2026', '08/09/2026'], cells)
+        a2 = pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id=\"A2\"] td')].map(x => x.textContent.trim())")
+        check('A2 : date réelle de début vide, de fin renseignée', a2[i0 + 2] == '' and a2[i0 + 3] == '21/09/2026', a2)
+        pg.click('#task-rows tr[data-id="A1"] button.select')
+        pg.wait_for_selector('#f-name')
+        pg.click('#f-name')
+        sel = pg.evaluate("(() => { const e = document.getElementById('f-name'); return [e.selectionStart, e.selectionEnd, e.value.length]; })()")
+        check('saisie : le texte existant est sélectionné au focus (clic compris)', sel[0] == 0 and sel[1] == sel[2] > 0, sel)
+        pg.keyboard.type('Z')
+        check('saisie : le premier caractère remplace le texte existant', pg.input_value('#f-name') == 'Z')
+        esc()
+        pg.keyboard.press('Escape')
+        deep = {'format': 3, 'name': 'Profond', 'projectStart': '2026-01-05', 'tasks': [
+            {'id': 'S1', 'name': 'N1', 'type': 'summary'}, {'id': 'S2', 'name': 'N2', 'type': 'summary', 'parent': 'S1'},
+            {'id': 'S3', 'name': 'N3', 'type': 'summary', 'parent': 'S2'}, {'id': 'S4', 'name': 'N4', 'type': 'summary', 'parent': 'S3'},
+            {'id': 'S5', 'name': 'N5', 'type': 'summary', 'parent': 'S4'}, {'id': 'S6', 'name': 'N6', 'type': 'summary', 'parent': 'S5'}, {'id': 'T', 'name': 'Feuille', 'dur': 2, 'parent': 'S5'}]}
+        (tmp / 'deep.json').write_text(json.dumps(deep), encoding='utf-8')
+        pg.set_input_files('#file-input', str(tmp / 'deep.json'))
+        pg.wait_for_selector('dialog[open]')
+        for _ in range(2):
+            b = pg.locator('dialog[open]').last.locator('button:has-text("Remplacer le projet ouvert")')
+            if b.count():
+                b.first.click(); pg.wait_for_timeout(120)
+        pg.wait_for_timeout(150)
+        n0 = pg.locator('#task-rows tr[data-id]').count()
+        pg.click('#task-rows tr[data-id="S6"] button.select')
+        pg.click('button[data-click="addTask"][data-arg="summary"]')
+        pg.wait_for_selector('dialog[open]')
+        check('sixième niveau : refus avec message, aucune ligne créée', 'niveaux' in pg.inner_text('dialog[open]') and pg.locator('#task-rows tr[data-id]').count() == n0, pg.inner_text('dialog[open]'))
+        esc()
+        pg.click('#task-rows tr[data-id="S5"] button.select')
+        pg.click('button[data-click="addTask"][data-arg="summary"]')
+        pg.wait_for_timeout(150)
+        check('dernier niveau permis encore accepté', pg.locator('#task-rows tr[data-id]').count() == n0 + 1)
+        esc()
+        pg.keyboard.press('Escape')
+        for _ in range(16):
+            pg.click('#btn-zoom-in') if pg.locator('#btn-zoom-in').count() else pg.click('.topbar button[data-click="zoom"][data-arg="1"]')
+        check('zoom jusqu\'à 400 %', '400' in pg.inner_text('#zoom-level'), pg.inner_text('#zoom-level'))
+        for _ in range(4):
+            pg.click('.topbar button[data-click="zoom"][data-arg="1"]')
+        check('zoom plafonné à 400 %', '400' in pg.inner_text('#zoom-level'))
+        load_fx('projet-atlas-budget.json')
+        zbtn = '.topbar button[data-click="zoom"]'
+        pg.click(f'{zbtn}[data-arg="0"]')
+        for pct, clicks in [(100, 0), (60, 2), (40, 1), (20, 2)]:
+            for _ in range(clicks):
+                pg.click(f'{zbtn}[data-arg="-1"]')
+            clipped = pg.evaluate("[...document.querySelectorAll('#gantt .g-col.month')].filter(c => c.textContent && c.scrollWidth > c.clientWidth + 1).map(c => c.textContent)")
+            labels = pg.evaluate("[...document.querySelectorAll('#gantt .g-col.month')].filter(c => c.textContent).length")
+            check(f'libellés de mois lisibles à {pct} % (aucun coupé, au moins un affiché)', not clipped and labels > 0, clipped)
+        pg.click(f'{zbtn}[data-arg="0"]')
+
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
         for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:

@@ -124,7 +124,7 @@ def main():
         pg.click('button[data-click="openBaselines"]'); pg.click('#bl-win button:has-text("Capturer une baseline")'); dlg('Fermer')
         pg.click('#task-rows button.select:has-text("Bravo")')
         pg.fill('#f-id', 'B2'); pg.click('#editor button[type=submit]')
-        check('R-24 : renommer B en B2 met à jour les prédécesseurs de C', 'B2' in pg.inner_text('#task-rows tr[data-id="C"] td:nth-child(4)'), row('C'))
+        check('R-24 : renommer B en B2 met à jour les prédécesseurs de C', 'B2' in pg.inner_text('#task-rows tr[data-id="C"] td:nth-child(8)'), row('C'))
         check('EF-05 : la baseline suit le renommage (barre de baseline de B2)', 'baseline Baseline 1' in (pg.get_attribute('.bar[data-arg="B2"]', 'aria-label') or ''))
 
         # ── R-25 : renommage, nom en double, suppression chiffrée ──────────────────────────────
@@ -163,9 +163,9 @@ def main():
         txt = pg.locator('dialog[open]').last.inner_text()
         check('EF-06 : la confirmation nomme la tâche et compte les liens perdus', 'Alpha' in txt and '1 tâche perdra un prédécesseur' in txt, txt)
         dlg('Supprimer')
-        check('R-31 : A supprimée, B sans prédécesseur', 'A' not in ids() and pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)') == '')
+        check('R-31 : A supprimée, B sans prédécesseur', 'A' not in ids() and pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)') == '')
         pg.click('#btn-undo')
-        check('R-31 : « Annuler » rétablit A et la dépendance de B', 'A' in ids() and pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)') == 'A')
+        check('R-31 : « Annuler » rétablit A et la dépendance de B', 'A' in ids() and pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)') == 'A')
 
         # ── R-32 : vue semaine ou mois selon le zoom ──────────────────────────────────────────
         views = []
@@ -268,14 +268,14 @@ def main():
         pg.mouse.move(src['x'] + 4, src['y'] + 4); pg.mouse.down(); pg.mouse.move(src['x'] + 30, src['y'] + 30, steps=4)
         dst = pg.locator('.bar[data-arg="B"] .lk-s').bounding_box()
         pg.mouse.move(dst['x'] + 4, dst['y'] + 4, steps=6); pg.mouse.up()
-        check('R-55 : relier A à B : B après A', pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)') == 'A', row('B'))
+        check('R-55 : relier A à B : B après A', pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)') == 'A', row('B'))
         pg.hover('.bar[data-arg="B"]')
         s2 = pg.locator('.bar[data-arg="B"] .lk-e').bounding_box()
         pg.mouse.move(s2['x'] + 4, s2['y'] + 4); pg.mouse.down(); pg.mouse.move(s2['x'] + 20, s2['y'] - 20, steps=4)
         d2 = pg.locator('.bar[data-arg="A"] .lk-s').bounding_box()  # poignées de toutes les barres pendant le geste
         pg.mouse.move(d2['x'] + 4, d2['y'] + 4, steps=6); pg.mouse.up()
-        check('R-55 : un lien qui créerait une boucle est refusé', 'boucle' in pg.inner_text('#toast') and pg.inner_text('#task-rows tr[data-id="A"] td:nth-child(4)') == '', pg.inner_text('#toast'))
-        pg.click('#btn-undo'); s1 = pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)')
+        check('R-55 : un lien qui créerait une boucle est refusé', 'boucle' in pg.inner_text('#toast') and pg.inner_text('#task-rows tr[data-id="A"] td:nth-child(8)') == '', pg.inner_text('#toast'))
+        pg.click('#btn-undo'); s1 = pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)')
         pg.click('#btn-undo'); s2_ = row('A')
         pg.click('#btn-undo'); pg.click('#task-rows button.select:has-text("Alpha")'); s3 = pg.input_value('#f-forcedStart'); pg.keyboard.press('Escape')
         check('R-55 : chaque geste s\'annule séparément (lien, durée, date)', s1 == '' and '5 j' in s2_ and s3 == '', (s1, s2_, s3))
