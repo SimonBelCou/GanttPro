@@ -23,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+          # Prend la dernière 22.x publiée plutôt qu'une version déjà présente sur le runner (correctifs de sécurité).
+          check-latest: true
 
       - name: Fichier assemblé à jour et sans construction interdite (GanttPro.html, CSP par empreinte)
         run: python3 tools/build.py --check
@@ -48,7 +50,7 @@ jobs:
         run: |
           pip install playwright
           python3 -m playwright install --with-deps chromium
-          npm install --no-save axe-core
+          npm install --no-save axe-core@4.14.0
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
           PERF_FACTOR=2 python3 tests/test_v3_recette.py
