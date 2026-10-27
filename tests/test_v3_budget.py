@@ -483,6 +483,17 @@ def main():
         pg.keyboard.press('Escape')
         load_fx('projet-atlas-budget.json')
 
+        # Titres de colonnes jamais coupés, même colonnes réduites au minimum (capture de recette G8).
+        clip_js = "[...document.querySelectorAll('#tasks-table thead th')].filter(t => t.scrollWidth > t.clientWidth + 1).map(t => t.textContent.trim())"
+        check('titres de colonnes entiers à largeur automatique', pg.evaluate(clip_js) == [], pg.evaluate(clip_js))
+        for key in ['dur', 'start', 'rstart', 'deps', 'res', 'status', 'money']:
+            sep = pg.locator(f'#tasks-table .col-resize[data-col="{key}"]')
+            sep.focus()
+            for _ in range(40):
+                pg.keyboard.press('ArrowLeft')
+        check('titres de colonnes entiers même colonnes réduites au minimum', pg.evaluate(clip_js) == [], pg.evaluate(clip_js))
+        pg.click('button:has-text("Colonnes par défaut")')
+
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
         for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:

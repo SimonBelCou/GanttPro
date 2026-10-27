@@ -182,6 +182,9 @@ Départ : `projet-exemple.json` ouvert, puis `projet-surcharge.json` pour les co
 - [ ] 8. Tirez le triangle sous une barre : l'avancement change par pas de 5 %. Annulez.
 - [ ] 9. Tirez la séparation liste / Gantt ; double-clic dessus : la largeur par défaut revient. Tirez le bord d'un
   en-tête de colonne ; **Colonnes par défaut** rétablit.
+  *Attendu aussi :* les titres de colonnes ne sont jamais coupés, même en réduisant une colonne au minimum ou en
+  rétrécissant la fenêtre (la liste défile alors horizontalement) ; un double-clic sur la poignée d'une colonne
+  rétablit **sa** largeur par défaut, les autres gardent la leur.
 - [ ] 10. **Figer** l'identifiant et le nom, défilez la liste vers la droite : ils restent visibles.
 - [ ] 11. **Plein écran du Gantt**, puis Échap. *Attendu :* le reste de la page est désactivé pendant le plein
   écran ; le focus revient au bouton à la sortie.

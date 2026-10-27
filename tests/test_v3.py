@@ -137,7 +137,8 @@ def main():
         nm1 = pg.evaluate("document.querySelector('#tasks-table thead th:nth-child(2)').getBoundingClientRect().width")
         check('colonne : la largeur du nom dépasse l\'ancien maximum de 400 px', nm1 > 400, (nm0, nm1))
         pg.dblclick('#tasks-table .col-resize[data-col="name"]')
-        check('colonne : double-clic sur la poignée rétablit la colonne', not pg.evaluate("document.getElementById('tasks-table').classList.contains('fixed')"))
+        nm2 = pg.evaluate("document.querySelector('#tasks-table thead th:nth-child(2)').getBoundingClientRect().width")
+        check('colonne : double-clic sur la poignée rétablit la largeur par défaut de la colonne', abs(nm2 - 310) <= 2, nm2)
         pg.click('button[data-click="resetColumns"]')
         # Colonnes figées : liste étroite, défilement horizontal, le nom reste en place.
         drag_by('#splitter', -(w0 - 300))

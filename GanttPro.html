@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rwWo3MlWPyucD3lsKkwid/V+RZrpymiwcnt9mvLXBZ8='; style-src 'sha256-Y4t9ljyiovsp8ygMVbDzCr2FFOH+N3dJgiZGkW7onZw='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4io43CPKQotbWE3KeK/Pl3K+2bjI796Jz20BIz7GbeM='; style-src 'sha256-Rp2lE1A3Jj6859pHECJfnYnR5RfHhfX559eJsduBVTs='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -96,7 +96,7 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
    le défilement vertical est recopié de l'une à l'autre par 66-layout.js. */
 .list, .gantt { max-height: var(--planner-h, calc(100vh - 210px)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
 .list { background: var(--panel); }
-table.tasks { border-collapse: collapse; width: 100%; }
+table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
@@ -411,7 +411,7 @@ ul.comments li { align-items: flex-start; }
 .col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
 table.tasks.fixed { table-layout: fixed; }
-table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
+table.tasks.fixed td, table.tasks.fixed th { overflow: hidden; text-overflow: ellipsis; }
 .planner.list-collapsed { grid-template-columns: 0 0 1fr; }
 .planner.list-collapsed .splitter { display: none; }
 .tasks tr[draggable="true"] td.id { cursor: grab; }
@@ -5807,11 +5807,23 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], start: [70, 200], end: [70, 200], rstart: [70, 200], rend: [70, 200], deps: [60, 800], res: [80, 800], status: [70, 500], money: [90, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], money: [124, 500] };
+/** Largeur par défaut d'une colonne, rétablie par le double-clic ou la touche Début sur sa poignée. */
+const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, money: 124 };
 App.colWidths = {};
+/** Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
+ *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit. */
+function snapshotColWidths() {
+  for (const th of $('tasks-table').querySelectorAll('thead th')) {
+    const k = th.querySelector('.col-resize') && th.querySelector('.col-resize').dataset.col;
+    if (k && !App.colWidths[k]) App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width)));
+  }
+}
 function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
+  const all = Object.keys(COL_LIMITS).every(k => App.colWidths[k]);
+  if (all) table.style.setProperty('width', Object.keys(COL_LIMITS).reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);
   for (const col of table.querySelectorAll('col')) {
     const w = App.colWidths[col.dataset.col];
@@ -5834,14 +5846,15 @@ function initColumns() {
       aria: { orientation: 'vertical', valuemin: COL_LIMITS[k][0], valuemax: COL_LIMITS[k][1], label: t('col.resize', { col: th.textContent }),
         valuenow: Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width) || COL_LIMITS[k][0])) } });
     th.append(sep);
-    const set = w => { App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
+    const set = w => { snapshotColWidths(); App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
     sep.addEventListener('keydown', ev => {
-      if (ev.key === 'Home') { ev.preventDefault(); delete App.colWidths[k]; applyColWidths(); return; }
+      if (ev.key === 'Home') { ev.preventDefault(); snapshotColWidths(); App.colWidths[k] = COL_DEFAULT[k]; applyColWidths(); return; }
       if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
       ev.preventDefault();
+      snapshotColWidths();
       set((App.colWidths[k] || th.getBoundingClientRect().width) + (ev.key === 'ArrowRight' ? 10 : -10));
     });
-    sep.addEventListener('dblclick', () => { delete App.colWidths[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
+    sep.addEventListener('dblclick', () => { snapshotColWidths(); App.colWidths[k] = COL_DEFAULT[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
     sep.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       sep.setPointerCapture(ev.pointerId);
