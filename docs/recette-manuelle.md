@@ -211,7 +211,9 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 2. **Filtres** par catégorie « Conception » : seules T1 et T2 restent.
 - [ ] 3. **Grouper par** ressource : des en-têtes de groupe avec totaux (« n élément(s), x j ») ; le groupe peut
   se replier.
-- [ ] 4. **Étiquettes** : afficher les étiquettes ; filtrer sur « lot 1 ».
+- [ ] 4. **Étiquettes** : cochez **Étiquettes**. *Attendu :* une pastille arrondie après le nom de T1 (« cadrage »)
+  et de T3 (« lot 1 »), jamais de texte du genre « [object HTMLSpanElement] ». Filtrez ensuite sur « lot 1 » :
+  seule T3 (avec sa récapitulative) reste, pastille visible.
 - [ ] 5. **Tout replier** puis **Tout déplier**.
 - [ ] 6. **Trier** : une confirmation rappelle l'effet sur la priorité ; après validation chaque prédécesseur est
   avant ses successeurs.

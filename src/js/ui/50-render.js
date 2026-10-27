@@ -205,7 +205,7 @@ function renderList(items, fl) {
     if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
       '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
     if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
-    if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
+    if (App.view.showTags && task.tags.length) nameCell.append(' ', ...task.tags.flatMap(tg => [h('span', { class: 'tag-pill', text: tg }), ' ']));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
     // Cellules de texte créées directement (textContent) : même sûreté que h(), plus rapide sur 1 000 lignes (EX-25).
     const tr = document.createElement('tr');

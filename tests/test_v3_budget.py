@@ -422,6 +422,16 @@ def main():
             check(f'libellés de mois lisibles à {pct} % (aucun coupé, au moins un affiché)', not clipped and labels > 0, clipped)
         pg.click(f'{zbtn}[data-arg="0"]')
 
+        # Remarque de recette G8 étape 4 : étiquettes affichées sous forme de pastilles, jamais « [object HTMLSpanElement] ».
+        load_fx('projet-exemple.json')
+        pg.check('#show-tags')
+        pg.wait_for_timeout(150)
+        tag_info = pg.evaluate("({ pills: [...document.querySelectorAll('#task-rows .tag-pill')].map(x => x.textContent), t3: document.querySelector('#task-rows tr[data-id=\"T3\"] td.name').textContent })")
+        check('étiquettes : pastilles « cadrage » et « lot 1 » dans la liste', tag_info['pills'] == ['cadrage', 'lot 1'], tag_info)
+        check('étiquettes : aucun « [object » affiché', '[object' not in tag_info['t3'], tag_info['t3'])
+        pg.uncheck('#show-tags')
+        load_fx('projet-atlas-budget.json')
+
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
         for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:
