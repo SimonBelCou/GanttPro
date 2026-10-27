@@ -651,7 +651,7 @@ def main():
         check('une modification déclenche l\'avertissement', pg.evaluate("(() => { const e = new Event('beforeunload', {cancelable: true}); window.dispatchEvent(e); return e.defaultPrevented; })()") is True)
 
         # ── Thème sombre : contraste ─────────────────────────────────────────────────────────
-        pg.click('#btn-theme'); pg.click('#btn-theme')
+        pg.click('#btn-theme')  # clair (défaut) → sombre
         check('thème sombre appliqué', pg.get_attribute('html', 'data-theme') == 'dark')
         axe_check(pg, 'vue principale en thème sombre')
 

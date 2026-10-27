@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4io43CPKQotbWE3KeK/Pl3K+2bjI796Jz20BIz7GbeM='; style-src 'sha256-Rp2lE1A3Jj6859pHECJfnYnR5RfHhfX559eJsduBVTs='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IKoWHLm1LUZMHtSNV9pehAzG3ydPthD9K0ENyFj83a4='; style-src 'sha256-Rp2lE1A3Jj6859pHECJfnYnR5RfHhfX559eJsduBVTs='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -520,9 +520,9 @@ body.planner-full { overflow: hidden; }
       <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
     <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
       <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
@@ -613,8 +613,8 @@ body.planner-full { overflow: hidden; }
     </section>
   </div>
   <div class="full-bar" id="full-bar" hidden>
-    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
-    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
@@ -2635,7 +2635,7 @@ const I18n = (() => {
     'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enabledToast': 'Sauvegarde automatique activée : chaque projet modifié est copié sur cet appareil 5 secondes après la dernière modification.', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
     'auto.enable2': "La copie contient tout le projet, y compris les noms des ressources. Sur un appareil partagé, d'autres personnes pourraient la voir : protégez-la par un mot de passe.",
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
-    'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
+    'set.tips': 'Afficher les raccourcis clavier au survol des boutons', 'set.tipsOn': 'Raccourcis affichés au survol.', 'set.tipsOff': 'Raccourcis masqués au survol.', 'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
     'set.recProtect': 'Protéger la sauvegarde automatique par mot de passe', 'set.recPwdEnter': 'Saisir le mot de passe', 'set.recPwdHint': 'Le mot de passe de la sauvegarde automatique est demandé à chaque ouverture de GanttPro ; il reste en mémoire seulement.',
     'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques et réglages. Les fichiers exportés ne sont jamais touchés.",
     'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': 'La bibliothèque, les modèles, les sauvegardes automatiques et les réglages seront supprimés définitivement de cet appareil.',
@@ -2962,7 +2962,7 @@ const I18n = (() => {
     'auto.enableTitle': 'Turn on automatic backup', 'auto.enabledToast': 'Autosave enabled: each modified project is copied to this device 5 seconds after the last change.', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
     'auto.enable2': 'The copy contains the whole project, including resource names. On a shared device, other people could see it: protect it with a password.',
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
-    'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
+    'set.tips': 'Show keyboard shortcuts when hovering buttons', 'set.tipsOn': 'Shortcuts shown on hover.', 'set.tipsOff': 'Shortcuts hidden on hover.', 'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
     'set.recProtect': 'Protect the automatic backup with a password', 'set.recPwdEnter': 'Enter the password', 'set.recPwdHint': 'The automatic backup password is asked each time GanttPro opens; it is only kept in memory.',
     'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups and settings. Exported files are never affected.',
     'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups and settings will be permanently deleted from this device.',
@@ -3966,7 +3966,7 @@ function announce(msg) {
 /* Seul module autorisé à toucher au stockage du navigateur (contrôlé par tools/build.py).
  *
  * Vie privée (EX-10, EX-22) : sont conservés sur l'appareil, sans cookie,
- *  - les RÉGLAGES (langue, thème, sauvegarde automatique, message de première utilisation vu) ;
+ *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
@@ -3974,9 +3974,11 @@ function announce(msg) {
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
  * Model.sanitize chez l'appelant. Chaque accès est protégé, le stockage pouvant être indisponible
  * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
+/** Thème par défaut : clair (le thème « système » reste un choix dans les réglages). */
+const DEFAULT_THEME = 'light';
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'] };
 
   function get(key) {
     try {
@@ -4425,7 +4427,7 @@ function renderTopbar() {
   $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
   const lang = $('btn-lang');
   lang.textContent = t('top.lang');
@@ -4855,6 +4857,7 @@ function render() {
   // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
   RenderIndex.open(App.project.tasks);
   try { renderAll(); } finally { RenderIndex.close(); }
+  applyShortcutTips();
 }
 function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
@@ -5109,6 +5112,22 @@ const Tooltip = (() => {
   }
   return { init, hide };
 })();
+
+
+/** Raccourcis clavier au survol des boutons (réglage « Afficher les raccourcis au survol », activé par défaut) :
+ *  l'infobulle native du navigateur reprend le nom du bouton et son raccourci, d'après aria-keyshortcuts. */
+const KEY_NAMES = { Control: 'Ctrl', ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' };
+function applyShortcutTips() {
+  const on = Settings.get('tips') !== 'off';
+  for (const el of document.querySelectorAll('[aria-keyshortcuts]')) {
+    if (!on) { if (el.dataset.tipSet) { el.removeAttribute('title'); delete el.dataset.tipSet; } continue; }
+    const keys = el.getAttribute('aria-keyshortcuts').split(/\+(?=.)/).map(k => (k === 'Escape' ? (I18n.getLang() === 'fr' ? 'Échap' : 'Esc') : KEY_NAMES[k] || k)).join(' + ');
+    const label = el.labels && el.labels[0];
+    const name = (el.getAttribute('aria-label') || (label && label.textContent) || el.textContent || '').trim();
+    el.setAttribute('title', `${name} (${keys})`);
+    el.dataset.tipSet = '1';
+  }
+}
 
 // ── js/ui/60-editor.js ──
 /* Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
@@ -8776,7 +8795,8 @@ async function openSettings() {
       h('div', { class: 'field' }, h('label', { for: 'set-lang', text: t('set.lang') }),
         h('select', { id: 'set-lang' }, [['fr', 'Français'], ['en', 'English']].map(([v, l]) => h('option', { value: v, selected: I18n.getLang() === v, lang: v }, l)))),
       h('div', { class: 'field' }, h('label', { for: 'set-theme', text: t('set.theme') }),
-        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || 'system') === v }, t('theme.' + v))))),
+        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || DEFAULT_THEME) === v }, t('theme.' + v))))),
+      h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-tips', checked: Settings.get('tips') !== 'off' }), h('label', { for: 'set-tips', text: t('set.tips') })),
       h('fieldset', { class: 'sub' }, h('legend', { text: t('auto.title') }),
         h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-auto', checked: auto, aria: { describedby: 'set-auto-hint' } }), h('label', { for: 'set-auto', text: t('set.autosave') })),
         h('p', { class: 'hint', id: 'set-auto-hint', text: t('set.autosaveHint') }),
@@ -8808,6 +8828,7 @@ async function openSettings() {
     const id = ev.target.id;
     if (id === 'set-lang') { setLanguage(ev.target.value); closeDlg(); openSettings(); return; }
     if (id === 'set-theme') { Settings.set('theme', ev.target.value); applyTheme(); render(); return; }
+    if (id === 'set-tips') { Settings.set('tips', ev.target.checked ? 'on' : 'off'); applyShortcutTips(); announce(t(ev.target.checked ? 'set.tipsOn' : 'set.tipsOff')); return; }
     if (id === 'set-auto') {
       if (ev.target.checked) { if (!(await enableAutosave())) ev.target.checked = false; }
       else { Settings.set('autosave', 'off'); Settings.set('recprotect', 'off'); Recovery.stop(); Recovery.clearAllCopies(); announce(t('auto.disabled')); }
@@ -8982,7 +9003,7 @@ action('toggleAlerts', () => { App.showAlerts = !App.showAlerts; render(); if (!
 
 action('toggleTheme', () => {
   const order = ['system', 'light', 'dark'];
-  const next = order[(order.indexOf(Settings.get('theme') || 'system') + 1) % 3];
+  const next = order[(order.indexOf(Settings.get('theme') || DEFAULT_THEME) + 1) % 3];
   Settings.set('theme', next);
   applyTheme();
   render();
@@ -9018,7 +9039,7 @@ action('fileChosen', async (arg, el) => {
 });
 
 function applyTheme() {
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
 }

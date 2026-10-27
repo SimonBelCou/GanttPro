@@ -73,3 +73,19 @@ const Tooltip = (() => {
   }
   return { init, hide };
 })();
+
+
+/** Raccourcis clavier au survol des boutons (réglage « Afficher les raccourcis au survol », activé par défaut) :
+ *  l'infobulle native du navigateur reprend le nom du bouton et son raccourci, d'après aria-keyshortcuts. */
+const KEY_NAMES = { Control: 'Ctrl', ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' };
+function applyShortcutTips() {
+  const on = Settings.get('tips') !== 'off';
+  for (const el of document.querySelectorAll('[aria-keyshortcuts]')) {
+    if (!on) { if (el.dataset.tipSet) { el.removeAttribute('title'); delete el.dataset.tipSet; } continue; }
+    const keys = el.getAttribute('aria-keyshortcuts').split(/\+(?=.)/).map(k => (k === 'Escape' ? (I18n.getLang() === 'fr' ? 'Échap' : 'Esc') : KEY_NAMES[k] || k)).join(' + ');
+    const label = el.labels && el.labels[0];
+    const name = (el.getAttribute('aria-label') || (label && label.textContent) || el.textContent || '').trim();
+    el.setAttribute('title', `${name} (${keys})`);
+    el.dataset.tipSet = '1';
+  }
+}

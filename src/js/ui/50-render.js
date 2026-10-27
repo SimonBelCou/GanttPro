@@ -45,7 +45,7 @@ function renderTopbar() {
   $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
   const lang = $('btn-lang');
   lang.textContent = t('top.lang');
@@ -475,6 +475,7 @@ function render() {
   // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
   RenderIndex.open(App.project.tasks);
   try { renderAll(); } finally { RenderIndex.close(); }
+  applyShortcutTips();
 }
 function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.

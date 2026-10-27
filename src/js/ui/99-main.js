@@ -68,7 +68,7 @@ action('toggleAlerts', () => { App.showAlerts = !App.showAlerts; render(); if (!
 
 action('toggleTheme', () => {
   const order = ['system', 'light', 'dark'];
-  const next = order[(order.indexOf(Settings.get('theme') || 'system') + 1) % 3];
+  const next = order[(order.indexOf(Settings.get('theme') || DEFAULT_THEME) + 1) % 3];
   Settings.set('theme', next);
   applyTheme();
   render();
@@ -104,7 +104,7 @@ action('fileChosen', async (arg, el) => {
 });
 
 function applyTheme() {
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
 }

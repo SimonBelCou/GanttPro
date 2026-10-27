@@ -337,11 +337,19 @@ Départ : `projet-exemple.json` ouvert.
 
 - [ ] 1. Bouton de langue : toute l'interface passe en anglais (barre, fenêtres, messages, dates, légende), puis
   revient en français sans perte.
-- [ ] 2. Bouton de thème : système → clair → sombre ; les textes restent lisibles dans les deux thèmes.
+- [ ] 2. Au premier lancement (ou après « Effacer toutes les données » des réglages), le thème est **clair**, quel que
+  soit le thème de l'ordinateur. Bouton de thème : clair → sombre → système → clair ; les textes restent lisibles
+  dans les deux thèmes. Le choix fait dans Réglages ou par le bouton est conservé seulement si le stockage local est
+  disponible.
 - [ ] 3. `?` ouvre l'aide ; Échap la ferme et rend le focus.
 - [ ] 4. Raccourcis : Ctrl + Z / Ctrl + Y, Ctrl + D, Ctrl + S, + / −, Alt + flèches, Ctrl + Maj + flèches,
   Suppr, comme listés dans la section 15 du guide.
 - [ ] 5. **Réglages** : les options de stockage sont décochées par défaut et chacune est effaçable.
+- [ ] 6. **Raccourcis au survol.** Survolez (ou mettez au focus) les boutons Annuler, Rétablir, −, +, Bibliothèque, Aide,
+  Plein écran du Gantt, et dans une fiche Dupliquer, Mettre en retrait, Remonter d'un niveau. *Attendu :* une
+  infobulle donne le nom et le raccourci, par exemple « Annuler (Ctrl + Z) », « Zoom avant (+) ». Ouvrez
+  **Réglages**, décochez « Afficher les raccourcis clavier au survol des boutons » : les infobulles disparaissent ;
+  recochez : elles reviennent. L'option est cochée par défaut.
 
 ### G15 — Accessibilité, vie privée, sécurité, performance (§ 16, R-34, EX)
 

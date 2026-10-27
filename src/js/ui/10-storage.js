@@ -1,7 +1,7 @@
 /* Seul module autorisé à toucher au stockage du navigateur (contrôlé par tools/build.py).
  *
  * Vie privée (EX-10, EX-22) : sont conservés sur l'appareil, sans cookie,
- *  - les RÉGLAGES (langue, thème, sauvegarde automatique, message de première utilisation vu) ;
+ *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
@@ -9,9 +9,11 @@
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
  * Model.sanitize chez l'appelant. Chaque accès est protégé, le stockage pouvant être indisponible
  * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
+/** Thème par défaut : clair (le thème « système » reste un choix dans les réglages). */
+const DEFAULT_THEME = 'light';
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'] };
 
   function get(key) {
     try {

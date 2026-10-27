@@ -32,7 +32,8 @@ async function openSettings() {
       h('div', { class: 'field' }, h('label', { for: 'set-lang', text: t('set.lang') }),
         h('select', { id: 'set-lang' }, [['fr', 'Français'], ['en', 'English']].map(([v, l]) => h('option', { value: v, selected: I18n.getLang() === v, lang: v }, l)))),
       h('div', { class: 'field' }, h('label', { for: 'set-theme', text: t('set.theme') }),
-        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || 'system') === v }, t('theme.' + v))))),
+        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || DEFAULT_THEME) === v }, t('theme.' + v))))),
+      h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-tips', checked: Settings.get('tips') !== 'off' }), h('label', { for: 'set-tips', text: t('set.tips') })),
       h('fieldset', { class: 'sub' }, h('legend', { text: t('auto.title') }),
         h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-auto', checked: auto, aria: { describedby: 'set-auto-hint' } }), h('label', { for: 'set-auto', text: t('set.autosave') })),
         h('p', { class: 'hint', id: 'set-auto-hint', text: t('set.autosaveHint') }),
@@ -64,6 +65,7 @@ async function openSettings() {
     const id = ev.target.id;
     if (id === 'set-lang') { setLanguage(ev.target.value); closeDlg(); openSettings(); return; }
     if (id === 'set-theme') { Settings.set('theme', ev.target.value); applyTheme(); render(); return; }
+    if (id === 'set-tips') { Settings.set('tips', ev.target.checked ? 'on' : 'off'); applyShortcutTips(); announce(t(ev.target.checked ? 'set.tipsOn' : 'set.tipsOff')); return; }
     if (id === 'set-auto') {
       if (ev.target.checked) { if (!(await enableAutosave())) ev.target.checked = false; }
       else { Settings.set('autosave', 'off'); Settings.set('recprotect', 'off'); Recovery.stop(); Recovery.clearAllCopies(); announce(t('auto.disabled')); }

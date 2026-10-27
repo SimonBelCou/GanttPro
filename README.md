@@ -42,7 +42,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 - Dix projets en onglets, bibliothèque locale, modèles, sauvegarde automatique facultative
 
 ### 🌍 Interface
-- Français et anglais ; thèmes clair, sombre ou système ; utilisable au clavier, au doigt et sur petit écran
+- Français et anglais ; thèmes clair (par défaut), sombre ou système ; raccourcis clavier au survol des boutons ; utilisable au clavier, au doigt et sur petit écran
 
 ## 🖥 Compatibilité
 

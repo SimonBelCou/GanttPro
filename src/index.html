@@ -49,9 +49,9 @@
       <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
     <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
       <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
@@ -142,8 +142,8 @@
     </section>
   </div>
   <div class="full-bar" id="full-bar" hidden>
-    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
-    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>

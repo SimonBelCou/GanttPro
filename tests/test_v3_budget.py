@@ -91,6 +91,16 @@ def main():
             pg.keyboard.press('Escape')
             pg.wait_for_timeout(80)
 
+        # Notes de recette : thème clair par défaut, raccourcis au survol (désactivables).
+        check('thème clair par défaut', pg.get_attribute('html', 'data-theme') == 'light')
+        tip = lambda sel: pg.get_attribute(sel, 'title')
+        check('raccourci au survol : Annuler (Ctrl + Z)', tip('#btn-undo') == 'Annuler (Ctrl + Z)', tip('#btn-undo'))
+        check('raccourci au survol : zoom avant (+)', '(+)' in (tip('.topbar button[data-click="zoom"][data-arg="1"]') or ''))
+        pg.click('#btn-settings'); pg.uncheck('#set-tips'); pg.wait_for_timeout(100)
+        check('raccourcis masqués : plus d\'infobulle', tip('#btn-undo') is None, tip('#btn-undo'))
+        pg.check('#set-tips'); pg.wait_for_timeout(100)
+        check('raccourcis réaffichés', tip('#btn-undo') == 'Annuler (Ctrl + Z)')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
         # ── Projet vide : pas d'onglet Budget (EF-117) ────────────────────────────────────────
         check('colonne « Budget / Réel » dans l\'en-tête de la liste', 'Budget / Réel' in pg.inner_text('#tasks-table thead'))
         pg.click('button[data-click="openDashboard"]')

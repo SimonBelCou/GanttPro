@@ -364,9 +364,10 @@ Jusqu'à dix projets s'ouvrent côte à côte, et ceux que vous choisissez se ga
 
 ## 14. Réglages, langue, thème, aide
 
-- **Thème** : le bouton « Thème » passe de système à clair puis sombre. « Système » suit la préférence de l'ordinateur.
+- **Thème** : le thème est **clair** par défaut. Le bouton « Thème » passe de clair à sombre puis à système ; « Système » suit la préférence de l'ordinateur.
+- **Raccourcis au survol** : en survolant un bouton, une infobulle donne son nom et son raccourci clavier (« Annuler (Ctrl + Z) »). Réglages ⚙ → « Afficher les raccourcis clavier au survol des boutons » permet de la désactiver.
 - **Langue** : le bouton « English » / « Français » change aussitôt tous les libellés, messages et formats de date (« lun. 05 janv. 2026 », « Mon 05 Jan 2026 »), sans recharger ni toucher aux données. Au premier lancement, GanttPro suit la langue du navigateur.
-- **Réglages** (⚙) : langue, thème, sauvegarde automatique et sa protection par mot de passe, espace occupé par GanttPro, et « Effacer toutes les données de l'application sur cet appareil » (bibliothèque, modèles, sauvegardes, réglages ; les projets ouverts et les fichiers exportés ne sont pas touchés).
+- **Réglages** (⚙) : langue, thème, raccourcis au survol, sauvegarde automatique et sa protection par mot de passe, espace occupé par GanttPro, et « Effacer toutes les données de l'application sur cet appareil » (bibliothèque, modèles, sauvegardes, réglages ; les projets ouverts et les fichiers exportés ne sont pas touchés).
 - **Aide** (? ou la touche ?) : version, licence MIT, mode d'emploi en bref, raccourcis, vie privée, déclaration d'accessibilité et licence des polices intégrées.
 - **Page d'accueil** : si GanttPro est ouvert par une page d'accueil de votre organisation, les boutons « ← Accueil » et « Sauvegarder » apparaissent pour lui remettre une copie du projet. Sans page d'accueil, ils n'existent pas.
 
