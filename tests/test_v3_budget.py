@@ -458,6 +458,31 @@ def main():
         pg.set_viewport_size({'width': 1500, 'height': 950})
         load_fx('projet-atlas-budget.json')
 
+        # Remarques de recette G11 étape 7 : fenêtres d'impression et d'export sans défilement horizontal.
+        for width in [1500, 900, 400]:
+            pg.set_viewport_size({'width': width, 'height': 800})
+            for opener, label in [('button[data-click="openPrint"]', 'impression'), ('button:has-text("Exporter")', 'export')]:
+                pg.click(opener)
+                if label == 'export':
+                    pg.check('#exp-f-png')
+                over = pg.evaluate("(() => { const d = document.querySelector('dialog[open]'); return d.scrollWidth - d.clientWidth; })()")
+                check(f'fenêtre d\'{label} sans défilement horizontal ({width} px)', over <= 1, over)
+                esc()
+        pg.set_viewport_size({'width': 1500, 'height': 950})
+
+        # Sauvegarde automatique : écriture immédiate à la fermeture (G13 étape 6), sans attendre 5 secondes.
+        pg.click('#btn-settings'); pg.check('#set-auto')
+        pg.locator('dialog[open] button:has-text("Activer")').click(); pg.wait_for_timeout(150)
+        check('activation : message visible', 'Sauvegarde automatique activée' in pg.inner_text('#toast'))
+        pg.locator('dialog[open] button:has-text("Fermer")').click(); pg.wait_for_timeout(100)
+        pg.click('button[data-click="addTask"][data-arg="task"]'); pg.fill('#f-name', 'Tâche auto'); pg.click('#edit-form button[type=submit]')
+        pg.evaluate("window.dispatchEvent(new Event('pagehide'))")
+        stored_keys = pg.evaluate("Object.keys(localStorage).filter(k => k.startsWith('ganttpro.rec.'))")
+        check('fermeture : copie de récupération écrite aussitôt (sans attendre 5 s)', len(stored_keys) == 1, stored_keys)
+        pg.click('#btn-settings'); pg.uncheck('#set-auto'); pg.wait_for_timeout(100)
+        pg.keyboard.press('Escape')
+        load_fx('projet-atlas-budget.json')
+
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
         for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:
@@ -470,8 +495,15 @@ def main():
               ts.forEach(t => t.querySelectorAll('td, th').forEach(c => { if (c.scrollWidth > c.clientWidth + 1) bad.push(c.textContent.slice(0, 20)); }));
               return { n: ts.length, heads: [...ts[0].querySelectorAll('thead th')].map(x => x.textContent), caps: ts.map(t => t.querySelector('caption').textContent),
                 rows: ts.map(t => t.querySelectorAll('tbody tr').length), bad }; }""")
+            colors = pg.evaluate("""() => { const bars = [...document.querySelectorAll('#print-area .pg-bar.task')];
+              const ok = bars.filter(b => { const c = getComputedStyle(b).backgroundColor; return c && c !== 'rgba(0, 0, 0, 0)' && c !== 'rgb(255, 255, 255)'; }).length;
+              const crit = [...document.querySelectorAll('#print-area .pg-bar.critical')].filter(b => getComputedStyle(b).borderTopColor === 'rgb(176, 0, 32)' && getComputedStyle(b).backgroundImage !== 'none').length;
+              return { bars: bars.length, colored: ok, crit }; }""")
             pg.emulate_media(media='screen')
             tag = f'{scale}, {orient}'
+            check(f'EX-32 : barres imprimées en couleur ({tag})', colors['bars'] > 0 and colors['colored'] == colors['bars'], colors)
+            check(f'EX-32 : tâches critiques repérables sans couleur (contour épais et hachures) ({tag})', colors['crit'] > 0, colors)
+            check(f'EX-32 : colonne Catégorie imprimée ({tag})', 'Catégorie' in sp(' '.join(info['heads'])), info['heads'])
             check(f'EX-30 : colonnes Début, Fin et Dépendances imprimées ({tag})', all(x in sp(' '.join(info['heads'])) for x in ['Début', 'Fin', 'Dépendances']), info['heads'])
             check(f'EX-30 : aucun texte coupé à l\'impression ({tag})', not info['bad'], info['bad'])
             check(f'EX-30 : toutes les lignes sur chaque bande ({tag})', len(set(info['rows'])) == 1 and info['rows'][0] >= 40, info['rows'])

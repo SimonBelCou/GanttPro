@@ -26,7 +26,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.cat': 'Catégorie', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -299,7 +299,7 @@ const I18n = (() => {
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
     'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
-    'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
+    'print.legend': 'Légende : barre = tâche (sa couleur est celle de sa catégorie, nommée dans la colonne Catégorie) ; partie sombre rayée = réalisé ; contour épais et hachures, ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
     'ver.saved': 'Version « {name} » enregistrée.', 'ver.restored': 'Version « {name} » restaurée.', 'ver.deleteQ': 'Supprimer la version « {name} » ?',
@@ -361,7 +361,7 @@ const I18n = (() => {
     'auto.pwd': 'Mot de passe de la sauvegarde', 'auto.later': 'Décider plus tard', 'auto.restored': { one: '{count} projet restauré.', other: '{count} projets restaurés.' },
     'auto.bad': { one: "{count} copie n'a pas pu être restaurée (mot de passe faux ou copie altérée) ; elle est gardée.", other: "{count} copies n'ont pas pu être restaurées (mot de passe faux ou copies altérées) ; elles sont gardées." },
     'auto.paused': 'Sauvegarde automatique en pause : mot de passe à saisir dans les réglages', 'auto.failed': 'Sauvegarde automatique impossible', 'auto.saved': 'Sauvegardé sur cet appareil à {time}', 'auto.on': 'Sauvegarde automatique activée',
-    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
+    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enabledToast': 'Sauvegarde automatique activée : chaque projet modifié est copié sur cet appareil 5 secondes après la dernière modification.', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
     'auto.enable2': "La copie contient tout le projet, y compris les noms des ressources. Sur un appareil partagé, d'autres personnes pourraient la voir : protégez-la par un mot de passe.",
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
     'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
@@ -409,7 +409,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.cat': 'Category', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -626,7 +626,7 @@ const I18n = (() => {
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
     'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
-    'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
+    'print.legend': 'Legend: bar = task (its color is its category, named in the Category column); dark striped part = done; thick outline and hatching, ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
     'ver.saved': 'Version “{name}” saved.', 'ver.restored': 'Version “{name}” restored.', 'ver.deleteQ': 'Delete version “{name}”?',
@@ -688,7 +688,7 @@ const I18n = (() => {
     'auto.pwd': 'Backup password', 'auto.later': 'Decide later', 'auto.restored': { one: '{count} project restored.', other: '{count} projects restored.' },
     'auto.bad': { one: '{count} copy could not be restored (wrong password or damaged copy); it is kept.', other: '{count} copies could not be restored (wrong password or damaged copies); they are kept.' },
     'auto.paused': 'Automatic backup paused: enter the password in Settings', 'auto.failed': 'Automatic backup impossible', 'auto.saved': 'Saved on this device at {time}', 'auto.on': 'Automatic backup on',
-    'auto.enableTitle': 'Turn on automatic backup', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
+    'auto.enableTitle': 'Turn on automatic backup', 'auto.enabledToast': 'Autosave enabled: each modified project is copied to this device 5 seconds after the last change.', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
     'auto.enable2': 'The copy contains the whole project, including resource names. On a shared device, other people could see it: protect it with a password.',
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
     'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
@@ -793,8 +793,9 @@ const I18n = (() => {
   }
   /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
   const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
-  function numDate(dn) {
+  function numDate(dn, short = false) {
     if (dn == null) return '';
+    if (short) return numDate(dn).replace(/(\d{2})(\d{2})$/, '$2'); // « 07/09/26 » : année sur deux chiffres
     const key = lang === 'fr' ? dn : -dn - 1;
     let v = numDateCache.get(key);
     if (v === undefined) {

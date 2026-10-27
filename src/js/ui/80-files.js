@@ -131,10 +131,23 @@ function ganttPng(o) {
   g.font = '600 12px Sora, sans-serif'; g.textBaseline = 'middle';
   const x = dn => left + (dn - from) * dayW;
   for (let dn = from; dn <= to; dn++) if (!s.cal.isWork(dn)) { g.fillStyle = white ? 'rgba(20,26,38,.06)' : col('--off'); g.fillRect(x(dn), head, dayW, H - head - legendH); }
+  // En-tête sur deux lignes comme à l'écran : les mois, puis les semaines (jj/mm, ou jj seul quand la place manque) ;
+  // quand une semaine est trop étroite pour un libellé, les mois seuls. Chaque libellé est rogné à sa colonne :
+  // aucun ne déborde sur le voisin.
   g.fillStyle = muted; g.font = '11px Sora, sans-serif';
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    g.fillRect(x(Math.max(p.start, from)), 0, 1, H - legendH);
-    g.fillText(dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start), x(Math.max(p.start, from)) + 3, head / 2);
+  const weekW = dayW * 7, weeks = weekW >= 18;
+  const label = (text, x0, w, y) => { if (!text) return; g.save(); g.beginPath(); g.rect(x0, 0, Math.max(0, w), head); g.clip(); g.fillText(text, x0 + 3, y); g.restore(); };
+  for (const p of Metrics.periods(from, to, 'month')) {
+    const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+    g.fillRect(x(a), 0, 1, weeks ? head / 2 : H - legendH);
+    label(I18n.monthLabelFit(p.start, w - 4), x(a), w, weeks ? head * 0.28 : head / 2);
+  }
+  if (weeks) {
+    for (const p of Metrics.periods(from, to, 'week')) {
+      const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+      g.fillRect(x(a), head / 2, 1, H - head / 2 - legendH);
+      label(weekW >= 34 ? I18n.shortDate(p.start) : String(Dates.ymd(p.start).d).padStart(2, '0'), x(a), w, head * 0.75);
+    }
   }
   g.fillStyle = ink; g.font = '700 13px Sora, sans-serif';
   g.fillText(`${App.project.name}`, 8, head / 2);

@@ -1,0 +1,64 @@
+{
+ "format": 3,
+ "name": "Projet fictif noms piégés",
+ "desc": "Fichier d'essai : noms de tâches qui ressemblent à du code ; ils doivent s'afficher tels quels.",
+ "emoji": "🔬",
+ "projectStart": "2026-11-02",
+ "calendar": {
+  "workDays": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   0,
+   0
+  ],
+  "holidays": "FR",
+  "daysOff": [],
+  "daysWorked": []
+ },
+ "leveling": "smooth",
+ "resources": [
+  {
+   "name": "Ressource fictive"
+  }
+ ],
+ "categories": [
+  {
+   "name": "Essai",
+   "color": "#4d9fff"
+  }
+ ],
+ "tasks": [
+  {
+   "id": "T1",
+   "name": "<img src=x onerror=alert(1)>",
+   "dur": 3,
+   "cat": "Essai",
+   "notes": "<script>alert(2)</script>",
+   "tags": [
+    "<b>gras</b>"
+   ]
+  },
+  {
+   "id": "T2",
+   "name": "=\"=1+1\"",
+   "dur": 2,
+   "deps": [
+    {
+     "id": "T1",
+     "type": "FS",
+     "lag": 0
+    }
+   ],
+   "cat": "Essai"
+  },
+  {
+   "id": "T3",
+   "name": "Nom avec 'apostrophes' et \"guillemets\" & esperluette",
+   "dur": 2,
+   "cat": "Essai"
+  }
+ ]
+}

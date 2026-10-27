@@ -153,6 +153,10 @@ function init() {
     Recovery.flushSync();
     if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
   });
+  // Sauvegarde automatique : écriture immédiate dès que la page passe en arrière-plan ou se ferme (les minuteurs d'un
+  // onglet masqué sont ralentis par le navigateur, et la fermeture n'appelle pas toujours beforeunload).
+  window.addEventListener('pagehide', () => Recovery.flushSync());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') Recovery.flushSync(); });
   // Champs de saisie : le texte existant est sélectionné à l'arrivée, le premier caractère tapé le remplace (aucune
   // sélection à faire à la main). Le clic de souris ne doit pas défaire cette sélection.
   let pickedInput = null;

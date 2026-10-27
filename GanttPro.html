@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-YNAV8b7Fb2U79DD/ZZ/I9c4oZHhjI8WKjRujsv9PWSQ='; style-src 'sha256-fB6z85GANw4yWdqft4JzOAHomFzbBYwOY2fQEhKy56c='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rwWo3MlWPyucD3lsKkwid/V+RZrpymiwcnt9mvLXBZ8='; style-src 'sha256-Y4t9ljyiovsp8ygMVbDzCr2FFOH+N3dJgiZGkW7onZw='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -267,12 +267,13 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .voyant.red { color: var(--critical); } .voyant.orange { color: var(--warning); } .voyant.green { color: var(--ok); }
 .print-area { display: none; }
 
-/* Impression (EX-26) : seul #print-area est imprimé ; noir sur blanc, motifs au lieu des couleurs. */
+/* Impression (EX-26, EX-32) : seul #print-area est imprimé ; en couleur, mais lisible sans couleur (contours, motifs, ● et texte).
+   Le mode noir et blanc du système d'impression reste possible. */
 @media print {
   body.printing > *:not(#print-area) { display: none !important; }
   body.printing #print-area { display: block !important; }
   body { background: #fff !important; color: #000 !important; }
-  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .print-area, .print-area * { color: #000 !important; background-color: transparent !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .report-page { border: 0; padding: 0; }
   .rep-sec { break-inside: avoid; }
   .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
@@ -283,16 +284,19 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
   table.print-gantt thead { display: table-header-group; }
   table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: normal; overflow-wrap: break-word; vertical-align: top; }
   table.print-gantt th { font-size: 7.5pt; }
+  table.print-gantt td.pg-start, table.print-gantt td.pg-end { white-space: nowrap; }
   table.print-gantt td.pg-timecell, table.print-gantt th.pg-timecell { overflow: hidden; white-space: nowrap; }
   table.print-gantt tr { break-inside: avoid; }
   .pg-timecell { padding: 0 !important; }
   .pg-time, .pg-lane { position: relative; height: 16pt; }
   .pg-col { position: absolute; top: 0; height: 100%; border-left: 0.5pt solid #999; font-size: 7pt; padding-left: 1pt; overflow: hidden; }
-  .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background: #fff !important; overflow: hidden; }
-  .pg-bar.critical { background: repeating-linear-gradient(45deg, #000 0 1pt, #fff 1pt 4pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, #000 0 1.5pt, transparent 1.5pt 3pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; }
-  .pg-bar.summary { height: 4pt; top: 6pt; background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-area .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background-color: var(--c, #fff) !important; overflow: hidden; }
+  .print-area .pg-bar.critical { border: 1.6pt solid #b00020; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.55) 0 0.8pt, transparent 0.8pt 3.5pt); }
+  .print-area .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,.45) !important; background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,.55) 0 1pt, transparent 1pt 3pt); }
+  .print-area .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; background: none !important; }
+  .print-area .pg-bar.milestone.critical { color: #b00020 !important; }
+  .print-area .pg-bar.summary { height: 4pt; top: 6pt; background-color: #000 !important; background-image: none; }
+  .pg-sw { display: inline-block; width: 8pt; height: 8pt; border: 0.6pt solid #000; margin-right: 2pt; vertical-align: -1pt; background-color: var(--c, #fff) !important; }
   tr.summary td { font-weight: 700; }
   .pg-legend { font-size: 8pt; margin-top: 6pt; }
 }
@@ -324,7 +328,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .dash-section { margin: 1rem 0; }
 .dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .dash-section .row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: .5rem; }
-fieldset.inline { border: 0; padding: 0; margin: 0; display: flex; gap: .8rem; align-items: center; }
+fieldset.inline { border: 0; padding: 0; margin: 0 0 .5rem; min-width: 0; display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+dialog.dialog fieldset, dialog.dialog .field { min-width: 0; }
+dialog.dialog input[type=date] { max-width: 100%; }
 fieldset.inline legend { float: left; margin-right: .6rem; color: var(--muted); }
 .chart-box { position: relative; }
 .chart-box:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -2291,7 +2297,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.cat': 'Catégorie', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -2564,7 +2570,7 @@ const I18n = (() => {
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
     'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
-    'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
+    'print.legend': 'Légende : barre = tâche (sa couleur est celle de sa catégorie, nommée dans la colonne Catégorie) ; partie sombre rayée = réalisé ; contour épais et hachures, ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
     'ver.saved': 'Version « {name} » enregistrée.', 'ver.restored': 'Version « {name} » restaurée.', 'ver.deleteQ': 'Supprimer la version « {name} » ?',
@@ -2626,7 +2632,7 @@ const I18n = (() => {
     'auto.pwd': 'Mot de passe de la sauvegarde', 'auto.later': 'Décider plus tard', 'auto.restored': { one: '{count} projet restauré.', other: '{count} projets restaurés.' },
     'auto.bad': { one: "{count} copie n'a pas pu être restaurée (mot de passe faux ou copie altérée) ; elle est gardée.", other: "{count} copies n'ont pas pu être restaurées (mot de passe faux ou copies altérées) ; elles sont gardées." },
     'auto.paused': 'Sauvegarde automatique en pause : mot de passe à saisir dans les réglages', 'auto.failed': 'Sauvegarde automatique impossible', 'auto.saved': 'Sauvegardé sur cet appareil à {time}', 'auto.on': 'Sauvegarde automatique activée',
-    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
+    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enabledToast': 'Sauvegarde automatique activée : chaque projet modifié est copié sur cet appareil 5 secondes après la dernière modification.', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
     'auto.enable2': "La copie contient tout le projet, y compris les noms des ressources. Sur un appareil partagé, d'autres personnes pourraient la voir : protégez-la par un mot de passe.",
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
     'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
@@ -2674,7 +2680,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.cat': 'Category', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -2891,7 +2897,7 @@ const I18n = (() => {
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
     'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
-    'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
+    'print.legend': 'Legend: bar = task (its color is its category, named in the Category column); dark striped part = done; thick outline and hatching, ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
     'ver.saved': 'Version “{name}” saved.', 'ver.restored': 'Version “{name}” restored.', 'ver.deleteQ': 'Delete version “{name}”?',
@@ -2953,7 +2959,7 @@ const I18n = (() => {
     'auto.pwd': 'Backup password', 'auto.later': 'Decide later', 'auto.restored': { one: '{count} project restored.', other: '{count} projects restored.' },
     'auto.bad': { one: '{count} copy could not be restored (wrong password or damaged copy); it is kept.', other: '{count} copies could not be restored (wrong password or damaged copies); they are kept.' },
     'auto.paused': 'Automatic backup paused: enter the password in Settings', 'auto.failed': 'Automatic backup impossible', 'auto.saved': 'Saved on this device at {time}', 'auto.on': 'Automatic backup on',
-    'auto.enableTitle': 'Turn on automatic backup', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
+    'auto.enableTitle': 'Turn on automatic backup', 'auto.enabledToast': 'Autosave enabled: each modified project is copied to this device 5 seconds after the last change.', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
     'auto.enable2': 'The copy contains the whole project, including resource names. On a shared device, other people could see it: protect it with a password.',
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
     'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
@@ -3058,8 +3064,9 @@ const I18n = (() => {
   }
   /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
   const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
-  function numDate(dn) {
+  function numDate(dn, short = false) {
     if (dn == null) return '';
+    if (short) return numDate(dn).replace(/(\d{2})(\d{2})$/, '$2'); // « 07/09/26 » : année sur deux chiffres
     const key = lang === 'fr' ? dn : -dn - 1;
     let v = numDateCache.get(key);
     if (v === undefined) {
@@ -7531,8 +7538,8 @@ action('repCopy', async () => { const ok = await copyText(reportText()); announc
 // ── js/ui/78-print.js ──
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
- * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
+ * page ; en couleur, mais lisible sans couleur (contours, motifs, ● et colonne Catégorie). */
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, cat: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -7550,10 +7557,12 @@ function buildPrintGantt() {
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
   // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
   const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
-  const base = { id: 36, name: 150, start: 72, end: 72, dur: 46, deps: 80, res: 86, status: 70, money: 100 };
-  const baseTotal = cols.reduce((a, k) => a + base[k], 0);
-  const shrink = Math.min(1, (pageW - 200) / Math.max(1, baseTotal));
-  const colW = Object.fromEntries(cols.map(k => [k, Math.floor(base[k] * shrink)]));
+  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, money: 100 };
+  const isDate = k => k === 'start' || k === 'end'; // les dates ne se réduisent pas (jamais coupées)
+  const dateTotal = cols.filter(isDate).reduce((a, k) => a + base[k], 0);
+  const textTotal = cols.filter(k => !isDate(k)).reduce((a, k) => a + base[k], 0);
+  const shrink = Math.min(1, (pageW - 200 - dateTotal) / Math.max(1, textTotal));
+  const colW = Object.fromEntries(cols.map(k => [k, isDate(k) ? base[k] : Math.floor(base[k] * shrink)]));
   const colsW = cols.reduce((a, k) => a + colW[k], 0);
   const availW = Math.max(200, pageW - colsW);
   // « Ajuster » : tout le planning sur la largeur d'une page. « Zoom actuel » : à l'échelle de l'écran, découpé en bandes
@@ -7563,7 +7572,7 @@ function buildPrintGantt() {
   const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
   const slices = [];
   for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
-  const labels = { id: t('col.id'), name: t('col.name'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
+  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
   const fl = flags();
   const wrap = h('div', { class: 'print-wrap' });
   slices.forEach((sl, idx) => {
@@ -7588,7 +7597,7 @@ function buildPrintGantt() {
       const r = s.tasks.get(task.id);
       const st = statusOf(task);
       const cells = {
-        id: task.id, name: task.name, start: r && !r.empty ? I18n.numDate(r.startDn) : '', end: r && !r.empty ? I18n.numDate(r.endDn) : '',
+        id: task.id, name: task.name, cat: task.type === 'summary' ? '' : ((catById(task.cat) || {}).name || ''), start: r && !r.empty ? I18n.numDate(r.startDn, true) : '', end: r && !r.empty ? I18n.numDate(r.endDn, true) : '',
         dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
         status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
         money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
@@ -7599,6 +7608,7 @@ function buildPrintGantt() {
         const a = Math.max(r.startDn, sl.a), b = Math.min(r.endDn, sl.b);
         const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
         el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
+        { const cat = catById(task.cat); if (cat) el.style.setProperty('--c', safeColor(cat.color)); }
         if (task.type !== 'milestone') {
           el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
           const pct = Metrics.pctOf(task, s);
@@ -7611,7 +7621,10 @@ function buildPrintGantt() {
     table.append(tb);
     wrap.append(table);
   });
-  if (PrintOpt.legend) wrap.append(h('p', { class: 'pg-legend', text: t('print.legend') }));
+  if (PrintOpt.legend) {
+    const cats = App.project.categories.map(c => { const sw = h('span', { class: 'pg-sw' }); sw.style.setProperty('--c', safeColor(c.color)); return h('span', {}, sw, c.name, '  '); });
+    wrap.append(h('p', { class: 'pg-legend' }, t('print.legend'), cats.length ? ' ' : '', ...cats));
+  }
   return wrap;
 }
 
@@ -7630,7 +7643,7 @@ function printWindow() {
     chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
     h('div', {}, chk('pr-amounts', t('out.amounts'), PrintOpt.amounts, 'amounts'), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('p', { class: 'hint', text: t('print.hint') }));
-  return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
+  return Dialog.open({ title: t('top.print'), size: 'wide', body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
 }
 action('openPrint', () => printWindow());
@@ -7836,10 +7849,23 @@ function ganttPng(o) {
   g.font = '600 12px Sora, sans-serif'; g.textBaseline = 'middle';
   const x = dn => left + (dn - from) * dayW;
   for (let dn = from; dn <= to; dn++) if (!s.cal.isWork(dn)) { g.fillStyle = white ? 'rgba(20,26,38,.06)' : col('--off'); g.fillRect(x(dn), head, dayW, H - head - legendH); }
+  // En-tête sur deux lignes comme à l'écran : les mois, puis les semaines (jj/mm, ou jj seul quand la place manque) ;
+  // quand une semaine est trop étroite pour un libellé, les mois seuls. Chaque libellé est rogné à sa colonne :
+  // aucun ne déborde sur le voisin.
   g.fillStyle = muted; g.font = '11px Sora, sans-serif';
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    g.fillRect(x(Math.max(p.start, from)), 0, 1, H - legendH);
-    g.fillText(dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start), x(Math.max(p.start, from)) + 3, head / 2);
+  const weekW = dayW * 7, weeks = weekW >= 18;
+  const label = (text, x0, w, y) => { if (!text) return; g.save(); g.beginPath(); g.rect(x0, 0, Math.max(0, w), head); g.clip(); g.fillText(text, x0 + 3, y); g.restore(); };
+  for (const p of Metrics.periods(from, to, 'month')) {
+    const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+    g.fillRect(x(a), 0, 1, weeks ? head / 2 : H - legendH);
+    label(I18n.monthLabelFit(p.start, w - 4), x(a), w, weeks ? head * 0.28 : head / 2);
+  }
+  if (weeks) {
+    for (const p of Metrics.periods(from, to, 'week')) {
+      const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+      g.fillRect(x(a), head / 2, 1, H - head / 2 - legendH);
+      label(weekW >= 34 ? I18n.shortDate(p.start) : String(Dates.ymd(p.start).d).padStart(2, '0'), x(a), w, head * 0.75);
+    }
   }
   g.fillStyle = ink; g.font = '700 13px Sora, sans-serif';
   g.fillText(`${App.project.name}`, 8, head / 2);
@@ -8724,6 +8750,7 @@ async function enableAutosave() {
   Settings.set('autosave', 'on');
   Recovery.touch();
   if (App.dirty) Recovery.saveNow();
+  toast(t('auto.enabledToast'));
   return true;
 }
 
@@ -9027,6 +9054,10 @@ function init() {
     Recovery.flushSync();
     if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
   });
+  // Sauvegarde automatique : écriture immédiate dès que la page passe en arrière-plan ou se ferme (les minuteurs d'un
+  // onglet masqué sont ralentis par le navigateur, et la fermeture n'appelle pas toujours beforeunload).
+  window.addEventListener('pagehide', () => Recovery.flushSync());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') Recovery.flushSync(); });
   // Champs de saisie : le texte existant est sélectionné à l'arrivée, le premier caractère tapé le remplace (aucune
   // sélection à faire à la main). Le clic de souris ne doit pas défaire cette sélection.
   let pickedInput = null;

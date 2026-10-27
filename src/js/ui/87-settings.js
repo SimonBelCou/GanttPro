@@ -19,6 +19,7 @@ async function enableAutosave() {
   Settings.set('autosave', 'on');
   Recovery.touch();
   if (App.dirty) Recovery.saveNow();
+  toast(t('auto.enabledToast'));
   return true;
 }
 

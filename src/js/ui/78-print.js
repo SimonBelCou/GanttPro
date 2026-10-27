@@ -1,7 +1,7 @@
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
- * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
+ * page ; en couleur, mais lisible sans couleur (contours, motifs, ● et colonne Catégorie). */
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, cat: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -19,10 +19,12 @@ function buildPrintGantt() {
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
   // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
   const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
-  const base = { id: 36, name: 150, start: 72, end: 72, dur: 46, deps: 80, res: 86, status: 70, money: 100 };
-  const baseTotal = cols.reduce((a, k) => a + base[k], 0);
-  const shrink = Math.min(1, (pageW - 200) / Math.max(1, baseTotal));
-  const colW = Object.fromEntries(cols.map(k => [k, Math.floor(base[k] * shrink)]));
+  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, money: 100 };
+  const isDate = k => k === 'start' || k === 'end'; // les dates ne se réduisent pas (jamais coupées)
+  const dateTotal = cols.filter(isDate).reduce((a, k) => a + base[k], 0);
+  const textTotal = cols.filter(k => !isDate(k)).reduce((a, k) => a + base[k], 0);
+  const shrink = Math.min(1, (pageW - 200 - dateTotal) / Math.max(1, textTotal));
+  const colW = Object.fromEntries(cols.map(k => [k, isDate(k) ? base[k] : Math.floor(base[k] * shrink)]));
   const colsW = cols.reduce((a, k) => a + colW[k], 0);
   const availW = Math.max(200, pageW - colsW);
   // « Ajuster » : tout le planning sur la largeur d'une page. « Zoom actuel » : à l'échelle de l'écran, découpé en bandes
@@ -32,7 +34,7 @@ function buildPrintGantt() {
   const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
   const slices = [];
   for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
-  const labels = { id: t('col.id'), name: t('col.name'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
+  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
   const fl = flags();
   const wrap = h('div', { class: 'print-wrap' });
   slices.forEach((sl, idx) => {
@@ -57,7 +59,7 @@ function buildPrintGantt() {
       const r = s.tasks.get(task.id);
       const st = statusOf(task);
       const cells = {
-        id: task.id, name: task.name, start: r && !r.empty ? I18n.numDate(r.startDn) : '', end: r && !r.empty ? I18n.numDate(r.endDn) : '',
+        id: task.id, name: task.name, cat: task.type === 'summary' ? '' : ((catById(task.cat) || {}).name || ''), start: r && !r.empty ? I18n.numDate(r.startDn, true) : '', end: r && !r.empty ? I18n.numDate(r.endDn, true) : '',
         dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
         status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
         money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
@@ -68,6 +70,7 @@ function buildPrintGantt() {
         const a = Math.max(r.startDn, sl.a), b = Math.min(r.endDn, sl.b);
         const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
         el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
+        { const cat = catById(task.cat); if (cat) el.style.setProperty('--c', safeColor(cat.color)); }
         if (task.type !== 'milestone') {
           el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
           const pct = Metrics.pctOf(task, s);
@@ -80,7 +83,10 @@ function buildPrintGantt() {
     table.append(tb);
     wrap.append(table);
   });
-  if (PrintOpt.legend) wrap.append(h('p', { class: 'pg-legend', text: t('print.legend') }));
+  if (PrintOpt.legend) {
+    const cats = App.project.categories.map(c => { const sw = h('span', { class: 'pg-sw' }); sw.style.setProperty('--c', safeColor(c.color)); return h('span', {}, sw, c.name, '  '); });
+    wrap.append(h('p', { class: 'pg-legend' }, t('print.legend'), cats.length ? ' ' : '', ...cats));
+  }
   return wrap;
 }
 
@@ -99,7 +105,7 @@ function printWindow() {
     chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
     h('div', {}, chk('pr-amounts', t('out.amounts'), PrintOpt.amounts, 'amounts'), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('p', { class: 'hint', text: t('print.hint') }));
-  return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
+  return Dialog.open({ title: t('top.print'), size: 'wide', body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
 }
 action('openPrint', () => printWindow());

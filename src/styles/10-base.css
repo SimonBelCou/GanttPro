@@ -253,12 +253,13 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .voyant.red { color: var(--critical); } .voyant.orange { color: var(--warning); } .voyant.green { color: var(--ok); }
 .print-area { display: none; }
 
-/* Impression (EX-26) : seul #print-area est imprimé ; noir sur blanc, motifs au lieu des couleurs. */
+/* Impression (EX-26, EX-32) : seul #print-area est imprimé ; en couleur, mais lisible sans couleur (contours, motifs, ● et texte).
+   Le mode noir et blanc du système d'impression reste possible. */
 @media print {
   body.printing > *:not(#print-area) { display: none !important; }
   body.printing #print-area { display: block !important; }
   body { background: #fff !important; color: #000 !important; }
-  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .print-area, .print-area * { color: #000 !important; background-color: transparent !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .report-page { border: 0; padding: 0; }
   .rep-sec { break-inside: avoid; }
   .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
@@ -269,16 +270,19 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
   table.print-gantt thead { display: table-header-group; }
   table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: normal; overflow-wrap: break-word; vertical-align: top; }
   table.print-gantt th { font-size: 7.5pt; }
+  table.print-gantt td.pg-start, table.print-gantt td.pg-end { white-space: nowrap; }
   table.print-gantt td.pg-timecell, table.print-gantt th.pg-timecell { overflow: hidden; white-space: nowrap; }
   table.print-gantt tr { break-inside: avoid; }
   .pg-timecell { padding: 0 !important; }
   .pg-time, .pg-lane { position: relative; height: 16pt; }
   .pg-col { position: absolute; top: 0; height: 100%; border-left: 0.5pt solid #999; font-size: 7pt; padding-left: 1pt; overflow: hidden; }
-  .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background: #fff !important; overflow: hidden; }
-  .pg-bar.critical { background: repeating-linear-gradient(45deg, #000 0 1pt, #fff 1pt 4pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, #000 0 1.5pt, transparent 1.5pt 3pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; }
-  .pg-bar.summary { height: 4pt; top: 6pt; background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-area .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background-color: var(--c, #fff) !important; overflow: hidden; }
+  .print-area .pg-bar.critical { border: 1.6pt solid #b00020; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.55) 0 0.8pt, transparent 0.8pt 3.5pt); }
+  .print-area .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,.45) !important; background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,.55) 0 1pt, transparent 1pt 3pt); }
+  .print-area .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; background: none !important; }
+  .print-area .pg-bar.milestone.critical { color: #b00020 !important; }
+  .print-area .pg-bar.summary { height: 4pt; top: 6pt; background-color: #000 !important; background-image: none; }
+  .pg-sw { display: inline-block; width: 8pt; height: 8pt; border: 0.6pt solid #000; margin-right: 2pt; vertical-align: -1pt; background-color: var(--c, #fff) !important; }
   tr.summary td { font-weight: 700; }
   .pg-legend { font-size: 8pt; margin-top: 6pt; }
 }
@@ -310,7 +314,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .dash-section { margin: 1rem 0; }
 .dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .dash-section .row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: .5rem; }
-fieldset.inline { border: 0; padding: 0; margin: 0; display: flex; gap: .8rem; align-items: center; }
+fieldset.inline { border: 0; padding: 0; margin: 0 0 .5rem; min-width: 0; display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+dialog.dialog fieldset, dialog.dialog .field { min-width: 0; }
+dialog.dialog input[type=date] { max-width: 100%; }
 fieldset.inline legend { float: left; margin-right: .6rem; color: var(--muted); }
 .chart-box { position: relative; }
 .chart-box:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

@@ -106,6 +106,15 @@ def main():
         check('G11 : voyant ROUGE', 'Voyant : ROUGE' in pg.inner_text('#report-preview'))
         pg.keyboard.press('Escape')
 
+        # ── G15 6 et 7 : noms piégés et 1 000 tâches ─────────────────────────
+        alerts = []
+        pg.on('dialog', lambda d: (alerts.append(d.message), d.dismiss()))
+        load('projet-noms-pieges.json')
+        check('G15 6 : le nom `<img onerror…>` s\'affiche tel quel, sans alerte', '<img src=x onerror=alert(1)>' in row('T1') and not alerts, (row('T1'), alerts))
+        check('G15 6 : aucun élément img créé par le nom', pg.locator('#task-rows img').count() == 0)
+        load('projet-1000-taches.json')
+        check('G15 7 : 1 000 tâches importées', pg.locator('#task-rows tr[data-id]').count() == 1000, pg.locator('#task-rows tr[data-id]').count())
+
         check('aucune erreur JavaScript', not errors, errors)
         browser.close()
 

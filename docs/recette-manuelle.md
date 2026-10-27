@@ -38,6 +38,8 @@ comportement existant.
 | `projet-surcharge.json` | Une ressource surchargée et absente, sans nivellement : un conflit | G5, G6 |
 | `projet-retard.json` | Projet daté d'août 2026, en retard : tâche critique, échéance dépassée, voyant ROUGE | G9, G11 |
 | `projet-atlas-budget.json` | Projet complet de 49 éléments avec budgets, coûts réels, provision, un montant en millions, une baseline prise avant des dépassements, 4 conflits voulus | B13, et tout parcours sur un grand projet |
+| `projet-noms-pieges.json` | Trois tâches dont le nom ressemble à du code (`<img onerror…>`, `=1+1`, guillemets) | G12 7, G15 6 |
+| `projet-1000-taches.json` | 1 000 tâches fictives liées, pour la fluidité | G15 7 |
 | `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
 
 ### Quand rejouer quoi
@@ -268,24 +270,34 @@ Départ : importez `projet-retard.json`.
 - [ ] 5. **Copier le texte** : collez dans un éditeur de texte, le contenu est lisible.
 - [ ] 6. Avec `projet-exemple.json`, le voyant dépend de la date du jour : ROUGE si une tâche critique est en
   retard, ORANGE pour un autre retard, VERT sinon.
-- [ ] 7. **Imprimer le Gantt** (EF-89, EX-26, EX-30), avec `projet-atlas-budget.json` : choisissez période, échelle,
-  orientation, colonnes ; l'aperçu d'impression répète l'en-tête du temps, remplace les couleurs par des motifs noir
-  et blanc, numérote les pages. *Attendu :* aucun texte n'est coupé (les noms longs passent à la ligne) ; les colonnes
-  Début, Fin et Dépendances sont proposées et cochées ; avec **Ajuster à la largeur de la page** tout le planning tient
-  sur la largeur d'une page ; avec **Zoom actuel** le planning est découpé en bandes (« partie 1 sur N »), chacune sur
-  de nouvelles pages et répétant les colonnes de texte, sans rien perdre sur le bord droit.
+- [ ] 7. **Imprimer le Gantt** (EF-89, EX-26, EX-30, EX-32), avec `projet-atlas-budget.json`. *Attendu :* la
+  fenêtre s'adapte à son contenu, **sans barre de défilement horizontale** (réduisez aussi la fenêtre du navigateur :
+  les choix passent à la ligne). Dans l'aperçu d'impression : les barres sont **en couleur** (celle de leur
+  catégorie) ; une tâche critique a un contour rouge épais et des hachures ; la partie réalisée est foncée et
+  rayée ; la colonne **Catégorie** nomme la catégorie de chaque ligne et la légende donne les couleurs. *Lisible sans
+  couleur :* choisissez « noir et blanc » dans la fenêtre d'impression du navigateur : critique, réalisé, jalon et
+  catégorie restent distinguables. Aucun texte n'est coupé (les noms longs passent à la ligne) ; les colonnes Début,
+  Fin et Dépendances sont proposées et cochées ; **Ajuster à la largeur de la page** met tout le planning sur une
+  page en largeur ; **Zoom actuel** le découpe en bandes (« partie 1 sur N ») sur de nouvelles pages, chacune
+  répétant les colonnes de texte.
 
 ### G12 — Exporter et importer (§ 12, R-26 à R-29, R-57 à R-61)
 
 Départ : `projet-exemple.json` ouvert.
 
-- [ ] 1. **Exporter** en JSON, puis **Importer** ce fichier. *Attendu :* un projet identique (mêmes tâches, liens,
-  dates).
+- [ ] 1. Cliquez **Exporter**, laissez « Projet GanttPro (.json) », cliquez **Exporter** : le navigateur enregistre
+  `<nom>_gantt.json` (dossier Téléchargements, ou la boîte « Enregistrer sous » selon votre navigateur) et un message
+  « Export « Projet GanttPro (.json) » terminé » s'affiche : cherchez le fichier. Puis **Importer** ce fichier :
+  l'aperçu d'import s'ouvre ; choisissez **Remplacer le projet ouvert**. *Attendu :* un projet identique (mêmes
+  tâches, liens, dates). Si rien n'apparaît, notez le navigateur et le message affiché.
 - [ ] 2. Exportez en **Excel (.xlsx)** : ouvrez dans un tableur, feuilles Tâches, Ressources, Absences, Calendrier,
   Baselines, en-tête figée.
 - [ ] 3. Exportez en **CSV** puis réimportez via l'assistant (trois étapes) : les tâches reviennent.
 - [ ] 4. Exportez en **MS Project (.xml)** puis réimportez : tâches, hiérarchie, liens et durées conservés.
-- [ ] 5. Exportez l'**Image du Gantt (.png)** : le fichier s'ouvre et reproduit la grille.
+- [ ] 5. Exportez l'**Image du Gantt (.png)** avec `projet-atlas-budget.json` : le fichier s'ouvre et reproduit la
+  grille. *Attendu :* l'en-tête a deux lignes (mois, puis semaines « 07/09 » ou « 07 » selon la place) ; aucun
+  libellé n'en chevauche un autre, quel que soit le zoom de l'écran au moment de l'export ; la fenêtre d'export
+  n'a pas de défilement horizontal.
 - [ ] 6. **Exporter sans noms de personnes** (JSON) : les ressources deviennent « Ressource 1 », « Ressource 2 ».
 - [ ] 7. Avec `projet-surcharge.json`, créez une tâche nommée `=1+1` puis exportez en CSV et Excel et ouvrez dans un
   tableur : le texte reste du texte (apostrophe), aucune formule ne s'exécute.
@@ -304,11 +316,19 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 4. **Enregistrer comme modèle** (avec puis sans ressources), puis **Nouveau projet à partir d'un modèle** :
   nom et date de début demandés ; avancement, dates réelles, commentaires, baselines et versions absents.
   Les deux modèles fournis (« Projet en 5 phases », « Événement ») s'ouvrent.
-- [ ] 5. **Exporter** en JSON avec un mot de passe de 12 caractères au moins : le fichier est illisible dans un
-  éditeur ; l'import demande le mot de passe ; un mauvais mot de passe est refusé ; un fichier altéré est refusé.
-- [ ] 6. **Réglages** : activez la sauvegarde automatique, modifiez un projet, attendez 5 secondes : l'indicateur
-  « Sauvegardé sur cet appareil à … » apparaît. Fermez et rouvrez : GanttPro propose de restaurer. Désactivez
-  l'option et effacez les données depuis les réglages.
+- [ ] 5. Cliquez **Exporter**, laissez le format JSON, cochez **Protéger par mot de passe** (la case est sous « Exporter
+  sans noms de personnes ») : deux champs apparaissent (mot de passe, confirmation). Saisissez 12 caractères au
+  moins (une phrase de passe convient), **Exporter**. *Attendu :* le fichier est illisible dans un éditeur ;
+  l'import demande le mot de passe ; un mauvais mot de passe est refusé ; un fichier altéré est refusé. Un mot de
+  passe trop court ou deux saisies différentes sont refusés avec un message. Le mot de passe n'est jamais
+  conservé : le perdre rend le fichier définitivement illisible.
+- [ ] 6. **Réglages** (⚙) : cochez la sauvegarde automatique, **puis cliquez « Activer » dans la fenêtre de
+  confirmation** (sans ce clic elle reste désactivée) ; un message confirme l'activation et l'indicateur apparaît
+  en haut. Modifiez un projet (la sauvegarde ne concerne que les projets **modifiés** depuis leur ouverture ou leur
+  dernier export), attendez 5 secondes : « Sauvegardé sur cet appareil à … ». Fermez l'onglet du navigateur puis
+  rouvrez `GanttPro.html` : GanttPro propose de restaurer. Avec plusieurs fenêtres : la proposition apparaît
+  dans toute fenêtre ouverte ensuite, car les copies sont gardées par appareil ; une fenêtre ouverte avant la
+  modification reste vide. Désactivez l'option et effacez les données depuis les réglages.
 
 ### G14 — Réglages, langue, thème, aide, raccourcis (§ 14, § 15)
 
@@ -332,10 +352,9 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 5. Ouvrez les outils de développement du navigateur, onglet Réseau, puis utilisez l'application pendant
   quelques minutes : **aucune requête** n'est émise ; la console ne signale aucune violation de politique de
   sécurité ; aucun cookie n'est créé.
-- [ ] 6. Importez un fichier JSON dont un nom de tâche est `<img src=x onerror=alert(1)>` : le texte s'affiche tel
-  quel, aucune alerte ne se déclenche.
-- [ ] 7. Générez un projet de 1 000 tâches (collez-en plusieurs fois par Ctrl + C / Ctrl + V) : l'affichage reste
-  fluide, les gestes restent utilisables.
+- [ ] 6. Importez `projet-noms-pieges.json` (un nom de tâche est `<img src=x onerror=alert(1)>`) : le texte
+  s'affiche tel quel, aucune alerte ne se déclenche.
+- [ ] 7. Importez `projet-1000-taches.json` (1 000 tâches) : l'affichage reste fluide, les gestes restent utilisables.
 
 ---
 
