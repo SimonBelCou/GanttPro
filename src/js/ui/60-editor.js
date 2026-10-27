@@ -290,7 +290,8 @@ const Editor = (() => {
     App.selected = newId;
     originalId = newId;
     commit(p => applyTask(p, oldId, final));
-    announce(t('saved', { id: newId }) + (cleared ? ' ' + t('err.realEndCleared') : ''));
+    // La fin réelle effacée est signalée à l'écran (bandeau visible 8 s), pas seulement aux lecteurs d'écran.
+    if (cleared) toast(t('saved', { id: newId }) + ' ' + t('err.realEndCleared')); else announce(t('saved', { id: newId }));
     const sel = document.querySelector(`button.select[data-arg="${CSS.escape(newId)}"]`);
     if (sel) sel.focus();
   }

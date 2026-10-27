@@ -110,6 +110,9 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 11. **Saisie.** Ouvrez la fiche d'une tâche et cliquez dans le champ « Nom » (ou tabulez jusqu'à lui).
   *Attendu :* tout le texte existant est sélectionné ; taper un premier caractère le remplace, sans avoir à
   effacer l'ancien nom. Même comportement pour la durée et les autres champs texte ou nombre.
+- [ ] 11b. **Fiche d'édition.** Réduisez la hauteur de la fenêtre du navigateur puis ouvrez une tâche. *Attendu :*
+  le titre « Modifier … » reste fixe en haut, la rangée de boutons (Enregistrer, Annuler, etc.) reste visible en bas,
+  et seuls les champs au milieu défilent.
 - [ ] 12. **Colonnes de dates.** Dans la liste, repérez les colonnes **Début**, **Fin**, **Début réel** et
   **Fin réel** (après Durée). *Attendu :* pour chaque tâche les dates prévues (calculées) ; les dates réelles sont
   vides tant qu'elles ne sont pas saisies dans la fiche ; une récapitulative affiche ses dates prévues. Ouvrez
@@ -230,7 +233,8 @@ Départ : importez `projet-retard.json` (daté d'août 2026, donc en retard à t
 - [ ] 3. Alerte : C signale « échéance dépassée » (drapeau rouge, bandeau avec les dates).
 - [ ] 4. Ouvrez B : mettez l'avancement à 100 %. *Attendu :* l'avancement global augmente ; B devient « Terminé ».
 - [ ] 5. Saisissez une fin réelle sur C. *Attendu :* l'avancement de C passe à 100 %. Ramenez-le à 50 % :
-  la fin réelle est effacée, avec un message.
+  la fin réelle est effacée et un
+  **message visible** (bandeau en bas de l'écran, une dizaine de secondes) l'indique.
 - [ ] 6. Saisissez une fin réelle antérieure au début réel. *Attendu :* refus.
 - [ ] 7. Ouvrez le tableau de bord, « Tableau de suivi » : colonne Écart en jours ouvrés (+ pour un retard) ;
   tri par un clic sur un en-tête.

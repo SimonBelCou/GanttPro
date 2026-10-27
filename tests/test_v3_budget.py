@@ -432,6 +432,32 @@ def main():
         pg.uncheck('#show-tags')
         load_fx('projet-atlas-budget.json')
 
+        # Remarques de recette G9 étape 5 et fiche d'édition : message visible, titre et boutons toujours à l'écran.
+        load_fx('projet-retard.json')
+        pg.set_viewport_size({'width': 1500, 'height': 480})
+        pg.click('#task-rows tr[data-id="C"] button.select')
+        pg.wait_for_selector('#f-name')
+        lay = pg.evaluate("""() => { const e = document.getElementById('editor').getBoundingClientRect(), h2 = document.getElementById('editor-title').getBoundingClientRect(),
+          sv = document.querySelector('#edit-form button[type=submit]').getBoundingClientRect(), f = document.getElementById('edit-fields');
+          return { vh: innerHeight, top: Math.round(h2.top), saveBottom: Math.round(sv.bottom), scroll: f.scrollHeight > f.clientHeight, eb: Math.round(e.bottom) }; }""")
+        check('fiche : titre en haut et bouton Enregistrer visibles sur une fenêtre basse', lay['top'] >= 0 and lay['saveBottom'] <= lay['vh'] and lay['scroll'], lay)
+        pg.evaluate("document.getElementById('edit-fields').scrollTop = 9999")
+        after = pg.evaluate("({ top: Math.round(document.getElementById('editor-title').getBoundingClientRect().top), saveBottom: Math.round(document.querySelector('#edit-form button[type=submit]').getBoundingClientRect().bottom), vh: innerHeight })")
+        check('fiche : titre et boutons restent en place pendant le défilement des champs', after['top'] >= 0 and after['saveBottom'] <= after['vh'], after)
+        pg.evaluate("document.getElementById('edit-fields').scrollTop = 0")
+        pg.fill('#f-realEnd', '2026-09-10')
+        pg.click('#edit-form button[type=submit]')
+        pg.wait_for_timeout(200)
+        pg.click('#task-rows tr[data-id="C"] button.select')
+        pg.wait_for_selector('#f-name')
+        pg.fill('#f-pct', '50')
+        pg.click('#edit-form button[type=submit]')
+        pg.wait_for_timeout(200)
+        vis = pg.evaluate("(() => { const t = document.getElementById('toast'); return t.hidden ? '' : t.textContent; })()")
+        check('G9-5 : message visible quand la fin réelle est effacée (avancement sous 100 %)', 'fin réelle' in vis.lower() or 'finish' in vis.lower(), vis)
+        pg.set_viewport_size({'width': 1500, 'height': 950})
+        load_fx('projet-atlas-budget.json')
+
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
         for scale, orient in [('fit', 'landscape'), ('zoom', 'landscape'), ('zoom', 'portrait')]:
