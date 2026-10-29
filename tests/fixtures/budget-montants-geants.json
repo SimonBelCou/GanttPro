@@ -1,0 +1,55 @@
+{
+  "format": 3,
+  "name": "Projet fictif montants géants",
+  "projectStart": "2025-03-03",
+  "provision": 0,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Petit",
+      "dur": 3,
+      "budget": 99999999,
+      "actual": 0
+    },
+    {
+      "id": "T2",
+      "name": "Un million",
+      "dur": 3,
+      "budget": 100000000,
+      "actual": 123456789
+    },
+    {
+      "id": "T3",
+      "name": "Plusieurs millions",
+      "dur": 3,
+      "budget": 123456789,
+      "actual": 0
+    },
+    {
+      "id": "T4",
+      "name": "Milliards",
+      "dur": 3,
+      "budget": 250000000000,
+      "actual": 0
+    },
+    {
+      "id": "T5",
+      "name": "Plafond",
+      "dur": 3,
+      "budget": 5000000000000,
+      "actual": 5000000000000
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}

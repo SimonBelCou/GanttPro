@@ -28,6 +28,11 @@ const Tooltip = (() => {
     const tip = $('tooltip');
     clear(tip);
     for (const l of lines(task)) tip.append(h('div', { text: l }));
+    // Budget et coût réel en entier (EF-125 : masqués à l'écran quand le masquage est actif).
+    if (task.type !== 'milestone' && Budget.hasAmounts(App.project)) {
+      const a = Budget.amounts(App.project).get(task.id) || { budget: 0, actual: 0 };
+      tip.append(h('div', {}, `${t('col.money')} : `, Money.node(a.budget), ' / ', Money.node(a.actual)));
+    }
     tip.hidden = false;
     const r = el.getBoundingClientRect();
     const w = tip.offsetWidth, hgt = tip.offsetHeight;
@@ -68,3 +73,19 @@ const Tooltip = (() => {
   }
   return { init, hide };
 })();
+
+
+/** Raccourcis clavier au survol des boutons (réglage « Afficher les raccourcis au survol », activé par défaut) :
+ *  l'infobulle native du navigateur reprend le nom du bouton et son raccourci, d'après aria-keyshortcuts. */
+const KEY_NAMES = { Control: 'Ctrl', ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' };
+function applyShortcutTips() {
+  const on = Settings.get('tips') !== 'off';
+  for (const el of document.querySelectorAll('[aria-keyshortcuts]')) {
+    if (!on) { if (el.dataset.tipSet) { el.removeAttribute('title'); delete el.dataset.tipSet; } continue; }
+    const keys = el.getAttribute('aria-keyshortcuts').split(/\+(?=.)/).map(k => (k === 'Escape' ? (I18n.getLang() === 'fr' ? 'Échap' : 'Esc') : KEY_NAMES[k] || k)).join(' + ');
+    const label = el.labels && el.labels[0];
+    const name = (el.getAttribute('aria-label') || (label && label.textContent) || el.textContent || '').trim();
+    el.setAttribute('title', `${name} (${keys})`);
+    el.dataset.tipSet = '1';
+  }
+}

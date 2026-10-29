@@ -1,0 +1,142 @@
+{
+  "format": 3,
+  "name": "Projet fictif exemple",
+  "desc": "Projet d'essai : données fictives.",
+  "emoji": "🎯",
+  "projectStart": "2026-11-02",
+  "calendar": {
+    "workDays": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0
+    ],
+    "holidays": "FR",
+    "daysOff": [],
+    "daysWorked": []
+  },
+  "leveling": "smooth",
+  "resources": [
+    {
+      "name": "Dev 1",
+      "role": "Développement",
+      "capacity": 100
+    },
+    {
+      "name": "Chef de projet",
+      "role": "Pilotage",
+      "capacity": 50
+    }
+  ],
+  "categories": [
+    {
+      "name": "Conception",
+      "color": "#4d9fff"
+    },
+    {
+      "name": "Réalisation",
+      "color": "#36d9a0"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P1",
+      "name": "Phase 1 — Cadrage",
+      "type": "summary"
+    },
+    {
+      "id": "T1",
+      "name": "Rédiger la note de cadrage",
+      "parent": "P1",
+      "dur": 3,
+      "assign": [
+        {
+          "res": "Chef de projet",
+          "units": 50
+        }
+      ],
+      "cat": "Conception",
+      "pct": 100,
+      "realStart": "2026-11-02",
+      "realEnd": "2026-11-04",
+      "tags": [
+        "cadrage"
+      ],
+      "notes": "Note fictive."
+    },
+    {
+      "id": "T2",
+      "name": "Valider le périmètre",
+      "parent": "P1",
+      "dur": 2,
+      "deps": [
+        "T1"
+      ],
+      "assign": [
+        {
+          "res": "Chef de projet",
+          "units": 50
+        }
+      ],
+      "cat": "Conception",
+      "pct": 40
+    },
+    {
+      "id": "M1",
+      "name": "Cadrage validé",
+      "type": "milestone",
+      "parent": "P1",
+      "deps": [
+        "T2"
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "Phase 2 — Réalisation",
+      "type": "summary"
+    },
+    {
+      "id": "T3",
+      "name": "Développer le premier lot",
+      "parent": "P2",
+      "dur": 10,
+      "deps": [
+        {
+          "id": "M1",
+          "type": "FS",
+          "lag": 1
+        }
+      ],
+      "assign": [
+        {
+          "res": "Dev 1",
+          "units": 100
+        }
+      ],
+      "cat": "Réalisation",
+      "tags": [
+        "lot 1"
+      ]
+    },
+    {
+      "id": "T4",
+      "name": "Recetter le premier lot",
+      "parent": "P2",
+      "dur": 4,
+      "deps": [
+        "T3"
+      ],
+      "assign": [
+        {
+          "res": "Chef de projet",
+          "units": 50
+        }
+      ],
+      "cat": "Réalisation",
+      "deadline": "2026-12-18"
+    }
+  ]
+}

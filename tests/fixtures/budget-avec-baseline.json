@@ -1,0 +1,87 @@
+{
+  "format": 3,
+  "name": "Projet fictif avec baseline",
+  "projectStart": "2025-03-03",
+  "provision": 4000,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Etude",
+      "dur": 5,
+      "pct": 100,
+      "realEnd": "2025-03-07",
+      "cat": "Etudes",
+      "budget": 10000,
+      "actual": 9000
+    },
+    {
+      "id": "T2",
+      "name": "Realisation",
+      "dur": 5,
+      "deps": [
+        "T1"
+      ],
+      "pct": 40,
+      "cat": "Etudes",
+      "budget": 35000,
+      "actual": 10000
+    },
+    {
+      "id": "J",
+      "name": "Jalon final",
+      "type": "milestone",
+      "dur": 0,
+      "deps": [
+        "T2"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ],
+  "baselines": [
+    {
+      "id": "B1",
+      "name": "Baseline initiale",
+      "color": "#e8590c",
+      "createdAt": 1740960000000,
+      "projectStart": "2025-03-03",
+      "shownOnGantt": true,
+      "shownOnScurve": true,
+      "provision": 4000,
+      "tasks": [
+        {
+          "id": "T1",
+          "name": "Etude",
+          "dur": 5,
+          "deps": [],
+          "cat": "Etudes",
+          "start": "2025-03-03",
+          "end": "2025-03-07",
+          "budget": 10000
+        },
+        {
+          "id": "T2",
+          "name": "Realisation",
+          "dur": 5,
+          "deps": [
+            "T1"
+          ],
+          "cat": "Etudes",
+          "start": "2025-03-10",
+          "end": "2025-03-14",
+          "budget": 30000
+        }
+      ]
+    }
+  ]
+}

@@ -16,7 +16,7 @@ action('addTask', type => {
   const id = Model.nextTaskId(App.project.tasks.map(x => x.id));
   const sel = App.selected && taskById(App.selected);
   let parent = sel && sel.type === 'summary' ? sel.id : (sel ? sel.parent : '');
-  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) parent = '';
+  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) { Dialog.message(t('top.addTask'), t('err.depth', { max: Model.LIMITS.depth })); return; }
   const name = t(type === 'milestone' ? 'newMilestone' : type === 'summary' ? 'newSummary' : 'newTask');
   commit(p => p.tasks.push({
     id, name, type, parent, dur: type === 'task' ? 5 : 0, deps: [], assign: [], cat: type === 'summary' ? '' : (p.categories[0] ? p.categories[0].id : ''),
@@ -59,7 +59,7 @@ action('redo', () => { if (undoStep(App.redo, App.undo)) announce(t('redo.done')
 
 action('zoom', step => {
   const s = Number(step);
-  App.zoom = s === 0 ? 100 : Math.min(300, Math.max(20, App.zoom + 20 * s));
+  App.zoom = s === 0 ? 100 : Math.min(400, Math.max(20, App.zoom + 20 * s));
   render();
   announce(t('top.zoom', { pct: App.zoom }));
 });
@@ -68,7 +68,7 @@ action('toggleAlerts', () => { App.showAlerts = !App.showAlerts; render(); if (!
 
 action('toggleTheme', () => {
   const order = ['system', 'light', 'dark'];
-  const next = order[(order.indexOf(Settings.get('theme') || 'system') + 1) % 3];
+  const next = order[(order.indexOf(Settings.get('theme') || DEFAULT_THEME) + 1) % 3];
   Settings.set('theme', next);
   applyTheme();
   render();
@@ -104,7 +104,7 @@ action('fileChosen', async (arg, el) => {
 });
 
 function applyTheme() {
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
 }
@@ -134,6 +134,7 @@ function init() {
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();
+  App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
   initKeyboard();
   Tooltip.init();
@@ -152,6 +153,16 @@ function init() {
     Recovery.flushSync();
     if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
   });
+  // Sauvegarde automatique : écriture immédiate dès que la page passe en arrière-plan ou se ferme (les minuteurs d'un
+  // onglet masqué sont ralentis par le navigateur, et la fermeture n'appelle pas toujours beforeunload).
+  window.addEventListener('pagehide', () => Recovery.flushSync());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') Recovery.flushSync(); });
+  // Champs de saisie : le texte existant est sélectionné à l'arrivée, le premier caractère tapé le remplace (aucune
+  // sélection à faire à la main). Le clic de souris ne doit pas défaire cette sélection.
+  let pickedInput = null;
+  const isTextField = el => el instanceof HTMLInputElement && ['text', 'search', 'number', 'email', 'url', 'tel', ''].includes(el.type) && !el.readOnly && !el.disabled;
+  document.addEventListener('focusin', ev => { if (isTextField(ev.target)) { ev.target.select(); pickedInput = ev.target; } });
+  document.addEventListener('mouseup', ev => { if (pickedInput && ev.target === pickedInput) ev.preventDefault(); pickedInput = null; }, true);
   // Import par glisser-déposer (EF-52).
   document.addEventListener('dragover', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) ev.preventDefault(); });
   document.addEventListener('drop', async ev => {

@@ -19,7 +19,7 @@ function download(data, filename, type) {
 }
 
 /* ── Export (EF-92) ─────────────────────────────────────────────────────────────────────── */
-const ExportOpt = { format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
+const ExportOpt = { amounts: false, format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
 const FORMATS = ['json', 'xlsx', 'csv', 'msp', 'png'];
 
 function exportBody() {
@@ -30,6 +30,8 @@ function exportBody() {
   const box = h('div', { id: 'exp-win' }, h('fieldset', { class: 'sub' }, h('legend', { text: t('exp.format') }), FORMATS.map(radio)));
   box.append(h('p', { class: 'field-error', id: 'exp-err', role: 'alert', hidden: true }));
   if (o.format !== 'png') box.append(chk('exp-anon', 'anonymize', t('exp.anonymize')));
+  // Rien ne sort sans geste volontaire (EF-124) : la case est décochée à chaque ouverture. Le format MS Project n'emporte aucun montant.
+  if (['json', 'xlsx', 'csv'].includes(o.format)) box.append(chk('exp-amounts', 'amounts', t('out.amounts')), h('p', { class: 'hint', text: t('out.amountsHint') }));
   if (o.format === 'json') {
     box.append(h('p', { class: 'hint', text: t('exp.notice') }), chk('exp-protect', 'protect', t('exp.protect')));
     if (o.protect) box.append(
@@ -54,6 +56,7 @@ function exportBody() {
 }
 
 function exportWindow() {
+  ExportOpt.amounts = false;
   const holder = h('div', {}, exportBody());
   exportWindow.holder = holder;
   return Dialog.open({
@@ -82,7 +85,7 @@ async function doExport() {
   if (!s) { err(t('calc.error')); return; }
   try {
     if (o.format === 'json') {
-      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize }), null, 2);
+      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize, amounts: o.amounts }), null, 2);
       if (o.protect) {
         const a = $('exp-pwd').value, b = $('exp-pwd2').value;
         if (!Secure.passwordOk(a)) { err(t('pwd.short', { min: Secure.MIN_PASSWORD })); $('exp-pwd').focus(); return; }
@@ -92,8 +95,8 @@ async function doExport() {
         download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
       } else download(text, exportFileName(p.name), 'application/json');
       if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
-    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
-    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
+    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     else if (o.format === 'msp') {
       const q = o.anonymize ? Model.sanitize(Model.serialize(p, { anonymize: true })).project : p;
       download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
@@ -128,10 +131,23 @@ function ganttPng(o) {
   g.font = '600 12px Sora, sans-serif'; g.textBaseline = 'middle';
   const x = dn => left + (dn - from) * dayW;
   for (let dn = from; dn <= to; dn++) if (!s.cal.isWork(dn)) { g.fillStyle = white ? 'rgba(20,26,38,.06)' : col('--off'); g.fillRect(x(dn), head, dayW, H - head - legendH); }
+  // En-tête sur deux lignes comme à l'écran : les mois, puis les semaines (jj/mm, ou jj seul quand la place manque) ;
+  // quand une semaine est trop étroite pour un libellé, les mois seuls. Chaque libellé est rogné à sa colonne :
+  // aucun ne déborde sur le voisin.
   g.fillStyle = muted; g.font = '11px Sora, sans-serif';
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    g.fillRect(x(Math.max(p.start, from)), 0, 1, H - legendH);
-    g.fillText(dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start), x(Math.max(p.start, from)) + 3, head / 2);
+  const weekW = dayW * 7, weeks = weekW >= 18;
+  const label = (text, x0, w, y) => { if (!text) return; g.save(); g.beginPath(); g.rect(x0, 0, Math.max(0, w), head); g.clip(); g.fillText(text, x0 + 3, y); g.restore(); };
+  for (const p of Metrics.periods(from, to, 'month')) {
+    const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+    g.fillRect(x(a), 0, 1, weeks ? head / 2 : H - legendH);
+    label(I18n.monthLabelFit(p.start, w - 4), x(a), w, weeks ? head * 0.28 : head / 2);
+  }
+  if (weeks) {
+    for (const p of Metrics.periods(from, to, 'week')) {
+      const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+      g.fillRect(x(a), head / 2, 1, H - head / 2 - legendH);
+      label(weekW >= 34 ? I18n.shortDate(p.start) : String(Dates.ymd(p.start).d).padStart(2, '0'), x(a), w, head * 0.75);
+    }
   }
   g.fillStyle = ink; g.font = '700 13px Sora, sans-serif';
   g.fillText(`${App.project.name}`, 8, head / 2);
@@ -285,6 +301,10 @@ async function sheetWizard(src) {
       if (r.errors.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage' }, h('caption', { text: t('wiz.errors') }),
         h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
         h('tbody', {}, r.errors.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
+      // RG-42 : un montant invalide est signalé et ignoré, la ligne reste importée.
+      if (r.warnings && r.warnings.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'wiz-warnings' }, h('caption', { text: t('wiz.warnings') }),
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
+        h('tbody', {}, r.warnings.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
       body.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('wiz.mode') }),
         ['add', 'replace'].map(m => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'wiz-mode', id: 'wiz-m-' + m, value: m, checked: W.mode === m }), h('label', { for: 'wiz-m-' + m, text: t('wiz.m.' + m) })))));
     }
@@ -320,7 +340,7 @@ async function sheetWizard(src) {
       if (W.step === 1) { W.step = 2; paint(); return false; }
       if (W.step === 2) {
         if (W.map.name === undefined) return err(t('wiz.needName'));
-        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
         W.step = 3; paint(); return false;
       }
       if (!W.result.rows.length) return err(t('wiz.none'));

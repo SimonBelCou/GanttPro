@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/GdqMNlNXTPN4DfaxRO0c7PUinsvHKJLhonGCzqsxbU='; style-src 'sha256-L6S/N0p3cBxbV+R+1Vlj0RcUYzp8cSa/0zxMCleMqbU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nOJIAWNIi9POL9hGG5UohKyHYMDbtaeaaKDvHyKoSmE='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
 <title>GanttPro</title>
 <style>
 /* Polices intégrées (SIL OFL 1.1, voir THIRD_PARTY_LICENSES.md) : aucune requête réseau. */
@@ -91,12 +92,17 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 /* Planning : liste + grille, défilement vertical commun */
 
-.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; max-height: calc(100vh - 210px); min-height: 300px; overflow: auto; border-bottom: 1px solid var(--line); }
-.list { background: var(--panel); overflow-x: auto; }
-table.tasks { border-collapse: collapse; width: 100%; }
+.planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; border-bottom: 1px solid var(--line); }
+/* Chaque colonne défile seule dans les deux sens : sa barre horizontale reste toujours visible au bas de la zone (EX-29) ;
+   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. */
+.list, .gantt { max-height: var(--planner-h, calc(100vh - 210px)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
+.list { background: var(--panel); }
+table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .tasks thead th { height: var(--head); position: sticky; top: 0; background: var(--panel-2); z-index: 2; font-weight: 600; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
+.tasks td.money { font-variant-numeric: tabular-nums; text-align: right; position: relative; }
+.money { font-variant-numeric: tabular-nums; }
 .tasks td.name { padding-left: calc(.45rem + var(--depth, 0) * 1.1rem); max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.select { background: transparent; border: 0; padding: 0 .2rem; min-height: 28px; text-align: left; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.toggle { background: transparent; border: 0; min-height: 26px; min-width: 26px; }
@@ -115,11 +121,11 @@ table.tasks { border-collapse: collapse; width: 100%; }
 .tasks td.status.late { color: var(--critical); font-weight: 600; }
 .tasks td.status.done { color: var(--ok); }
 
-.gantt { overflow-x: auto; overflow-y: hidden; background: var(--panel); }
+.gantt { background: var(--panel); }
 .gantt-inner { position: relative; width: var(--grid-w); min-width: 100%; }
-.g-head { position: relative; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.g-head { position: sticky; top: 0; z-index: 3; height: var(--head); background: var(--panel-2); border-bottom: 1px solid var(--line); }
 .g-col { position: absolute; border-left: 1px solid var(--line); font-size: .72rem; line-height: 17px; color: var(--muted); padding: 0 .2rem; overflow: hidden; white-space: nowrap; }
-.g-col.month { top: 0; height: 17px; font-weight: 600; }
+.g-col.month { top: 0; height: 17px; font-weight: 600; padding: 0 2px; }
 .g-col.month.full { height: 100%; line-height: var(--head); }
 .g-col.week { top: 17px; height: 17px; border-top: 1px solid var(--line); text-align: center; padding: 0; }
 .g-col.has-holiday { background: color-mix(in srgb, var(--warning) 14%, transparent); }
@@ -181,9 +187,15 @@ table.tasks { border-collapse: collapse; width: 100%; }
 
 /* Panneau d'édition */
 .editor {
-  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); overflow: auto; z-index: 5;
-  background: var(--panel); border-left: 1px solid var(--line); padding: 1rem; box-shadow: -8px 0 24px rgba(0,0,0,.18);
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); overflow: hidden; z-index: 5;
+  background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.18);
 }
+/* Titre fixe en haut, boutons toujours visibles en bas, champs défilants entre les deux. */
+.editor[hidden] { display: none; }
+.editor form { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.editor h2 { margin: 0; padding: 1rem 1rem .6rem; border-bottom: 1px solid var(--line); background: var(--panel); flex: 0 0 auto; }
+#edit-fields { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: .8rem 1rem; }
+.editor .actions { flex: 0 0 auto; margin: 0; padding: .6rem 1rem; border-top: 1px solid var(--line); background: var(--panel); max-height: 40%; overflow-y: auto; }
 .field { display: flex; flex-direction: column; gap: .2rem; margin-bottom: .7rem; }
 .field.check { flex-direction: row; align-items: center; gap: .5rem; }
 .field label { font-weight: 600; }
@@ -206,6 +218,8 @@ dialog.dialog.wide { width: min(900px, calc(100vw - 2rem)); }
 dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
 .dialog-head h2 { margin: 0 0 .5rem; flex: 1 1 auto; }
+button.dlg-mask { flex: 0 0 auto; min-height: 2.2rem; }
+button.dlg-mask[aria-pressed="true"] { font-weight: 700; }
 button.dlg-x { flex: 0 0 auto; min-width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; }
 .dialog-body p { margin: .3rem 0; }
 .dialog-body .strong { font-weight: 700; }
@@ -235,9 +249,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 
 /* Écrans étroits (4.4) */
 @media (max-width: 900px) {
-  .planner { grid-template-columns: 1fr; max-height: none; }
+  .planner { grid-template-columns: 1fr; }
+  .list, .gantt { max-height: none; min-height: 0; }
   .splitter { display: none; }
-  .list { overflow-x: auto; }
   .editor { width: 100vw; }
 }
 
@@ -256,29 +270,36 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .voyant.red { color: var(--critical); } .voyant.orange { color: var(--warning); } .voyant.green { color: var(--ok); }
 .print-area { display: none; }
 
-/* Impression (EX-26) : seul #print-area est imprimé ; noir sur blanc, motifs au lieu des couleurs. */
+/* Impression (EX-26, EX-32) : seul #print-area est imprimé ; en couleur, mais lisible sans couleur (contours, motifs, ● et texte).
+   Le mode noir et blanc du système d'impression reste possible. */
 @media print {
   body.printing > *:not(#print-area) { display: none !important; }
   body.printing #print-area { display: block !important; }
   body { background: #fff !important; color: #000 !important; }
-  .print-area, .print-area * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+  .print-area, .print-area * { color: #000 !important; background-color: transparent !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .report-page { border: 0; padding: 0; }
   .rep-sec { break-inside: avoid; }
   .scurve .series.planned { stroke: #000 !important; } .scurve .series.real { stroke: #000 !important; stroke-dasharray: 2 2; }
   .scurve .grid { stroke: #bbb !important; } .scurve text { fill: #000 !important; }
-  table.print-gantt { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table.print-gantt { border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
+  table.print-gantt + table.print-gantt { break-before: page; margin-top: 0; }
   table.print-gantt caption { text-align: left; font-weight: 700; margin-bottom: 4pt; }
   table.print-gantt thead { display: table-header-group; }
-  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: nowrap; overflow: hidden; }
+  table.print-gantt th, table.print-gantt td { border-bottom: 0.5pt solid #999; padding: 1pt 3pt; text-align: left; white-space: normal; overflow-wrap: break-word; vertical-align: top; }
+  table.print-gantt th { font-size: 7.5pt; }
+  table.print-gantt td.pg-start, table.print-gantt td.pg-end { white-space: nowrap; }
+  table.print-gantt td.pg-timecell, table.print-gantt th.pg-timecell { overflow: hidden; white-space: nowrap; }
   table.print-gantt tr { break-inside: avoid; }
   .pg-timecell { padding: 0 !important; }
   .pg-time, .pg-lane { position: relative; height: 16pt; }
   .pg-col { position: absolute; top: 0; height: 100%; border-left: 0.5pt solid #999; font-size: 7pt; padding-left: 1pt; overflow: hidden; }
-  .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background: #fff !important; overflow: hidden; }
-  .pg-bar.critical { background: repeating-linear-gradient(45deg, #000 0 1pt, #fff 1pt 4pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, #000 0 1.5pt, transparent 1.5pt 3pt) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; }
-  .pg-bar.summary { height: 4pt; top: 6pt; background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-area .pg-bar { position: absolute; top: 3pt; height: 10pt; border: 1pt solid #000; background-color: var(--c, #fff) !important; overflow: hidden; }
+  .print-area .pg-bar.critical { border: 1.6pt solid #b00020; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.55) 0 0.8pt, transparent 0.8pt 3.5pt); }
+  .print-area .pg-done { position: absolute; left: 0; top: 0; bottom: 0; background-color: rgba(0,0,0,.45) !important; background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,.55) 0 1pt, transparent 1pt 3pt); }
+  .print-area .pg-bar.milestone { border: 0; width: auto; top: 1pt; font-size: 10pt; margin-left: -4pt; background: none !important; }
+  .print-area .pg-bar.milestone.critical { color: #b00020 !important; }
+  .print-area .pg-bar.summary { height: 4pt; top: 6pt; background-color: #000 !important; background-image: none; }
+  .pg-sw { display: inline-block; width: 8pt; height: 8pt; border: 0.6pt solid #000; margin-right: 2pt; vertical-align: -1pt; background-color: var(--c, #fff) !important; }
   tr.summary td { font-weight: 700; }
   .pg-legend { font-size: 8pt; margin-top: 6pt; }
 }
@@ -302,13 +323,17 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; } }
 :root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
-.tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; min-width: 0; container-type: inline-size; }
 .tile dt { color: var(--muted); font-size: .85rem; }
-.tile dd { margin: .2rem 0 0; font-size: 1.6rem; font-weight: 700; }
+/* Un montant ne déborde jamais de sa tuile : sa taille suit la largeur de la tuile (EX-04). */
+.tile dd { margin: .2rem 0 0; font-size: clamp(1rem, 9.5cqi, 1.6rem); font-weight: 700; white-space: nowrap; overflow-wrap: normal; }
+.tiles.amounts { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
 .dash-section { margin: 1rem 0; }
 .dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .dash-section .row { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin-bottom: .5rem; }
-fieldset.inline { border: 0; padding: 0; margin: 0; display: flex; gap: .8rem; align-items: center; }
+fieldset.inline { border: 0; padding: 0; margin: 0 0 .5rem; min-width: 0; display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+dialog.dialog fieldset, dialog.dialog .field { min-width: 0; }
+dialog.dialog input[type=date] { max-width: 100%; }
 fieldset.inline legend { float: left; margin-right: .6rem; color: var(--muted); }
 .chart-box { position: relative; }
 .chart-box:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -389,7 +414,7 @@ ul.comments li { align-items: flex-start; }
 .col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
 table.tasks.fixed { table-layout: fixed; }
-table.tasks.fixed td { overflow: hidden; text-overflow: ellipsis; }
+table.tasks.fixed td, table.tasks.fixed th { overflow: hidden; text-overflow: ellipsis; }
 .planner.list-collapsed { grid-template-columns: 0 0 1fr; }
 .planner.list-collapsed .splitter { display: none; }
 .tasks tr[draggable="true"] td.id { cursor: grab; }
@@ -449,10 +474,12 @@ body.dragging { user-select: none; cursor: grabbing; }
 .tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
 .tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
 .tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
-body.planner-full .planner { position: fixed; inset: 0; z-index: 4; max-height: none; min-height: 0; background: var(--bg); border-bottom: 0; }
+body.planner-full .planner { position: fixed; inset: 0; z-index: 4; grid-template-rows: minmax(0, 1fr); background: var(--bg); border-bottom: 0; }
+body.planner-full .list, body.planner-full .gantt { max-height: none; min-height: 0; }
 body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 </style>
 </head>
@@ -489,15 +516,16 @@ body.planner-full { overflow: hidden; }
       <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
+      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
     </div>
     <div class="group">
       <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
       <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
     <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
       <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
@@ -572,10 +600,12 @@ body.planner-full { overflow: hidden; }
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="budget"><col data-col="actual"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
+          <th scope="col"><span data-i18n="col.budget"></span></th><th scope="col"><span data-i18n="col.actual"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -586,8 +616,8 @@ body.planner-full { overflow: hidden; }
     </section>
   </div>
   <div class="full-bar" id="full-bar" hidden>
-    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
-    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
@@ -1469,6 +1499,9 @@ const Model = (() => {
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
     comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
+    // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
+    amount: 5000000000000, currency: 5,
   });
   const ID_RE = /^[A-Z0-9._-]{1,12}$/;
   const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -1506,6 +1539,13 @@ const Model = (() => {
         if (!present(k)) return def;
         const v = src[k];
         if (!Number.isInteger(v) || v < min || v > max) err(k, 'rule.int', { min, max });
+        return v;
+      },
+      /** Montant en centimes (RG-35) : entier de 0 à LIMITS.amount, jamais un nombre à virgule. */
+      amount(k) {
+        if (!present(k)) return 0;
+        const v = src[k];
+        if (!Number.isSafeInteger(v) || v < 0 || v > LIMITS.amount) err(k, 'rule.amount', { min: 0, max: LIMITS.amount });
         return v;
       },
       num(k, { def = 0 } = {}) {
@@ -1620,7 +1660,7 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -1642,7 +1682,11 @@ const Model = (() => {
       // Lissage par défaut : l'utilisateur arbitre lui-même les surcharges (A.3). Un fichier 2.3
       // (sans champ format) garde le nivellement automatique pour retrouver ses dates d'origine.
       leveling: P.oneOf('leveling', ['level', 'smooth', 'off'], has(raw, 'format') ? 'smooth' : 'level'),
+      // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
+      currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
+      provision: P.amount('provision'),
     };
+    if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
     // Ressources et catégories : identités internes neuves ; les noms doivent être uniques (casse ignorée).
@@ -1699,7 +1743,7 @@ const Model = (() => {
       const where = { obj: 'task', n: i + 1 };
       if (!isObj(t)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
       const f = reader(t, where, ['id', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'assign', 'cat', 'pct', 'forcedStart', 'notBefore',
-        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed'], stats);
+        'deadline', 'realStart', 'realEnd', 'tags', 'notes', 'comments', 'collapsed', 'budget', 'actual'], stats);
       if (typeof t.id !== 'string' || !ID_RE.test(t.id)) fail('imp.badId', { n: i + 1 });
       if (ids.has(t.id)) fail('imp.dupId', { id: t.id });
       ids.add(t.id);
@@ -1743,6 +1787,10 @@ const Model = (() => {
         return { res: r.id, units: a.units };
       });
 
+      // Un jalon et une récapitulative n'ont aucun montant propre (RG-36) : un montant non nul est refusé.
+      const budget = f.amount('budget'), actual = f.amount('actual');
+      if (!isTask && (budget || actual)) fail('imp.noAmount', { n: i + 1, id: t.id });
+
       const catName = f.text('cat', { max: 100, trim: true });
       const cat = catName ? resolveCat(catName).id : '';
 
@@ -1750,7 +1798,7 @@ const Model = (() => {
         id: t.id, name: f.text('name', { min: 1, max: 200, trim: true }), type, parent: f.text('parent', { max: 12 }), dur, deps, assign, cat, pct,
         forcedStart: f.date('forcedStart'), notBefore: f.date('notBefore'), deadline: f.date('deadline'),
         realStart: f.date('realStart'), realEnd: f.date('realEnd'),
-        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false,
+        tags: [], notes: f.text('notes', { max: 2000 }), comments: [], collapsed: false, budget, actual,
       };
       if (task.realStart && task.realEnd && task.realEnd < task.realStart) fail('imp.realOrder', { n: i + 1 });
       if (task.realEnd && task.pct < 100 && type !== 'summary') fail('imp.realEndPct', { n: i + 1 });
@@ -1804,17 +1852,17 @@ const Model = (() => {
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
-        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [],
+        shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
-        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end'], stats);
+        const g = reader(bt, w, ['id', 'name', 'dur', 'deps', 'cat', 'start', 'end', 'budget'], stats);
         if (typeof bt.id !== 'string' || !ID_RE.test(bt.id)) fail('imp.badId', { n: j + 1 });
         const start = g.date('start', { required: true }), end = g.date('end', { required: true });
         if (end < start) fail('imp.rangeOrder', { ...w, field: 'end' });
@@ -1823,7 +1871,7 @@ const Model = (() => {
           if (typeof did !== 'string' || !ID_RE.test(did)) fail('imp.field', { ...w, field: 'deps', rule: 'rule.link' });
           return did;
         });
-        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end };
+        return { id: bt.id, name: g.text('name', { max: 200 }), dur: g.int('dur', { min: 0, max: LIMITS.dur, def: 0 }), deps, cat: g.text('cat', { max: 100 }), start, end, budget: g.amount('budget') };
       });
       return bl;
     });
@@ -1863,7 +1911,7 @@ const Model = (() => {
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
 
   /** Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51). */
-  function serialize(project, { anonymize = false, withVersions = true } = {}) {
+  function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
@@ -1872,6 +1920,8 @@ const Model = (() => {
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
       leveling: project.leveling || 'level',
+      currency: project.currency || '€',
+      provision: project.provision || 0,
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1880,16 +1930,31 @@ const Model = (() => {
         cat: catName(t.cat), pct: t.pct,
         forcedStart: t.forcedStart, notBefore: t.notBefore, deadline: t.deadline, realStart: t.realStart, realEnd: t.realEnd,
         tags: t.tags.slice(), notes: t.notes, comments: t.comments.map(c => ({ ts: c.ts, text: c.text })), collapsed: t.collapsed,
+        // Un jalon et une récapitulative n'ont aucun montant propre (RG-36).
+        ...(t.type === 'task' ? { budget: t.budget || 0, actual: t.actual || 0 } : {}),
       })),
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
-      baselines: project.baselines.map(b => ({ ...b, tasks: b.tasks.map(bt => ({ ...bt, deps: bt.deps.slice() })) })),
+      baselines: project.baselines.map(b => ({ ...b, provision: b.provision || 0, tasks: b.tasks.map(bt => ({ ...bt, budget: bt.budget || 0, deps: bt.deps.slice() })) })),
     };
     // Les versions contiennent des noms : elles ne sont pas exportées dans un fichier anonymisé.
     if (withVersions) file.versions = anonymize ? [] : (project.versions || []).map(v => ({ id: v.id, label: v.label, ts: v.ts, state: v.state }));
+    // Export « sans montants » (EF-124) : ni budget, ni coût réel, ni provision, y compris dans les baselines et
+    // dans chaque version ; la devise reste.
+    if (!amounts) stripAmounts(file);
+    return file;
+  }
+
+  /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
+  function stripAmounts(file) {
+    delete file.provision;
+    for (const t of file.tasks) { delete t.budget; delete t.actual; }
+    for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
+    if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
   }
 
@@ -1909,8 +1974,9 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
+      currency: '€', provision: 0,
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
-        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false }],
+        forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
       categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
@@ -1920,7 +1986,184 @@ const Model = (() => {
   /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
   const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
 
-  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle };
+  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
+})();
+
+// ── js/core/42-budget.js ──
+/* Budget, étape A (EF-112 à EF-127, RG-35 à RG-43).
+ *
+ * Tout montant est un ENTIER de centimes (RG-35) : aucune somme ni différence n'est faite en nombres à virgule.
+ * Avec au plus 1 000 tâches de 50 000 000 000,00 chacune plus la provision, un total reste sous 5,01e15, donc
+ * sous la limite des entiers exacts du moteur. Moteur sans DOM : l'affichage reçoit la langue en paramètre. */
+const Budget = (() => {
+  const NBSP = ' ', NNBSP = ' ', MINUS = '−';
+  const MAX = Model.LIMITS.amount;
+  const COMPACT_FROM = 100000000; // 1 000 000,00 en centimes (RG-43)
+
+  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0);
+
+  /**
+   * Saisie d'un montant en unités (EF-112) : virgule ou point décimal, espaces ignorés, au plus deux décimales.
+   * Les espaces et le symbole de la devise éventuel sont ignorés (RG-42) ; une saisie vide vaut 0.
+   * @returns {{ok:true, cents:number}|{ok:false, reason:'format'|'negative'|'decimals'|'max'}}
+   */
+  function parse(text, symbol = '') {
+    let s = String(text == null ? '' : text);
+    if (symbol) s = s.split(symbol).join('');
+    s = s.replace(/[\s  ]/g, '');
+    if (s === '') return { ok: true, cents: 0 };
+    if (s[0] === '-' || s[0] === '−') return /^[-−]\d+([.,]\d*)?$/.test(s) ? { ok: false, reason: 'negative' } : { ok: false, reason: 'format' };
+    const m = /^(\d+)(?:([.,])(\d*))?$/.exec(s);
+    if (!m) return { ok: false, reason: 'format' };
+    const frac = m[3] || '';
+    if (frac.length > 2) return { ok: false, reason: 'decimals' };
+    const intPart = m[1].replace(/^0+(?=\d)/, '');
+    if (intPart.length > 12) return { ok: false, reason: 'max' };
+    const cents = Number(intPart) * 100 + Number(frac.padEnd(2, '0'));
+    if (cents > MAX) return { ok: false, reason: 'max' };
+    return { ok: true, cents };
+  }
+
+  /** Texte d'un champ de saisie (sans groupement, avec le séparateur de la langue) : 123450 → « 1234,5 » (fr). */
+  function toInput(cents, lang) {
+    const c = amt(cents);
+    const frac = String(c % 100).padStart(2, '0').replace(/0+$/, '');
+    const sep = lang === 'fr' ? ',' : '.';
+    return Math.floor(c / 100) + (frac ? sep + frac : '');
+  }
+
+  const groupInt = (n, lang) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? NNBSP : ',');
+
+  /** Place le symbole de la devise : après le montant en français (« 1 234,56 € »), avant en anglais (« €1,234.56 »). */
+  function withSymbol(body, symbol, lang, negative) {
+    const sign = negative ? MINUS : '';
+    if (!symbol) return sign + body;
+    return lang === 'fr' ? `${sign}${body}${NBSP}${symbol}` : `${sign}${symbol}${body}`;
+  }
+
+  /** Montant complet : « 1 234,56 € » (fr) / « €1,234.56 » (en). Accepte une valeur négative (reste, écart). */
+  function format(cents, { lang = 'fr', symbol = '' } = {}) {
+    const neg = cents < 0, c = Math.abs(cents);
+    const body = groupInt(Math.floor(c / 100), lang) + (lang === 'fr' ? ',' : '.') + String(c % 100).padStart(2, '0');
+    return withSymbol(body, symbol, lang, neg);
+  }
+
+  /**
+   * Montant compact (RG-43) : en entier sous 1 000 000,00 ; au-delà, en millions (M), ou en milliards (Md en français,
+   * B en anglais) dès que l'arrondi atteint 1 000 M. Deux décimales au plus, moitié vers le haut, calculées sur des
+   * entiers ; les zéros de fin sont retirés. Valeur négative acceptée.
+   */
+  function formatCompact(cents, { lang = 'fr', symbol = '' } = {}) {
+    const neg = cents < 0, c = Math.abs(cents);
+    if (c < COMPACT_FROM) return format(cents, { lang, symbol });
+    let h = Math.floor((c + 500000) / 1000000); // centièmes de million
+    let suffix = 'M';
+    if (h >= 100000) { h = Math.floor((c + 500000000) / 1000000000); suffix = lang === 'fr' ? 'Md' : 'B'; } // centièmes de milliard
+    const whole = Math.floor(h / 100), frac = String(h % 100).padStart(2, '0').replace(/0+$/, '');
+    const body = whole + (frac ? (lang === 'fr' ? ',' : '.') + frac : '');
+    return withSymbol(lang === 'fr' ? `${body}${NBSP}${suffix}` : body + suffix, symbol, lang, neg);
+  }
+
+  /**
+   * Montants propres et cumulés de chaque ligne (RG-36) : une tâche porte les siens, un jalon vaut 0, une
+   * récapitulative est la somme de sa descendance. @returns {Map<id, {budget, actual}>}
+   */
+  function amounts(project) {
+    const out = new Map();
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    for (const t of project.tasks) out.set(t.id, { budget: 0, actual: 0 });
+    for (const t of project.tasks) {
+      if (t.type !== 'task') continue;
+      const b = amt(t.budget), a = amt(t.actual);
+      let cur = t, guard = 0;
+      while (cur && guard++ <= Model.LIMITS.depth + 1) {
+        const o = out.get(cur.id);
+        o.budget += b; o.actual += a;
+        cur = cur.parent ? byId.get(cur.parent) : null;
+      }
+    }
+    return out;
+  }
+
+  /** Totaux du projet (RG-37) : BAC, provision, budget total, coût réel total, reste (négatif = dépassement). */
+  function totals(project) {
+    let bac = 0, actual = 0;
+    for (const t of project.tasks) if (t.type === 'task') { bac += amt(t.budget); actual += amt(t.actual); }
+    const provision = amt(project.provision);
+    const total = bac + provision;
+    return { bac, provision, total, actual, remaining: total - actual };
+  }
+
+  /** Une présence d'au moins un montant (EF-117 : l'onglet Budget n'apparaît qu'à partir de là). */
+  function hasAmounts(project) {
+    return amt(project.provision) > 0 || project.tasks.some(t => t.type === 'task' && (amt(t.budget) > 0 || amt(t.actual) > 0));
+  }
+
+  /**
+   * Tableau par catégorie (RG-40) : une ligne par catégorie qui a au moins une tâche (hors récapitulatives), classée par
+   * ordre alphabétique, « sans catégorie » (id '') en dernier ; écart = budget moins coût réel ; total en pied.
+   */
+  function byCategory(project) {
+    const rows = new Map();
+    for (const t of project.tasks) {
+      if (t.type === 'summary') continue;
+      const key = project.categories.some(c => c.id === t.cat) ? t.cat : '';
+      if (!rows.has(key)) rows.set(key, { id: key, name: key ? project.categories.find(c => c.id === key).name : '', budget: 0, actual: 0 });
+      const r = rows.get(key);
+      if (t.type === 'task') { r.budget += amt(t.budget); r.actual += amt(t.actual); }
+    }
+    const list = [...rows.values()].sort((a, b) => (a.id === '') - (b.id === '') || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    list.forEach(r => { r.gap = r.budget - r.actual; });
+    const total = list.reduce((a, r) => ({ budget: a.budget + r.budget, actual: a.actual + r.actual }), { budget: 0, actual: 0 });
+    return { rows: list, total: { ...total, gap: total.budget - total.actual } };
+  }
+
+  /** BAC d'une baseline (RG-39) : somme des budgets capturés. */
+  function baselineBac(baseline) {
+    return baseline.tasks.reduce((a, bt) => a + amt(bt.budget), 0);
+  }
+
+  /** Variation du BAC (RG-39) : BAC du projet moins celui de la baseline. */
+  function bacVariation(project, baseline) {
+    return totals(project).bac - baselineBac(baseline);
+  }
+
+  /**
+   * Courbe en S des coûts (RG-38, RG-39), en centimes cumulés, sur la grille de périodes de RG-17.
+   * planned : budget des tâches dont la fin prévue est au plus tard le dernier jour de la période.
+   * real : coût réel des tâches terminées (100 %) dont la fin réelle est dans la période ou avant ; une tâche à 100 %
+   * sans fin réelle compte dans la période en cours ; s'arrête à la période qui contient aujourd'hui.
+   * La provision n'y figure pas ; le coût réel des tâches non terminées n'y figure que si opts.ongoing (période en cours).
+   */
+  function costCurve(project, sched, today, unit = 'week', opts = {}) {
+    const work = project.tasks.filter(t => t.type === 'task');
+    let last = sched.projectEndDn;
+    const shown = (project.baselines || []).filter(b => b.shownOnScurve);
+    for (const b of shown) for (const bt of b.tasks) { const e = Dates.parse(bt.end); if (e != null) last = Math.max(last, e); }
+    const ps = Metrics.periods(Dates.parse(project.projectStart), last, unit);
+    const planned = ps.map(p => work.reduce((a, t) => a + (sched.tasks.get(t.id).endDn <= p.end ? amt(t.budget) : 0), 0));
+    const real = [];
+    for (const p of ps) {
+      if (p.start > today) break;
+      // Période en cours : celle qui contient aujourd'hui, ou la dernière si aujourd'hui dépasse la grille.
+      const current = p.end >= today || p === ps[ps.length - 1];
+      real.push(work.reduce((a, t) => {
+        if (t.pct < 100) return a + (opts.ongoing && current ? amt(t.actual) : 0); // option : coût engagé des tâches en cours
+        const re = Dates.parse(t.realEnd);
+        return a + (re != null ? (re <= p.end ? amt(t.actual) : 0) : (current ? amt(t.actual) : 0));
+      }, 0));
+    }
+    const baselines = {};
+    for (const b of shown) {
+      baselines[b.id] = ps.map(p => b.tasks.reduce((a, bt) => {
+        const e = Dates.parse(bt.end);
+        return a + (e != null && e <= p.end ? amt(bt.budget) : 0);
+      }, 0));
+    }
+    return { periods: ps, planned, real, baselines };
+  }
+
+  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();
 
 // ── js/core/45-view.js ──
@@ -2058,7 +2301,7 @@ const I18n = (() => {
     'kpi.progress': 'Avancement global', 'kpi.none': 'aucun',
     // Liste
     'list.label': 'Liste des tâches',
-    'col.id': 'N°', 'col.name': 'Activité', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
+    'col.id': 'N°', 'col.name': 'Activité', 'col.start': 'Début', 'col.end': 'Fin', 'col.cat': 'Catégorie', 'col.rstart': 'Début réel', 'col.rend': 'Fin réel', 'col.dur': 'Durée', 'col.deps': 'Dépendances', 'col.res': 'Ressource', 'col.status': 'Statut',
     'list.select': '{id} {name}', 'list.noRes': 'sans ressource',
     'list.critical': 'critique', 'list.conflict': 'en conflit', 'list.warning': 'avertissement',
     'list.msStart': 'Jalon Début', 'list.msEnd': 'Jalon Fin',
@@ -2149,6 +2392,7 @@ const I18n = (() => {
     'imp.overCapacity': 'Tâche n° {n} : le taux de {units} % dépasse la capacité de {capacity} % de {name}.',
     'imp.milestoneRes': "Tâche n° {n} : un jalon n'a pas de ressource.",
     'imp.summaryField': "Tâche n° {n} : une récapitulative n'a ni lien, ni affectation, ni date imposée, ni contrainte.",
+    'imp.noAmount': "Tâche n° {n} : un jalon ou une récapitulative n'a ni budget ni coût réel propre.",
     'imp.realOrder': 'Tâche n° {n} : la fin réelle précède le début réel.',
     'imp.realEndPct': "Tâche n° {n} : une fin réelle impose un avancement de 100 %.",
     'imp.badParent': "Tâche n° {n} : le parent {parent} n'est pas une récapitulative.",
@@ -2164,12 +2408,61 @@ const I18n = (() => {
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
     'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
-    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif',
+    'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
     'rule.link': 'lien invalide', 'rule.week': 'sept valeurs 0 ou 1', 'rule.ident': 'identifiant invalide', 'rule.unique': 'valeurs en double',
     'rule.milestonePct': '0 ou 100 pour un jalon', 'rule.absent': 'champ interdit ici',
     'calc.error': 'Le planning ne peut pas être calculé : une date dépasse 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Montants ignorés (les lignes sont importées sans ce montant)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Inclure les montants',
+    'out.amountsHint': 'Décochée à chaque ouverture : sans cette case, rien de ce qui sort (fichier, impression, copie) ne contient de montant.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'Variation du BAC avec {name} : {value}',
+    'rep.budgetOff': 'Le bloc Budget n\'apparaît que si « Inclure les montants » est coché.',
+    'print.colMoney': 'Budget / Réel (si les montants sont inclus)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (budget des tâches)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Budget total',
+    'bud.actual': 'Coût réel total',
+    'bud.remaining': 'Reste',
+    'bud.overrun': 'dépassement de',
+    'bud.byCat': 'Budget par catégorie',
+    'bud.cat': 'Catégorie',
+    'bud.gap': 'Écart',
+    'bud.sum': 'Total',
+    'bud.curve': 'Courbe en S des coûts',
+    'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
+    'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'bud.ongoing': 'Inclure le coût réel des tâches en cours',
+    'bud.noteOngoing': 'Le coût réel des tâches non terminées est compté dans la période en cours (coût engagé à ce jour). La provision ne figure pas dans la courbe.',
+    'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'BAC du projet (budget des tâches, provision exclue) :',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'montant masqué',
+    'top.mask': 'Masquer les montants',
+    'col.budget': 'Budget',
+    'col.actual': 'Coût réel',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Coût réel cumulé',
+    'f.actualHelp': 'Paiements faits, paiements en cours et factures engagées.',
+    'f.amountHint': 'Montant en {symbol}, deux décimales au plus (ex. 1 234,56).',
+    'f.summaryAmounts': 'Somme des tâches de cette récapitulative : budget {budget}, coût réel {actual}.',
+    'f.maskedFields': 'Les montants sont masqués : désactivez « Masquer les montants » pour les modifier.',
+    'err.amount.format': '{field} : écrire un montant comme « 1 234,56 ».',
+    'err.amount.negative': '{field} : le montant ne peut pas être négatif.',
+    'err.amount.decimals': '{field} : deux décimales au plus.',
+    'err.amount.max': '{field} : au plus {max}.',
+    'proj.currency': 'Symbole de la devise (1 à 5 caractères)',
+    'proj.provision': 'Provision globale',
+    'proj.budgetNote': 'Une seule devise pour tout le projet, sans conversion. L\'outil ne remplace pas une comptabilité de projet.',
     // Divers
     'undo.done': 'Modification annulée.', 'redo.done': 'Modification rétablie.', 'saved': 'Tâche {id} enregistrée.', 'deleted': 'Tâche {id} supprimée.',
     'added': 'Tâche {id} ajoutée.', 'newTask': 'Nouvelle tâche', 'newMilestone': 'Nouveau jalon', 'newSummary': 'Nouvelle récapitulative',
@@ -2283,17 +2576,17 @@ const I18n = (() => {
     'top.print': 'Imprimer le Gantt', 'top.versions': 'Versions',
     'print.period': 'Période', 'print.all': 'Tout le planning', 'print.range': 'Du … au …', 'print.scale': 'Échelle', 'print.fit': 'Ajuster à la largeur de la page', 'print.zoom': 'Zoom actuel',
     'print.orient': 'Orientation', 'print.landscape': 'Paysage', 'print.portrait': 'Portrait', 'print.cols': 'Colonnes', 'print.withLegend': 'Imprimer la légende',
-    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Le navigateur propose aussi « Enregistrer en PDF ».", 'print.go': 'Imprimer',
-    'print.legend': 'Légende : barre blanche = tâche ; partie rayée = réalisé ; barre hachurée et ● = critique ; ◆ = jalon ; ⚠ = conflit.',
+    'print.hint': "Les lignes imprimées sont celles affichées (filtres compris). Avec « Zoom actuel », le planning est découpé en bandes de semaines entières, une par page en largeur, chacune répétant les colonnes. Le navigateur propose aussi « Enregistrer en PDF ».", 'print.part': 'partie {n} sur {m}', 'print.go': 'Imprimer',
+    'print.legend': 'Légende : barre = tâche (sa couleur est celle de sa catégorie, nommée dans la colonne Catégorie) ; partie sombre rayée = réalisé ; contour épais et hachures, ● = critique ; ◆ = jalon ; ⚠ = conflit.',
     'ver.name': 'Nom de la version', 'ver.save': "Enregistrer l'état actuel", 'ver.none': 'Aucune version enregistrée.', 'ver.date': 'Date', 'ver.tasks': 'Tâches',
     'ver.restore': 'Restaurer', 'ver.restoreQ': 'Restaurer la version « {name} » ?', 'ver.restoreHint': "L'état actuel sera remplacé ; « Annuler » permet de revenir en arrière.",
     'ver.saved': 'Version « {name} » enregistrée.', 'ver.restored': 'Version « {name} » restaurée.', 'ver.deleteQ': 'Supprimer la version « {name} » ?',
     'xp.outline': 'N°', 'xp.id': 'Identifiant', 'xp.name': 'Nom', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Durée', 'xp.start': 'Début', 'xp.end': 'Fin',
     'xp.deps': 'Prédécesseurs', 'xp.res': 'Ressources', 'xp.cat': 'Catégorie', 'xp.pct': 'Avancement', 'xp.status': 'Statut', 'xp.critical': 'Critique', 'xp.slack': 'Marge',
     'xp.realStart': 'Début réel', 'xp.realEnd': 'Fin réelle', 'xp.forced': 'Début imposé', 'xp.notBefore': 'Ne pas commencer avant', 'xp.deadline': 'Échéance',
-    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
+    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Coût réel', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
     'xp.sheet.tasks': 'Tâches', 'xp.sheet.resources': 'Ressources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendrier', 'xp.sheet.baselines': 'Baselines',
-    'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable',
+    'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable', 'imp.amountIgnored': '« {value} » n\'est pas un montant valide : valeur ignorée',
     'imp.resFormat': '« {value} » ne se lit pas (ex. « Alice 50 %; Bob »)',
     'msp.ign.calendars': 'calendriers secondaires', 'msp.ign.constraint': 'contrainte de type {n}', 'msp.ign.cost': 'coûts', 'msp.ign.work': 'heures de travail',
     'msp.ign.resCalendars': 'calendriers des ressources', 'msp.ign.units': 'taux d\'affectation ramenés à la capacité de la ressource',
@@ -2315,7 +2608,7 @@ const I18n = (() => {
     'wiz.needName': 'Associez au moins la colonne du nom.', 'wiz.none': 'Aucune ligne valide à importer.', 'wiz.imported': { one: '{count} tâche importée.', other: '{count} tâches importées.' },
     'wiz.importValid': { one: 'Importer la ligne valide', other: 'Importer les {count} lignes valides' },
     'wiz.f.id': 'Identifiant', 'wiz.f.num': 'N° (référence des liens)', 'wiz.f.name': 'Nom', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Durée', 'wiz.f.deps': 'Prédécesseurs', 'wiz.f.res': 'Ressources',
-    'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
+    'wiz.f.budget': 'Budget', 'wiz.f.actual': 'Coût réel', 'wiz.f.cat': 'Catégorie', 'wiz.f.pct': 'Avancement', 'wiz.f.tags': 'Étiquettes', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Début imposé', 'wiz.f.notBefore': 'Ne pas commencer avant', 'wiz.f.deadline': 'Échéance',
     'clip.copied': { one: '{count} tâche copiée.', other: '{count} tâches copiées.' }, 'clip.pasted': { one: '{count} tâche collée.', other: '{count} tâches collées.' }, 'clip.paste': 'Coller',
     'png.legend': 'Barre : tâche (partie sombre = réalisé) ; contour rouge : critique ; losange : jalon ; trait rouge : aujourd\'hui.',
     'tabs.label': 'Projets ouverts', 'tabs.title': 'Onglets', 'tabs.max': 'Dix projets au plus peuvent être ouverts ({max}) : fermez un onglet pour en ouvrir un autre.',
@@ -2346,10 +2639,10 @@ const I18n = (() => {
     'auto.pwd': 'Mot de passe de la sauvegarde', 'auto.later': 'Décider plus tard', 'auto.restored': { one: '{count} projet restauré.', other: '{count} projets restaurés.' },
     'auto.bad': { one: "{count} copie n'a pas pu être restaurée (mot de passe faux ou copie altérée) ; elle est gardée.", other: "{count} copies n'ont pas pu être restaurées (mot de passe faux ou copies altérées) ; elles sont gardées." },
     'auto.paused': 'Sauvegarde automatique en pause : mot de passe à saisir dans les réglages', 'auto.failed': 'Sauvegarde automatique impossible', 'auto.saved': 'Sauvegardé sur cet appareil à {time}', 'auto.on': 'Sauvegarde automatique activée',
-    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
+    'auto.enableTitle': 'Activer la sauvegarde automatique', 'auto.enabledToast': 'Sauvegarde automatique activée : chaque projet modifié est copié sur cet appareil 5 secondes après la dernière modification.', 'auto.enable1': "Chaque projet modifié sera copié dans ce navigateur, sur cet appareil, 5 secondes après la dernière modification. Rien n'est envoyé sur Internet.",
     'auto.enable2': "La copie contient tout le projet, y compris les noms des ressources. Sur un appareil partagé, d'autres personnes pourraient la voir : protégez-la par un mot de passe.",
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
-    'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
+    'set.tips': 'Afficher les raccourcis clavier au survol des boutons', 'set.tipsOn': 'Raccourcis affichés au survol.', 'set.tipsOff': 'Raccourcis masqués au survol.', 'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
     'set.recProtect': 'Protéger la sauvegarde automatique par mot de passe', 'set.recPwdEnter': 'Saisir le mot de passe', 'set.recPwdHint': 'Le mot de passe de la sauvegarde automatique est demandé à chaque ouverture de GanttPro ; il reste en mémoire seulement.',
     'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques et réglages. Les fichiers exportés ne sont jamais touchés.",
     'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': 'La bibliothèque, les modèles, les sauvegardes automatiques et les réglages seront supprimés définitivement de cet appareil.',
@@ -2394,7 +2687,7 @@ const I18n = (() => {
     'top.toolbar': 'Commands',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
-    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
+    'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.cat': 'Category', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
     'list.select': '{id} {name}', 'list.noRes': 'no resource', 'list.critical': 'critical', 'list.conflict': 'in conflict', 'list.warning': 'warning',
     'list.msStart': 'Start milestone', 'list.msEnd': 'Finish milestone',
     'dur.days': { one: '{count} d', other: '{count} d' }, 'dur.milestone': 'milestone',
@@ -2457,6 +2750,7 @@ const I18n = (() => {
     'imp.dupCategory': 'Two categories are named {name}.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
     'imp.overCapacity': 'Task #{n}: {units}% exceeds the {capacity}% capacity of {name}.', 'imp.milestoneRes': 'Task #{n}: a milestone has no resource.',
     'imp.summaryField': 'Task #{n}: a summary task has no link, assignment, fixed date or constraint.',
+    'imp.noAmount': 'Task #{n}: a milestone or summary task has no budget or actual cost of its own.',
     'imp.realOrder': 'Task #{n}: actual finish is before actual start.', 'imp.realEndPct': 'Task #{n}: an actual finish requires 100% progress.',
     'imp.badParent': 'Task #{n}: parent {parent} is not a summary task.', 'imp.parentCycle': 'Circular hierarchy around {id}.',
     'imp.tooDeep': 'Task {id} exceeds {max} levels of summary tasks.', 'imp.missingPred': 'Task #{n}: predecessor {pred} does not exist.',
@@ -2465,11 +2759,60 @@ const I18n = (() => {
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
     'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
-    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number',
+    'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
     'rule.week': 'seven 0 or 1 values', 'rule.ident': 'invalid identifier', 'rule.unique': 'duplicate values', 'rule.milestonePct': '0 or 100 for a milestone',
     'rule.absent': 'field not allowed here', 'calc.error': 'The schedule cannot be computed: a date goes beyond 2199.',
+    // Budget (étape A) : assistant d'import
+    'wiz.warnings': 'Ignored amounts (the rows are imported without that amount)',
+    // Budget (étape A) : rapport, impression et exports
+    'out.amounts': 'Include amounts',
+    'out.amountsHint': 'Unchecked every time this window opens: without this box, nothing that leaves the app (file, print, copy) contains an amount.',
+    'rep.b.budget': 'Budget',
+    'rep.bacVar': 'BAC variation against {name}: {value}',
+    'rep.budgetOff': 'The Budget block only appears when “Include amounts” is checked.',
+    'print.colMoney': 'Budget / Actual (if amounts are included)',
+    // Budget (étape A) : onglet Budget du tableau de bord
+    'dash.tab.budget': 'Budget',
+    'bud.bac': 'BAC (task budgets)',
+    'bud.provision': 'Provision',
+    'bud.total': 'Total budget',
+    'bud.actual': 'Total actual cost',
+    'bud.remaining': 'Remaining',
+    'bud.overrun': 'overrun of',
+    'bud.byCat': 'Budget by category',
+    'bud.cat': 'Category',
+    'bud.gap': 'Variance',
+    'bud.sum': 'Total',
+    'bud.curve': 'Cost S-curve',
+    'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
+    'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'bud.ongoing': 'Include the actual cost of tasks in progress',
+    'bud.noteOngoing': 'The actual cost of unfinished tasks is counted in the current period (cost incurred to date). The provision is not in the curve.',
+    'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
+    // Budget (étape A) : baselines
+    'bl.bac': 'BAC',
+    'bl.projectBac': 'Project BAC (task budgets, provision excluded):',
+    // Budget (étape A) : montants, fiche, fenêtre du projet
+    'amt.masked': 'amount hidden',
+    'top.mask': 'Hide amounts',
+    'col.budget': 'Budget',
+    'col.actual': 'Actual cost',
+    'f.budgetGroup': 'Budget',
+    'f.budget': 'Budget',
+    'f.actual': 'Cumulative actual cost',
+    'f.actualHelp': 'Payments made, payments in progress and committed invoices.',
+    'f.amountHint': 'Amount in {symbol}, at most two decimals (e.g. 1,234.56).',
+    'f.summaryAmounts': 'Total of the tasks in this summary task: budget {budget}, actual cost {actual}.',
+    'f.maskedFields': 'Amounts are hidden: turn off “Hide amounts” to edit them.',
+    'err.amount.format': '{field}: write an amount such as “1,234.56”.',
+    'err.amount.negative': '{field}: the amount cannot be negative.',
+    'err.amount.decimals': '{field}: at most two decimals.',
+    'err.amount.max': '{field}: at most {max}.',
+    'proj.currency': 'Currency symbol (1 to 5 characters)',
+    'proj.provision': 'Overall provision',
+    'proj.budgetNote': 'One currency for the whole project, no conversion. The tool does not replace project accounting.',
     'undo.done': 'Change undone.', 'redo.done': 'Change redone.', 'saved': 'Task {id} saved.', 'deleted': 'Task {id} deleted.', 'added': 'Task {id} added.',
     'newTask': 'New task', 'newMilestone': 'New milestone', 'newSummary': 'New summary task', 'unsaved.leave': 'Some changes were not exported.',
     'hol.newYear': "New Year's Day", 'hol.goodFriday': 'Good Friday', 'hol.easterMonday': 'Easter Monday', 'hol.labour': 'Labour Day',
@@ -2563,17 +2906,17 @@ const I18n = (() => {
     'top.print': 'Print the Gantt', 'top.versions': 'Versions',
     'print.period': 'Period', 'print.all': 'Whole schedule', 'print.range': 'From … to …', 'print.scale': 'Scale', 'print.fit': 'Fit to page width', 'print.zoom': 'Current zoom',
     'print.orient': 'Orientation', 'print.landscape': 'Landscape', 'print.portrait': 'Portrait', 'print.cols': 'Columns', 'print.withLegend': 'Print the legend',
-    'print.hint': 'The printed rows are those displayed (filters included). The browser also offers “Save as PDF”.', 'print.go': 'Print',
-    'print.legend': 'Legend: white bar = task; striped part = done; hatched bar and ● = critical; ◆ = milestone; ⚠ = conflict.',
+    'print.hint': 'The printed rows are those displayed (filters included). With “Current zoom”, the schedule is split into bands of whole weeks, one page wide each, each repeating the columns. The browser also offers “Save as PDF”.', 'print.part': 'part {n} of {m}', 'print.go': 'Print',
+    'print.legend': 'Legend: bar = task (its color is its category, named in the Category column); dark striped part = done; thick outline and hatching, ● = critical; ◆ = milestone; ⚠ = conflict.',
     'ver.name': 'Version name', 'ver.save': 'Save the current state', 'ver.none': 'No saved version.', 'ver.date': 'Date', 'ver.tasks': 'Tasks',
     'ver.restore': 'Restore', 'ver.restoreQ': 'Restore version “{name}”?', 'ver.restoreHint': 'The current state will be replaced; “Undo” takes you back.',
     'ver.saved': 'Version “{name}” saved.', 'ver.restored': 'Version “{name}” restored.', 'ver.deleteQ': 'Delete version “{name}”?',
     'xp.outline': 'No.', 'xp.id': 'ID', 'xp.name': 'Name', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Duration', 'xp.start': 'Start', 'xp.end': 'Finish',
     'xp.deps': 'Predecessors', 'xp.res': 'Resources', 'xp.cat': 'Category', 'xp.pct': 'Progress', 'xp.status': 'Status', 'xp.critical': 'Critical', 'xp.slack': 'Slack',
     'xp.realStart': 'Actual start', 'xp.realEnd': 'Actual finish', 'xp.forced': 'Fixed start date', 'xp.notBefore': 'Start no earlier than', 'xp.deadline': 'Deadline',
-    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
+    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Actual cost', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
     'xp.sheet.tasks': 'Tasks', 'xp.sheet.resources': 'Resources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendar', 'xp.sheet.baselines': 'Baselines',
-    'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found',
+    'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found', 'imp.amountIgnored': '“{value}” is not a valid amount: value ignored',
     'imp.resFormat': '“{value}” cannot be read (e.g. “Alice 50 %; Bob”)',
     'msp.ign.calendars': 'secondary calendars', 'msp.ign.constraint': 'constraint of type {n}', 'msp.ign.cost': 'costs', 'msp.ign.work': 'work hours',
     'msp.ign.resCalendars': 'resource calendars', 'msp.ign.units': 'assignment units reduced to the resource capacity',
@@ -2595,7 +2938,7 @@ const I18n = (() => {
     'wiz.needName': 'Match at least the name column.', 'wiz.none': 'No valid row to import.', 'wiz.imported': { one: '{count} task imported.', other: '{count} tasks imported.' },
     'wiz.importValid': { one: 'Import the valid row', other: 'Import the {count} valid rows' },
     'wiz.f.id': 'ID', 'wiz.f.num': 'No. (link reference)', 'wiz.f.name': 'Name', 'wiz.f.type': 'Type', 'wiz.f.parent': 'Parent', 'wiz.f.dur': 'Duration', 'wiz.f.deps': 'Predecessors', 'wiz.f.res': 'Resources',
-    'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
+    'wiz.f.budget': 'Budget', 'wiz.f.actual': 'Actual cost', 'wiz.f.cat': 'Category', 'wiz.f.pct': 'Progress', 'wiz.f.tags': 'Tags', 'wiz.f.notes': 'Notes', 'wiz.f.forcedStart': 'Fixed start date', 'wiz.f.notBefore': 'Start no earlier than', 'wiz.f.deadline': 'Deadline',
     'clip.copied': { one: '{count} task copied.', other: '{count} tasks copied.' }, 'clip.pasted': { one: '{count} task pasted.', other: '{count} tasks pasted.' }, 'clip.paste': 'Paste',
     'png.legend': 'Bar: task (dark part = done); red outline: critical; diamond: milestone; red line: today.',
     'tabs.label': 'Open projects', 'tabs.title': 'Tabs', 'tabs.max': 'At most ten projects can be open ({max}): close a tab to open another one.',
@@ -2626,10 +2969,10 @@ const I18n = (() => {
     'auto.pwd': 'Backup password', 'auto.later': 'Decide later', 'auto.restored': { one: '{count} project restored.', other: '{count} projects restored.' },
     'auto.bad': { one: '{count} copy could not be restored (wrong password or damaged copy); it is kept.', other: '{count} copies could not be restored (wrong password or damaged copies); they are kept.' },
     'auto.paused': 'Automatic backup paused: enter the password in Settings', 'auto.failed': 'Automatic backup impossible', 'auto.saved': 'Saved on this device at {time}', 'auto.on': 'Automatic backup on',
-    'auto.enableTitle': 'Turn on automatic backup', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
+    'auto.enableTitle': 'Turn on automatic backup', 'auto.enabledToast': 'Autosave enabled: each modified project is copied to this device 5 seconds after the last change.', 'auto.enable1': 'Each modified project will be copied in this browser, on this device, 5 seconds after the last change. Nothing is sent over the Internet.',
     'auto.enable2': 'The copy contains the whole project, including resource names. On a shared device, other people could see it: protect it with a password.',
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
-    'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
+    'set.tips': 'Show keyboard shortcuts when hovering buttons', 'set.tipsOn': 'Shortcuts shown on hover.', 'set.tipsOff': 'Shortcuts hidden on hover.', 'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
     'set.recProtect': 'Protect the automatic backup with a password', 'set.recPwdEnter': 'Enter the password', 'set.recPwdHint': 'The automatic backup password is asked each time GanttPro opens; it is only kept in memory.',
     'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups and settings. Exported files are never affected.',
     'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups and settings will be permanently deleted from this device.',
@@ -2711,6 +3054,7 @@ const I18n = (() => {
     const p = { ...e.params };
     if (p.obj) p.obj = t('obj.' + p.obj);
     if (p.n === undefined) p.n = '';
+    if (p.rule === 'rule.amount') { p.min = group(p.min); p.max = group(p.max); }
     if (p.rule) p.rule = t(p.rule, p);
     if (p.inner) p.inner = error(p.inner);
     return t(e.key, p);
@@ -2728,13 +3072,43 @@ const I18n = (() => {
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
     return lang === 'fr' ? `${dd}/${mm}` : `${mm}/${dd}`;
   }
+  /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
+  const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
+  function numDate(dn, short = false) {
+    if (dn == null) return '';
+    if (short) return numDate(dn).replace(/(\d{2})(\d{2})$/, '$2'); // « 07/09/26 » : année sur deux chiffres
+    const key = lang === 'fr' ? dn : -dn - 1;
+    let v = numDateCache.get(key);
+    if (v === undefined) {
+      const { y, m, d } = Dates.ymd(dn);
+      const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
+      v = lang === 'fr' ? `${dd}/${mm}/${y}` : `${mm}/${dd}/${y}`;
+      if (numDateCache.size > 20000) numDateCache.clear();
+      numDateCache.set(key, v);
+    }
+    return v;
+  }
   /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
   function dateTime(ts) {
     const d = new Date(ts);
     const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
+  /** Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ». */
+  function monthLabelFit(dn, width) {
+    const { y, m } = Dates.ymd(dn), yy = String(y % 100).padStart(2, '0'), mm = String(m).padStart(2, '0');
+    if (width >= 80) return `${MONTHS[lang][m - 1]} ${y}`;
+    if (width >= 62) return `${MONTHS[lang][m - 1]} ${yy}`;
+    if (width >= 40) return `${mm}/${yy}`;
+    if (width >= 20) return mm;
+    return '';
+  }
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
+  /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
+  function group(n) {
+    const s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? '\u202f' : ',');
+    return n < 0 ? '\u2212' + s : s;
+  }
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
     return lang === 'fr' ? s.replace('.', ',') : s;
@@ -2742,7 +3116,7 @@ const I18n = (() => {
 
   const dayName = i => DAYS[lang][i];
   const monthName = m => MONTHS[lang][m - 1];
-  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, monthLabel, number, CATALOGS };
+  return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();
 
 // ── js/core/60-xml.js ──
@@ -2942,6 +3316,7 @@ const Csv = (() => {
   function write(rows, sep = ';', bom = true) {
     const cell = v => {
       if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
+      if (v && typeof v === 'object' && typeof v.n === 'number') return v.n.toFixed(2); // montant : deux décimales (EF-123)
       const s = neutralize(v);
       return /["\n\r]/.test(s) || s.includes(sep) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
@@ -3004,6 +3379,7 @@ const Xlsx = (() => {
     const data = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => {
       const ref = colName(ci) + (ri + 1), st = ri === 0 ? ' s="1"' : '';
       if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'object' && typeof v.n === 'number') return `<c r="${ref}" s="2"><v>${v.n}</v></c>`; // montant : format 0,00 (EF-123)
       if (typeof v === 'number' && Number.isFinite(v)) return `<c r="${ref}"${st}><v>${v}</v></c>`;
       return `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${esc(Csv.neutralize(v))}</t></is></c>`;
     }).join('')}</row>`).join('');
@@ -3019,7 +3395,7 @@ const Xlsx = (() => {
     const names = sheets.map((s, i) => sheetName(s.name, i));
     const widthsOf = rows => {
       const n = Math.max(0, ...rows.map(r => r.length));
-      return Array.from({ length: n }, (_, c) => Math.min(60, Math.max(8, ...rows.slice(0, 500).map(r => String(r[c] ?? '').length + 2))));
+      return Array.from({ length: n }, (_, c) => Math.min(60, Math.max(8, ...rows.slice(0, 500).map(r => String(r[c] && typeof r[c] === 'object' ? r[c].n : r[c] ?? '').length + 2))));
     };
     const files = [
       { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -3041,7 +3417,7 @@ const Xlsx = (() => {
         '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
         '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
         '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-        '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+        '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
         '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
       ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s.rows, widthsOf(s.rows)) })),
     ];
@@ -3121,13 +3497,17 @@ const Exchange = (() => {
   }
 
   /** Lignes du tableau des tâches (EF-93) : en-tête puis une ligne par tâche. */
-  function taskRows(project, sched, today, { anonymize = false } = {}) {
+  function taskRows(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
-      'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes'].map(k => t(k));
+      'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
+      ...(amounts ? ['xp.budget', 'xp.actual'] : [])].map(k => t(k));
+    // Budget et coût réel (EF-123) : seulement si l'export les inclut (EF-124) ; une récapitulative donne la somme de ses enfants.
+    const sums = amounts ? Budget.amounts(project) : null;
+    const money = c => ({ n: c / 100 });
     const rows = [head];
     for (const x of project.tasks) {
       const r = sched.tasks.get(x.id);
@@ -3138,6 +3518,7 @@ const Exchange = (() => {
         x.assign.map(a => resName(a.res) + (a.units !== 100 ? ` ${a.units} %` : '')).join('; '), cat(x.cat), Metrics.pctOf(x, sched),
         st ? t('status.' + st) : '', r && r.critical && x.type !== 'summary' ? t('xp.yes') : '', x.type !== 'summary' && r ? r.slack : '',
         x.realStart, x.realEnd, x.forcedStart, x.notBefore, x.deadline, x.tags.join('; '), x.notes,
+        ...(amounts ? [money(sums.get(x.id).budget), money(sums.get(x.id).actual)] : []),
       ]);
     }
     return rows;
@@ -3145,13 +3526,14 @@ const Exchange = (() => {
 
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
+
   /** Classeur de cinq feuilles (EF-94). */
-  function xlsx(project, sched, today, { anonymize = false } = {}) {
+  function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
     return Xlsx.build([
-      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize }) },
+      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
       { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd')],
         ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10])] },
       { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
@@ -3324,7 +3706,7 @@ const Exchange = (() => {
   }
 
   /* ── Import de tâches depuis un tableau (EF-96, RG-30) ─────────────────────────────────── */
-  const FIELDS = ['id', 'num', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'cat', 'pct', 'tags', 'notes', 'forcedStart', 'notBefore', 'deadline'];
+  const FIELDS = ['id', 'num', 'name', 'type', 'parent', 'dur', 'deps', 'res', 'cat', 'pct', 'tags', 'notes', 'forcedStart', 'notBefore', 'deadline', 'budget', 'actual'];
   const SYN = {
     id: ['identifiant', 'id', 'code'], num: ['n°', 'n', 'no', 'numero', 'num', 'number', 'ligne', 'row', '#', 'wbs', 'edt'], name: ['nom', 'name', 'activite', 'activity', 'tache', 'task', 'libelle'],
     type: ['type'], parent: ['parent', 'recapitulative', 'summary'], dur: ['duree', 'duration', 'jours', 'days'],
@@ -3332,6 +3714,7 @@ const Exchange = (() => {
     cat: ['categorie', 'category'], pct: ['avancement', 'progress', '% acheve', 'percent complete'], tags: ['etiquettes', 'tags', 'etiquette'],
     notes: ['notes', 'note', 'commentaire'], forcedStart: ['debut impose', 'date imposee', 'fixed start date', 'fixed start', 'must start on'],
     notBefore: ['ne pas commencer avant', 'start no earlier than', 'pas avant'], deadline: ['echeance', 'deadline'],
+    budget: ['budget'], actual: ['cout reel', 'cout reel cumule', 'actual cost', 'actual', 'reel'],
   };
   const norm = s => View.fold(String(s)).replace(/[^a-z0-9%° ]/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -3343,6 +3726,17 @@ const Exchange = (() => {
       for (const f of FIELDS) if (map[f] === undefined && SYN[f].includes(n)) { map[f] = i; break; }
     });
     return map;
+  }
+
+  /** Cellule de montant d'un tableur (RG-42) : nombre Excel ou texte ; renvoie {ok, cents}. */
+  function amountCell(v, symbol) {
+    if (typeof v === 'number') {
+      const c = Math.round(v * 100);
+      if (!Number.isFinite(v) || v < 0 || Math.abs(v * 100 - c) > 1e-6 || c > Budget.MAX) return { ok: false };
+      return { ok: true, cents: c };
+    }
+    const r = Budget.parse(v, symbol);
+    return r.ok ? r : { ok: false };
   }
 
   function parseDate(v) {
@@ -3362,18 +3756,18 @@ const Exchange = (() => {
    * d'identifiant, une colonne « N° » sert de référence pour les liens et les parents : les tâches
    * reçoivent alors de nouveaux identifiants et les liens suivent.
    */
-  function rowsToTasks(rows, map, existing, { skipHeader = true } = {}) {
+  function rowsToTasks(rows, map, existing, { skipHeader = true, symbol = '' } = {}) {
     const data = rows.slice(skipHeader ? 1 : 0);
     if (data.length > 1000) throw new Model.Invalid('imp.tooMany', { what: 'lignes', max: 1000 });
     const get = (r, f) => (map[f] === undefined ? '' : r[map[f]] ?? '');
-    const errors = [], out = [];
+    const errors = [], warnings = [], out = [];
     const fileIds = new Set();
     const refOf = r => String(get(r, 'id')).trim().toUpperCase() || String(get(r, 'num')).trim().toUpperCase();
     for (const r of data) { const id = refOf(r); if (Model.ID_RE.test(id)) fileIds.add(id); }
     const known = new Set([...fileIds, ...existing]);
     data.forEach((r, k) => {
       const line = k + (skipHeader ? 2 : 1);
-      const LABEL = { name: 'xp.name', dur: 'xp.dur', pct: 'xp.pct', deps: 'xp.deps', res: 'xp.res', forcedStart: 'xp.forced', notBefore: 'xp.notBefore', deadline: 'xp.deadline' };
+      const LABEL = { name: 'xp.name', dur: 'xp.dur', pct: 'xp.pct', deps: 'xp.deps', res: 'xp.res', forcedStart: 'xp.forced', notBefore: 'xp.notBefore', deadline: 'xp.deadline', budget: 'xp.budget', actual: 'xp.actual' };
       const fail = (field, msg) => errors.push({ line, msg: `${t(LABEL[field])} : ${msg}` });
       const before = errors.length;
       const name = String(get(r, 'name')).trim();
@@ -3411,14 +3805,22 @@ const Exchange = (() => {
       for (const f of ['forcedStart', 'notBefore', 'deadline']) { const v = parseDate(get(r, f)); if (v === null) fail(f, t('rule.date')); else dates[f] = v; }
       const tags = String(get(r, 'tags')).split(/[;,]/).map(x => x.trim()).filter(Boolean).slice(0, Model.LIMITS.tags).map(x => x.slice(0, 30));
       if (errors.length > before) return;
+      // Montants (RG-42) : une valeur invalide est signalée et ignorée (la ligne est gardée) ; une cellule vide vaut 0 ;
+      // un jalon et une récapitulative n'ont aucun montant propre.
+      const amountsOf = {};
+      for (const f of ['budget', 'actual']) {
+        const v = type === 'task' ? amountCell(get(r, f), symbol) : { ok: true, cents: 0 };
+        if (v.ok) amountsOf[f] = v.cents;
+        else { amountsOf[f] = 0; warnings.push({ line, msg: `${t(LABEL[f])} : ${t('imp.amountIgnored', { value: String(get(r, f)).slice(0, 40) })}` }); }
+      }
       out.push({
         fileId: String(get(r, 'id')).trim().toUpperCase(), ref: refOf(r), name, type, parent: String(get(r, 'parent')).trim().toUpperCase(),
         dur: type === 'task' ? dur : 0, pct: type === 'milestone' ? (pct >= 100 ? 100 : 0) : type === 'summary' ? 0 : pct,
         deps: type === 'summary' ? [] : deps, assign: type === 'task' ? assign : [], cat: String(get(r, 'cat')).trim().slice(0, 100),
-        tags, notes: String(get(r, 'notes')).slice(0, 2000), ...dates, line,
+        tags, notes: String(get(r, 'notes')).slice(0, 2000), ...dates, ...amountsOf, line,
       });
     });
-    return { rows: out, errors, total: data.length };
+    return { rows: out, errors, warnings, total: data.length };
   }
 
   /**
@@ -3442,6 +3844,7 @@ const Exchange = (() => {
       id: ids[i], name: r.name, type: r.type, parent: r.parent ? fix(r.parent) : '', dur: r.dur, pct: r.pct,
       deps: r.deps.map(d => ({ id: fix(d.id), type: d.type, lag: d.lag })), assign: r.assign, cat: r.cat, tags: r.tags, notes: r.notes,
       forcedStart: r.forcedStart || '', notBefore: r.notBefore || '', deadline: r.deadline || '',
+      ...(r.type === 'task' ? { budget: r.budget || 0, actual: r.actual || 0 } : {}),
     }));
     const { project: p } = Model.sanitize(file);
     return { project: p, added: ids };
@@ -3573,7 +3976,7 @@ function announce(msg) {
 /* Seul module autorisé à toucher au stockage du navigateur (contrôlé par tools/build.py).
  *
  * Vie privée (EX-10, EX-22) : sont conservés sur l'appareil, sans cookie,
- *  - les RÉGLAGES (langue, thème, sauvegarde automatique, message de première utilisation vu) ;
+ *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
@@ -3581,9 +3984,11 @@ function announce(msg) {
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
  * Model.sanitize chez l'appelant. Chaque accès est protégé, le stockage pouvant être indisponible
  * (navigation privée, fichier local) ou plein : l'échec est rendu à l'appelant, qui le dit (EX-22). */
+/** Thème par défaut : clair (le thème « système » reste un choix dans les réglages). */
+const DEFAULT_THEME = 'light';
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'] };
 
   function get(key) {
     try {
@@ -3732,10 +4137,11 @@ const Dialog = (() => {
    * @param {{label:string, value:string, kind?:string, focus?:boolean}[]} o.actions
    * @param {(value:string, dlg:HTMLDialogElement) => boolean|void} [o.onAction] renvoyer false garde la fenêtre ouverte
    * @param {string} [o.size] 'wide'
+   * @param {boolean} [o.maskTool] ajoute dans l'en-tête le bouton « Masquer les montants » (même réglage que la barre du haut, RG-41)
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    */
-  function open({ title, body = [], actions = [], onAction, size, guard }) {
+  function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
     const id = 'dlg-' + (++seq);
     return new Promise(resolve => {
@@ -3745,7 +4151,8 @@ const Dialog = (() => {
       }, a.label));
       const closeX = h('button', { type: 'button', class: 'dlg-x', aria: { label: I18n.t('dlg.close') }, data: { dlgx: '1' } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
       const form = h('form', { method: 'dialog', novalidate: true },
-        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }), closeX),
+        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }),
+          maskTool ? h('button', { type: 'button', class: 'dlg-mask', data: { click: 'toggleMask' }, aria: { pressed: String(!!App.maskAmounts) }, text: I18n.t('top.mask') }) : null, closeX),
         h('div', { class: 'dialog-body' }, body),
         h('div', { class: 'actions' }, buttons));
       const dlg = h('dialog', { class: ['dialog', size], aria: { labelledby: id + '-title' } }, form);
@@ -3823,6 +4230,7 @@ const App = {
   undo: [],
   redo: [],
   dirty: false,
+  maskAmounts: false, // masquage des montants à l'écran (EF-125) : réglage de l'appareil, relu au démarrage
 };
 const UNDO_MAX = 50;
 
@@ -3932,6 +4340,55 @@ function visibleTasks() {
 /** Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7). */
 function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }
 
+// ── js/ui/41-money.js ──
+/* Affichage des montants à l'écran (EF-112, EF-125, EF-127, RG-41, RG-43).
+ * Un montant est affiché en entier ou en forme compacte selon l'endroit ; le masquage remplace tout montant par
+ * « •••• » (nom accessible « montant masqué »), sans toucher aux données ni aux fichiers (RG-41). */
+const Money = (() => {
+  const DOTS = '••••';
+  const symbol = () => (App.project && App.project.currency) || '€';
+  const masked = () => !!App.maskAmounts;
+  const opts = () => ({ lang: I18n.getLang(), symbol: symbol() });
+
+  /** Texte brut (infobulles, annonces) : « •••• » si masqué. */
+  function text(cents, { compact = false } = {}) {
+    if (masked()) return DOTS;
+    return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+  }
+  /** Texte d'une SORTIE (copie, impression) : jamais masqué, le masquage ne concerne que l'écran (RG-41). */
+  function plain(cents, { compact = false } = {}) {
+    return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+  }
+  /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
+  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
+
+  /**
+   * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
+   * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
+   */
+  function node(cents, { compact = false, cls = '' } = {}) {
+    if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
+    const shown = compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
+    if (!compact || Math.abs(cents) < 100000000) return h('span', { class: ['money', cls], text: shown });
+    return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
+  }
+
+  return { DOTS, symbol, masked, text, plain, spoken, node };
+})();
+
+/** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */
+action('toggleMask', (arg, el) => {
+  App.maskAmounts = !App.maskAmounts;
+  Settings.set('mask', App.maskAmounts ? 'on' : 'off');
+  render();
+  for (const b of document.querySelectorAll('.dlg-mask')) b.setAttribute('aria-pressed', String(App.maskAmounts));
+  if (typeof repaintDashboard === 'function') repaintDashboard();
+  if (baselinesWindow.paint) baselinesWindow.paint();
+  if (reportWindow.body) paintReport(reportWindow.body);
+  announce(t('top.mask') + ' : ' + t(App.maskAmounts ? 'state.on' : 'state.off'));
+  const b = el && el.classList && el.classList.contains('dlg-mask') ? el : $('btn-mask'); if (b) b.focus();
+});
+
 // ── js/ui/50-render.js ──
 /* Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches). */
@@ -3980,7 +4437,7 @@ function renderTopbar() {
   $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
   const lang = $('btn-lang');
   lang.textContent = t('top.lang');
@@ -3993,6 +4450,8 @@ function renderTopbar() {
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
+  const mask = $('btn-mask');
+  mask.setAttribute('aria-pressed', String(!!App.maskAmounts));
   const links = $('btn-links');
   links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
   links.setAttribute('aria-pressed', String(App.showLinks));
@@ -4088,19 +4547,28 @@ function textCell(text, cls) {
   return td;
 }
 
+/** Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon. */
+function moneyCell(task, amts, key) {
+  const td = document.createElement('td');
+  td.className = 'money';
+  if (task.type !== 'milestone') td.append(Money.node((amts.get(task.id) || { budget: 0, actual: 0 })[key], { compact: true }));
+  return td;
+}
+
 function renderList(items, fl) {
   const noRes = t('list.noRes');
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
+  const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 6 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 12 },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -4129,7 +4597,7 @@ function renderList(items, fl) {
     if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
       '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
     if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
-    if (App.view.showTags && task.tags.length) nameCell.append(' ', task.tags.map(tg => h('span', { class: 'tag-pill', text: tg })));
+    if (App.view.showTags && task.tags.length) nameCell.append(' ', ...task.tags.flatMap(tg => [h('span', { class: 'tag-pill', text: tg }), ' ']));
     if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
     // Cellules de texte créées directement (textContent) : même sûreté que h(), plus rapide sur 1 000 lignes (EX-25).
     const tr = document.createElement('tr');
@@ -4138,8 +4606,12 @@ function renderList(items, fl) {
     tr.dataset.id = task.id;
     const idCell = textCell(task.id, 'id');
     if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
-    tr.append(idCell, nameCell, textCell(durText(task, r)), textCell(depsText(task)),
-      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')));
+    const rs = Dates.parse(task.realStart), re = Dates.parse(task.realEnd);
+    tr.append(idCell, nameCell, textCell(durText(task, r)),
+      textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
+      textCell(rs != null ? I18n.numDate(rs) : '', 'date'), textCell(re != null ? I18n.numDate(re) : '', 'date'), textCell(depsText(task)),
+      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
+      moneyCell(task, amts, 'budget'), moneyCell(task, amts, 'actual'));
     frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
@@ -4195,7 +4667,7 @@ function renderGantt(items, fl) {
   };
   for (const p of Metrics.periods(from, to, 'month')) {
     const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, (b - a + 1) * dayW > 40 ? I18n.monthLabel(p.start) : '');
+    const mc = cell('g-col month' + (monthView ? ' full' : ''), a, b, I18n.monthLabelFit(p.start, (b - a + 1) * dayW), I18n.monthLabel(p.start));
     mc.setAttribute('aria-hidden', 'true');
     head.append(mc);
   }
@@ -4395,6 +4867,7 @@ function render() {
   // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
   RenderIndex.open(App.project.tasks);
   try { renderAll(); } finally { RenderIndex.close(); }
+  applyShortcutTips();
 }
 function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
@@ -4604,6 +5077,11 @@ const Tooltip = (() => {
     const tip = $('tooltip');
     clear(tip);
     for (const l of lines(task)) tip.append(h('div', { text: l }));
+    // Budget et coût réel en entier (EF-125 : masqués à l'écran quand le masquage est actif).
+    if (task.type !== 'milestone' && Budget.hasAmounts(App.project)) {
+      const a = Budget.amounts(App.project).get(task.id) || { budget: 0, actual: 0 };
+      tip.append(h('div', {}, `${t('col.money')} : `, Money.node(a.budget), ' / ', Money.node(a.actual)));
+    }
     tip.hidden = false;
     const r = el.getBoundingClientRect();
     const w = tip.offsetWidth, hgt = tip.offsetHeight;
@@ -4644,6 +5122,22 @@ const Tooltip = (() => {
   }
   return { init, hide };
 })();
+
+
+/** Raccourcis clavier au survol des boutons (réglage « Afficher les raccourcis au survol », activé par défaut) :
+ *  l'infobulle native du navigateur reprend le nom du bouton et son raccourci, d'après aria-keyshortcuts. */
+const KEY_NAMES = { Control: 'Ctrl', ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' };
+function applyShortcutTips() {
+  const on = Settings.get('tips') !== 'off';
+  for (const el of document.querySelectorAll('[aria-keyshortcuts]')) {
+    if (!on) { if (el.dataset.tipSet) { el.removeAttribute('title'); delete el.dataset.tipSet; } continue; }
+    const keys = el.getAttribute('aria-keyshortcuts').split(/\+(?=.)/).map(k => (k === 'Escape' ? (I18n.getLang() === 'fr' ? 'Échap' : 'Esc') : KEY_NAMES[k] || k)).join(' + ');
+    const label = el.labels && el.labels[0];
+    const name = (el.getAttribute('aria-label') || (label && label.textContent) || el.textContent || '').trim();
+    el.setAttribute('title', `${name} (${keys})`);
+    el.dataset.tipSet = '1';
+  }
+}
 
 // ── js/ui/60-editor.js ──
 /* Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
@@ -4716,6 +5210,22 @@ const Editor = (() => {
     return box;
   }
 
+  /** Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112). */
+  function budgetEditor() {
+    const lang = I18n.getLang(), masked = Money.masked();
+    const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
+    const mk = (name, label, cents, raw, hint) => {
+      const inp = input('text', masked ? Money.DOTS : (raw ?? Budget.toInput(cents || 0, lang)), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', disabled: masked, maxlength: 20 });
+      return field(name, `${label} (${Money.symbol()})`, inp, hint);
+    };
+    if (masked) box.append(h('p', { class: 'note', text: t('f.maskedFields') }));
+    box.append(mk('budget', t('f.budget'), draft.budget, draft.budgetRaw, t('f.amountHint', { symbol: Money.symbol() })));
+    box.append(mk('actual', t('f.actual'), draft.actual, draft.actualRaw, t('f.actualHelp')));
+    return box;
+  }
+
+  function summaryText(a) { return t('f.summaryAmounts', { budget: Money.text(a.budget), actual: Money.text(a.actual) }); }
+
   function build() {
     const box = clear($('edit-fields'));
     const d = draft;
@@ -4770,6 +5280,12 @@ const Editor = (() => {
       box.append(field('realStart', t('f.realStart'), input('date', d.realStart, { min: '1970-01-01', max: '2199-12-31' })));
       box.append(field('realEnd', t('f.realEnd'), input('date', d.realEnd, { min: '1970-01-01', max: '2199-12-31' })));
     }
+    if (d.type === 'task') box.append(budgetEditor());
+    else if (d.type === 'summary') {
+      // EF-113, RG-36 : une récapitulative affiche les sommes de ses enfants, sans saisie.
+      const a = Budget.amounts(App.project).get(originalId) || { budget: 0, actual: 0 };
+      box.append(h('p', { class: 'note', id: 'edit-sums', text: summaryText(a) }));
+    }
     // EF-91 : étiquettes avec suggestions tirées du projet.
     const tagField = field('tags', t('f.tags'), input('text', d.tagsRaw ?? d.tags.join(', '), { maxlength: 400 }));
     const current = new Set((d.tagsRaw ?? d.tags.join(',')).split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
@@ -4802,6 +5318,8 @@ const Editor = (() => {
     if (f.pct) d.pctRaw = val('pct');
     if (f.reached) d.pct = f.reached.checked ? 100 : 0;
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) if (f[k]) d[k] = val(k);
+    if (f.budget && !f.budget.disabled) d.budgetRaw = val('budget');
+    if (f.actual && !f.actual.disabled) d.actualRaw = val('actual');
     d.tagsRaw = val('tags') || '';
     d.notes = val('notes') || '';
   }
@@ -4853,6 +5371,14 @@ const Editor = (() => {
       const pct = intIn(d.pctRaw, 0, 100);
       if (pct == null) e.pct = t('err.int', { field: t('f.pct'), min: 0, max: 100 }); else d.pct = pct;
     }
+    if (d.type === 'task' && !Money.masked()) {
+      for (const k of ['budget', 'actual']) {
+        if (d[k + 'Raw'] === undefined) continue;
+        const r = Budget.parse(d[k + 'Raw']);
+        if (!r.ok) e[k] = t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) });
+        else d[k] = r.cents;
+      }
+    }
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) {
       if (d[k] && Dates.parse(d[k]) == null) e[k] = t('err.date', { field: t('f.' + ({ forcedStart: 'forced' }[k] || k)) });
     }
@@ -4894,6 +5420,7 @@ const Editor = (() => {
       forcedStart: d.type === 'summary' ? '' : d.forcedStart, notBefore: d.type === 'summary' ? '' : d.notBefore, deadline: d.type === 'summary' ? '' : d.deadline,
       realStart: d.type === 'task' ? d.realStart : '', realEnd: d.type === 'task' ? d.realEnd : '',
       tags: d.tags, notes: d.notes, comments: d.comments, collapsed: d.collapsed,
+      budget: d.type === 'task' ? d.budget || 0 : 0, actual: d.type === 'task' ? d.actual || 0 : 0,
     };
     // Simulation : le planning doit rester calculable (dates ≤ 2199).
     const trial = clone(App.project);
@@ -4905,7 +5432,8 @@ const Editor = (() => {
     App.selected = newId;
     originalId = newId;
     commit(p => applyTask(p, oldId, final));
-    announce(t('saved', { id: newId }) + (cleared ? ' ' + t('err.realEndCleared') : ''));
+    // La fin réelle effacée est signalée à l'écran (bandeau visible 8 s), pas seulement aux lecteurs d'écran.
+    if (cleared) toast(t('saved', { id: newId }) + ' ' + t('err.realEndCleared')); else announce(t('saved', { id: newId }));
     const sel = document.querySelector(`button.select[data-arg="${CSS.escape(newId)}"]`);
     if (sel) sel.focus();
   }
@@ -5308,11 +5836,23 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [50, 300], deps: [60, 800], res: [80, 800], status: [70, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], budget: [88, 500], actual: [88, 500] };
+/** Largeur par défaut d'une colonne, rétablie par le double-clic ou la touche Début sur sa poignée. */
+const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, budget: 100, actual: 100 };
 App.colWidths = {};
+/** Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
+ *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit. */
+function snapshotColWidths() {
+  for (const th of $('tasks-table').querySelectorAll('thead th')) {
+    const k = th.querySelector('.col-resize') && th.querySelector('.col-resize').dataset.col;
+    if (k && !App.colWidths[k]) App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width)));
+  }
+}
 function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
+  const all = Object.keys(COL_LIMITS).every(k => App.colWidths[k]);
+  if (all) table.style.setProperty('width', Object.keys(COL_LIMITS).reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);
   for (const col of table.querySelectorAll('col')) {
     const w = App.colWidths[col.dataset.col];
@@ -5328,21 +5868,22 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'deps', 'res', 'status'];
+  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'budget', 'actual'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
       aria: { orientation: 'vertical', valuemin: COL_LIMITS[k][0], valuemax: COL_LIMITS[k][1], label: t('col.resize', { col: th.textContent }),
         valuenow: Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width) || COL_LIMITS[k][0])) } });
     th.append(sep);
-    const set = w => { App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
+    const set = w => { snapshotColWidths(); App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))); applyColWidths(); };
     sep.addEventListener('keydown', ev => {
-      if (ev.key === 'Home') { ev.preventDefault(); delete App.colWidths[k]; applyColWidths(); return; }
+      if (ev.key === 'Home') { ev.preventDefault(); snapshotColWidths(); App.colWidths[k] = COL_DEFAULT[k]; applyColWidths(); return; }
       if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
       ev.preventDefault();
+      snapshotColWidths();
       set((App.colWidths[k] || th.getBoundingClientRect().width) + (ev.key === 'ArrowRight' ? 10 : -10));
     });
-    sep.addEventListener('dblclick', () => { delete App.colWidths[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
+    sep.addEventListener('dblclick', () => { snapshotColWidths(); App.colWidths[k] = COL_DEFAULT[k]; applyColWidths(); if (typeof applyFreeze === 'function') applyFreeze(); });
     sep.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       sep.setPointerCapture(ev.pointerId);
@@ -5469,6 +6010,10 @@ function bulkWindow() {
       fld('bk-res', t('col.res'), h('select', {}, p.resources.map(r => opt(r.id, r.name)))),
       fld('bk-units', t('rs.units') + ' (%)', h('input', { type: 'number', min: 1, max: 100, step: 1, value: 100, inputmode: 'numeric' }))),
     fld('bk-pct', t('f.pct'), h('input', { type: 'number', min: 0, max: 100, step: 1, inputmode: 'numeric', placeholder: t('bulk.keepShort') })),
+    h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+      Money.masked() ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+      fld('bk-budget', `${t('f.budget')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') })),
+      fld('bk-actual', `${t('f.actual')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') }))),
     fld('bk-tag-add', t('bulk.tagAdd'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-tag-remove', t('bulk.tagRemove'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-shift', t('bulk.shift'), h('input', { type: 'number', min: -365, max: 365, step: 1, inputmode: 'numeric', placeholder: '0' })),
@@ -5485,6 +6030,15 @@ function bulkWindow() {
       if (pctRaw !== '' && !(Number.isInteger(Number(pctRaw)) && Number(pctRaw) >= 0 && Number(pctRaw) <= 100)) return err(t('err.int', { field: t('f.pct'), min: 0, max: 100 }));
       if (shiftRaw !== '' && !(Number.isInteger(Number(shiftRaw)) && Math.abs(Number(shiftRaw)) <= 365)) return err(t('err.int', { field: t('bulk.shift'), min: -365, max: 365 }));
       if (mode && mode !== 'remove' && !(Number.isInteger(units) && units >= 1 && units <= 100)) return err(t('err.int', { field: t('rs.units'), min: 1, max: 100 }));
+      // Budget et coût réel (EF-116) : valeur vide = on garde ; seules les tâches reçoivent un montant (RG-36).
+      const money = {};
+      for (const k of ['budget', 'actual']) {
+        const raw = val('bk-' + k);
+        if (raw.trim() === '' || $('bk-' + k).disabled) continue;
+        const r = Budget.parse(raw);
+        if (!r.ok) return err(t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) }));
+        money[k] = r.cents;
+      }
       const refused = [];
       const apply = pr => {
         const r = pr.resources.find(x => x.id === res);
@@ -5515,6 +6069,7 @@ function bulkWindow() {
             const cal = App.sched.cal;
             x.forcedStart = Dates.toISO(cal.dnOf(cal.ceil(Dates.parse(x.forcedStart)) + Number(shiftRaw)));
           }
+          if (x.type === 'task') for (const k of Object.keys(money)) x[k] = money[k];
           if (nb) x.notBefore = nb;
           if (dl) x.deadline = dl;
         }
@@ -5773,7 +6328,24 @@ function applyFreeze() {
 }
 
 /** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
+/** Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
+ *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page. */
+function applyPlannerHeight() {
+  const pl = $('planner');
+  const top = pl.getBoundingClientRect().top + window.scrollY;
+  pl.style.setProperty('--planner-h', Math.max(300, Math.round(window.innerHeight - top - 12)) + 'px');
+}
+
+let plannerHeightPending = false;
+/** Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25). */
+function schedulePlannerHeight() {
+  if (plannerHeightPending) return;
+  plannerHeightPending = true;
+  requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
+}
+
 function refreshLayout() {
+  schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
@@ -5822,7 +6394,11 @@ function initLayout() {
     sep.addEventListener('pointerup', up);
     sep.addEventListener('pointercancel', up);
   });
-  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  // Défilement vertical commun : la liste et le Gantt défilent chacun dans leur zone (barres horizontales toujours visibles).
+  const list = $('list'), gantt = $('gantt');
+  const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
+  mirror(list, gantt); mirror(gantt, list);
+  window.addEventListener('resize', () => { applyPlannerHeight(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);
@@ -5843,10 +6419,19 @@ async function editProjectWindow() {
     Model.EMOJIS.map((e, i) => h('span', { class: 'emoji-opt' },
       h('input', { type: 'radio', id: 'p-emo-' + i, name: 'p-emoji', value: e, checked: e === p.emoji }),
       h('label', { for: 'p-emo-' + i, text: e }))));
+  // Budget (EF-114) : symbole de la devise, unique pour le projet et sans conversion, et provision globale.
+  const masked = Money.masked();
+  const currency = h('input', { type: 'text', id: 'p-currency', value: p.currency || '€', maxlength: Model.LIMITS.currency, autocomplete: 'off', aria: { describedby: 'p-currency-err' } });
+  const provision = h('input', { type: 'text', id: 'p-provision', value: masked ? Money.DOTS : Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-provision-err' } });
+  const budgetBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+    h('p', { class: 'hint', text: t('proj.budgetNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
+    masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+    h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -5857,9 +6442,27 @@ async function editProjectWindow() {
         name.setAttribute('aria-invalid', 'true'); name.focus();
         return false;
       }
+      const cur = currency.value.trim();
+      if (!cur || cur.length > Model.LIMITS.currency || /[\u0000-\u001f\u007f]/.test(cur)) {
+        const err = $('p-currency-err');
+        err.textContent = t('err.text', { field: t('proj.currency'), min: 1, max: Model.LIMITS.currency }); err.hidden = false;
+        currency.setAttribute('aria-invalid', 'true'); currency.focus();
+        return false;
+      }
+      let prov = p.provision || 0;
+      if (!masked) {
+        const r = Budget.parse(provision.value);
+        if (!r.ok) {
+          const err = $('p-provision-err');
+          err.textContent = t('err.amount.' + r.reason, { field: t('proj.provision'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+          provision.setAttribute('aria-invalid', 'true'); provision.focus();
+          return false;
+        }
+        prov = r.cents;
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
       return true;
     },
   });
@@ -6223,9 +6826,10 @@ function captureBaseline(p, sched, name, color) {
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
     id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
-      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn) };
+      return { id: x.id, name: x.name, dur: x.type === 'task' ? x.dur : 0, deps: x.deps.map(d => d.id), cat: catName(x.cat), start: Dates.toISO(r.startDn), end: Dates.toISO(r.endDn), budget: x.type === 'task' ? x.budget || 0 : 0 };
     }),
   };
 }
@@ -6250,16 +6854,18 @@ function baselinesWindow() {
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
             h('label', { for: 'bls-' + b.id, text: ' ' + t('bl.onScurve') })),
           h('td', { text: t('bl.captured', { date: I18n.date(Dates.todayDn(new Date(b.createdAt || 0))), count: b.tasks.length }) }),
+          h('td', {}, Money.node(Budget.baselineBac(b)), h('span', { class: 'sr-only', text: ' ' + t('proj.provision') + ' : ' }), h('span', { class: 'hint' }, ' + ', Money.node(b.provision || 0))),
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
     }
+    if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
   };
   baselinesWindow.paint = paint;
   paint();
-  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] })
+  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] })
     .then(() => { baselinesWindow.paint = null; });
 }
 
@@ -6427,22 +7033,27 @@ action('calAdd', kind => {
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
-function sCurveChart(curve) {
-  const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
+/** Réglages de la courbe d'avancement : une échelle de 0 à 100 %. */
+const PCT_CHART = {
+  max: 100, ticks: [0, 25, 50, 75, 100], axis: v => `${v} %`, fmt: fmtPct, fmtFull: fmtPct, title: 'dash.curve',
+  desc: (curve, last) => t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }),
+};
+
+function sCurveChart(curve, o = PCT_CHART) {
+  const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
   const n = curve.periods.length;
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
-  const py = v => m.t + (1 - v / 100) * (H - m.t - m.b);
+  const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
   const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
   const last = a => (a.length ? a[a.length - 1] : 0);
-  chart.append(svg('title', { id: 'sc-title', text: t('dash.curve') }),
-    svg('desc', { id: 'sc-desc', text: t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }) }));
-  for (const v of [0, 25, 50, 75, 100]) {
+  chart.append(svg('title', { id: 'sc-title', text: t(o.title) }), svg('desc', { id: 'sc-desc', text: o.desc(curve, last) }));
+  for (const v of o.ticks) {
     chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
-      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: `${v} %` }));
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: o.axis(v) }));
   }
   const step = Math.max(1, Math.ceil(n / 8));
   curve.periods.forEach((p, i) => {
@@ -6462,19 +7073,24 @@ function sCurveChart(curve) {
   const labels = [];
   for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
     line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${fmtPct(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
   }
   line(curve.planned, 'planned');
   line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${fmtPct(last(curve.planned))}`, i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${fmtPct(last(curve.real))}`, i: curve.real.length - 1 });
+  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
+  // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
+  // à 18 caractères (le nom entier reste dans <title>, l'infobulle et les tableaux).
   let prev = -Infinity;
   for (const l of labels) {
-    const y = Math.max(py(l.v) + 4, prev + 14);
+    const y = Math.max(py(l.v) + 4, prev + 28);
     prev = y;
-    chart.append(svg('text', { x: px(l.i) + 6, y, class: 'label', text: l.text }));
+    const short = l.name.length > 18 ? l.name.slice(0, 17) + '…' : l.name;
+    const el = svg('text', { x: px(l.i) + 6, y, class: 'label' });
+    el.append(svg('title', { text: `${l.name} ${l.value}` }), svg('tspan', { x: px(l.i) + 6, text: short }), svg('tspan', { x: px(l.i) + 6, dy: 13, text: l.value }));
+    chart.append(el);
   }
   // Réticule au survol et au clavier (flèches gauche/droite).
   const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'cross', visibility: 'hidden' });
@@ -6487,9 +7103,9 @@ function sCurveChart(curve) {
     cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
     const p = curve.periods[idx];
     const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
-      `${t('dash.planned')} ${fmtPct(curve.planned[idx])}`];
-    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${fmtPct(curve.real[idx])}`);
-    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${fmtPct((curve.baselines[b.id] || [])[idx] || 0)}`);
+      `${t('dash.planned')} ${o.fmtFull(curve.planned[idx])}`];
+    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${o.fmtFull(curve.real[idx])}`);
+    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${o.fmtFull((curve.baselines[b.id] || [])[idx] || 0)}`);
     tip.textContent = parts.join(' · ');
     tip.hidden = false;
   };
@@ -6521,15 +7137,15 @@ function curveLegend() {
     App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
 }
 
-function curveTable(curve) {
+function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
   const bls = App.project.baselines.filter(b => b.shownOnScurve);
-  return h('table', { class: 'manage values', id: 'sc-values' },
-    h('caption', { text: t('dash.valuesCaption') }),
+  return h('table', { class: 'manage values', id },
+    h('caption', { text: t(caption) }),
     h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
     h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
       h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
-      h('td', { text: fmtPct(curve.planned[i]) }), h('td', { text: i < curve.real.length ? fmtPct(curve.real[i]) : '—' }),
-      bls.map(b => h('td', { text: fmtPct((curve.baselines[b.id] || [])[i] || 0) }))))));
+      cell(curve.planned[i]), i < curve.real.length ? cell(curve.real[i]) : h('td', { text: '—' }),
+      bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
 }
 
 function trackingRows() {
@@ -6571,17 +7187,26 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+function dashTabs() {
+  const tabs = ['summary', 'load'];
+  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
+  return tabs;
+}
+
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
   // Onglets « Synthèse » et « Charge » (motif ARIA tabs : flèches gauche/droite).
-  const tabs = ['summary', 'load'];
+  const tabs = dashTabs();
   body.append(h('div', { role: 'tablist', class: 'tabs', aria: { label: t('top.dashboard') } }, tabs.map(k => h('button', {
     type: 'button', role: 'tab', id: 'dtab-' + k, tabindex: Dash.tab === k ? '0' : '-1', aria: { selected: String(Dash.tab === k), controls: 'dpanel' },
     data: { click: 'dashTab', arg: k } }, t('dash.tab.' + k)))));
   const panel = h('div', { role: 'tabpanel', id: 'dpanel', aria: { labelledby: 'dtab-' + Dash.tab }, tabindex: '0' });
   body.append(panel);
   if (Dash.tab === 'load') { paintLoad(panel); return; }
+  if (Dash.tab === 'budget') { paintBudget(panel); return; }
   body = panel;
   const today = Dates.todayDn();
   const c = Metrics.counters(App.project, App.sched, today);
@@ -6614,7 +7239,7 @@ function dashboardWindow() {
   const body = h('div', { id: 'dash-win' });
   dashboardWindow.body = body;
   paintDashboard(body);
-  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
     .then(() => { dashboardWindow.body = null; });
 }
 
@@ -6624,20 +7249,79 @@ function repaintDashboard(focusSel) {
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
-action('dashTab', k => { Dash.tab = k === 'load' ? 'load' : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
+action('dashTab', k => { Dash.tab = ['load', 'budget'].includes(k) ? k : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
 document.addEventListener('keydown', ev => {
   const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
   if (!tab || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
   ev.preventDefault();
-  ACTIONS.dashTab(Dash.tab === 'load' ? 'summary' : 'load');
+  const tabs = dashTabs(), at = tabs.indexOf(Dash.tab);
+  ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashOngoing', (arg, el) => { Dash.ongoing = el.checked; repaintDashboard('#bud-ongoing'); });
+action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
 action('dashSort', k => {
   Dash.sort = Dash.sort.key === k ? { key: k, dir: -Dash.sort.dir } : { key: k, dir: 1 };
   repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
 });
+
+// ── js/ui/76-budget.js ──
+/* Onglet « Budget » du tableau de bord (EF-117 à EF-119, RG-37 à RG-40) : indicateurs, tableau par catégorie,
+ * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
+
+/** Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries. */
+function costScale(curve) {
+  const all = [...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()];
+  const max = Math.max(0, ...all);
+  if (max <= 0) return { max: 10000, ticks: [0, 10000] };
+  const raw = max / 4, mag = Math.max(1, 10 ** Math.floor(Math.log10(raw))), norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const top = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = 0; v <= top; v += step) ticks.push(v);
+  return { max: top, ticks };
+}
+
+function paintBudget(panel) {
+  const P = App.project, tot = Budget.totals(P);
+  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+  const remaining = tot.remaining < 0
+    ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
+    : [Money.node(tot.remaining)];
+  panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
+    tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
+    tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
+
+  // Tableau par catégorie (RG-40).
+  const cats = Budget.byCategory(P);
+  const num = c => h('td', { class: 'num' }, Money.node(c));
+  panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-cat-h' } },
+    h('h3', { id: 'bud-cat-h', text: t('bud.byCat') }),
+    h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-cats' },
+      h('thead', {}, h('tr', {}, [t('bud.cat'), t('f.budget'), t('f.actual'), t('bud.gap')].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
+
+  // Courbe en S des coûts (RG-38, RG-39).
+  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
+  const scale = costScale(curve);
+  const opts = {
+    max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
+  };
+  const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+    ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
+      h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
+  const ongoing = h('span', {}, h('input', { type: 'checkbox', id: 'bud-ongoing', checked: Dash.ongoing, data: { change: 'dashOngoing' } }), h('label', { for: 'bud-ongoing', text: ' ' + t('bud.ongoing') }));
+  const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values' } },
+    t(Dash.showCostValues ? 'dash.hideValues' : 'dash.showValues'));
+  panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
+    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
+    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
+    Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+}
 
 // ── js/ui/76-load.js ──
 /* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à
@@ -6737,8 +7421,8 @@ action('loadValues', () => { Load.showValues = !Load.showValues; repaintDashboar
 // ── js/ui/77-report.js ──
 /* Rapport d'état (EF-88, RG-28) : aperçu, choix des blocs, note, impression ou PDF, texte brut.
  * Le voyant est toujours écrit en toutes lettres (jamais la couleur seule, EX-03). */
-const Report = { blocks: { kpis: true, curve: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
-const REPORT_BLOCKS = ['kpis', 'curve', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
+const Report = { amounts: false, blocks: { kpis: true, curve: true, budget: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
+const REPORT_BLOCKS = ['kpis', 'curve', 'budget', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
 
 function reportData() {
   const today = Dates.todayDn();
@@ -6748,6 +7432,16 @@ function reportData() {
 const taskLabel = id => { const x = taskById(id); return x ? `${id} ${x.name}` : id; };
 
 /** Contenu du rapport sous forme de sections {title, lines[]} : sert à l'aperçu ET au texte brut. */
+/** Une ligne du rapport est un texte, ou {label, cents, signed} pour un montant (masquable à l'écran, jamais dans une sortie). */
+function lineText(l) {
+  if (typeof l === 'string') return l;
+  return l.label + (l.signed && l.cents > 0 ? '+' : '') + Money.plain(l.cents);
+}
+function lineNode(l, out) {
+  if (typeof l === 'string' || out) return lineText(l);
+  return [l.label + (l.signed && l.cents > 0 ? '+' : ''), Money.node(l.cents)];
+}
+
 function reportSections() {
   const { today, bl, r } = reportData();
   const s = App.sched;
@@ -6763,6 +7457,14 @@ function reportSections() {
     t('rep.end', { date: I18n.date(s.projectEndDn) }),
   ] });
   if (B.curve) out.push({ key: 'curve', title: t('dash.curve'), lines: [], chart: true });
+  // Bloc Budget (EF-120) : seulement si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Report.amounts) {
+    const tot = Budget.totals(App.project), L = (k, c) => ({ label: t(k) + ' : ', cents: c });
+    const lines = [L('bud.bac', tot.bac), L('bud.provision', tot.provision), L('bud.total', tot.total), L('bud.actual', tot.actual),
+      tot.remaining < 0 ? { label: `${t('bud.remaining')} : ${t('bud.overrun')} `, cents: -tot.remaining } : L('bud.remaining', tot.remaining)];
+    if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
+    out.push({ key: 'budget', title: t('rep.b.budget'), lines });
+  }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });
   if (B.milestones) out.push({ key: 'milestones', title: t('rep.milestones'), lines: [
@@ -6776,7 +7478,7 @@ function reportSections() {
   return out;
 }
 
-function reportArticle() {
+function reportArticle(out = false) {
   const art = h('article', { class: 'report-page', id: 'report-preview', aria: { label: t('rep.preview') } });
   const { r } = reportData();
   for (const sec of reportSections()) {
@@ -6789,14 +7491,14 @@ function reportArticle() {
       c.removeAttribute('tabindex');
       el.append(c);
     }
-    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', { text: l }))));
+    if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', {}, lineNode(l, out)))));
     art.append(el);
   }
   return art;
 }
 
 function reportText() {
-  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? l : `- ${l}`))].join('\n')).join('\n');
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
 }
 
 function paintReport(body, focusSel) {
@@ -6805,6 +7507,8 @@ function paintReport(body, focusSel) {
     h('fieldset', { class: 'sub' }, h('legend', { text: t('rep.blocks') }),
       REPORT_BLOCKS.map(k => h('div', { class: 'check' }, h('input', { type: 'checkbox', id: 'rb-' + k, checked: Report.blocks[k], data: { change: 'repBlock', arg: k } }),
         h('label', { for: 'rb-' + k, text: t('rep.b.' + k) })))),
+    h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'rep-amounts', checked: Report.amounts, data: { change: 'repAmounts' } }),
+      h('label', { for: 'rep-amounts', text: t('out.amounts') }), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('div', { class: 'field' }, h('label', { for: 'rep-bl', text: t('rep.baseline') }),
       h('select', { id: 'rep-bl', data: { change: 'repBaseline' } }, h('option', { value: '' }, t('dash.noBl')),
         App.project.baselines.map(b => h('option', { value: b.id, selected: Report.baseline === b.id }, b.name)))),
@@ -6821,10 +7525,11 @@ function paintReport(body, focusSel) {
 function reportWindow() {
   if (!App.sched) return;
   if (Report.baseline && !App.project.baselines.some(b => b.id === Report.baseline)) Report.baseline = '';
+  Report.amounts = false; // décochée à chaque ouverture (EF-124)
   const body = h('div', { id: 'rep-win' });
   reportWindow.body = body;
   paintReport(body);
-  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
+  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
 }
 
 /** Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26). */
@@ -6868,16 +7573,17 @@ function copyText(text) {
 
 action('openReport', () => reportWindow());
 action('repBlock', (k, el) => { Report.blocks[k] = el.checked; paintReport(reportWindow.body, '#rb-' + k); });
+action('repAmounts', (a, el) => { Report.amounts = el.checked; paintReport(reportWindow.body, '#rep-amounts'); });
 action('repBaseline', (a, el) => { Report.baseline = el.value; paintReport(reportWindow.body, '#rep-bl'); });
 action('repNote', (a, el) => { const v = el.value.slice(0, 2000); if (v !== App.project.reportNote) commit(p => { p.reportNote = v; }); paintReport(reportWindow.body, '#rep-note'); });
-action('repPrint', () => printNode(reportArticle(), 'print-report', 'A4 portrait'));
+action('repPrint', () => printNode(reportArticle(true), 'print-report', 'A4 portrait'));
 action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });
 
 // ── js/ui/78-print.js ──
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
- * page ; couleurs remplacées par des motifs noir et blanc et par du texte. */
-const PrintOpt = { period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, dur: true, deps: false, res: true, status: true } };
+ * page ; en couleur, mais lisible sans couleur (contours, motifs, ● et colonne Catégorie). */
+const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, cat: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
 
 function buildPrintGantt() {
   const s = App.sched;
@@ -6890,56 +7596,86 @@ function buildPrintGantt() {
   }
   const days = to - from + 1;
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
-  // Largeur imprimable approximative en px CSS (A4, marges 12 mm) moins les colonnes.
-  const pageW = PrintOpt.orient === 'landscape' ? 1045 : 715;
-  const colW = { id: 40, name: 180, dur: 50, deps: 80, res: 110, status: 80 };
-  const ganttW = PrintOpt.scale === 'fit' ? Math.max(200, pageW - cols.reduce((a, k) => a + colW[k], 0)) : Math.round(days * 26 * App.zoom / 100 / 7);
-  const dayW = ganttW / days;
-  const x = dn => (dn - from) * dayW;
-  const head = h('div', { class: 'pg-time' });
-  head.style.setProperty('width', ganttW + 'px');
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    const a = Math.max(p.start, from), b = Math.min(p.end, to);
-    const c = h('div', { class: 'pg-col', text: dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) });
-    c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
-    head.append(c);
-  }
-  const labels = { id: t('col.id'), name: t('col.name'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status') };
-  const table = h('table', { class: 'print-gantt' },
-    h('caption', { text: `${App.project.emoji} ${App.project.name} — ${I18n.date(from)} → ${I18n.date(to)}` }),
-    h('thead', {}, h('tr', {}, cols.map(k => h('th', { scope: 'col', text: labels[k] })), h('th', { scope: 'col', class: 'pg-timecell' }, head))));
-  const tb = h('tbody');
+  if (PrintOpt.amounts) cols.push('budget', 'actual'); // colonnes Budget et Coût réel : seulement si les montants sont inclus (EF-124)
+  const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
+  // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
+  // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
+  const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
+  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, budget: 56, actual: 56 };
+  const isDate = k => k === 'start' || k === 'end'; // les dates ne se réduisent pas (jamais coupées)
+  const dateTotal = cols.filter(isDate).reduce((a, k) => a + base[k], 0);
+  const textTotal = cols.filter(k => !isDate(k)).reduce((a, k) => a + base[k], 0);
+  const shrink = Math.min(1, (pageW - 200 - dateTotal) / Math.max(1, textTotal));
+  const colW = Object.fromEntries(cols.map(k => [k, isDate(k) ? base[k] : Math.floor(base[k] * shrink)]));
+  const colsW = cols.reduce((a, k) => a + colW[k], 0);
+  const availW = Math.max(200, pageW - colsW);
+  // « Ajuster » : tout le planning sur la largeur d'une page. « Zoom actuel » : à l'échelle de l'écran, découpé en bandes
+  // de semaines entières, une par page en largeur, chacune répétant les colonnes de texte (aucune information perdue).
+  const fit = PrintOpt.scale === 'fit';
+  const dayW = fit ? availW / days : 26 * App.zoom / 100 / 7;
+  const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
+  const slices = [];
+  for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
+  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), budget: t('col.budget'), actual: t('col.actual') };
   const fl = flags();
-  for (const task of tasks) {
-    const r = s.tasks.get(task.id);
-    const st = statusOf(task);
-    const cells = {
-      id: task.id, name: task.name, dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
-      status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
-    };
-    const lane = h('div', { class: 'pg-lane' });
-    lane.style.setProperty('width', ganttW + 'px');
-    if (r && !r.empty && r.endDn >= from && r.startDn <= to) {
-      const a = Math.max(r.startDn, from), b = Math.min(r.endDn, to);
-      const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
-      el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
-      if (task.type !== 'milestone') {
-        el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
-        const pct = Metrics.pctOf(task, s);
-        const done = h('span', { class: 'pg-done' }); done.style.setProperty('width', pct + '%'); el.append(done);
-      }
-      lane.append(el);
+  const wrap = h('div', { class: 'print-wrap' });
+  slices.forEach((sl, idx) => {
+    const x = dn => (dn - sl.a) * dayW;
+    const laneW = (sl.b - sl.a + 1) * dayW;
+    const head = h('div', { class: 'pg-time' });
+    head.style.setProperty('width', laneW + 'px');
+    for (const p of Metrics.periods(sl.a, sl.b, dayW * 7 < 36 ? 'month' : 'week')) {
+      const a = Math.max(p.start, sl.a), b = Math.min(p.end, sl.b);
+      const c = h('div', { class: 'pg-col', text: dayW * 7 < 36 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start) });
+      c.style.setProperty('left', x(a) + 'px'); c.style.setProperty('width', ((b - a + 1) * dayW) + 'px');
+      head.append(c);
     }
-    tb.append(h('tr', { class: task.type }, cols.map(k => h('td', { class: 'pg-' + k, text: cells[k] })), h('td', { class: 'pg-timecell' }, lane)));
+    const caption = `${App.project.emoji} ${App.project.name} — ${I18n.date(sl.a)} → ${I18n.date(sl.b)}` + (slices.length > 1 ? ` — ${t('print.part', { n: idx + 1, m: slices.length })}` : '');
+    const heads = cols.map(k => { const th = h('th', { scope: 'col', text: labels[k] }); th.style.setProperty('width', colW[k] + 'px'); return th; });
+    const timeTh = h('th', { scope: 'col', class: 'pg-timecell' }, head);
+    timeTh.style.setProperty('width', laneW + 'px');
+    const table = h('table', { class: 'print-gantt' }, h('caption', { text: caption }), h('thead', {}, h('tr', {}, heads, timeTh)));
+    table.style.setProperty('width', (colsW + laneW) + 'px');
+    const tb = h('tbody');
+    for (const task of tasks) {
+      const r = s.tasks.get(task.id);
+      const st = statusOf(task);
+      const cells = {
+        id: task.id, name: task.name, cat: task.type === 'summary' ? '' : ((catById(task.cat) || {}).name || ''), start: r && !r.empty ? I18n.numDate(r.startDn, true) : '', end: r && !r.empty ? I18n.numDate(r.endDn, true) : '',
+        dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
+        status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
+        budget: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).budget, { compact: true }) : '',
+        actual: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).actual, { compact: true }) : '',
+      };
+      const lane = h('div', { class: 'pg-lane' });
+      lane.style.setProperty('width', laneW + 'px');
+      if (r && !r.empty && r.endDn >= sl.a && r.startDn <= sl.b) {
+        const a = Math.max(r.startDn, sl.a), b = Math.min(r.endDn, sl.b);
+        const el = h('div', { class: ['pg-bar', task.type, r.critical && 'critical'], text: task.type === 'milestone' ? '◆' : '' });
+        el.style.setProperty('left', x(task.type === 'milestone' ? r.startDn : a) + 'px');
+        { const cat = catById(task.cat); if (cat) el.style.setProperty('--c', safeColor(cat.color)); }
+        if (task.type !== 'milestone') {
+          el.style.setProperty('width', Math.max(3, (b - a + 1) * dayW) + 'px');
+          const pct = Metrics.pctOf(task, s);
+          const done = h('span', { class: 'pg-done' }); done.style.setProperty('width', pct + '%'); el.append(done);
+        }
+        lane.append(el);
+      }
+      tb.append(h('tr', { class: task.type }, cols.map(k => h('td', { class: 'pg-' + k, text: cells[k] })), h('td', { class: 'pg-timecell' }, lane)));
+    }
+    table.append(tb);
+    wrap.append(table);
+  });
+  if (PrintOpt.legend) {
+    const cats = App.project.categories.map(c => { const sw = h('span', { class: 'pg-sw' }); sw.style.setProperty('--c', safeColor(c.color)); return h('span', {}, sw, c.name, '  '); });
+    wrap.append(h('p', { class: 'pg-legend' }, t('print.legend'), cats.length ? ' ' : '', ...cats));
   }
-  table.append(tb);
-  const wrap = h('div', { class: 'print-wrap' }, table);
-  if (PrintOpt.legend) wrap.append(h('p', { class: 'pg-legend', text: t('print.legend') }));
   return wrap;
 }
 
 function printWindow() {
   if (!App.sched) return;
+  PrintOpt.amounts = false; // décochée à chaque ouverture (EF-124)
   const chk = (id, label, checked, arg) => h('span', { class: 'check' }, h('input', { type: 'checkbox', id, checked, data: { change: 'printOpt', arg } }), h('label', { for: id, text: label }));
   const radio = (name, value, label, checked) => h('span', { class: 'check' }, h('input', { type: 'radio', name, id: `pr-${name}-${value}`, value, checked, data: { change: 'printOpt', arg: name } }), h('label', { for: `pr-${name}-${value}`, text: label }));
   const body = h('div', { id: 'print-win' },
@@ -6950,8 +7686,9 @@ function printWindow() {
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.orient') }), radio('orient', 'landscape', t('print.landscape'), PrintOpt.orient === 'landscape'), radio('orient', 'portrait', t('print.portrait'), PrintOpt.orient === 'portrait')),
     h('fieldset', { class: 'inline' }, h('legend', { text: t('print.cols') }), Object.keys(PrintOpt.cols).map(k => chk('pr-col-' + k, t('col.' + k), PrintOpt.cols[k], 'col:' + k))),
     chk('pr-legend', t('print.withLegend'), PrintOpt.legend, 'legend'),
+    h('div', {}, chk('pr-amounts', t('out.amounts'), PrintOpt.amounts, 'amounts'), h('p', { class: 'hint', text: t('out.amountsHint') })),
     h('p', { class: 'hint', text: t('print.hint') }));
-  return Dialog.open({ title: t('top.print'), body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
+  return Dialog.open({ title: t('top.print'), size: 'wide', body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
 }
 action('openPrint', () => printWindow());
@@ -6959,6 +7696,7 @@ action('printOpt', (arg, el) => {
   if (arg === 'period' || arg === 'scale' || arg === 'orient') PrintOpt[arg] = el.value;
   else if (arg === 'from' || arg === 'to') { PrintOpt[arg] = Dates.parse(el.value) != null ? el.value : ''; PrintOpt.period = 'range'; }
   else if (arg === 'legend') PrintOpt.legend = el.checked;
+  else if (arg === 'amounts') PrintOpt.amounts = el.checked;
   else if (arg.startsWith('col:')) PrintOpt.cols[arg.slice(4)] = el.checked;
 });
 
@@ -7044,7 +7782,7 @@ function download(data, filename, type) {
 }
 
 /* ── Export (EF-92) ─────────────────────────────────────────────────────────────────────── */
-const ExportOpt = { format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
+const ExportOpt = { amounts: false, format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
 const FORMATS = ['json', 'xlsx', 'csv', 'msp', 'png'];
 
 function exportBody() {
@@ -7055,6 +7793,8 @@ function exportBody() {
   const box = h('div', { id: 'exp-win' }, h('fieldset', { class: 'sub' }, h('legend', { text: t('exp.format') }), FORMATS.map(radio)));
   box.append(h('p', { class: 'field-error', id: 'exp-err', role: 'alert', hidden: true }));
   if (o.format !== 'png') box.append(chk('exp-anon', 'anonymize', t('exp.anonymize')));
+  // Rien ne sort sans geste volontaire (EF-124) : la case est décochée à chaque ouverture. Le format MS Project n'emporte aucun montant.
+  if (['json', 'xlsx', 'csv'].includes(o.format)) box.append(chk('exp-amounts', 'amounts', t('out.amounts')), h('p', { class: 'hint', text: t('out.amountsHint') }));
   if (o.format === 'json') {
     box.append(h('p', { class: 'hint', text: t('exp.notice') }), chk('exp-protect', 'protect', t('exp.protect')));
     if (o.protect) box.append(
@@ -7079,6 +7819,7 @@ function exportBody() {
 }
 
 function exportWindow() {
+  ExportOpt.amounts = false;
   const holder = h('div', {}, exportBody());
   exportWindow.holder = holder;
   return Dialog.open({
@@ -7107,7 +7848,7 @@ async function doExport() {
   if (!s) { err(t('calc.error')); return; }
   try {
     if (o.format === 'json') {
-      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize }), null, 2);
+      const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize, amounts: o.amounts }), null, 2);
       if (o.protect) {
         const a = $('exp-pwd').value, b = $('exp-pwd2').value;
         if (!Secure.passwordOk(a)) { err(t('pwd.short', { min: Secure.MIN_PASSWORD })); $('exp-pwd').focus(); return; }
@@ -7117,8 +7858,8 @@ async function doExport() {
         download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
       } else download(text, exportFileName(p.name), 'application/json');
       if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
-    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
-    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
+    else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     else if (o.format === 'msp') {
       const q = o.anonymize ? Model.sanitize(Model.serialize(p, { anonymize: true })).project : p;
       download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
@@ -7153,10 +7894,23 @@ function ganttPng(o) {
   g.font = '600 12px Sora, sans-serif'; g.textBaseline = 'middle';
   const x = dn => left + (dn - from) * dayW;
   for (let dn = from; dn <= to; dn++) if (!s.cal.isWork(dn)) { g.fillStyle = white ? 'rgba(20,26,38,.06)' : col('--off'); g.fillRect(x(dn), head, dayW, H - head - legendH); }
+  // En-tête sur deux lignes comme à l'écran : les mois, puis les semaines (jj/mm, ou jj seul quand la place manque) ;
+  // quand une semaine est trop étroite pour un libellé, les mois seuls. Chaque libellé est rogné à sa colonne :
+  // aucun ne déborde sur le voisin.
   g.fillStyle = muted; g.font = '11px Sora, sans-serif';
-  for (const p of Metrics.periods(from, to, dayW * 7 < 22 ? 'month' : 'week')) {
-    g.fillRect(x(Math.max(p.start, from)), 0, 1, H - legendH);
-    g.fillText(dayW * 7 < 22 ? I18n.monthLabel(p.start) : I18n.shortDate(p.start), x(Math.max(p.start, from)) + 3, head / 2);
+  const weekW = dayW * 7, weeks = weekW >= 18;
+  const label = (text, x0, w, y) => { if (!text) return; g.save(); g.beginPath(); g.rect(x0, 0, Math.max(0, w), head); g.clip(); g.fillText(text, x0 + 3, y); g.restore(); };
+  for (const p of Metrics.periods(from, to, 'month')) {
+    const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+    g.fillRect(x(a), 0, 1, weeks ? head / 2 : H - legendH);
+    label(I18n.monthLabelFit(p.start, w - 4), x(a), w, weeks ? head * 0.28 : head / 2);
+  }
+  if (weeks) {
+    for (const p of Metrics.periods(from, to, 'week')) {
+      const a = Math.max(p.start, from), b = Math.min(p.end, to), w = (b - a + 1) * dayW;
+      g.fillRect(x(a), head / 2, 1, H - head / 2 - legendH);
+      label(weekW >= 34 ? I18n.shortDate(p.start) : String(Dates.ymd(p.start).d).padStart(2, '0'), x(a), w, head * 0.75);
+    }
   }
   g.fillStyle = ink; g.font = '700 13px Sora, sans-serif';
   g.fillText(`${App.project.name}`, 8, head / 2);
@@ -7310,6 +8064,10 @@ async function sheetWizard(src) {
       if (r.errors.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage' }, h('caption', { text: t('wiz.errors') }),
         h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
         h('tbody', {}, r.errors.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
+      // RG-42 : un montant invalide est signalé et ignoré, la ligne reste importée.
+      if (r.warnings && r.warnings.length) body.append(h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'wiz-warnings' }, h('caption', { text: t('wiz.warnings') }),
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col', text: t('wiz.line') }), h('th', { scope: 'col', text: t('wiz.problem') }))),
+        h('tbody', {}, r.warnings.slice(0, 200).map(e => h('tr', {}, h('td', { text: String(e.line) }), h('td', { text: e.msg })))))));
       body.append(h('fieldset', { class: 'inline' }, h('legend', { text: t('wiz.mode') }),
         ['add', 'replace'].map(m => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'wiz-mode', id: 'wiz-m-' + m, value: m, checked: W.mode === m }), h('label', { for: 'wiz-m-' + m, text: t('wiz.m.' + m) })))));
     }
@@ -7345,7 +8103,7 @@ async function sheetWizard(src) {
       if (W.step === 1) { W.step = 2; paint(); return false; }
       if (W.step === 2) {
         if (W.map.name === undefined) return err(t('wiz.needName'));
-        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
         W.step = 3; paint(); return false;
       }
       if (!W.result.rows.length) return err(t('wiz.none'));
@@ -8037,6 +8795,7 @@ async function enableAutosave() {
   Settings.set('autosave', 'on');
   Recovery.touch();
   if (App.dirty) Recovery.saveNow();
+  toast(t('auto.enabledToast'));
   return true;
 }
 
@@ -8049,7 +8808,8 @@ async function openSettings() {
       h('div', { class: 'field' }, h('label', { for: 'set-lang', text: t('set.lang') }),
         h('select', { id: 'set-lang' }, [['fr', 'Français'], ['en', 'English']].map(([v, l]) => h('option', { value: v, selected: I18n.getLang() === v, lang: v }, l)))),
       h('div', { class: 'field' }, h('label', { for: 'set-theme', text: t('set.theme') }),
-        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || 'system') === v }, t('theme.' + v))))),
+        h('select', { id: 'set-theme' }, ['system', 'light', 'dark'].map(v => h('option', { value: v, selected: (Settings.get('theme') || DEFAULT_THEME) === v }, t('theme.' + v))))),
+      h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-tips', checked: Settings.get('tips') !== 'off' }), h('label', { for: 'set-tips', text: t('set.tips') })),
       h('fieldset', { class: 'sub' }, h('legend', { text: t('auto.title') }),
         h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-auto', checked: auto, aria: { describedby: 'set-auto-hint' } }), h('label', { for: 'set-auto', text: t('set.autosave') })),
         h('p', { class: 'hint', id: 'set-auto-hint', text: t('set.autosaveHint') }),
@@ -8081,6 +8841,7 @@ async function openSettings() {
     const id = ev.target.id;
     if (id === 'set-lang') { setLanguage(ev.target.value); closeDlg(); openSettings(); return; }
     if (id === 'set-theme') { Settings.set('theme', ev.target.value); applyTheme(); render(); return; }
+    if (id === 'set-tips') { Settings.set('tips', ev.target.checked ? 'on' : 'off'); applyShortcutTips(); announce(t(ev.target.checked ? 'set.tipsOn' : 'set.tipsOff')); return; }
     if (id === 'set-auto') {
       if (ev.target.checked) { if (!(await enableAutosave())) ev.target.checked = false; }
       else { Settings.set('autosave', 'off'); Settings.set('recprotect', 'off'); Recovery.stop(); Recovery.clearAllCopies(); announce(t('auto.disabled')); }
@@ -8203,7 +8964,7 @@ action('addTask', type => {
   const id = Model.nextTaskId(App.project.tasks.map(x => x.id));
   const sel = App.selected && taskById(App.selected);
   let parent = sel && sel.type === 'summary' ? sel.id : (sel ? sel.parent : '');
-  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) parent = '';
+  if (parent && ancestorsOf(parent).length + 1 > Model.LIMITS.depth) { Dialog.message(t('top.addTask'), t('err.depth', { max: Model.LIMITS.depth })); return; }
   const name = t(type === 'milestone' ? 'newMilestone' : type === 'summary' ? 'newSummary' : 'newTask');
   commit(p => p.tasks.push({
     id, name, type, parent, dur: type === 'task' ? 5 : 0, deps: [], assign: [], cat: type === 'summary' ? '' : (p.categories[0] ? p.categories[0].id : ''),
@@ -8246,7 +9007,7 @@ action('redo', () => { if (undoStep(App.redo, App.undo)) announce(t('redo.done')
 
 action('zoom', step => {
   const s = Number(step);
-  App.zoom = s === 0 ? 100 : Math.min(300, Math.max(20, App.zoom + 20 * s));
+  App.zoom = s === 0 ? 100 : Math.min(400, Math.max(20, App.zoom + 20 * s));
   render();
   announce(t('top.zoom', { pct: App.zoom }));
 });
@@ -8255,7 +9016,7 @@ action('toggleAlerts', () => { App.showAlerts = !App.showAlerts; render(); if (!
 
 action('toggleTheme', () => {
   const order = ['system', 'light', 'dark'];
-  const next = order[(order.indexOf(Settings.get('theme') || 'system') + 1) % 3];
+  const next = order[(order.indexOf(Settings.get('theme') || DEFAULT_THEME) + 1) % 3];
   Settings.set('theme', next);
   applyTheme();
   render();
@@ -8291,7 +9052,7 @@ action('fileChosen', async (arg, el) => {
 });
 
 function applyTheme() {
-  const theme = Settings.get('theme') || 'system';
+  const theme = Settings.get('theme') || DEFAULT_THEME;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
 }
@@ -8321,6 +9082,7 @@ function init() {
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();
+  App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
   initKeyboard();
   Tooltip.init();
@@ -8339,6 +9101,16 @@ function init() {
     Recovery.flushSync();
     if (Tabs.anyDirty()) { ev.preventDefault(); ev.returnValue = ''; }
   });
+  // Sauvegarde automatique : écriture immédiate dès que la page passe en arrière-plan ou se ferme (les minuteurs d'un
+  // onglet masqué sont ralentis par le navigateur, et la fermeture n'appelle pas toujours beforeunload).
+  window.addEventListener('pagehide', () => Recovery.flushSync());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') Recovery.flushSync(); });
+  // Champs de saisie : le texte existant est sélectionné à l'arrivée, le premier caractère tapé le remplace (aucune
+  // sélection à faire à la main). Le clic de souris ne doit pas défaire cette sélection.
+  let pickedInput = null;
+  const isTextField = el => el instanceof HTMLInputElement && ['text', 'search', 'number', 'email', 'url', 'tel', ''].includes(el.type) && !el.readOnly && !el.disabled;
+  document.addEventListener('focusin', ev => { if (isTextField(ev.target)) { ev.target.select(); pickedInput = ev.target; } });
+  document.addEventListener('mouseup', ev => { if (pickedInput && ev.target === pickedInput) ev.preventDefault(); pickedInput = null; }, true);
   // Import par glisser-déposer (EF-52).
   document.addEventListener('dragover', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) ev.preventDefault(); });
   document.addEventListener('drop', async ev => {

@@ -169,6 +169,10 @@ accepté, la construction échouerait.
 
 ## Pour aller plus loin
 
+- **Montants** : une tâche (jamais un jalon ni une récapitulative) accepte `budget` et `actual`, en **centimes entiers**
+  (`12345` = 123,45), de 0 à 5 000 000 000 000 ; le projet accepte `currency` (1 à 5 caractères) et `provision` (centimes).
+  Un montant hors limite refuse le fichier en entier. Les montants sont des données sensibles : ne les confiez à une IA
+  que si votre organisation l'autorise, ou exportez le projet **sans les montants** (case décochée par défaut).
 - Un champ inconnu n'est pas une erreur : il est ignoré, et l'aperçu d'import indique combien ont été ignorés.
 - Les ressources ou catégories citées par une tâche mais absentes des listes sont **créées** à l'import, et l'aperçu les mentionne :
   relisez-les, une faute de frappe crée une ressource en trop.

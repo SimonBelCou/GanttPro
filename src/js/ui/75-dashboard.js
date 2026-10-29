@@ -2,22 +2,27 @@
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
-function sCurveChart(curve) {
-  const W = 760, H = 280, m = { l: 44, r: 140, t: 16, b: 34 };
+/** Réglages de la courbe d'avancement : une échelle de 0 à 100 %. */
+const PCT_CHART = {
+  max: 100, ticks: [0, 25, 50, 75, 100], axis: v => `${v} %`, fmt: fmtPct, fmtFull: fmtPct, title: 'dash.curve',
+  desc: (curve, last) => t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }),
+};
+
+function sCurveChart(curve, o = PCT_CHART) {
+  const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
   const n = curve.periods.length;
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
-  const py = v => m.t + (1 - v / 100) * (H - m.t - m.b);
+  const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
   const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
   const last = a => (a.length ? a[a.length - 1] : 0);
-  chart.append(svg('title', { id: 'sc-title', text: t('dash.curve') }),
-    svg('desc', { id: 'sc-desc', text: t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }) }));
-  for (const v of [0, 25, 50, 75, 100]) {
+  chart.append(svg('title', { id: 'sc-title', text: t(o.title) }), svg('desc', { id: 'sc-desc', text: o.desc(curve, last) }));
+  for (const v of o.ticks) {
     chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
-      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: `${v} %` }));
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: o.axis(v) }));
   }
   const step = Math.max(1, Math.ceil(n / 8));
   curve.periods.forEach((p, i) => {
@@ -37,19 +42,24 @@ function sCurveChart(curve) {
   const labels = [];
   for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
     line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), text: `${b.name} ${fmtPct(last(curve.baselines[b.id] || []))}`, i: n - 1 });
+    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
   }
   line(curve.planned, 'planned');
   line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), text: `${t('dash.planned')} ${fmtPct(last(curve.planned))}`, i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), text: `${t('dash.real')} ${fmtPct(last(curve.real))}`, i: curve.real.length - 1 });
+  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
+  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
+  // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
+  // à 18 caractères (le nom entier reste dans <title>, l'infobulle et les tableaux).
   let prev = -Infinity;
   for (const l of labels) {
-    const y = Math.max(py(l.v) + 4, prev + 14);
+    const y = Math.max(py(l.v) + 4, prev + 28);
     prev = y;
-    chart.append(svg('text', { x: px(l.i) + 6, y, class: 'label', text: l.text }));
+    const short = l.name.length > 18 ? l.name.slice(0, 17) + '…' : l.name;
+    const el = svg('text', { x: px(l.i) + 6, y, class: 'label' });
+    el.append(svg('title', { text: `${l.name} ${l.value}` }), svg('tspan', { x: px(l.i) + 6, text: short }), svg('tspan', { x: px(l.i) + 6, dy: 13, text: l.value }));
+    chart.append(el);
   }
   // Réticule au survol et au clavier (flèches gauche/droite).
   const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'cross', visibility: 'hidden' });
@@ -62,9 +72,9 @@ function sCurveChart(curve) {
     cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
     const p = curve.periods[idx];
     const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
-      `${t('dash.planned')} ${fmtPct(curve.planned[idx])}`];
-    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${fmtPct(curve.real[idx])}`);
-    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${fmtPct((curve.baselines[b.id] || [])[idx] || 0)}`);
+      `${t('dash.planned')} ${o.fmtFull(curve.planned[idx])}`];
+    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${o.fmtFull(curve.real[idx])}`);
+    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${o.fmtFull((curve.baselines[b.id] || [])[idx] || 0)}`);
     tip.textContent = parts.join(' · ');
     tip.hidden = false;
   };
@@ -96,15 +106,15 @@ function curveLegend() {
     App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
 }
 
-function curveTable(curve) {
+function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
   const bls = App.project.baselines.filter(b => b.shownOnScurve);
-  return h('table', { class: 'manage values', id: 'sc-values' },
-    h('caption', { text: t('dash.valuesCaption') }),
+  return h('table', { class: 'manage values', id },
+    h('caption', { text: t(caption) }),
     h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
     h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
       h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
-      h('td', { text: fmtPct(curve.planned[i]) }), h('td', { text: i < curve.real.length ? fmtPct(curve.real[i]) : '—' }),
-      bls.map(b => h('td', { text: fmtPct((curve.baselines[b.id] || [])[i] || 0) }))))));
+      cell(curve.planned[i]), i < curve.real.length ? cell(curve.real[i]) : h('td', { text: '—' }),
+      bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
 }
 
 function trackingRows() {
@@ -146,17 +156,26 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+function dashTabs() {
+  const tabs = ['summary', 'load'];
+  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
+  return tabs;
+}
+
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
   // Onglets « Synthèse » et « Charge » (motif ARIA tabs : flèches gauche/droite).
-  const tabs = ['summary', 'load'];
+  const tabs = dashTabs();
   body.append(h('div', { role: 'tablist', class: 'tabs', aria: { label: t('top.dashboard') } }, tabs.map(k => h('button', {
     type: 'button', role: 'tab', id: 'dtab-' + k, tabindex: Dash.tab === k ? '0' : '-1', aria: { selected: String(Dash.tab === k), controls: 'dpanel' },
     data: { click: 'dashTab', arg: k } }, t('dash.tab.' + k)))));
   const panel = h('div', { role: 'tabpanel', id: 'dpanel', aria: { labelledby: 'dtab-' + Dash.tab }, tabindex: '0' });
   body.append(panel);
   if (Dash.tab === 'load') { paintLoad(panel); return; }
+  if (Dash.tab === 'budget') { paintBudget(panel); return; }
   body = panel;
   const today = Dates.todayDn();
   const c = Metrics.counters(App.project, App.sched, today);
@@ -189,7 +208,7 @@ function dashboardWindow() {
   const body = h('div', { id: 'dash-win' });
   dashboardWindow.body = body;
   paintDashboard(body);
-  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
     .then(() => { dashboardWindow.body = null; });
 }
 
@@ -199,14 +218,17 @@ function repaintDashboard(focusSel) {
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
-action('dashTab', k => { Dash.tab = k === 'load' ? 'load' : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
+action('dashTab', k => { Dash.tab = ['load', 'budget'].includes(k) ? k : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
 document.addEventListener('keydown', ev => {
   const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
   if (!tab || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
   ev.preventDefault();
-  ACTIONS.dashTab(Dash.tab === 'load' ? 'summary' : 'load');
+  const tabs = dashTabs(), at = tabs.indexOf(Dash.tab);
+  ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashOngoing', (arg, el) => { Dash.ongoing = el.checked; repaintDashboard('#bud-ongoing'); });
+action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
 action('dashSort', k => {

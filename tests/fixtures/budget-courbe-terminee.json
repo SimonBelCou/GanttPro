@@ -1,0 +1,51 @@
+{
+  "format": 3,
+  "name": "Projet fictif budget, tâche terminée",
+  "projectStart": "2025-03-03",
+  "provision": 4000,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Etude",
+      "dur": 5,
+      "pct": 100,
+      "realEnd": "2025-03-07",
+      "cat": "Etudes",
+      "budget": 10000,
+      "actual": 9000
+    },
+    {
+      "id": "T2",
+      "name": "Realisation",
+      "dur": 5,
+      "deps": [
+        "T1"
+      ],
+      "pct": 100,
+      "cat": "Etudes",
+      "budget": 30000,
+      "actual": 50000
+    },
+    {
+      "id": "J",
+      "name": "Jalon final",
+      "type": "milestone",
+      "dur": 0,
+      "deps": [
+        "T2"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}

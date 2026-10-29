@@ -97,6 +97,7 @@ def main():
 
         # ── Chargement et CSP ──────────────────────────────────────────────────────────────
         check('aucune erreur ni violation CSP au chargement', not errors and not csp, (errors, csp))
+        check('icône de l\'onglet intégrée (data:), aucune requête /favicon.ico', (pg.get_attribute('link[rel=icon]', 'href') or '').startswith('data:'))
         meta = pg.get_attribute('meta[http-equiv="Content-Security-Policy"]', 'content')
         check("CSP sans 'unsafe-inline' ni 'unsafe-eval'", 'unsafe' not in meta, meta)
         check('polices intégrées chargées', pg.evaluate("document.fonts.load('600 14px Sora').then(() => document.fonts.check('600 14px Sora'))"))
@@ -137,7 +138,8 @@ def main():
         nm1 = pg.evaluate("document.querySelector('#tasks-table thead th:nth-child(2)').getBoundingClientRect().width")
         check('colonne : la largeur du nom dépasse l\'ancien maximum de 400 px', nm1 > 400, (nm0, nm1))
         pg.dblclick('#tasks-table .col-resize[data-col="name"]')
-        check('colonne : double-clic sur la poignée rétablit la colonne', not pg.evaluate("document.getElementById('tasks-table').classList.contains('fixed')"))
+        nm2 = pg.evaluate("document.querySelector('#tasks-table thead th:nth-child(2)').getBoundingClientRect().width")
+        check('colonne : double-clic sur la poignée rétablit la largeur par défaut de la colonne', abs(nm2 - 310) <= 2, nm2)
         pg.click('button[data-click="resetColumns"]')
         # Colonnes figées : liste étroite, défilement horizontal, le nom reste en place.
         drag_by('#splitter', -(w0 - 300))
@@ -231,7 +233,7 @@ def main():
 
         # ── Annuler / rétablir ───────────────────────────────────────────────────────────────
         pg.click('#btn-undo')
-        check('annuler retire la tâche C', pg.query_selector('#task-rows tr[data-id="C"] td:nth-child(4)') is None or 'B' not in pg.inner_text('#task-rows tr[data-id="C"]'))
+        check('annuler retire la tâche C', pg.query_selector('#task-rows tr[data-id="C"] td:nth-child(8)') is None or 'B' not in pg.inner_text('#task-rows tr[data-id="C"]'))
         pg.click('#btn-redo')
         check('rétablir remet le lien de C', 'B' in pg.inner_text('#task-rows tr[data-id="C"]'))
 
@@ -300,7 +302,7 @@ def main():
         pg.wait_for_selector('#dash-win')
         dash = pg.inner_text('#dash-win')
         check('tableau de bord : indicateurs', 'Avancement global' in dash and 'Tâches terminées' in dash)
-        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
+        check('courbe en S : SVG titré et décrit', pg.locator('svg.scurve > title').count() == 1 and pg.locator('svg.scurve polyline.planned').count() == 1)
         pg.click('#dash-win button:has-text("Afficher les valeurs")')
         check('équivalent texte de la courbe', pg.locator('#sc-values tbody tr').count() >= 2 and pg.get_attribute('[data-click="dashValues"]', 'aria-expanded') == 'true')
         pg.focus('#dash-win .chart-box'); pg.keyboard.press('ArrowRight')
@@ -449,7 +451,7 @@ def main():
         pg.mouse.move(src['x'] + 40, src['y'] + 40, steps=4)
         dst = pg.locator('.bar[data-arg="B"] .lk-s').bounding_box()
         pg.mouse.move(dst['x'] + 5, dst['y'] + 5, steps=6); pg.mouse.up()
-        check('tirer un lien fin → début crée « C → B »', 'C' in pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(4)'), pg.inner_text('#task-rows tr[data-id="B"]'))
+        check('tirer un lien fin → début crée « C → B »', 'C' in pg.inner_text('#task-rows tr[data-id="B"] td:nth-child(8)'), pg.inner_text('#task-rows tr[data-id="B"]'))
         pg.mouse.move(dst['x'] + 5, dst['y'] + 5); pg.mouse.down(); pg.mouse.move(src['x'] + 5, src['y'] + 5, steps=6); pg.mouse.up()
         check('lien qui créerait une boucle : refusé avec message', 'boucle' in pg.inner_text('#toast'), pg.inner_text('#toast'))
         # Commentaires et étiquettes (EF-90, EF-91)
@@ -650,7 +652,7 @@ def main():
         check('une modification déclenche l\'avertissement', pg.evaluate("(() => { const e = new Event('beforeunload', {cancelable: true}); window.dispatchEvent(e); return e.defaultPrevented; })()") is True)
 
         # ── Thème sombre : contraste ─────────────────────────────────────────────────────────
-        pg.click('#btn-theme'); pg.click('#btn-theme')
+        pg.click('#btn-theme')  # clair (défaut) → sombre
         check('thème sombre appliqué', pg.get_attribute('html', 'data-theme') == 'dark')
         axe_check(pg, 'vue principale en thème sombre')
 

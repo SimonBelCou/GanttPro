@@ -6,6 +6,7 @@
 <!--CSP-->
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
 <title>GanttPro</title>
 <style>/*@STYLES@*/</style>
 </head>
@@ -42,15 +43,16 @@
       <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
       <button type="button" id="btn-links" data-click="toggleLinks"></button>
+      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
     </div>
     <div class="group">
       <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
       <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
     <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
       <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
       <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
     </div>
     <div class="group">
@@ -125,10 +127,12 @@
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="deps"><col data-col="res"><col data-col="status"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="budget"><col data-col="actual"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
+          <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
+          <th scope="col"><span data-i18n="col.budget"></span></th><th scope="col"><span data-i18n="col.actual"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -139,8 +143,8 @@
     </section>
   </div>
   <div class="full-bar" id="full-bar" hidden>
-    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut">−</button>
-    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn">+</button>
+    <button type="button" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+    <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>

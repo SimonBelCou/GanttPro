@@ -1,0 +1,27 @@
+{
+  "format": 3,
+  "name": "Projet fictif budget",
+  "projectStart": "2025-03-03",
+  "provision": 4000,
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "M",
+      "name": "Jalon",
+      "type": "milestone",
+      "dur": 0,
+      "budget": 100
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}

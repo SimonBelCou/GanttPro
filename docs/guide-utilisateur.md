@@ -67,6 +67,7 @@ Un clic sur le nom d'une ligne, sur sa barre ou son jalon (ou Entrée au clavier
 | Avancement | Curseur et champ liés, de 0 à 100 % ; case « Atteint » pour un jalon |
 | Date imposée, Ne pas commencer avant, Échéance | Contraintes de dates (section 4) |
 | Début réel, fin réelle | Suivi (section 9) |
+| Budget, coût réel cumulé | Montants d'une **tâche** (jamais d'un jalon ni d'une récapitulative, dont les montants sont la somme de leurs tâches). Voir « Budget et coûts » plus bas |
 | Étiquettes | Mots-clés séparés par des virgules (10 par tâche), avec suggestions tirées du projet |
 | Notes, commentaires | Notes libres (2 000 caractères) et journal de commentaires datés ; une icône 📝 les signale sur la ligne |
 
@@ -183,11 +184,13 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 
 ### Zoom et affichage
 
-- Zoom de 20 à 300 % : boutons − et +, ↺ pour revenir à 100 %, touches + et −, ou Ctrl + molette sur la grille. Au-dessous de 60 %, la grille passe en vue mois.
+- Zoom de 20 à 400 % : boutons − et +, ↺ pour revenir à 100 %, touches + et −, ou Ctrl + molette sur la grille. Au-dessous de 60 %, la grille passe en vue mois ; les libellés de mois s'abrègent selon la place disponible (« nov. 2026 », « nov. 26 », « 11/26 », « 11 »).
 - **Liens : ON / OFF** affiche ou masque les flèches.
 - **Replier la liste** donne toute la largeur à la grille.
 - **Largeur de la liste.** Tirez la barre verticale qui sépare la liste du Gantt (au doigt, elle est plus large), ou placez-vous dessus et utilisez les flèches gauche et droite (Maj : par pas de 100 px). Un double-clic, ou la touche Début, rétablit la largeur automatique. La liste garde au moins 200 px, le Gantt aussi.
-- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit cette colonne ; **Colonnes par défaut** rétablit toutes les colonnes.
+- **Colonnes de dates.** Après la durée, la liste affiche **Début**, **Fin** (dates prévues calculées), **Début réel** et **Fin réel** (saisies dans la fiche ; vides sinon). Ajouter une ligne sous une récapitulative déjà au cinquième niveau est refusé avec un message, au lieu de la placer en tête de liste.
+- **Saisie.** Dans une fiche, le texte d'un champ est sélectionné quand vous y arrivez : le premier caractère tapé remplace l'ancien contenu.
+- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit la largeur par défaut de cette colonne (les autres gardent la leur) ; **Colonnes par défaut** rétablit toutes les colonnes.
 - **Figer des colonnes.** Le choix **Figer** de la barre de recherche garde à l'écran l'identifiant, ou l'identifiant et le nom, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
 - **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière et le bouton **Quitter le plein écran** (ou Échap). Le reste de la page est désactivé pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
 - Ces réglages valent pour la session : ils ne sont pas enregistrés dans le projet ni dans le navigateur.
@@ -217,7 +220,7 @@ Plusieurs tâches se modifient en une seule opération, annulable d'un seul « A
 
 **Modifier en masse.** Seuls les champs remplis s'appliquent : catégorie ; ressource à ajouter, à retirer ou qui remplace toutes les autres (avec son taux) ; avancement ; étiquette à ajouter ou à retirer ; décalage des dates imposées de n jours ouvrés ; « ne pas commencer avant » ; échéance. Si une seule tâche refuse une valeur (par exemple un taux au-dessus de la capacité), rien n'est appliqué et le message liste les tâches en cause.
 
-**Copier-coller.** Ctrl + C copie la sélection, avec ses liens internes, et aussi en texte tabulé lisible par un tableur. Ctrl + V colle après la sélection avec de nouveaux identifiants. Vous pouvez aussi coller des lignes copiées depuis Excel ou LibreOffice : avec une ligne d'en-tête, les colonnes sont reconnues (Nom, Durée, Prédécesseurs, Ressources…) ; sans en-tête, l'ordre attendu est nom, durée, prédécesseurs, ressources, catégorie, avancement, étiquettes. Les lignes invalides sont listées avant le collage.
+**Copier-coller.** Ctrl + C copie la sélection, avec ses liens internes, et aussi en texte tabulé lisible par un tableur. Ctrl + V colle après la sélection avec de nouveaux identifiants. Le texte tabulé ne contient **pas** les montants (comme un export, il faut les demander explicitement) ; coller ou dupliquer dans GanttPro conserve en revanche le budget et le coût réel des tâches copiées. Vous pouvez aussi coller des lignes copiées depuis Excel ou LibreOffice : avec une ligne d'en-tête, les colonnes sont reconnues (Nom, Durée, Prédécesseurs, Ressources…) ; sans en-tête, l'ordre attendu est nom, durée, prédécesseurs, ressources, catégorie, avancement, étiquettes. Les lignes invalides sont listées avant le collage.
 
 ## 8. Rechercher, filtrer, regrouper
 
@@ -255,6 +258,17 @@ Le suivi repose sur deux saisies, l'avancement et les dates réelles ; GanttPro 
 
 **Alertes** : le bandeau regroupe conflits de ressources, dates imposées qui contredisent un lien, surcharges non lissées et échéances dépassées ; chaque cas nomme les tâches et les dates.
 
+### Budget et coûts
+
+Chaque tâche peut recevoir un **budget** (ce qu'elle doit coûter) et un **coût réel cumulé** (les factures engagées ou payées à ce jour, à saisir vous-même : GanttPro ne le calcule pas). Ils se saisissent dans le groupe « Budget » de la fiche, ou pour plusieurs tâches à la fois par « Modifier en masse ».
+
+- **Format** : un montant en unités, deux décimales au plus (`1 234,56` ou `1234.56`), jamais négatif, `50 000 000 000,00` au plus. Un montant refusé est expliqué sous le champ.
+- **Devise et provision** : dans les réglages du projet (clic sur son nom), le symbole de la devise (1 à 5 caractères, `€` par défaut) et une **provision globale**, réserve de budget qui n'appartient à aucune tâche. Le budget total est le BAC (somme des budgets des tâches) plus la provision.
+- **Liste** : les colonnes « Budget » et « Coût réel » affichent chacune leur montant (elles se redimensionnent séparément). À partir de 1 000 000,00, la liste et l'axe de la courbe passent en forme abrégée (français : `1,23 M €`, `2,5 Md €` ; anglais : `€1.23M`, `€2.5B`) ; la fiche, les tableaux et les fichiers gardent toujours le montant complet. Une récapitulative affiche la somme de ses tâches.
+- **Courbe des coûts** (onglet Budget du tableau de bord) : le réel cumule le coût réel des tâches terminées, à leur date de fin réelle (une tâche terminée sans date de fin réelle compte dans la période en cours, ou dans la dernière période si la date du jour dépasse la fin du projet). Cochez **Inclure le coût réel des tâches en cours** pour y ajouter, dans la période en cours, le coût déjà engagé des tâches non terminées ; la case est décochée par défaut.
+- **Masquer les montants** : le bouton de la barre du haut, ou celui de l'en-tête des fenêtres Tableau de bord, Baselines et Rapport d'état, remplace tous les montants par `••••` à l'écran (utile en réunion ou en partage d'écran) et désactive leur saisie. Il ne change aucune donnée et se mémorise sur votre poste. Il ne s'applique pas aux fichiers, impressions et copies : voir la section 12.
+- GanttPro **ne remplace pas une comptabilité de projet** : ce sont des montants de suivi saisis à la main.
+
 ## 10. Baselines et versions
 
 Une baseline fige les dates du planning pour les comparer plus tard ; une version garde tout le projet pour pouvoir y revenir.
@@ -264,6 +278,7 @@ Une baseline fige les dates du planning pour les comparer plus tard ; une versio
 - « Capturer une baseline » copie aussitôt les dates calculées de toutes les tâches sous le nom « Baseline 1 », « Baseline 2 »…, que vous pouvez changer dans la liste, comme sa couleur.
 - Deux cases par baseline : l'afficher sur le Gantt (fine barre sous chaque tâche) et sur la courbe en S (en pointillé).
 - Une baseline ne bouge plus quand le planning change ; seul le renommage d'un identifiant de tâche y est reporté. Une tâche créée après la capture n'a pas de barre de baseline.
+- Une baseline fige aussi le **budget** des tâches et la provision ; la fenêtre affiche son **BAC**, à comparer au BAC actuel du projet. Le coût réel n'est pas figé.
 - Le tableau de suivi et le rapport d'état comparent la fin prévue à celle de la baseline choisie.
 
 **Versions** (bouton « Versions », dix au plus) : donnez un nom et cliquez sur « Enregistrer l'état actuel ». La liste montre nom, date et nombre de tâches. « Restaurer » remplace le projet par la version après confirmation, et s'annule par « Annuler ». Les versions sont enregistrées dans le fichier exporté.
@@ -277,6 +292,10 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 - Quatre indicateurs : avancement global, tâches terminées, en cours, en retard.
 - **Courbe en S** : cumul prévu et cumul réel en pourcentage, par semaine ou par mois, avec le repère « Aujourd'hui » et les baselines cochées en pointillé. Chaque tâche vaut un point, acquis quand elle est terminée : à sa fin prévue pour la courbe prévue (et celle d'une baseline), à sa fin réelle pour la courbe réelle. Seules les tâches à 100 % comptent dans la courbe réelle ; un avancement partiel n'y figure pas, mais il est dans l'avancement global. Une tâche à 100 % sans fin réelle compte dans la période en cours. Les flèches ← / → parcourent les périodes au clavier. « Afficher les valeurs » ouvre le tableau des chiffres de la courbe.
 - **Tableau de suivi** : une ligne par tâche (avancement, début et fin prévus, dates réelles, écart, statut), triable par un clic sur l'en-tête de colonne. La liste « Écart vs baseline » ajoute la différence de fin avec la baseline choisie.
+
+### Tableau de bord, onglet « Budget »
+
+Cet onglet n'apparaît que si au moins un montant est saisi. Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
 
 ### Tableau de bord, onglet « Charge »
 
@@ -294,13 +313,13 @@ Le bouton « Rapport d'état » ouvre un aperçu prêt à imprimer, daté du jou
 | ORANGE | Une autre tâche est en retard, ou la fin dépasse la baseline de 1 à 5 jours ouvrés |
 | VERT | Aucun retard, aucune dérive |
 
-Des cases incluent ou excluent chaque bloc : indicateurs (avancement réel et prévu à ce jour), courbe en S, tâches en retard, échéances des 14 prochains jours, jalons, tâches critiques, alertes, comparaison à une baseline et note. La note se rédige dans la fenêtre et reste dans le projet. Deux boutons : **Imprimer ou enregistrer en PDF**, et **Copier le texte** pour le coller dans un courriel.
+Une case **Inclure les montants**, décochée à chaque ouverture, ajoute le bloc Budget (BAC, provision, budget total, coût réel, reste, variation du BAC avec la baseline choisie). Des cases incluent ou excluent chaque bloc : indicateurs (avancement réel et prévu à ce jour), courbe en S, tâches en retard, échéances des 14 prochains jours, jalons, tâches critiques, alertes, comparaison à une baseline et note. La note se rédige dans la fenêtre et reste dans le projet. Deux boutons : **Imprimer ou enregistrer en PDF**, et **Copier le texte** pour le coller dans un courriel.
 
 ![Rapport d'état : voyant, indicateurs, courbe en S, retards et échéances](img/08-rapport.png)
 
 ### Imprimer le Gantt
 
-Choisissez la période (tout le planning ou du… au…), l'échelle (ajuster à la largeur de la page ou zoom actuel), l'orientation, les colonnes de la liste et la légende. L'en-tête du temps se répète sur chaque page, les couleurs sont remplacées par des motifs noir et blanc, et le pied de page numérote les pages. Seules les lignes affichées (filtres compris) sont imprimées. Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d'impression du navigateur.
+Choisissez la période (tout le planning ou du… au…), l'échelle (ajuster à la largeur de la page ou zoom actuel), l'orientation, les colonnes de la liste et la légende. Les colonnes Début, Fin et Dépendances sont proposées avec les autres, et aucun texte n'est coupé (les noms longs passent à la ligne). Avec **Ajuster**, tout le planning tient sur la largeur d'une page ; avec **Zoom actuel**, il est découpé en bandes de semaines entières (« partie 1 sur N »), chacune imprimée sur de nouvelles pages et répétant les colonnes de texte, pour que rien ne sorte de la page. L'en-tête du temps se répète sur chaque page, l'impression est en couleur mais reste lisible sans couleur (contour épais et hachures pour le chemin critique, partie réalisée rayée, colonne Catégorie, légende) : le mode noir et blanc de l'imprimante convient aussi ; le pied de page numérote les pages. Seules les lignes affichées (filtres compris) sont imprimées. Une colonne de montants n'est imprimée que si **Inclure les montants** est coché (décoché à chaque ouverture). Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d'impression du navigateur.
 
 ## 12. Fichiers : exporter et importer
 
@@ -318,7 +337,7 @@ Le bouton **Exporter** propose cinq formats ; le fichier s'appelle « nom\_du\_p
 | MS Project (.xml) | Tâches, jalons, hiérarchie, durées, dates, avancement, liens, contraintes, ressources, affectations, calendrier, première baseline | Échanger avec MS Project |
 | Image du Gantt (.png) | La grille, période au choix, résolution normale ou double, légende, fond blanc ou du thème | Illustrer un document |
 
-Options : **Exporter sans noms de personnes** remplace les ressources par « Ressource 1 », « Ressource 2 »… et vide les rôles. **Protéger par mot de passe** (JSON) chiffre le fichier : 12 caractères au moins, une phrase convient très bien. Un mot de passe perdu rend le fichier irrécupérable : GanttPro ne le garde jamais. Dans un tableur, un texte qui commence par =, +, − ou @ est précédé d'une apostrophe pour ne jamais s'exécuter comme une formule. MS Project ne reçoit ni catégories, ni étiquettes, ni commentaires, ni versions, ni absences.
+Options : **Inclure les montants** (JSON, Excel, CSV) est **décochée à chaque ouverture** : sans elle, le fichier ne contient ni budget, ni coût réel, ni provision (baselines et versions comprises), seulement la devise. Le masquage à l'écran n'y change rien : une case cochée exporte les montants. **Exporter sans noms de personnes** remplace les ressources par « Ressource 1 », « Ressource 2 »… et vide les rôles. **Protéger par mot de passe** (JSON) chiffre le fichier : 12 caractères au moins, une phrase convient très bien. Un mot de passe perdu rend le fichier irrécupérable : GanttPro ne le garde jamais. Dans un tableur, un texte qui commence par =, +, − ou @ est précédé d'une apostrophe pour ne jamais s'exécuter comme une formule. MS Project ne reçoit aucun montant, ni catégories, ni étiquettes, ni commentaires, ni versions, ni absences.
 
 ![Fenêtre Exporter : choix du format et options](img/16-export.png)
 
@@ -328,7 +347,7 @@ Options : **Exporter sans noms de personnes** remplace les ressources par « Res
 
 - Pour un projet, un aperçu montre nom, nombre de tâches, ressources, catégories, baselines, début et avancement moyen. Vous l'ouvrez dans un nouvel onglet, ou il remplace le projet courant (avec une confirmation de plus si celui-ci a des modifications non enregistrées).
 - Un fichier invalide est refusé en entier, avec la raison (par exemple « Tâche n° 12 : identifiant invalide ») : le projet ouvert reste intact. Taille maximale : 5 Mo.
-- Un **tableur** passe par un assistant en trois étapes : la feuille et la ligne d'en-tête ; l'association des colonnes, proposée automatiquement ; l'aperçu des lignes valides et des erreurs ligne par ligne. Vous choisissez d'ajouter les tâches au projet ou de les remplacer. Une durée s'écrit « 5 », « 5j » ou « 5 j » ; des prédécesseurs « A; B DD+2; C FF-1 » ; des ressources « Alice 50 %; Bob ». Une colonne « N° » sert de référence aux liens s'il n'y a pas d'identifiant.
+- Un **tableur** passe par un assistant en trois étapes : la feuille et la ligne d'en-tête ; l'association des colonnes, proposée automatiquement ; l'aperçu des lignes valides et des erreurs ligne par ligne. Vous choisissez d'ajouter les tâches au projet ou de les remplacer. Les colonnes « Budget » et « Coût réel » sont reconnues ; un montant illisible ou hors limite est ignoré et listé à l'étape d'aperçu. Une durée s'écrit « 5 », « 5j » ou « 5 j » ; des prédécesseurs « A; B DD+2; C FF-1 » ; des ressources « Alice 50 %; Bob ». Une colonne « N° » sert de référence aux liens s'il n'y a pas d'identifiant.
 - Pour **faire créer ou modifier un projet par une IA** (à partir de notes ou après une réunion), le [guide « IA »](guide-ia-json.md) fournit deux prompts prêts à l'emploi, le format attendu et les erreurs fréquentes. Le fichier produit passe par le même contrôle qu'un import : s'il est incorrect, il est refusé en entier avec la raison.
 - Depuis **MS Project**, les durées en heures sont converties à 8 heures par jour, arrondies au jour supérieur ; ce qui n'a pas d'équivalent (coûts, heures de travail, calendriers de ressources) est listé puis ignoré.
 
@@ -346,9 +365,10 @@ Jusqu'à dix projets s'ouvrent côte à côte, et ceux que vous choisissez se ga
 
 ## 14. Réglages, langue, thème, aide
 
-- **Thème** : le bouton « Thème » passe de système à clair puis sombre. « Système » suit la préférence de l'ordinateur.
+- **Thème** : le thème est **clair** par défaut. Le bouton « Thème » passe de clair à sombre puis à système ; « Système » suit la préférence de l'ordinateur.
+- **Raccourcis au survol** : en survolant un bouton, une infobulle donne son nom et son raccourci clavier (« Annuler (Ctrl + Z) »). Réglages ⚙ → « Afficher les raccourcis clavier au survol des boutons » permet de la désactiver.
 - **Langue** : le bouton « English » / « Français » change aussitôt tous les libellés, messages et formats de date (« lun. 05 janv. 2026 », « Mon 05 Jan 2026 »), sans recharger ni toucher aux données. Au premier lancement, GanttPro suit la langue du navigateur.
-- **Réglages** (⚙) : langue, thème, sauvegarde automatique et sa protection par mot de passe, espace occupé par GanttPro, et « Effacer toutes les données de l'application sur cet appareil » (bibliothèque, modèles, sauvegardes, réglages ; les projets ouverts et les fichiers exportés ne sont pas touchés).
+- **Réglages** (⚙) : langue, thème, raccourcis au survol, sauvegarde automatique et sa protection par mot de passe, espace occupé par GanttPro, et « Effacer toutes les données de l'application sur cet appareil » (bibliothèque, modèles, sauvegardes, réglages ; les projets ouverts et les fichiers exportés ne sont pas touchés).
 - **Aide** (? ou la touche ?) : version, licence MIT, mode d'emploi en bref, raccourcis, vie privée, déclaration d'accessibilité et licence des polices intégrées.
 - **Page d'accueil** : si GanttPro est ouvert par une page d'accueil de votre organisation, les boutons « ← Accueil » et « Sauvegarder » apparaissent pour lui remettre une copie du projet. Sans page d'accueil, ils n'existent pas.
 

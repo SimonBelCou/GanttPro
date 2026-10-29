@@ -8,10 +8,19 @@ async function editProjectWindow() {
     Model.EMOJIS.map((e, i) => h('span', { class: 'emoji-opt' },
       h('input', { type: 'radio', id: 'p-emo-' + i, name: 'p-emoji', value: e, checked: e === p.emoji }),
       h('label', { for: 'p-emo-' + i, text: e }))));
+  // Budget (EF-114) : symbole de la devise, unique pour le projet et sans conversion, et provision globale.
+  const masked = Money.masked();
+  const currency = h('input', { type: 'text', id: 'p-currency', value: p.currency || '€', maxlength: Model.LIMITS.currency, autocomplete: 'off', aria: { describedby: 'p-currency-err' } });
+  const provision = h('input', { type: 'text', id: 'p-provision', value: masked ? Money.DOTS : Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-provision-err' } });
+  const budgetBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+    h('p', { class: 'hint', text: t('proj.budgetNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
+    masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+    h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -22,9 +31,27 @@ async function editProjectWindow() {
         name.setAttribute('aria-invalid', 'true'); name.focus();
         return false;
       }
+      const cur = currency.value.trim();
+      if (!cur || cur.length > Model.LIMITS.currency || /[\u0000-\u001f\u007f]/.test(cur)) {
+        const err = $('p-currency-err');
+        err.textContent = t('err.text', { field: t('proj.currency'), min: 1, max: Model.LIMITS.currency }); err.hidden = false;
+        currency.setAttribute('aria-invalid', 'true'); currency.focus();
+        return false;
+      }
+      let prov = p.provision || 0;
+      if (!masked) {
+        const r = Budget.parse(provision.value);
+        if (!r.ok) {
+          const err = $('p-provision-err');
+          err.textContent = t('err.amount.' + r.reason, { field: t('proj.provision'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+          provision.setAttribute('aria-invalid', 'true'); provision.focus();
+          return false;
+        }
+        prov = r.cents;
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
       return true;
     },
   });

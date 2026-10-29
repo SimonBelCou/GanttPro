@@ -29,6 +29,10 @@ function bulkWindow() {
       fld('bk-res', t('col.res'), h('select', {}, p.resources.map(r => opt(r.id, r.name)))),
       fld('bk-units', t('rs.units') + ' (%)', h('input', { type: 'number', min: 1, max: 100, step: 1, value: 100, inputmode: 'numeric' }))),
     fld('bk-pct', t('f.pct'), h('input', { type: 'number', min: 0, max: 100, step: 1, inputmode: 'numeric', placeholder: t('bulk.keepShort') })),
+    h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
+      Money.masked() ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
+      fld('bk-budget', `${t('f.budget')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') })),
+      fld('bk-actual', `${t('f.actual')} (${Money.symbol()})`, h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', disabled: Money.masked(), placeholder: t('bulk.keepShort') }))),
     fld('bk-tag-add', t('bulk.tagAdd'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-tag-remove', t('bulk.tagRemove'), h('input', { type: 'text', maxlength: 30 })),
     fld('bk-shift', t('bulk.shift'), h('input', { type: 'number', min: -365, max: 365, step: 1, inputmode: 'numeric', placeholder: '0' })),
@@ -45,6 +49,15 @@ function bulkWindow() {
       if (pctRaw !== '' && !(Number.isInteger(Number(pctRaw)) && Number(pctRaw) >= 0 && Number(pctRaw) <= 100)) return err(t('err.int', { field: t('f.pct'), min: 0, max: 100 }));
       if (shiftRaw !== '' && !(Number.isInteger(Number(shiftRaw)) && Math.abs(Number(shiftRaw)) <= 365)) return err(t('err.int', { field: t('bulk.shift'), min: -365, max: 365 }));
       if (mode && mode !== 'remove' && !(Number.isInteger(units) && units >= 1 && units <= 100)) return err(t('err.int', { field: t('rs.units'), min: 1, max: 100 }));
+      // Budget et coût réel (EF-116) : valeur vide = on garde ; seules les tâches reçoivent un montant (RG-36).
+      const money = {};
+      for (const k of ['budget', 'actual']) {
+        const raw = val('bk-' + k);
+        if (raw.trim() === '' || $('bk-' + k).disabled) continue;
+        const r = Budget.parse(raw);
+        if (!r.ok) return err(t('err.amount.' + r.reason, { field: t('f.' + k), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: Money.symbol() }) }));
+        money[k] = r.cents;
+      }
       const refused = [];
       const apply = pr => {
         const r = pr.resources.find(x => x.id === res);
@@ -75,6 +88,7 @@ function bulkWindow() {
             const cal = App.sched.cal;
             x.forcedStart = Dates.toISO(cal.dnOf(cal.ceil(Dates.parse(x.forcedStart)) + Number(shiftRaw)));
           }
+          if (x.type === 'task') for (const k of Object.keys(money)) x[k] = money[k];
           if (nb) x.notBefore = nb;
           if (dl) x.deadline = dl;
         }

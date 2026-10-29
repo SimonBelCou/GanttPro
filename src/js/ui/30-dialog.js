@@ -12,10 +12,11 @@ const Dialog = (() => {
    * @param {{label:string, value:string, kind?:string, focus?:boolean}[]} o.actions
    * @param {(value:string, dlg:HTMLDialogElement) => boolean|void} [o.onAction] renvoyer false garde la fenêtre ouverte
    * @param {string} [o.size] 'wide'
+   * @param {boolean} [o.maskTool] ajoute dans l'en-tête le bouton « Masquer les montants » (même réglage que la barre du haut, RG-41)
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    */
-  function open({ title, body = [], actions = [], onAction, size, guard }) {
+  function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
     const id = 'dlg-' + (++seq);
     return new Promise(resolve => {
@@ -25,7 +26,8 @@ const Dialog = (() => {
       }, a.label));
       const closeX = h('button', { type: 'button', class: 'dlg-x', aria: { label: I18n.t('dlg.close') }, data: { dlgx: '1' } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
       const form = h('form', { method: 'dialog', novalidate: true },
-        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }), closeX),
+        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }),
+          maskTool ? h('button', { type: 'button', class: 'dlg-mask', data: { click: 'toggleMask' }, aria: { pressed: String(!!App.maskAmounts) }, text: I18n.t('top.mask') }) : null, closeX),
         h('div', { class: 'dialog-body' }, body),
         h('div', { class: 'actions' }, buttons));
       const dlg = h('dialog', { class: ['dialog', size], aria: { labelledby: id + '-title' } }, form);
