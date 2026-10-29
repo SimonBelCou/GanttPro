@@ -11,7 +11,9 @@ const Model = (() => {
   const MAX_BYTES = 5 * 1024 * 1024;
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
-    comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    comments: 50, absences: 100, calendarDays: 366, baselines: 10, baselinesShown: 3, versions: 10, dur: 3650, lag: 365,
+    // Étape B (A.8 lignes 14 à 16) : points de situation, seuils CPI/SPI en centièmes (1,00 = 100).
+    statusPoints: 60, evmMax: 300, ratioMax: 100000,
     // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
     // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
     amount: 5000000000000, currency: 5,
@@ -173,13 +175,15 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
     const rawRes = lim(P.list('resources', Infinity), LIMITS.resources, 'resources');
     const rawCats = lim(P.list('categories', Infinity), LIMITS.categories, 'categories');
     const rawBl = lim(P.list('baselines', Infinity), LIMITS.baselines, 'baselines');
+    const rawPts = lim(P.list('statusPoints', Infinity), LIMITS.statusPoints, 'statusPoints');
     const rawVer = nested ? [] : lim(P.list('versions', Infinity), LIMITS.versions, 'versions');
     if (nested && P.present('versions')) fail('imp.field', { obj: 'version', field: 'versions', rule: 'rule.absent' });
 
@@ -198,7 +202,14 @@ const Model = (() => {
       // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
       currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
       provision: P.amount('provision'),
+      // Étape B : champs facultatifs du format 3, sans changer son numéro (A.8 ligne 8). Seuils en centièmes ; ETC absent = inactif.
+      evmGreen: P.int('evmGreen', { min: 1, max: LIMITS.evmMax, def: 100 }),
+      evmRed: P.int('evmRed', { min: 1, max: LIMITS.evmMax, def: 90 }),
+      etc: P.present('etc') ? P.amount('etc') : null,
+      baselineRef: '', statusPoints: [],
     };
+    if (project.evmRed > project.evmGreen) fail('imp.field', { obj: 'project', field: 'evmRed', rule: 'rule.evmOrder', min: 1, max: project.evmGreen });
+    if (P.present('baselineRef') && (typeof raw.baselineRef !== 'string' || raw.baselineRef.length > 64)) fail('imp.field', { obj: 'project', field: 'baselineRef', rule: 'rule.ident' });
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -362,16 +373,19 @@ const Model = (() => {
     if (cycle) fail('imp.cycle', { path: cycle.join(' → ') });
 
     // Baselines : copies figées, contrôlées pour leur forme.
+    const rawBlIds = new Map(); // identifiant lu dans le fichier -> identifiant interne (B1, B2…), pour la référence de la PV
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision', 'initial'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
         shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
+        initial: f.bool('initial', false),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
+      if (typeof b.id === 'string' && !rawBlIds.has(b.id)) rawBlIds.set(b.id, bl.id);
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
@@ -388,6 +402,29 @@ const Model = (() => {
       });
       return bl;
     });
+    // Une seule baseline « initiale » ; trois baselines affichées au plus sur chaque vue (A.8 ligne 14) : l'interface
+    // ne produit jamais plus, un fichier modifié à la main est ramené à ces bornes sans être refusé.
+    let seenInitial = false, shownG = 0, shownS = 0;
+    for (const bl of baselines) {
+      if (bl.initial) { if (seenInitial) bl.initial = false; seenInitial = true; }
+      if (bl.shownOnGantt) { if (shownG >= LIMITS.baselinesShown) bl.shownOnGantt = false; else shownG++; }
+      if (bl.shownOnScurve) { if (shownS >= LIMITS.baselinesShown) bl.shownOnScurve = false; else shownS++; }
+    }
+    project.baselineRef = P.present('baselineRef') && rawBlIds.has(raw.baselineRef) ? rawBlIds.get(raw.baselineRef) : '';
+
+    // Points de situation (étape B) : date, libellé, référence, indicateurs et montants capturés. Les montants sont
+    // facultatifs : un fichier « sans montants » ne garde que la date, le libellé et les rapports CPI/SPI.
+    const statusPoints = rawPts.map((s, i) => {
+      const where = { obj: 'statusPoint', n: i + 1 };
+      if (!isObj(s)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
+      const f = reader(s, where, ['id', 'date', 'label', 'ref', 'cpi', 'spi', 'bac', 'pv', 'ev', 'ac', 'etc'], stats);
+      const opt = (k, kind) => (f.present(k) ? (kind === 'amount' ? f.amount(k) : f.int(k, { min: 0, max: LIMITS.ratioMax, def: 0 })) : null);
+      return {
+        id: 'S' + (i + 1), date: f.date('date', { required: true }), label: f.text('label', { max: 100, trim: true }), ref: f.text('ref', { max: 100 }),
+        cpi: opt('cpi', 'ratio'), spi: opt('spi', 'ratio'),
+        bac: opt('bac', 'amount'), pv: opt('pv', 'amount'), ev: opt('ev', 'amount'), ac: opt('ac', 'amount'), etc: opt('etc', 'amount'),
+      };
+    });
 
     // Versions : chaque état est contrôlé comme un projet complet, sans versions imbriquées.
     const versions = rawVer.map((v, i) => {
@@ -402,7 +439,7 @@ const Model = (() => {
       return { id: 'V' + (i + 1), label: f.text('label', { min: 1, max: 100, trim: true }), ts: f.num('ts'), state: serialize(inner.project, { withVersions: false }) };
     });
 
-    Object.assign(project, { tasks, resources, categories, baselines, versions });
+    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints });
     // Dernier contrôle : le planning doit pouvoir se calculer (dates dans les bornes 1970-2199).
     try { Schedule.compute(project); } catch (e) { if (e instanceof RangeError) fail('imp.horizon'); throw e; }
     return { project, notices: { unknown: stats.unknown, createdResources, createdCategories } };
@@ -435,6 +472,10 @@ const Model = (() => {
       leveling: project.leveling || 'level',
       currency: project.currency || '€',
       provision: project.provision || 0,
+      evmGreen: project.evmGreen || 100, evmRed: project.evmRed || 90,
+      ...(project.etc != null ? { etc: project.etc } : {}),
+      baselineRef: project.baselineRef || '',
+      statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -464,8 +505,11 @@ const Model = (() => {
   /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
   function stripAmounts(file) {
     delete file.provision;
+    delete file.etc;
     for (const t of file.tasks) { delete t.budget; delete t.actual; }
     for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // Un point de situation ne garde que sa date, son libellé et les rapports CPI/SPI, qui ne sont pas des montants.
+    for (const s of file.statusPoints || []) { delete s.bac; delete s.pv; delete s.ev; delete s.ac; delete s.etc; }
     // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
     if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
@@ -487,7 +531,7 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0,
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [],
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],

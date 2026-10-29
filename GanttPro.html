@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nOJIAWNIi9POL9hGG5UohKyHYMDbtaeaaKDvHyKoSmE='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-cABzets1Wz86P5P/lCgIzg/faNLfcEKaZ0AevGQxUuQ='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -1498,7 +1498,9 @@ const Model = (() => {
   const MAX_BYTES = 5 * 1024 * 1024;
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
-    comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    comments: 50, absences: 100, calendarDays: 366, baselines: 10, baselinesShown: 3, versions: 10, dur: 3650, lag: 365,
+    // Étape B (A.8 lignes 14 à 16) : points de situation, seuils CPI/SPI en centièmes (1,00 = 100).
+    statusPoints: 60, evmMax: 300, ratioMax: 100000,
     // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
     // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
     amount: 5000000000000, currency: 5,
@@ -1660,13 +1662,15 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
     const rawRes = lim(P.list('resources', Infinity), LIMITS.resources, 'resources');
     const rawCats = lim(P.list('categories', Infinity), LIMITS.categories, 'categories');
     const rawBl = lim(P.list('baselines', Infinity), LIMITS.baselines, 'baselines');
+    const rawPts = lim(P.list('statusPoints', Infinity), LIMITS.statusPoints, 'statusPoints');
     const rawVer = nested ? [] : lim(P.list('versions', Infinity), LIMITS.versions, 'versions');
     if (nested && P.present('versions')) fail('imp.field', { obj: 'version', field: 'versions', rule: 'rule.absent' });
 
@@ -1685,7 +1689,14 @@ const Model = (() => {
       // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
       currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
       provision: P.amount('provision'),
+      // Étape B : champs facultatifs du format 3, sans changer son numéro (A.8 ligne 8). Seuils en centièmes ; ETC absent = inactif.
+      evmGreen: P.int('evmGreen', { min: 1, max: LIMITS.evmMax, def: 100 }),
+      evmRed: P.int('evmRed', { min: 1, max: LIMITS.evmMax, def: 90 }),
+      etc: P.present('etc') ? P.amount('etc') : null,
+      baselineRef: '', statusPoints: [],
     };
+    if (project.evmRed > project.evmGreen) fail('imp.field', { obj: 'project', field: 'evmRed', rule: 'rule.evmOrder', min: 1, max: project.evmGreen });
+    if (P.present('baselineRef') && (typeof raw.baselineRef !== 'string' || raw.baselineRef.length > 64)) fail('imp.field', { obj: 'project', field: 'baselineRef', rule: 'rule.ident' });
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -1849,16 +1860,19 @@ const Model = (() => {
     if (cycle) fail('imp.cycle', { path: cycle.join(' → ') });
 
     // Baselines : copies figées, contrôlées pour leur forme.
+    const rawBlIds = new Map(); // identifiant lu dans le fichier -> identifiant interne (B1, B2…), pour la référence de la PV
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision', 'initial'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
         shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
+        initial: f.bool('initial', false),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
+      if (typeof b.id === 'string' && !rawBlIds.has(b.id)) rawBlIds.set(b.id, bl.id);
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
@@ -1875,6 +1889,29 @@ const Model = (() => {
       });
       return bl;
     });
+    // Une seule baseline « initiale » ; trois baselines affichées au plus sur chaque vue (A.8 ligne 14) : l'interface
+    // ne produit jamais plus, un fichier modifié à la main est ramené à ces bornes sans être refusé.
+    let seenInitial = false, shownG = 0, shownS = 0;
+    for (const bl of baselines) {
+      if (bl.initial) { if (seenInitial) bl.initial = false; seenInitial = true; }
+      if (bl.shownOnGantt) { if (shownG >= LIMITS.baselinesShown) bl.shownOnGantt = false; else shownG++; }
+      if (bl.shownOnScurve) { if (shownS >= LIMITS.baselinesShown) bl.shownOnScurve = false; else shownS++; }
+    }
+    project.baselineRef = P.present('baselineRef') && rawBlIds.has(raw.baselineRef) ? rawBlIds.get(raw.baselineRef) : '';
+
+    // Points de situation (étape B) : date, libellé, référence, indicateurs et montants capturés. Les montants sont
+    // facultatifs : un fichier « sans montants » ne garde que la date, le libellé et les rapports CPI/SPI.
+    const statusPoints = rawPts.map((s, i) => {
+      const where = { obj: 'statusPoint', n: i + 1 };
+      if (!isObj(s)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
+      const f = reader(s, where, ['id', 'date', 'label', 'ref', 'cpi', 'spi', 'bac', 'pv', 'ev', 'ac', 'etc'], stats);
+      const opt = (k, kind) => (f.present(k) ? (kind === 'amount' ? f.amount(k) : f.int(k, { min: 0, max: LIMITS.ratioMax, def: 0 })) : null);
+      return {
+        id: 'S' + (i + 1), date: f.date('date', { required: true }), label: f.text('label', { max: 100, trim: true }), ref: f.text('ref', { max: 100 }),
+        cpi: opt('cpi', 'ratio'), spi: opt('spi', 'ratio'),
+        bac: opt('bac', 'amount'), pv: opt('pv', 'amount'), ev: opt('ev', 'amount'), ac: opt('ac', 'amount'), etc: opt('etc', 'amount'),
+      };
+    });
 
     // Versions : chaque état est contrôlé comme un projet complet, sans versions imbriquées.
     const versions = rawVer.map((v, i) => {
@@ -1889,7 +1926,7 @@ const Model = (() => {
       return { id: 'V' + (i + 1), label: f.text('label', { min: 1, max: 100, trim: true }), ts: f.num('ts'), state: serialize(inner.project, { withVersions: false }) };
     });
 
-    Object.assign(project, { tasks, resources, categories, baselines, versions });
+    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints });
     // Dernier contrôle : le planning doit pouvoir se calculer (dates dans les bornes 1970-2199).
     try { Schedule.compute(project); } catch (e) { if (e instanceof RangeError) fail('imp.horizon'); throw e; }
     return { project, notices: { unknown: stats.unknown, createdResources, createdCategories } };
@@ -1922,6 +1959,10 @@ const Model = (() => {
       leveling: project.leveling || 'level',
       currency: project.currency || '€',
       provision: project.provision || 0,
+      evmGreen: project.evmGreen || 100, evmRed: project.evmRed || 90,
+      ...(project.etc != null ? { etc: project.etc } : {}),
+      baselineRef: project.baselineRef || '',
+      statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1951,8 +1992,11 @@ const Model = (() => {
   /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
   function stripAmounts(file) {
     delete file.provision;
+    delete file.etc;
     for (const t of file.tasks) { delete t.budget; delete t.actual; }
     for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // Un point de situation ne garde que sa date, son libellé et les rapports CPI/SPI, qui ne sont pas des montants.
+    for (const s of file.statusPoints || []) { delete s.bac; delete s.pv; delete s.ev; delete s.ac; delete s.etc; }
     // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
     if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
@@ -1974,7 +2018,7 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0,
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [],
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
@@ -2164,6 +2208,24 @@ const Budget = (() => {
   }
 
   return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+})();
+
+// ── js/core/43-evm.js ──
+/* Valeur acquise (étape B, EF-131 et suivantes, RG-44 et suivantes) : moteur sans DOM, en centimes entiers.
+ * Les indicateurs se calculent à une date (la date du jour), sur une référence : la baseline de référence du
+ * projet, ou le planning actuel quand le projet n'a aucune baseline (A.8 lignes 14 et 15). */
+const Evm = (() => {
+  /**
+   * Baseline de référence (RG-44) : celle que désigne le projet ; à défaut la baseline « initiale », à défaut la
+   * première. Sans aucune baseline : null, et le calcul porte sur le planning actuel.
+   */
+  function reference(project) {
+    const list = project.baselines || [];
+    if (!list.length) return null;
+    return list.find(b => b.id === project.baselineRef) || list.find(b => b.initial) || list[0];
+  }
+
+  return { reference };
 })();
 
 // ── js/core/45-view.js ──
@@ -2407,7 +2469,8 @@ const I18n = (() => {
     'imp.version': 'Version n° {n} : {inner}',
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
-    'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
+    'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier', 'obj.statusPoint': 'Point de situation n° ',
+    'rule.evmOrder': 'entier de {min} à {max} : le seuil rouge ne dépasse pas le seuil vert',
     'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
@@ -2499,8 +2562,18 @@ const I18n = (() => {
     'bl.none': "Aucune baseline : capturez l'état actuel du planning pour pouvoir le comparer plus tard.",
     'bl.capture': 'Capturer une baseline', 'bl.onGantt': 'Sur le Gantt', 'bl.onScurve': 'Sur la courbe en S', 'bl.content': 'Contenu',
     'bl.captured': { one: 'Capturée le {date}, {count} tâche', other: 'Capturée le {date}, {count} tâches' },
-    'bl.limit': 'Trois baselines au plus ({max}) : supprimez-en une pour en capturer une nouvelle.',
+    'bl.limit': '{max} baselines au plus : supprimez-en une pour en capturer une nouvelle.',
     'bl.done': 'Baseline « {name} » capturée.', 'bl.delete': 'Supprimer la baseline {name} ?',
+    'bl.initial': 'Initiale', 'bl.ref': 'Référence',
+    'bl.refAria': 'Référence de la valeur acquise : {name}',
+    'bl.refHint': 'La valeur planifiée et la valeur acquise se calculent sur la baseline de référence : par défaut la baseline initiale ; sans baseline, sur le planning actuel.',
+    'bl.shownHint': 'Affichées : {gantt} sur 3 sur le Gantt, {scurve} sur 3 sur la courbe en S. Cochez et décochez pour choisir celles qui s\'affichent.',
+    'bl.maxShownGantt': 'Trois baselines au plus sont affichées sur le Gantt : décochez-en une d\'abord.',
+    'bl.maxShownScurve': 'Trois baselines au plus sont affichées sur la courbe en S : décochez-en une d\'abord.',
+    'bl.doneNotShown': 'Baseline « {name} » capturée. Elle n\'est pas affichée sur {where}, car trois baselines le sont déjà : cochez-la dans la fenêtre pour la montrer.',
+    'bl.whereGantt': 'le Gantt', 'bl.whereScurve': 'la courbe en S', 'bl.whereBoth': 'le Gantt ni sur la courbe en S',
+    'bl.deleteInitial': 'Supprimer la baseline initiale {name} ?',
+    'bl.deleteInitialWhy': 'C\'est la référence d\'origine du projet : les écarts de planning, de budget et de valeur acquise se mesurent par rapport à elle. Une fois supprimée, elle ne se rétablit que par « Annuler ».',
     'dash.curve': 'Courbe en S', 'dash.curveDesc': 'Cumul prévu {planned} à la fin du planning ; cumul réel {real} à ce jour.',
     'dash.planned': 'Prévu', 'dash.real': 'Réel', 'dash.dashed': 'pointillé', 'dash.unit': 'Période', 'dash.week': 'Semaines', 'dash.month': 'Mois',
     'dash.showValues': 'Afficher les valeurs', 'dash.hideValues': 'Masquer les valeurs', 'dash.valuesCaption': 'Valeurs de la courbe en S (cumul en pourcentage)',
@@ -2758,7 +2831,8 @@ const I18n = (() => {
     'imp.linkSummary': 'Task #{n}: predecessor {pred} is a summary task.', 'imp.linkHierarchy': 'Task #{n}: the link with {pred} connects a task to its own summary task.',
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
-    'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
+    'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar', 'obj.statusPoint': 'Status point #',
+    'rule.evmOrder': 'whole number from {min} to {max}: the red threshold does not exceed the green threshold',
     'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
@@ -2829,8 +2903,18 @@ const I18n = (() => {
     'bl.none': 'No baseline: capture the current schedule to compare it later.',
     'bl.capture': 'Capture a baseline', 'bl.onGantt': 'On the Gantt', 'bl.onScurve': 'On the S-curve', 'bl.content': 'Content',
     'bl.captured': { one: 'Captured on {date}, {count} task', other: 'Captured on {date}, {count} tasks' },
-    'bl.limit': 'At most three baselines ({max}): delete one to capture a new one.',
+    'bl.limit': 'At most {max} baselines: delete one to capture a new one.',
     'bl.done': 'Baseline “{name}” captured.', 'bl.delete': 'Delete baseline {name}?',
+    'bl.initial': 'Initial', 'bl.ref': 'Reference',
+    'bl.refAria': 'Earned value reference: {name}',
+    'bl.refHint': 'Planned value and earned value are computed on the reference baseline: the initial baseline by default; with no baseline, on the current schedule.',
+    'bl.shownHint': 'Shown: {gantt} of 3 on the Gantt, {scurve} of 3 on the S-curve. Tick and untick to choose which ones are displayed.',
+    'bl.maxShownGantt': 'At most three baselines are shown on the Gantt: untick one first.',
+    'bl.maxShownScurve': 'At most three baselines are shown on the S-curve: untick one first.',
+    'bl.doneNotShown': 'Baseline “{name}” captured. It is not shown on {where}, because three baselines already are: tick it in the window to show it.',
+    'bl.whereGantt': 'the Gantt', 'bl.whereScurve': 'the S-curve', 'bl.whereBoth': 'the Gantt nor on the S-curve',
+    'bl.deleteInitial': 'Delete the initial baseline {name}?',
+    'bl.deleteInitialWhy': 'It is the project\'s original reference: schedule, budget and earned value variances are measured against it. Once deleted, it can only be brought back with "Undo".',
     'dash.curve': 'S-curve', 'dash.curveDesc': 'Planned cumulative {planned} at the end of the schedule; actual {real} to date.',
     'dash.planned': 'Planned', 'dash.real': 'Actual', 'dash.dashed': 'dashed', 'dash.unit': 'Period', 'dash.week': 'Weeks', 'dash.month': 'Months',
     'dash.showValues': 'Show values', 'dash.hideValues': 'Hide values', 'dash.valuesCaption': 'S-curve values (cumulative percentage)',
@@ -6819,13 +6903,19 @@ action('rsAbsRemove', arg => {
 });
 
 // ── js/ui/72-baselines.js ──
-/* Baselines (EF-33 à EF-36, RG-22) : copies figées des dates calculées, trois au plus. */
+/* Baselines (EF-33 à EF-36, RG-22, EF-131 à EF-133) : copies figées des dates calculées, dix au plus, dont trois au
+ * plus affichées sur chaque vue (Gantt, courbe en S) ; la première capturée est la baseline « initiale », protégée à
+ * la suppression ; une baseline est la référence de la valeur acquise (RG-44). */
+
+const shownCount = (p, key) => p.baselines.filter(b => b[key]).length;
 
 function captureBaseline(p, sched, name, color) {
   const catName = id => (p.categories.find(c => c.id === id) || { name: '' }).name;
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
-    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, initial: p.baselines.length === 0,
+    // Trois baselines affichées au plus par vue : la nouvelle ne s'affiche que s'il reste de la place (RG-45).
+    shownOnGantt: shownCount(p, 'shownOnGantt') < Model.LIMITS.baselinesShown, shownOnScurve: shownCount(p, 'shownOnScurve') < Model.LIMITS.baselinesShown,
     provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
@@ -6834,11 +6924,14 @@ function captureBaseline(p, sched, name, color) {
   };
 }
 
+const shownText = () => t('bl.shownHint', { gantt: shownCount(App.project, 'shownOnGantt'), scurve: shownCount(App.project, 'shownOnScurve') });
+
 function baselinesWindow() {
   const body = h('div', { id: 'bl-win' });
   const paint = () => {
     clear(body);
     const list = App.project.baselines;
+    const ref = Evm.reference(App.project);
     if (!list.length) body.append(h('p', { class: 'hint', text: t('bl.none') }));
     else {
       const tb = h('tbody');
@@ -6846,9 +6939,12 @@ function baselinesWindow() {
         const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(b.color));
         tb.append(h('tr', {},
           h('td', {}, h('input', { type: 'text', value: b.name, maxlength: 100, aria: { label: `${t('res.name')} (${b.name})`, describedby: 'blerr-' + b.id }, data: { change: 'blField', arg: b.id + ':name' } }),
+            b.initial ? h('span', { class: 'tag-pill', text: t('bl.initial') }) : null,
             h('p', { class: 'field-error', id: 'blerr-' + b.id, hidden: true })),
           h('td', {}, sw, h('select', { aria: { label: `${t('res.color')} (${b.name})` }, data: { change: 'blField', arg: b.id + ':color' } },
             Model.BASELINE_COLORS.map((c, i) => h('option', { value: c, selected: c === b.color }, t('color.pick', { n: i + 1 }))))),
+          h('td', {}, h('input', { type: 'radio', name: 'bl-ref', id: 'blr-' + b.id, checked: !!ref && ref.id === b.id, aria: { label: t('bl.refAria', { name: b.name }) }, data: { change: 'blRef', arg: b.id } }),
+            h('label', { for: 'blr-' + b.id, text: ' ' + t('bl.ref') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'blg-' + b.id, checked: b.shownOnGantt, data: { change: 'blField', arg: b.id + ':gantt' } }),
             h('label', { for: 'blg-' + b.id, text: ' ' + t('bl.onGantt') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
@@ -6858,7 +6954,8 @@ function baselinesWindow() {
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.ref'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+      body.append(h('p', { class: 'hint', text: t('bl.refHint') }), h('p', { class: 'hint', id: 'bl-shown', text: shownText() }));
     }
     if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
@@ -6879,7 +6976,13 @@ action('blCapture', () => {
   const color = Model.BASELINE_COLORS.find(c => !used.has(c)) || Model.BASELINE_COLORS[0];
   const b = captureBaseline(p, App.sched, `Baseline ${n}`, color);
   commit(pr => pr.baselines.push(b));
-  announce(t('bl.done', { name: b.name }));
+  if (b.shownOnGantt && b.shownOnScurve) announce(t('bl.done', { name: b.name }));
+  else {
+    // Trois baselines sont déjà affichées sur au moins une vue : la nouvelle n'y apparaît pas, et on le dit (RG-45).
+    const where = t(!b.shownOnGantt && !b.shownOnScurve ? 'bl.whereBoth' : !b.shownOnGantt ? 'bl.whereGantt' : 'bl.whereScurve');
+    const msg = t('bl.doneNotShown', { name: b.name, where });
+    announce(msg); toast(msg);
+  }
   if (baselinesWindow.paint) { baselinesWindow.paint(); const inp = document.querySelector('#bl-win tbody tr:last-child input'); if (inp) inp.focus(); }
 });
 
@@ -6898,16 +7001,36 @@ action('blField', (arg, el) => {
     commit(() => { b.color = el.value; });
   } else if (k === 'gantt' || k === 'scurve') {
     // Afficher ou masquer n'est pas une modification de données (EF-53) : pas d'historique.
-    b[k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve'] = el.checked;
+    // Trois baselines au plus par vue (RG-45) : une quatrième case est refusée avec un message, la case se décoche.
+    const key = k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve';
+    if (el.checked && App.project.baselines.filter(x => x.id !== id && x[key]).length >= Model.LIMITS.baselinesShown) {
+      el.checked = false;
+      const msg = t(k === 'gantt' ? 'bl.maxShownGantt' : 'bl.maxShownScurve');
+      announce(msg); toast(msg);
+      return;
+    }
+    b[key] = el.checked;
+    const hint = $('bl-shown'); if (hint) hint.textContent = shownText();
     render();
   }
+});
+
+// Référence de la valeur acquise (RG-44) : enregistrée dans le projet, annulable comme une modification.
+action('blRef', id => {
+  if (!App.project.baselines.some(x => x.id === id)) return;
+  commit(p => { p.baselineRef = id; });
+  if (baselinesWindow.paint) { baselinesWindow.paint(); const r = $('blr-' + id); if (r) r.focus(); }
 });
 
 action('blDelete', async id => {
   const b = App.project.baselines.find(x => x.id === id);
   if (!b) return;
-  if (!(await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete')))) return;
-  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); });
+  // La baseline initiale est la référence d'origine : confirmation renforcée qui explique pourquoi elle compte (RG-46).
+  const ok = b.initial
+    ? await Dialog.confirm(t('bl.deleteInitial', { name: b.name }), [t('bl.deleteInitialWhy')], t('edit.delete'))
+    : await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete'));
+  if (!ok) return;
+  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); if (p.baselineRef === id) p.baselineRef = ''; });
   if (baselinesWindow.paint) baselinesWindow.paint();
 });
 

@@ -1,10 +1,16 @@
-/* Baselines (EF-33 à EF-36, RG-22) : copies figées des dates calculées, trois au plus. */
+/* Baselines (EF-33 à EF-36, RG-22, EF-131 à EF-133) : copies figées des dates calculées, dix au plus, dont trois au
+ * plus affichées sur chaque vue (Gantt, courbe en S) ; la première capturée est la baseline « initiale », protégée à
+ * la suppression ; une baseline est la référence de la valeur acquise (RG-44). */
+
+const shownCount = (p, key) => p.baselines.filter(b => b[key]).length;
 
 function captureBaseline(p, sched, name, color) {
   const catName = id => (p.categories.find(c => c.id === id) || { name: '' }).name;
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
-    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, initial: p.baselines.length === 0,
+    // Trois baselines affichées au plus par vue : la nouvelle ne s'affiche que s'il reste de la place (RG-45).
+    shownOnGantt: shownCount(p, 'shownOnGantt') < Model.LIMITS.baselinesShown, shownOnScurve: shownCount(p, 'shownOnScurve') < Model.LIMITS.baselinesShown,
     provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
@@ -13,11 +19,14 @@ function captureBaseline(p, sched, name, color) {
   };
 }
 
+const shownText = () => t('bl.shownHint', { gantt: shownCount(App.project, 'shownOnGantt'), scurve: shownCount(App.project, 'shownOnScurve') });
+
 function baselinesWindow() {
   const body = h('div', { id: 'bl-win' });
   const paint = () => {
     clear(body);
     const list = App.project.baselines;
+    const ref = Evm.reference(App.project);
     if (!list.length) body.append(h('p', { class: 'hint', text: t('bl.none') }));
     else {
       const tb = h('tbody');
@@ -25,9 +34,12 @@ function baselinesWindow() {
         const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(b.color));
         tb.append(h('tr', {},
           h('td', {}, h('input', { type: 'text', value: b.name, maxlength: 100, aria: { label: `${t('res.name')} (${b.name})`, describedby: 'blerr-' + b.id }, data: { change: 'blField', arg: b.id + ':name' } }),
+            b.initial ? h('span', { class: 'tag-pill', text: t('bl.initial') }) : null,
             h('p', { class: 'field-error', id: 'blerr-' + b.id, hidden: true })),
           h('td', {}, sw, h('select', { aria: { label: `${t('res.color')} (${b.name})` }, data: { change: 'blField', arg: b.id + ':color' } },
             Model.BASELINE_COLORS.map((c, i) => h('option', { value: c, selected: c === b.color }, t('color.pick', { n: i + 1 }))))),
+          h('td', {}, h('input', { type: 'radio', name: 'bl-ref', id: 'blr-' + b.id, checked: !!ref && ref.id === b.id, aria: { label: t('bl.refAria', { name: b.name }) }, data: { change: 'blRef', arg: b.id } }),
+            h('label', { for: 'blr-' + b.id, text: ' ' + t('bl.ref') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'blg-' + b.id, checked: b.shownOnGantt, data: { change: 'blField', arg: b.id + ':gantt' } }),
             h('label', { for: 'blg-' + b.id, text: ' ' + t('bl.onGantt') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
@@ -37,7 +49,8 @@ function baselinesWindow() {
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.ref'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+      body.append(h('p', { class: 'hint', text: t('bl.refHint') }), h('p', { class: 'hint', id: 'bl-shown', text: shownText() }));
     }
     if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
@@ -58,7 +71,13 @@ action('blCapture', () => {
   const color = Model.BASELINE_COLORS.find(c => !used.has(c)) || Model.BASELINE_COLORS[0];
   const b = captureBaseline(p, App.sched, `Baseline ${n}`, color);
   commit(pr => pr.baselines.push(b));
-  announce(t('bl.done', { name: b.name }));
+  if (b.shownOnGantt && b.shownOnScurve) announce(t('bl.done', { name: b.name }));
+  else {
+    // Trois baselines sont déjà affichées sur au moins une vue : la nouvelle n'y apparaît pas, et on le dit (RG-45).
+    const where = t(!b.shownOnGantt && !b.shownOnScurve ? 'bl.whereBoth' : !b.shownOnGantt ? 'bl.whereGantt' : 'bl.whereScurve');
+    const msg = t('bl.doneNotShown', { name: b.name, where });
+    announce(msg); toast(msg);
+  }
   if (baselinesWindow.paint) { baselinesWindow.paint(); const inp = document.querySelector('#bl-win tbody tr:last-child input'); if (inp) inp.focus(); }
 });
 
@@ -77,15 +96,35 @@ action('blField', (arg, el) => {
     commit(() => { b.color = el.value; });
   } else if (k === 'gantt' || k === 'scurve') {
     // Afficher ou masquer n'est pas une modification de données (EF-53) : pas d'historique.
-    b[k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve'] = el.checked;
+    // Trois baselines au plus par vue (RG-45) : une quatrième case est refusée avec un message, la case se décoche.
+    const key = k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve';
+    if (el.checked && App.project.baselines.filter(x => x.id !== id && x[key]).length >= Model.LIMITS.baselinesShown) {
+      el.checked = false;
+      const msg = t(k === 'gantt' ? 'bl.maxShownGantt' : 'bl.maxShownScurve');
+      announce(msg); toast(msg);
+      return;
+    }
+    b[key] = el.checked;
+    const hint = $('bl-shown'); if (hint) hint.textContent = shownText();
     render();
   }
+});
+
+// Référence de la valeur acquise (RG-44) : enregistrée dans le projet, annulable comme une modification.
+action('blRef', id => {
+  if (!App.project.baselines.some(x => x.id === id)) return;
+  commit(p => { p.baselineRef = id; });
+  if (baselinesWindow.paint) { baselinesWindow.paint(); const r = $('blr-' + id); if (r) r.focus(); }
 });
 
 action('blDelete', async id => {
   const b = App.project.baselines.find(x => x.id === id);
   if (!b) return;
-  if (!(await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete')))) return;
-  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); });
+  // La baseline initiale est la référence d'origine : confirmation renforcée qui explique pourquoi elle compte (RG-46).
+  const ok = b.initial
+    ? await Dialog.confirm(t('bl.deleteInitial', { name: b.name }), [t('bl.deleteInitialWhy')], t('edit.delete'))
+    : await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete'));
+  if (!ok) return;
+  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); if (p.baselineRef === id) p.baselineRef = ''; });
   if (baselinesWindow.paint) baselinesWindow.paint();
 });
