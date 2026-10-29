@@ -3,17 +3,22 @@
 Document de passage pour démarrer une conversation neuve. Lisez-le en entier avant de coder.
 Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
-## 1. Où en est-on (21 octobre 2026)
+## 1. Où en est-on (29 octobre 2026)
 
 - Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est développée sur la branche `budget-etape-a-moteur` (PR
   ouverte vers `main`). La fusion reste la décision de l'utilisateur, après sa recette manuelle.
 - Étape A faite : budget et coût réel par tâche, devise, provision, BAC, baselines, courbe en S des coûts, onglet
   Budget du tableau de bord, bloc du rapport, export et impression « sans montants », masquage à l'écran, affichage
   compact (M, Md en français ; M, B en anglais), import de tableurs avec montants.
+- Depuis la recette manuelle (29 octobre) : colonnes Budget et Coût réel distinctes dans la liste (EF-128), courbe
+  des coûts corrigée quand la date du jour dépasse la grille, option « Inclure le coût réel des tâches en cours »
+  (EF-129), bouton « Masquer les montants » dans les fenêtres Tableau de bord, Baselines et Rapport (EF-130) ; recette
+  Budget 14 ; thème clair par défaut, raccourcis au survol, icône d'onglet intégrée. Cahier des charges : EX-29 à EX-38.
+  Reste à valider par l'utilisateur : G15 (mobile), puis fusion de la PR.
 - Reste à faire : étape B (valeur acquise, PV, EV, CV, SV, CPI, SPI, EAC ; décisions en A.8 lignes 5, 6 et 12) puis
   étape C (taux de ressource) ; options de colonnes de la liste ; nouvelle tâche « versionnement ».
 - Référence : cahier des charges
-  (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-127 (5.21), règles
+  (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
   RG-35 à RG-43 (6.8), recette R-71 à R-84 (9.7), décisions en annexe A.8, exigence EX-28 (recette manuelle).
 - Recette : `docs/recette-manuelle.md` (partie A, tout l'outil ; partie B, budget) et les faux projets de
   `tests/fixtures/`. Tests : `tests/test_v3_budget.py`, `tests/core/budget.test.mjs`.
