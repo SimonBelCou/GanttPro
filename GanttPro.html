@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d3NQomKKt63VeSbEG4vAb41EIxkXM0+8/3NL/AwvXwk='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pncSc1XSmzibdi6NQO7S+sazT7CLVqQkrhiz+99wC9A='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -480,6 +480,20 @@ body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Valeur acquise : voyants (forme + texte, jamais la couleur seule), diagramme CPI / SPI */
+.tile.light-green dd .light-tag { color: var(--ok); }
+.tile.light-orange dd .light-tag { color: var(--warning); }
+.tile.light-red dd .light-tag { color: var(--critical); }
+.light-tag { font-size: .8rem; font-weight: 600; white-space: normal; }
+.hint.block { display: block; font-size: .8rem; font-weight: 400; white-space: normal; }
+svg.cpispi { max-width: 420px; }
+.cpispi .zone.ok { fill: color-mix(in srgb, var(--ok) 14%, transparent); }
+.cpispi .now { fill: var(--accent); stroke: var(--text); stroke-width: 1.5; }
+.cpispi .pt { fill: var(--muted); }
+svg.cpispi { width: 100%; height: auto; display: block; }
+.cpispi .grid { stroke: var(--line); stroke-width: 1; }
+.cpispi .axis { fill: var(--muted); font-size: 11px; }
 
 </style>
 </head>
@@ -2606,6 +2620,62 @@ const I18n = (() => {
     'bud.curve': 'Courbe en S des coûts',
     'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
     'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'evm.title': 'Valeur acquise',
+    'evm.refBaseline': 'Référence : baseline « {name} » (budgets et dates figés à la capture, avancement et coût réel d\'aujourd\'hui).',
+    'evm.refPlan': 'Référence : planning actuel (aucune baseline capturée). Capturez une baseline pour mesurer l\'écart avec le plan d\'origine.',
+    'evm.asOf': 'Situation au {date}',
+    'evm.pv': 'PV, valeur planifiée',
+    'evm.ev': 'EV, valeur acquise',
+    'evm.ac': 'AC, coût réel',
+    'evm.cv': 'CV, écart de coût',
+    'evm.sv': 'SV, écart de délai',
+    'evm.cpi': 'CPI, indice de coût',
+    'evm.spi': 'SPI, indice de délai',
+    'evm.na': 'non calculable',
+    'evm.na.noBudget': 'aucun budget de tâche saisi',
+    'evm.na.noActual': 'aucun coût réel saisi',
+    'evm.na.noPlanned': 'aucun budget n\'est planifié à ce jour',
+    'evm.na.noEarned': 'aucune valeur acquise (avancement à 0 %)',
+    'evm.na.noEtc': 'reste à faire non saisi (réglages du projet)',
+    'evm.na.overflow': 'résultat trop grand',
+    'evm.light.green': 'conforme',
+    'evm.light.orange': 'à surveiller',
+    'evm.light.red': 'en dérive',
+    'evm.light.none': 'non évalué',
+    'evm.scope': 'Depuis la baseline : {added} tâche(s) ajoutée(s) (leur coût réel pèse sur le CPI), {removed} supprimée(s) (leur budget reste dans le BAC).',
+    'evm.pvNote': 'La valeur planifiée se compte par palier : le budget d\'une tâche entre dans la PV le jour de sa fin prévue. Le SPI est donc non calculable avant la première fin prévue, et favorable pour une tâche en cours.',
+    'evm.eac': 'Prévision à terminaison',
+    'evm.eacMethod': 'Hypothèse',
+    'evm.eacValue': 'EAC, coût final prévu',
+    'evm.vac': 'VAC, écart final',
+    'evm.eac1': 'Dérive durable : BAC / CPI',
+    'evm.eac2': 'Reste à faire estimé : AC + ETC',
+    'evm.eac3': 'Dérive exceptionnelle : AC + BAC − EV',
+    'evm.endNote': 'En fin de projet, ces indicateurs sont moins pertinents : privilégiez le coût réel final.',
+    'evm.diagram': 'Diagramme CPI / SPI',
+    'evm.diagramDesc': 'Position à ce jour : CPI {cpi}, SPI {spi}. Zones : en haut à droite, coût et délai maîtrisés.',
+    'evm.diagramNone': 'Position non calculable : au moins un des deux indices manque.',
+    'evm.axisCpi': 'CPI',
+    'evm.axisSpi': 'SPI',
+    'evm.points': 'Points de situation',
+    'evm.pointsNone': 'Aucun point de situation enregistré.',
+    'evm.pointAdd': 'Enregistrer un point de situation',
+    'evm.pointLabel': 'Libellé du point (facultatif)',
+    'evm.pointDelete': 'Supprimer le point du {date}',
+    'evm.pointLimit': '{max} points de situation au plus.',
+    'evm.pointDone': 'Point de situation du {date} enregistré.',
+    'evm.pointNoRatio': '—',
+    'evm.colDate': 'Date',
+    'evm.colLabel': 'Libellé',
+    'evm.colRef': 'Référence',
+    'evm.colCpi': 'CPI',
+    'evm.colSpi': 'SPI',
+    'evm.pointsHint': 'Un point est une photo enregistrée à votre demande, dans le projet ; il n\'est jamais créé automatiquement.',
+    'proj.evmGroup': 'Valeur acquise',
+    'proj.evmGreen': 'Seuil vert des indices CPI et SPI (%)',
+    'proj.evmRed': 'Seuil rouge des indices CPI et SPI (%)',
+    'proj.evmNote': 'Un indice est vert à partir du seuil vert, rouge sous le seuil rouge, orange entre les deux (100 % et 90 % par défaut).',
+    'proj.etc': 'Reste à faire estimé, ETC',
     'bud.ongoing': 'Inclure le coût réel des tâches en cours',
     'bud.noteOngoing': 'Le coût réel des tâches non terminées est compté dans la période en cours (coût engagé à ce jour). La provision ne figure pas dans la courbe.',
     'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
@@ -2967,6 +3037,62 @@ const I18n = (() => {
     'bud.curve': 'Cost S-curve',
     'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
     'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'evm.title': 'Earned value',
+    'evm.refBaseline': 'Reference: baseline “{name}” (budgets and dates frozen at capture, today\'s progress and actual cost).',
+    'evm.refPlan': 'Reference: current schedule (no baseline captured). Capture a baseline to measure the gap with the original plan.',
+    'evm.asOf': 'Status as of {date}',
+    'evm.pv': 'PV, planned value',
+    'evm.ev': 'EV, earned value',
+    'evm.ac': 'AC, actual cost',
+    'evm.cv': 'CV, cost variance',
+    'evm.sv': 'SV, schedule variance',
+    'evm.cpi': 'CPI, cost index',
+    'evm.spi': 'SPI, schedule index',
+    'evm.na': 'not computable',
+    'evm.na.noBudget': 'no task budget entered',
+    'evm.na.noActual': 'no actual cost entered',
+    'evm.na.noPlanned': 'no budget is planned yet',
+    'evm.na.noEarned': 'no earned value (progress at 0%)',
+    'evm.na.noEtc': 'estimate to complete not entered (project settings)',
+    'evm.na.overflow': 'result too large',
+    'evm.light.green': 'on track',
+    'evm.light.orange': 'watch',
+    'evm.light.red': 'off track',
+    'evm.light.none': 'not rated',
+    'evm.scope': 'Since the baseline: {added} task(s) added (their actual cost weighs on the CPI), {removed} removed (their budget stays in the BAC).',
+    'evm.pvNote': 'Planned value is counted in steps: a task\'s budget enters the PV on its planned finish day. The SPI is therefore not computable before the first planned finish, and favourable for a task in progress.',
+    'evm.eac': 'Estimate at completion',
+    'evm.eacMethod': 'Assumption',
+    'evm.eacValue': 'EAC, forecast final cost',
+    'evm.vac': 'VAC, final variance',
+    'evm.eac1': 'Lasting drift: BAC / CPI',
+    'evm.eac2': 'Estimated remaining work: AC + ETC',
+    'evm.eac3': 'One-off drift: AC + BAC − EV',
+    'evm.endNote': 'At the end of a project these indicators are less relevant: rely on the final actual cost.',
+    'evm.diagram': 'CPI / SPI diagram',
+    'evm.diagramDesc': 'Position today: CPI {cpi}, SPI {spi}. Zones: top right, cost and schedule under control.',
+    'evm.diagramNone': 'Position not computable: at least one of the two indices is missing.',
+    'evm.axisCpi': 'CPI',
+    'evm.axisSpi': 'SPI',
+    'evm.points': 'Status points',
+    'evm.pointsNone': 'No status point saved.',
+    'evm.pointAdd': 'Save a status point',
+    'evm.pointLabel': 'Point label (optional)',
+    'evm.pointDelete': 'Delete the point of {date}',
+    'evm.pointLimit': 'At most {max} status points.',
+    'evm.pointDone': 'Status point of {date} saved.',
+    'evm.pointNoRatio': '—',
+    'evm.colDate': 'Date',
+    'evm.colLabel': 'Label',
+    'evm.colRef': 'Reference',
+    'evm.colCpi': 'CPI',
+    'evm.colSpi': 'SPI',
+    'evm.pointsHint': 'A point is a snapshot saved at your request, inside the project; it is never created automatically.',
+    'proj.evmGroup': 'Earned value',
+    'proj.evmGreen': 'Green threshold of the CPI and SPI indices (%)',
+    'proj.evmRed': 'Red threshold of the CPI and SPI indices (%)',
+    'proj.evmNote': 'An index is green from the green threshold up, red below the red threshold, orange in between (100% and 90% by default).',
+    'proj.etc': 'Estimate to complete, ETC',
     'bud.ongoing': 'Include the actual cost of tasks in progress',
     'bud.noteOngoing': 'The actual cost of unfinished tasks is counted in the current period (cost incurred to date). The provision is not in the curve.',
     'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
@@ -6617,10 +6743,19 @@ async function editProjectWindow() {
     h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
     masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
     h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
+  // Valeur acquise : seuils des voyants CPI / SPI (en %) et reste à faire estimé (ETC), propres au projet.
+  const evmGreen = h('input', { type: 'text', id: 'p-evmgreen', value: String(p.evmGreen), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const evmRed = h('input', { type: 'text', id: 'p-evmred', value: String(p.evmRed), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const etc = h('input', { type: 'text', id: 'p-etc', value: masked ? Money.DOTS : (p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang())), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-etc-err' } });
+  const evmBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('proj.evmGroup') }),
+    h('p', { class: 'hint', text: t('proj.evmNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmgreen', text: t('proj.evmGreen') }), evmGreen),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmred', text: t('proj.evmRed') }), evmRed, h('p', { class: 'field-error', id: 'p-evm-err', hidden: true })),
+    h('div', { class: 'field' }, h('label', { for: 'p-etc', text: `${t('proj.etc')} (${p.currency || '€'})` }), etc, h('p', { class: 'field-error', id: 'p-etc-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox, evmBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -6649,9 +6784,31 @@ async function editProjectWindow() {
         }
         prov = r.cents;
       }
+      const intOf = el => (/^\d{1,3}$/.test(el.value.trim()) ? Number(el.value.trim()) : NaN);
+      const g = intOf(evmGreen), rd = intOf(evmRed), mx = Model.LIMITS.evmMax;
+      if (!(g >= 1 && g <= mx) || !(rd >= 1 && rd <= mx) || rd > g) {
+        const err = $('p-evm-err');
+        err.textContent = t('err.int', { field: `${t('proj.evmGreen')} / ${t('proj.evmRed')}`, min: 1, max: mx }) + ' ' + t('rule.evmOrder', { min: 1, max: mx }); err.hidden = false;
+        (!(g >= 1 && g <= mx) ? evmGreen : evmRed).setAttribute('aria-invalid', 'true'); (!(g >= 1 && g <= mx) ? evmGreen : evmRed).focus();
+        return false;
+      }
+      let etcCents = p.etc;
+      if (!masked) {
+        if (etc.value.trim() === '') etcCents = null;
+        else {
+          const r = Budget.parse(etc.value);
+          if (!r.ok) {
+            const err = $('p-etc-err');
+            err.textContent = t('err.amount.' + r.reason, { field: t('proj.etc'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+            etc.setAttribute('aria-invalid', 'true'); etc.focus();
+            return false;
+          }
+          etcCents = r.cents;
+        }
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; pr.evmGreen = g; pr.evmRed = rd; pr.etc = etcCents; });
       return true;
     },
   });
@@ -7549,7 +7706,107 @@ function paintBudget(panel) {
     h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+  paintEvm(panel);
 }
+
+/* Valeur acquise (EF-131 et suivantes) : indicateurs à la date du jour, diagramme CPI / SPI, prévisions à terminaison,
+ * points de situation. Un indice qui ne se calcule pas s'affiche « non calculable » avec sa raison, jamais 0. */
+const LIGHT_MARK = { green: '●', orange: '▲', red: '■', none: '○' }; // forme + texte : la couleur ne porte jamais seule le sens
+
+function ratioText(r) {
+  return r.hundredths == null ? t('evm.na') : I18n.number(r.hundredths / 100, 2);
+}
+
+function evmTile(label, node, r) {
+  const dd = h('dd', {}, node);
+  const tileEl = h('div', { class: 'tile' }, h('dt', { text: label }), dd);
+  if (r && r.light) {
+    tileEl.classList.add('light-' + r.light);
+    dd.append(h('span', { class: 'light-tag' }, ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)));
+    if (r.reason) dd.append(h('span', { class: 'hint block', text: t('evm.na.' + r.reason) }));
+  }
+  return tileEl;
+}
+
+function cpiSpiDiagram(res) {
+  const W = 360, H = 300, m = { l: 44, r: 16, t: 14, b: 38 }, MAX = 2;
+  const px = v => m.l + (Math.min(Math.max(v, 0), MAX) / MAX) * (W - m.l - m.r);
+  const py = v => H - m.b - (Math.min(Math.max(v, 0), MAX) / MAX) * (H - m.t - m.b);
+  const ok = res.cpi.value != null && res.spi.value != null;
+  const desc = ok ? t('evm.diagramDesc', { cpi: ratioText(res.cpi), spi: ratioText(res.spi) }) : t('evm.diagramNone');
+  const c = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'cpispi', role: 'img', 'aria-labelledby': 'evmd-title evmd-desc', id: 'evm-diagram' });
+  c.append(svg('title', { id: 'evmd-title', text: t('evm.diagram') }), svg('desc', { id: 'evmd-desc', text: desc }));
+  c.append(svg('rect', { x: px(1), y: m.t, width: px(MAX) - px(1), height: py(1) - m.t, class: 'zone ok' }));
+  for (const v of [0, 0.5, 1, 1.5, 2]) {
+    c.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }), svg('line', { x1: px(v), x2: px(v), y1: m.t, y2: H - m.b, class: 'grid' }),
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: I18n.number(v, 1) }),
+      svg('text', { x: px(v), y: H - m.b + 16, class: 'axis', 'text-anchor': 'middle', text: I18n.number(v, 1) }));
+  }
+  c.append(svg('text', { x: (m.l + W - m.r) / 2, y: H - 6, class: 'axis', 'text-anchor': 'middle', text: t('evm.axisCpi') }),
+    svg('text', { x: 10, y: m.t + 8, class: 'axis', text: t('evm.axisSpi') }));
+  for (const p of App.project.statusPoints) if (p.cpi != null && p.spi != null) c.append(svg('circle', { cx: px(p.cpi / 100), cy: py(p.spi / 100), r: 3.5, class: 'pt' }));
+  if (ok) c.append(svg('circle', { cx: px(res.cpi.value), cy: py(res.spi.value), r: 6, class: 'now' }));
+  return c;
+}
+
+function paintEvm(panel) {
+  const P = App.project, today = Dates.todayDn();
+  const res = Evm.compute(P, App.sched, today);
+  const money = v => h('span', {}, v < 0 ? '−' : '', Money.node(Math.abs(v)));
+  const ratioNode = r => h('span', { class: 'money', text: ratioText(r) });
+  const sec = h('section', { class: 'dash-section', id: 'evm', aria: { labelledby: 'evm-h' } },
+    h('h3', { id: 'evm-h', text: t('evm.title') }),
+    h('p', { class: 'hint', id: 'evm-ref', text: res.ref ? t('evm.refBaseline', { name: res.ref.name }) : t('evm.refPlan') }),
+    h('p', { class: 'hint', text: t('evm.asOf', { date: I18n.date(today) }) }));
+  if (res.added.length || res.removed.length) sec.append(h('p', { class: 'note', id: 'evm-scope', text: t('evm.scope', { added: res.added.length, removed: res.removed.length }) }));
+  sec.append(h('dl', { class: 'tiles amounts', id: 'evm-tiles' },
+    evmTile(t('evm.pv'), Money.node(res.pv)), evmTile(t('evm.ev'), Money.node(res.ev)), evmTile(t('evm.ac'), Money.node(res.ac)),
+    evmTile(t('evm.cv'), money(res.cv)), evmTile(t('evm.sv'), money(res.sv)),
+    evmTile(t('evm.cpi'), ratioNode(res.cpi), res.cpi), evmTile(t('evm.spi'), ratioNode(res.spi), res.spi)),
+    h('p', { class: 'hint', text: t('evm.pvNote') }));
+
+  // Prévisions à terminaison : trois hypothèses, jamais une seule présentée comme la vérité.
+  const eacRow = (key, e) => h('tr', {}, h('th', { scope: 'row', text: t(key) }),
+    h('td', { class: 'num' }, e.cents == null ? h('span', { text: t('evm.na') + ' (' + t('evm.na.' + e.reason) + ')' }) : Money.node(e.cents)),
+    h('td', { class: 'num' }, e.cents == null ? '' : money(e.vac)));
+  sec.append(h('h4', { text: t('evm.eac') }), h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'evm-eac' },
+    h('thead', {}, h('tr', {}, [t('evm.eacMethod'), t('evm.eacValue'), t('evm.vac')].map(x => h('th', { scope: 'col', text: x })))),
+    h('tbody', {}, eacRow('evm.eac1', res.eac.byCpi), eacRow('evm.eac2', res.eac.byEtc), eacRow('evm.eac3', res.eac.byEv)))),
+    h('p', { class: 'hint', text: t('evm.endNote') }));
+
+  sec.append(h('h4', { text: t('evm.diagram') }), cpiSpiDiagram(res));
+
+  // Points de situation : photo enregistrée sur geste explicite (RG-51), 60 au plus.
+  const pts = P.statusPoints;
+  const cell = v => h('td', { class: 'num', text: v == null ? t('evm.pointNoRatio') : I18n.number(v / 100, 2) });
+  sec.append(h('h4', { text: t('evm.points') }), h('p', { class: 'hint', text: t('evm.pointsHint') }),
+    pts.length ? h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'evm-points' },
+      h('thead', {}, h('tr', {}, [t('evm.colDate'), t('evm.colLabel'), t('evm.colRef'), t('evm.colCpi'), t('evm.colSpi'), ''].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, pts.map(p => h('tr', {}, h('td', { text: I18n.date(Dates.parse(p.date)) }), h('td', { text: p.label }), h('td', { text: p.ref }), cell(p.cpi), cell(p.spi),
+        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'evmPointDelete', arg: p.id } }, t('evm.pointDelete', { date: I18n.date(Dates.parse(p.date)) }))))))))
+      : h('p', { class: 'hint', text: t('evm.pointsNone') }),
+    h('div', { class: 'field' }, h('label', { for: 'evm-label', text: t('evm.pointLabel') }), h('input', { type: 'text', id: 'evm-label', maxlength: 100 })),
+    h('button', { type: 'button', id: 'evm-add', data: { click: 'evmPointAdd' } }, t('evm.pointAdd')));
+  panel.append(sec);
+}
+
+action('evmPointAdd', () => {
+  const P = App.project;
+  if (P.statusPoints.length >= Model.LIMITS.statusPoints) { Dialog.message(t('evm.points'), t('evm.pointLimit', { max: Model.LIMITS.statusPoints })); return; }
+  const res = Evm.compute(P, App.sched, Dates.todayDn());
+  const label = $('evm-label') ? $('evm-label').value : '';
+  let n = 1; while (P.statusPoints.some(x => x.id === 'S' + n)) n++;
+  const pt = { id: 'S' + n, ...Evm.point(res, label) };
+  commit(pr => pr.statusPoints.push(pt));
+  announce(t('evm.pointDone', { date: I18n.date(Dates.parse(pt.date)) }));
+  repaintDashboard('#evm-add');
+});
+
+action('evmPointDelete', id => {
+  if (!App.project.statusPoints.some(x => x.id === id)) return;
+  commit(pr => { pr.statusPoints = pr.statusPoints.filter(x => x.id !== id); });
+  repaintDashboard('#evm-add');
+});
 
 // ── js/ui/76-load.js ──
 /* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à

@@ -17,10 +17,19 @@ async function editProjectWindow() {
     h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
     masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
     h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
+  // Valeur acquise : seuils des voyants CPI / SPI (en %) et reste à faire estimé (ETC), propres au projet.
+  const evmGreen = h('input', { type: 'text', id: 'p-evmgreen', value: String(p.evmGreen), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const evmRed = h('input', { type: 'text', id: 'p-evmred', value: String(p.evmRed), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const etc = h('input', { type: 'text', id: 'p-etc', value: masked ? Money.DOTS : (p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang())), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-etc-err' } });
+  const evmBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('proj.evmGroup') }),
+    h('p', { class: 'hint', text: t('proj.evmNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmgreen', text: t('proj.evmGreen') }), evmGreen),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmred', text: t('proj.evmRed') }), evmRed, h('p', { class: 'field-error', id: 'p-evm-err', hidden: true })),
+    h('div', { class: 'field' }, h('label', { for: 'p-etc', text: `${t('proj.etc')} (${p.currency || '€'})` }), etc, h('p', { class: 'field-error', id: 'p-etc-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox, evmBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -49,9 +58,31 @@ async function editProjectWindow() {
         }
         prov = r.cents;
       }
+      const intOf = el => (/^\d{1,3}$/.test(el.value.trim()) ? Number(el.value.trim()) : NaN);
+      const g = intOf(evmGreen), rd = intOf(evmRed), mx = Model.LIMITS.evmMax;
+      if (!(g >= 1 && g <= mx) || !(rd >= 1 && rd <= mx) || rd > g) {
+        const err = $('p-evm-err');
+        err.textContent = t('err.int', { field: `${t('proj.evmGreen')} / ${t('proj.evmRed')}`, min: 1, max: mx }) + ' ' + t('rule.evmOrder', { min: 1, max: mx }); err.hidden = false;
+        (!(g >= 1 && g <= mx) ? evmGreen : evmRed).setAttribute('aria-invalid', 'true'); (!(g >= 1 && g <= mx) ? evmGreen : evmRed).focus();
+        return false;
+      }
+      let etcCents = p.etc;
+      if (!masked) {
+        if (etc.value.trim() === '') etcCents = null;
+        else {
+          const r = Budget.parse(etc.value);
+          if (!r.ok) {
+            const err = $('p-etc-err');
+            err.textContent = t('err.amount.' + r.reason, { field: t('proj.etc'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+            etc.setAttribute('aria-invalid', 'true'); etc.focus();
+            return false;
+          }
+          etcCents = r.cents;
+        }
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; pr.evmGreen = g; pr.evmRed = rd; pr.etc = etcCents; });
       return true;
     },
   });
