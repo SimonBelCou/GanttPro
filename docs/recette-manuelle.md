@@ -363,6 +363,7 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 5. Ouvrez les outils de développement du navigateur, onglet Réseau, puis utilisez l'application pendant
   quelques minutes : **aucune requête** n'est émise ; la console ne signale aucune violation de politique de
   sécurité ; aucun cookie n'est créé.
+  Le journal ne doit contenir que `GanttPro.html` : l'icône de l'onglet est intégrée à la page (aucune requête `favicon.ico`). Les messages « autoconsent.js » ou « sandbox eval code » viennent de Firefox ou d'une extension, pas de GanttPro ; testez au besoin dans une fenêtre privée sans extension.
 - [ ] 6. Importez `projet-noms-pieges.json` (un nom de tâche est `<img src=x onerror=alert(1)>`) : le texte
   s'affiche tel quel, aucune alerte ne se déclenche.
 - [ ] 7. Importez `projet-1000-taches.json` (1 000 tâches) : l'affichage reste fluide, les gestes restent utilisables.

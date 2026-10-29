@@ -97,6 +97,7 @@ def main():
 
         # ── Chargement et CSP ──────────────────────────────────────────────────────────────
         check('aucune erreur ni violation CSP au chargement', not errors and not csp, (errors, csp))
+        check('icône de l\'onglet intégrée (data:), aucune requête /favicon.ico', (pg.get_attribute('link[rel=icon]', 'href') or '').startswith('data:'))
         meta = pg.get_attribute('meta[http-equiv="Content-Security-Policy"]', 'content')
         check("CSP sans 'unsafe-inline' ni 'unsafe-eval'", 'unsafe' not in meta, meta)
         check('polices intégrées chargées', pg.evaluate("document.fonts.load('600 14px Sora').then(() => document.fonts.check('600 14px Sora'))"))
