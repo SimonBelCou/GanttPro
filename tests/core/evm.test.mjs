@@ -63,7 +63,7 @@ test('R-82 provision exclue des indicateurs', () => {
   assert.deepEqual(plain([run(base({ provision: eur(50) })).bac]), [eur(200)]);
 });
 
-test('R-83 baseline de référence : budgets et fins figés, tâches ajoutées/supprimées signalées', () => {
+test('R-87 baseline de référence : budgets et fins figés, tâches ajoutées/supprimées signalées', () => {
   const p = base({ etc: eur(100) });
   const s = Schedule.compute(p);
   p.baselines = [{ id: 'B1', name: 'Initiale', initial: true, tasks: p.tasks.map(t => ({ id: t.id, budget: t.budget, end: Dates.toISO(s.tasks.get(t.id).endDn) })) }];
@@ -79,12 +79,12 @@ test('R-83 baseline de référence : budgets et fins figés, tâches ajoutées/s
   assert.deepEqual(plain(run(p).removed), ['B']);
 });
 
-test('R-84 point de situation : photo des indicateurs', () => {
+test('R-88 point de situation : photo des indicateurs', () => {
   const pt = Evm.point(run(base({ etc: eur(100) })), '  Revue 1 ');
   assert.deepEqual(plain(pt), { date: '2026-01-09', label: 'Revue 1', ref: '', cpi: 57, spi: 80, bac: eur(200), pv: eur(100), ev: eur(80), ac: eur(140), etc: eur(100) });
 });
 
-test('R-84 produits au-delà de 2^53 sans perte', () => {
+test('R-88 produits au-delà de 2^53 sans perte', () => {
   assert.equal(Evm.divRound(5000000000000, 4000000000000, 5000000000000), 6250000000000); // produit 2,5e25, résultat exact
   assert.equal(Evm.divRound(5000000000000, 3, 5000000000000), null, 'résultat hors limite : refusé, pas faux');
   assert.equal(Evm.divRound(9007199254740991, 1, 9007199254740991), null);
@@ -92,7 +92,7 @@ test('R-84 produits au-delà de 2^53 sans perte', () => {
   assert.equal(Evm.divRound(1, 2), 1);
 });
 
-test('R-84 les points de situation survivent à la relecture ; l\'export sans montants garde les indices et retire les montants', () => {
+test('R-88 les points de situation survivent à la relecture ; l\'export sans montants garde les indices et retire les montants', () => {
   const p = Model.sanitize({ format: 3, name: 'T', projectStart: '2026-01-05', tasks: [{ id: 'A', name: 'a', type: 'task', dur: 5, budget: 10000 }],
     statusPoints: [{ date: '2026-01-09', label: 'Revue', cpi: 57, spi: 80, bac: 20000, pv: 10000, ev: 8000, ac: 14000, etc: 100 }] }).project;
   assert.equal(p.statusPoints.length, 1);

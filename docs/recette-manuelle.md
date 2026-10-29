@@ -375,7 +375,7 @@ Départ : `projet-exemple.json` ouvert.
 
 ## Partie B — Mises à jour : Budget, étapes A et B
 
-*Étape B (valeur acquise) : parcours Budget 15 à 20, fichiers `valeur-acquise-*.json`, exigences EF-131 à EF-141, RG-44 à RG-51, scénarios R-80 à R-86.*
+*Étape B (valeur acquise) : parcours Budget 15 à 20, fichiers `valeur-acquise-*.json`, exigences EF-131 à EF-141, RG-44 à RG-51, scénarios R-80 à R-82 et R-85 à R-88.*
 
 Exigences : EF-112 à EF-127, RG-35 à RG-43. Scénarios : R-71 à R-84.
 Fichiers (dans `tests/fixtures/`) : `budget-base.json`, `budget-avec-baseline.json`, `budget-montants-geants.json`, `budget-sans-montant.json`,
@@ -620,7 +620,7 @@ Départ : ouvrez `valeur-acquise-futur.json` (projet daté de 2035), onglet **Bu
 - [ ] 2. Dans le tableau des prévisions, la ligne AC + ETC dit « non calculable (reste à faire non saisi) ».
 - [ ] 3. Le diagramme CPI / SPI n'a pas de point courant et sa description dit que la position n'est pas calculable.
 
-### Budget 18 — Référence : baseline ou planning actuel (EF-131, RG-44, RG-47, R-83)
+### Budget 18 — Référence : baseline ou planning actuel (EF-131, RG-44, RG-47, R-87)
 
 Départ : ouvrez `valeur-acquise-derive.json`, onglet **Budget**. (La tâche « Recette » a été ajoutée depuis la baseline initiale ; « Realisation » a changé de budget et de durée.)
 
@@ -637,7 +637,7 @@ Départ : `valeur-acquise-passe.json`, **Projet** (clic sur le nom du projet).
 - [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, le champ ETC est désactivé et affiche `••••`.
 - [ ] 4. Barre du haut, **Annuler**. *Attendu :* les seuils reviennent à leur valeur précédente.
 
-### Budget 20 — Points de situation (EF-141, RG-51, R-84)
+### Budget 20 — Points de situation (EF-141, RG-51, R-88)
 
 Départ : `valeur-acquise-passe.json`, onglet **Budget**, section **Points de situation**.
 
