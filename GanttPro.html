@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IKoWHLm1LUZMHtSNV9pehAzG3ydPthD9K0ENyFj83a4='; style-src 'sha256-Rp2lE1A3Jj6859pHECJfnYnR5RfHhfX559eJsduBVTs='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nOJIAWNIi9POL9hGG5UohKyHYMDbtaeaaKDvHyKoSmE='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <title>GanttPro</title>
@@ -217,6 +217,8 @@ dialog.dialog.wide { width: min(900px, calc(100vw - 2rem)); }
 dialog::backdrop { background: rgba(0, 0, 0, .55); }
 .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
 .dialog-head h2 { margin: 0 0 .5rem; flex: 1 1 auto; }
+button.dlg-mask { flex: 0 0 auto; min-height: 2.2rem; }
+button.dlg-mask[aria-pressed="true"] { font-weight: 700; }
 button.dlg-x { flex: 0 0 auto; min-width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; }
 .dialog-body p { margin: .3rem 0; }
 .dialog-body .strong { font-weight: 700; }
@@ -597,12 +599,12 @@ body.planner-full { overflow: hidden; }
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="money"></colgroup>
+        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="budget"><col data-col="actual"></colgroup>
         <thead><tr>
           <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
           <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
           <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
-          <th scope="col"><span data-i18n="col.money"></span></th>
+          <th scope="col"><span data-i18n="col.budget"></span></th><th scope="col"><span data-i18n="col.actual"></span></th>
         </tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
@@ -2130,9 +2132,9 @@ const Budget = (() => {
    * planned : budget des tâches dont la fin prévue est au plus tard le dernier jour de la période.
    * real : coût réel des tâches terminées (100 %) dont la fin réelle est dans la période ou avant ; une tâche à 100 %
    * sans fin réelle compte dans la période en cours ; s'arrête à la période qui contient aujourd'hui.
-   * La provision et le coût réel des tâches non terminées n'y figurent pas.
+   * La provision n'y figure pas ; le coût réel des tâches non terminées n'y figure que si opts.ongoing (période en cours).
    */
-  function costCurve(project, sched, today, unit = 'week') {
+  function costCurve(project, sched, today, unit = 'week', opts = {}) {
     const work = project.tasks.filter(t => t.type === 'task');
     let last = sched.projectEndDn;
     const shown = (project.baselines || []).filter(b => b.shownOnScurve);
@@ -2142,9 +2144,10 @@ const Budget = (() => {
     const real = [];
     for (const p of ps) {
       if (p.start > today) break;
-      const current = p.end >= today;
+      // Période en cours : celle qui contient aujourd'hui, ou la dernière si aujourd'hui dépasse la grille.
+      const current = p.end >= today || p === ps[ps.length - 1];
       real.push(work.reduce((a, t) => {
-        if (t.pct < 100) return a;
+        if (t.pct < 100) return a + (opts.ongoing && current ? amt(t.actual) : 0); // option : coût engagé des tâches en cours
         const re = Dates.parse(t.realEnd);
         return a + (re != null ? (re <= p.end ? amt(t.actual) : 0) : (current ? amt(t.actual) : 0));
       }, 0));
@@ -2434,6 +2437,8 @@ const I18n = (() => {
     'bud.curve': 'Courbe en S des coûts',
     'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
     'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'bud.ongoing': 'Inclure le coût réel des tâches en cours',
+    'bud.noteOngoing': 'Le coût réel des tâches non terminées est compté dans la période en cours (coût engagé à ce jour). La provision ne figure pas dans la courbe.',
     'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
     // Budget (étape A) : baselines
     'bl.bac': 'BAC',
@@ -2441,7 +2446,8 @@ const I18n = (() => {
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'montant masqué',
     'top.mask': 'Masquer les montants',
-    'col.money': 'Budget / Réel',
+    'col.budget': 'Budget',
+    'col.actual': 'Coût réel',
     'f.budgetGroup': 'Budget',
     'f.budget': 'Budget',
     'f.actual': 'Coût réel cumulé',
@@ -2781,6 +2787,8 @@ const I18n = (() => {
     'bud.curve': 'Cost S-curve',
     'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
     'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'bud.ongoing': 'Include the actual cost of tasks in progress',
+    'bud.noteOngoing': 'The actual cost of unfinished tasks is counted in the current period (cost incurred to date). The provision is not in the curve.',
     'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
     // Budget (étape A) : baselines
     'bl.bac': 'BAC',
@@ -2788,7 +2796,8 @@ const I18n = (() => {
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'amount hidden',
     'top.mask': 'Hide amounts',
-    'col.money': 'Budget / Actual',
+    'col.budget': 'Budget',
+    'col.actual': 'Actual cost',
     'f.budgetGroup': 'Budget',
     'f.budget': 'Budget',
     'f.actual': 'Cumulative actual cost',
@@ -4127,10 +4136,11 @@ const Dialog = (() => {
    * @param {{label:string, value:string, kind?:string, focus?:boolean}[]} o.actions
    * @param {(value:string, dlg:HTMLDialogElement) => boolean|void} [o.onAction] renvoyer false garde la fenêtre ouverte
    * @param {string} [o.size] 'wide'
+   * @param {boolean} [o.maskTool] ajoute dans l'en-tête le bouton « Masquer les montants » (même réglage que la barre du haut, RG-41)
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    */
-  function open({ title, body = [], actions = [], onAction, size, guard }) {
+  function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
     const id = 'dlg-' + (++seq);
     return new Promise(resolve => {
@@ -4140,7 +4150,8 @@ const Dialog = (() => {
       }, a.label));
       const closeX = h('button', { type: 'button', class: 'dlg-x', aria: { label: I18n.t('dlg.close') }, data: { dlgx: '1' } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
       const form = h('form', { method: 'dialog', novalidate: true },
-        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }), closeX),
+        h('div', { class: 'dialog-head' }, h('h2', { id: id + '-title', text: title }),
+          maskTool ? h('button', { type: 'button', class: 'dlg-mask', data: { click: 'toggleMask' }, aria: { pressed: String(!!App.maskAmounts) }, text: I18n.t('top.mask') }) : null, closeX),
         h('div', { class: 'dialog-body' }, body),
         h('div', { class: 'actions' }, buttons));
       const dlg = h('dialog', { class: ['dialog', size], aria: { labelledby: id + '-title' } }, form);
@@ -4361,22 +4372,20 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  /** Cellule « Budget / Réel » de la liste : budget puis coût réel, en forme compacte (EF-115). */
-  function pair(amounts) {
-    const wrap = h('span', { class: 'money-pair' });
-    wrap.append(node(amounts.budget, { compact: true }), h('span', { class: 'sr-only', text: ` ${I18n.t('f.actual')} : ` }), h('span', { 'aria-hidden': 'true', text: ' / ' }), node(amounts.actual, { compact: true }));
-    return wrap;
-  }
-
-  return { DOTS, symbol, masked, text, plain, spoken, node, pair };
+  return { DOTS, symbol, masked, text, plain, spoken, node };
 })();
 
-action('toggleMask', () => {
+/** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */
+action('toggleMask', (arg, el) => {
   App.maskAmounts = !App.maskAmounts;
   Settings.set('mask', App.maskAmounts ? 'on' : 'off');
   render();
+  for (const b of document.querySelectorAll('.dlg-mask')) b.setAttribute('aria-pressed', String(App.maskAmounts));
+  if (typeof repaintDashboard === 'function') repaintDashboard();
+  if (baselinesWindow.paint) baselinesWindow.paint();
+  if (reportWindow.body) paintReport(reportWindow.body);
   announce(t('top.mask') + ' : ' + t(App.maskAmounts ? 'state.on' : 'state.off'));
-  const b = $('btn-mask'); if (b) b.focus();
+  const b = el && el.classList && el.classList.contains('dlg-mask') ? el : $('btn-mask'); if (b) b.focus();
 });
 
 // ── js/ui/50-render.js ──
@@ -4537,11 +4546,11 @@ function textCell(text, cls) {
   return td;
 }
 
-/** Cellule « Budget / Réel » (EF-115, EF-127) : forme compacte ; vide pour un jalon. */
-function moneyCell(task, amts) {
+/** Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon. */
+function moneyCell(task, amts, key) {
   const td = document.createElement('td');
   td.className = 'money';
-  if (task.type !== 'milestone') td.append(Money.pair(amts.get(task.id) || { budget: 0, actual: 0 }));
+  if (task.type !== 'milestone') td.append(Money.node((amts.get(task.id) || { budget: 0, actual: 0 })[key], { compact: true }));
   return td;
 }
 
@@ -4552,13 +4561,13 @@ function renderList(items, fl) {
   const frag = document.createDocumentFragment();
   const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 11 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 12 },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -4601,7 +4610,7 @@ function renderList(items, fl) {
       textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
       textCell(rs != null ? I18n.numDate(rs) : '', 'date'), textCell(re != null ? I18n.numDate(re) : '', 'date'), textCell(depsText(task)),
       textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
-      moneyCell(task, amts));
+      moneyCell(task, amts, 'budget'), moneyCell(task, amts, 'actual'));
     frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
@@ -5826,9 +5835,9 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], money: [124, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], budget: [88, 500], actual: [88, 500] };
 /** Largeur par défaut d'une colonne, rétablie par le double-clic ou la touche Début sur sa poignée. */
-const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, money: 124 };
+const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, budget: 100, actual: 100 };
 App.colWidths = {};
 /** Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
  *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit. */
@@ -5858,7 +5867,7 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'money'];
+  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'budget', 'actual'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
@@ -6855,7 +6864,7 @@ function baselinesWindow() {
   };
   baselinesWindow.paint = paint;
   paint();
-  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] })
+  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] })
     .then(() => { baselinesWindow.paint = null; });
 }
 
@@ -7023,7 +7032,7 @@ action('calAdd', kind => {
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, showCostValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
@@ -7229,7 +7238,7 @@ function dashboardWindow() {
   const body = h('div', { id: 'dash-win' });
   dashboardWindow.body = body;
   paintDashboard(body);
-  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
     .then(() => { dashboardWindow.body = null; });
 }
 
@@ -7248,6 +7257,7 @@ document.addEventListener('keydown', ev => {
   ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashOngoing', (arg, el) => { Dash.ongoing = el.checked; repaintDashboard('#bud-ongoing'); });
 action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
@@ -7294,7 +7304,7 @@ function paintBudget(panel) {
       h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
 
   // Courbe en S des coûts (RG-38, RG-39).
-  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit);
+  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
   const scale = costScale(curve);
   const opts = {
     max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
@@ -7303,11 +7313,12 @@ function paintBudget(panel) {
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
     ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
       h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
+  const ongoing = h('span', {}, h('input', { type: 'checkbox', id: 'bud-ongoing', checked: Dash.ongoing, data: { change: 'dashOngoing' } }), h('label', { for: 'bud-ongoing', text: ' ' + t('bud.ongoing') }));
   const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values' } },
     t(Dash.showCostValues ? 'dash.hideValues' : 'dash.showValues'));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
-    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, toggle),
-    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t('bud.note') }),
+    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
+    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
 }
 
@@ -7517,7 +7528,7 @@ function reportWindow() {
   const body = h('div', { id: 'rep-win' });
   reportWindow.body = body;
   paintReport(body);
-  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
+  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
 }
 
 /** Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26). */
@@ -7584,12 +7595,12 @@ function buildPrintGantt() {
   }
   const days = to - from + 1;
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
-  if (PrintOpt.amounts) cols.push('money'); // colonne Budget / Réel : seulement si les montants sont inclus (EF-124)
+  if (PrintOpt.amounts) cols.push('budget', 'actual'); // colonnes Budget et Coût réel : seulement si les montants sont inclus (EF-124)
   const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
   // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
   const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
-  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, money: 100 };
+  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, budget: 56, actual: 56 };
   const isDate = k => k === 'start' || k === 'end'; // les dates ne se réduisent pas (jamais coupées)
   const dateTotal = cols.filter(isDate).reduce((a, k) => a + base[k], 0);
   const textTotal = cols.filter(k => !isDate(k)).reduce((a, k) => a + base[k], 0);
@@ -7604,7 +7615,7 @@ function buildPrintGantt() {
   const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
   const slices = [];
   for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
-  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
+  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), budget: t('col.budget'), actual: t('col.actual') };
   const fl = flags();
   const wrap = h('div', { class: 'print-wrap' });
   slices.forEach((sl, idx) => {
@@ -7632,7 +7643,8 @@ function buildPrintGantt() {
         id: task.id, name: task.name, cat: task.type === 'summary' ? '' : ((catById(task.cat) || {}).name || ''), start: r && !r.empty ? I18n.numDate(r.startDn, true) : '', end: r && !r.empty ? I18n.numDate(r.endDn, true) : '',
         dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
         status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
-        money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
+        budget: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).budget, { compact: true }) : '',
+        actual: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).actual, { compact: true }) : '',
       };
       const lane = h('div', { class: 'pg-lane' });
       lane.style.setProperty('width', laneW + 'px');

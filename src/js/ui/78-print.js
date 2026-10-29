@@ -14,12 +14,12 @@ function buildPrintGantt() {
   }
   const days = to - from + 1;
   const cols = Object.keys(PrintOpt.cols).filter(k => PrintOpt.cols[k]);
-  if (PrintOpt.amounts) cols.push('money'); // colonne Budget / Réel : seulement si les montants sont inclus (EF-124)
+  if (PrintOpt.amounts) cols.push('budget', 'actual'); // colonnes Budget et Coût réel : seulement si les montants sont inclus (EF-124)
   const amts = PrintOpt.amounts ? Budget.amounts(App.project) : null;
   // Largeur imprimable approximative en px CSS (A4, marges 12 mm, prudente) ; les colonnes de texte sont réduites
   // ensemble si elles laissent moins de 200 px à l'échelle de temps. Rien n'est tronqué : les textes passent à la ligne.
   const pageW = PrintOpt.orient === 'landscape' ? 1000 : 690;
-  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, money: 100 };
+  const base = { id: 32, name: 130, cat: 64, start: 56, end: 56, dur: 40, deps: 70, res: 80, status: 66, budget: 56, actual: 56 };
   const isDate = k => k === 'start' || k === 'end'; // les dates ne se réduisent pas (jamais coupées)
   const dateTotal = cols.filter(isDate).reduce((a, k) => a + base[k], 0);
   const textTotal = cols.filter(k => !isDate(k)).reduce((a, k) => a + base[k], 0);
@@ -34,7 +34,7 @@ function buildPrintGantt() {
   const sliceDays = fit ? days : Math.max(7, Math.floor(availW / dayW / 7) * 7);
   const slices = [];
   for (let a = from; a <= to; a += sliceDays) slices.push({ a, b: Math.min(to, a + sliceDays - 1) });
-  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), money: t('col.money') };
+  const labels = { id: t('col.id'), name: t('col.name'), cat: t('col.cat'), start: t('col.start'), end: t('col.end'), dur: t('col.dur'), deps: t('col.deps'), res: t('col.res'), status: t('col.status'), budget: t('col.budget'), actual: t('col.actual') };
   const fl = flags();
   const wrap = h('div', { class: 'print-wrap' });
   slices.forEach((sl, idx) => {
@@ -62,7 +62,8 @@ function buildPrintGantt() {
         id: task.id, name: task.name, cat: task.type === 'summary' ? '' : ((catById(task.cat) || {}).name || ''), start: r && !r.empty ? I18n.numDate(r.startDn, true) : '', end: r && !r.empty ? I18n.numDate(r.endDn, true) : '',
         dur: durText(task, r), deps: depsText(task), res: task.type === 'task' ? resText(task) : '',
         status: (st ? t('status.' + st) : '') + (r && r.critical && task.type !== 'summary' ? ' ● ' + t('list.critical') : '') + (fl.conflict.has(task.id) ? ' ⚠' : ''),
-        money: amts && task.type !== 'milestone' ? `${Money.plain(amts.get(task.id).budget, { compact: true })} / ${Money.plain(amts.get(task.id).actual, { compact: true })}` : '',
+        budget: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).budget, { compact: true }) : '',
+        actual: amts && task.type !== 'milestone' ? Money.plain(amts.get(task.id).actual, { compact: true }) : '',
       };
       const lane = h('div', { class: 'pg-lane' });
       lane.style.setProperty('width', laneW + 'px');

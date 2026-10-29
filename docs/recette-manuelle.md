@@ -379,7 +379,7 @@ Fichiers (dans `tests/fixtures/`) : `budget-base.json`, `budget-avec-baseline.js
 
 Départ : ouvrez `budget-sans-montant.json`.
 
-- [ ] 1. Dans la liste, repérez la colonne **Budget / Réel**. *Attendu :* chaque tâche affiche `0,00 € / 0,00 €`.
+- [ ] 1. Dans la liste, repérez les deux colonnes **Budget** et **Coût réel** (EF-128). *Attendu :* chaque tâche affiche `0,00 €` dans chacune.
 - [ ] 2. Ouvrez **Tableau de bord**. *Attendu :* seulement deux onglets, **Synthèse** et **Charge** (pas d'onglet
   Budget). Fermez avec Échap.
 
@@ -387,8 +387,9 @@ Départ : ouvrez `budget-sans-montant.json`.
 
 Départ : ouvrez `budget-base.json`. Il contient deux tâches (Etude, Realisation) et un jalon.
 
-- [ ] 1. Lisez la colonne **Budget / Réel**. *Attendu :* Etude `100,00 € / 90,00 €`, Realisation
-  `300,00 € / 100,00 €`, le jalon est vide.
+- [ ] 1. Lisez les colonnes **Budget** et **Coût réel** (deux colonnes distinctes, EF-128). *Attendu :* Etude
+  Budget `100,00 €` et Coût réel `90,00 €` ; Realisation Budget `300,00 €` et Coût réel `100,00 €` ; le jalon est
+  vide dans les deux. Chaque colonne se redimensionne séparément (poignée de son en-tête).
 - [ ] 2. Cliquez sur **Etude** pour ouvrir sa fiche. *Attendu :* un groupe **Budget** avec les champs budget (`100`)
   et **Coût réel cumulé** (`90`), une aide sur le format du montant, et le texte qui précise que le coût réel
   compte les factures engagées ou payées.
@@ -410,7 +411,7 @@ Départ : `budget-base.json` ouvert. La date du jour importe peu pour les chiffr
 - [ ] 2. Lisez le tableau **Budget par catégorie**. *Attendu :* Etudes `400,00 €` / `190,00 €` / écart `210,00 €` ;
   Sans catégorie `0,00 €` ; Total `400,00 €` / `190,00 €` / `210,00 €`.
 - [ ] 3. Repérez la **Courbe en S des coûts** avec sa note (le coût réel d'une tâche non terminée n'est pas dans la
-  courbe ; la provision non plus). *Attendu :* la courbe est lisible, un titre et un résumé écrit l'accompagnent.
+  courbe ; la provision non plus) et la case **Inclure le coût réel des tâches en cours** (voir Budget 14). *Attendu :* la courbe est lisible, un titre et un résumé écrit l'accompagnent.
 - [ ] 4. Cliquez sur **Afficher les valeurs**. *Attendu :* un tableau de valeurs cumulées apparaît (par semaine).
   Passez en **mois** : une seule ligne si le projet tient sur un mois.
 - [ ] 5. Naviguez au clavier (Tab, Entrée) : tous les boutons de l'onglet sont atteignables, le focus est visible.
@@ -430,8 +431,8 @@ Départ : `budget-base.json` ouvert.
 
 Départ : ouvrez `budget-montants-geants.json` (cinq tâches, du petit montant au plafond).
 
-- [ ] 1. Lisez la colonne **Budget / Réel**. *Attendu :* `999 999,99 € / 0,00 €` (affiché en entier),
-  `1 M € / 1,23 M €`, `1,23 M € / 0,00 €`, `2,5 Md € / 0,00 €`, `50 Md € / 50 Md €`.
+- [ ] 1. Lisez les colonnes **Budget** et **Coût réel**. *Attendu* (Budget ; Coût réel) : `999 999,99 €` ; `0,00 €`
+  (affiché en entier) ; `1 M €` ; `1,23 M €` ; `1,23 M €` ; `0,00 €` ; `2,5 Md €` ; `0,00 €` ; `50 Md €` ; `50 Md €`.
   (En français : M = million, Md = milliard.)
 - [ ] 2. Ouvrez la fiche de la tâche « Un million », champ coût réel. *Attendu :* le montant **complet**
   (`1234567,89`), jamais abrégé.
@@ -524,17 +525,30 @@ Départ : `budget-base.json` ouvert.
 Départ : importez `projet-atlas-budget.json` (49 éléments, 6 ressources, provision de 15 000,00 €, une baseline
 « Baseline initiale »). Ce projet a aussi 4 conflits de ressources voulus : ils n'ont pas de lien avec le budget.
 
-- [ ] 1. Colonne **Budget / Réel**. *Attendu :* « Recueil des besoins » (A2) `8 000,00 € / 9 200,00 €` (coût réel
-  au-dessus du budget) ; « API réservations » (C3) `29 000,00 € / 0,00 €` ; « Infrastructure de production » (F1)
-  `1,5 M € / 0,00 €` (forme abrégée) ; les jalons sont vides.
-- [ ] 2. Les récapitulatives affichent la somme de leurs tâches : « Cadrage » (P1) `19 300,00 € / 18 800,00 €`,
-  « Développement » (P3) `189 000,00 € / 0,00 €`. Une récapitulative n'a pas de champ de montant dans sa fiche.
+- [ ] 1. Colonnes **Budget** et **Coût réel**. *Attendu* (Budget ; Coût réel) : « Recueil des besoins » (A2)
+  `8 000,00 €` ; `9 200,00 €` (coût réel au-dessus du budget) ; « API réservations » (C3) `29 000,00 €` ; `0,00 €` ;
+  « Infrastructure de production » (F1) `1,5 M €` (forme abrégée) ; `0,00 €` ; les jalons sont vides.
+- [ ] 2. Les récapitulatives affichent la somme de leurs tâches : « Cadrage » (P1) Budget `19 300,00 €`, Coût réel
+  `18 800,00 €` ; « Développement » (P3) Budget `189 000,00 €`, Coût réel `0,00 €`. Une récapitulative n'a pas de champ de montant dans sa fiche.
 - [ ] 3. Tableau de bord, onglet **Budget**. *Attendu :* BAC `1 836 700,00 €`, provision `15 000,00 €`, budget total
   `1 851 700,00 €`, coût réel total `26 100,00 €`, reste `1 825 600,00 €`.
   Aucun montant ne déborde de sa tuile ni du graphique (EX-04) ; réduisez la fenêtre et rouvrez l'onglet, puis
   recommencez avec `budget-montants-geants.json` : les montants restent dans leur tuile, en plus petit.
-- [ ] 4. Tableau par catégorie. *Attendu :* Ops `1 506 500,00 €` de budget (la catégorie qui pèse le plus à cause de
-  l'infrastructure), Études `30 100,00 €` budget / `19 200,00 €` réel, total `1 836 700,00 €` / `26 100,00 €`.
+- [ ] 4. Tableau par catégorie (colonnes Catégorie, Budget, Coût réel, Écart ; l'écart est le budget moins le coût
+  réel, négatif en cas de dépassement). *Attendu*, exactement ces 7 lignes dans cet ordre (alphabétique) :
+
+  | Catégorie | Budget | Coût réel | Écart |
+  |---|---:|---:|---:|
+  | Design | `37 900,00 €` | `3 300,00 €` | `34 600,00 €` |
+  | Dév | `193 800,00 €` | `0,00 €` | `193 800,00 €` |
+  | Études | `30 100,00 €` | `19 200,00 €` | `10 900,00 €` |
+  | Ops | `1 506 500,00 €` | `0,00 €` | `1 506 500,00 €` |
+  | Pilotage | `27 100,00 €` | `3 600,00 €` | `23 500,00 €` |
+  | Tests | `41 300,00 €` | `0,00 €` | `41 300,00 €` |
+  | **Total** | `1 836 700,00 €` | `26 100,00 €` | `1 810 600,00 €` |
+
+  Le total du budget (`1 836 700,00 €`) est le BAC de l'étape 3 ; le total du coût réel est le coût réel total.
+  Ops pèse le plus à cause de l'infrastructure. La provision n'est dans aucune catégorie.
 - [ ] 5. **Baselines**. *Attendu :* « Baseline initiale », BAC `1 831 700,00 €`, provision `15 000,00 €` ; BAC du projet
   `1 836 700,00 €`, soit **+5 000,00 €** (C3 et E2 ont augmenté, G2 a diminué depuis la capture).
 - [ ] 6. Ouvrez **Rapport d'état**, cochez **Inclure les montants** et choisissez la baseline : la variation du BAC
@@ -542,6 +556,25 @@ Départ : importez `projet-atlas-budget.json` (49 éléments, 6 ressources, prov
 - [ ] 7. Activez **Masquer les montants** puis ouvrez les trois endroits ci-dessus : aucun montant visible.
 - [ ] 8. Exportez en Excel avec puis sans montants : sans, aucune colonne de montant dans la feuille Tâches ni dans
   Baselines ; avec, les montants sont en unités à deux décimales.
+
+### Budget 14 — Courbe des coûts à jour, tâches en cours, bouton des montants dans les fenêtres (EF-129, EF-130, RG-20, RG-38)
+
+Départ : ouvrez `budget-courbe-terminee.json` (projet fictif ancien : la date du jour dépasse sa fin ; Etude
+`100,00 €` budget et `90,00 €` réel, terminée ; Realisation `300,00 €` budget, terminée avec `500,00 €` de coût réel).
+
+- [ ] 1. **Tableau de bord**, onglet **Budget**, bouton **Afficher les valeurs**. *Attendu :* le Coût réel total est
+  `590,00 €` ; dans le tableau des valeurs, la **dernière ligne** de la colonne Réel affiche `590,00 €` (et non plus
+  `90,00 €` : la tâche terminée ce jour-là compte dans la période en cours, ici la dernière de la grille).
+- [ ] 2. Fermez, ouvrez `budget-base.json` (Realisation à 40 %, `100,00 €` de coût réel), rouvrez l'onglet Budget et
+  les valeurs. *Attendu :* la case **Inclure le coût réel des tâches en cours** est décochée ; la dernière ligne du Réel
+  affiche `90,00 €` seulement ; la note sous la courbe dit que le coût des tâches non terminées n'y figure pas.
+- [ ] 3. Cochez la case. *Attendu :* le focus reste sur la case ; la dernière ligne du Réel passe à `190,00 €` ; la
+  note précise que le coût des tâches non terminées est compté dans la période en cours. Décochez : retour à `90,00 €`.
+- [ ] 4. Dans le Tableau de bord, repérez en haut à droite le bouton **Masquer les montants**. Cliquez dessus.
+  *Attendu :* tous les montants de la fenêtre deviennent `••••` sans la fermer, le bouton est enfoncé, le focus y reste
+  et le bouton de la barre du haut est lui aussi enfoncé. Recliquez : les montants reviennent.
+- [ ] 5. Faites de même dans **Baselines** et **Rapport d'état** (le bouton est dans leur en-tête). *Attendu :* même
+  comportement ; le réglage est le même que celui de la barre du haut.
 
 ### Contrôle final de la mise à jour
 

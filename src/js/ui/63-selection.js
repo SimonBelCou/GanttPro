@@ -229,9 +229,9 @@ function renderListToggle() {
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
-const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], money: [124, 500] };
+const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [96, 220], end: [96, 220], rstart: [104, 220], rend: [96, 220], deps: [124, 800], res: [100, 800], status: [80, 500], budget: [88, 500], actual: [88, 500] };
 /** Largeur par défaut d'une colonne, rétablie par le double-clic ou la touche Début sur sa poignée. */
-const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, money: 124 };
+const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, budget: 100, actual: 100 };
 App.colWidths = {};
 /** Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
  *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit. */
@@ -261,7 +261,7 @@ function applyColWidths() {
 }
 function initColumns() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'money'];
+  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'budget', 'actual'];
   ths.forEach((th, i) => {
     const k = keys[i];
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },

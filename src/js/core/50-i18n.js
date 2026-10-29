@@ -163,6 +163,8 @@ const I18n = (() => {
     'bud.curve': 'Courbe en S des coûts',
     'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
     'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'bud.ongoing': 'Inclure le coût réel des tâches en cours',
+    'bud.noteOngoing': 'Le coût réel des tâches non terminées est compté dans la période en cours (coût engagé à ce jour). La provision ne figure pas dans la courbe.',
     'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
     // Budget (étape A) : baselines
     'bl.bac': 'BAC',
@@ -170,7 +172,8 @@ const I18n = (() => {
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'montant masqué',
     'top.mask': 'Masquer les montants',
-    'col.money': 'Budget / Réel',
+    'col.budget': 'Budget',
+    'col.actual': 'Coût réel',
     'f.budgetGroup': 'Budget',
     'f.budget': 'Budget',
     'f.actual': 'Coût réel cumulé',
@@ -510,6 +513,8 @@ const I18n = (() => {
     'bud.curve': 'Cost S-curve',
     'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
     'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'bud.ongoing': 'Include the actual cost of tasks in progress',
+    'bud.noteOngoing': 'The actual cost of unfinished tasks is counted in the current period (cost incurred to date). The provision is not in the curve.',
     'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
     // Budget (étape A) : baselines
     'bl.bac': 'BAC',
@@ -517,7 +522,8 @@ const I18n = (() => {
     // Budget (étape A) : montants, fiche, fenêtre du projet
     'amt.masked': 'amount hidden',
     'top.mask': 'Hide amounts',
-    'col.money': 'Budget / Actual',
+    'col.budget': 'Budget',
+    'col.actual': 'Actual cost',
     'f.budgetGroup': 'Budget',
     'f.budget': 'Budget',
     'f.actual': 'Cumulative actual cost',

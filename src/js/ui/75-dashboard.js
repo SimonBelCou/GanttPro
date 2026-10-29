@@ -2,7 +2,7 @@
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, showCostValues: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
@@ -208,7 +208,7 @@ function dashboardWindow() {
   const body = h('div', { id: 'dash-win' });
   dashboardWindow.body = body;
   paintDashboard(body);
-  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+  return Dialog.open({ title: t('top.dashboard'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
     .then(() => { dashboardWindow.body = null; });
 }
 
@@ -227,6 +227,7 @@ document.addEventListener('keydown', ev => {
   ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashOngoing', (arg, el) => { Dash.ongoing = el.checked; repaintDashboard('#bud-ongoing'); });
 action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });

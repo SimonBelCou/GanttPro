@@ -35,7 +35,7 @@ function paintBudget(panel) {
       h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
 
   // Courbe en S des coûts (RG-38, RG-39).
-  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit);
+  const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
   const scale = costScale(curve);
   const opts = {
     max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
@@ -44,10 +44,11 @@ function paintBudget(panel) {
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
     ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
       h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
+  const ongoing = h('span', {}, h('input', { type: 'checkbox', id: 'bud-ongoing', checked: Dash.ongoing, data: { change: 'dashOngoing' } }), h('label', { for: 'bud-ongoing', text: ' ' + t('bud.ongoing') }));
   const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values' } },
     t(Dash.showCostValues ? 'dash.hideValues' : 'dash.showValues'));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
-    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, toggle),
-    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t('bud.note') }),
+    h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
+    curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
 }

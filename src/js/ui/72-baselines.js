@@ -44,7 +44,7 @@ function baselinesWindow() {
   };
   baselinesWindow.paint = paint;
   paint();
-  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] })
+  return Dialog.open({ title: t('top.baselines'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] })
     .then(() => { baselinesWindow.paint = null; });
 }
 

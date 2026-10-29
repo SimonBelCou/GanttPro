@@ -155,11 +155,11 @@ function textCell(text, cls) {
   return td;
 }
 
-/** Cellule « Budget / Réel » (EF-115, EF-127) : forme compacte ; vide pour un jalon. */
-function moneyCell(task, amts) {
+/** Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon. */
+function moneyCell(task, amts, key) {
   const td = document.createElement('td');
   td.className = 'money';
-  if (task.type !== 'milestone') td.append(Money.pair(amts.get(task.id) || { budget: 0, actual: 0 }));
+  if (task.type !== 'milestone') td.append(Money.node((amts.get(task.id) || { budget: 0, actual: 0 })[key], { compact: true }));
   return td;
 }
 
@@ -170,13 +170,13 @@ function renderList(items, fl) {
   const frag = document.createDocumentFragment();
   const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 11 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 12 },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -219,7 +219,7 @@ function renderList(items, fl) {
       textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
       textCell(rs != null ? I18n.numDate(rs) : '', 'date'), textCell(re != null ? I18n.numDate(re) : '', 'date'), textCell(depsText(task)),
       textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
-      moneyCell(task, amts));
+      moneyCell(task, amts, 'budget'), moneyCell(task, amts, 'actual'));
     frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));

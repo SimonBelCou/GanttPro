@@ -141,9 +141,9 @@ const Budget = (() => {
    * planned : budget des tâches dont la fin prévue est au plus tard le dernier jour de la période.
    * real : coût réel des tâches terminées (100 %) dont la fin réelle est dans la période ou avant ; une tâche à 100 %
    * sans fin réelle compte dans la période en cours ; s'arrête à la période qui contient aujourd'hui.
-   * La provision et le coût réel des tâches non terminées n'y figurent pas.
+   * La provision n'y figure pas ; le coût réel des tâches non terminées n'y figure que si opts.ongoing (période en cours).
    */
-  function costCurve(project, sched, today, unit = 'week') {
+  function costCurve(project, sched, today, unit = 'week', opts = {}) {
     const work = project.tasks.filter(t => t.type === 'task');
     let last = sched.projectEndDn;
     const shown = (project.baselines || []).filter(b => b.shownOnScurve);
@@ -153,9 +153,10 @@ const Budget = (() => {
     const real = [];
     for (const p of ps) {
       if (p.start > today) break;
-      const current = p.end >= today;
+      // Période en cours : celle qui contient aujourd'hui, ou la dernière si aujourd'hui dépasse la grille.
+      const current = p.end >= today || p === ps[ps.length - 1];
       real.push(work.reduce((a, t) => {
-        if (t.pct < 100) return a;
+        if (t.pct < 100) return a + (opts.ongoing && current ? amt(t.actual) : 0); // option : coût engagé des tâches en cours
         const re = Dates.parse(t.realEnd);
         return a + (re != null ? (re <= p.end ? amt(t.actual) : 0) : (current ? amt(t.actual) : 0));
       }, 0));

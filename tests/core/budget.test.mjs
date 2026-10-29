@@ -80,10 +80,10 @@ test('R-74 courbe des coûts par semaine et par mois', () => {
 });
 
 test('R-74 bis : tâche à 100 % sans fin réelle, comptée dans la période en cours seulement', () => {
-  const p = project([{ id: 'T1', pct: 100, budget: 1000, actual: 800 }]);
+  const p = project([{ id: 'T1', pct: 100, budget: 1000, actual: 800 }, { id: 'T2', deps: ['T1'], pct: 0, budget: 100, actual: 0 }]);
   const s = Schedule.compute(p);
   assert.deepEqual(plain(Budget.costCurve(p, s, Dates.parse('2026-01-08'), 'week').real), [800]); // période en cours : comptée
-  assert.deepEqual(plain(Budget.costCurve(p, s, Dates.parse('2026-01-14'), 'week').real), [0]); // période passée sans fin réelle : non comptée (RG-20)
+  assert.deepEqual(plain(Budget.costCurve(p, s, Dates.parse('2026-01-14'), 'week').real), [0, 800]); // période passée : non comptée (RG-20) ; période en cours : comptée
 });
 
 test('R-75 baseline : budgets et provision capturés, BAC et variation', () => {
@@ -286,4 +286,16 @@ test('R-76 bis : export avec montants puis réimport à l\'identique', () => {
   const t = id => merged.tasks.find(x => x.id === id);
   assert.deepEqual([t('A').budget, t('A').actual, t('B').budget], [12345, 600, 25050]);
   assert.equal(Budget.totals(merged).bac, 37395); // la somme de la récapitulative n'est pas comptée deux fois
+});
+
+test('courbe des coûts : aujourd\'hui au-delà de la grille, la dernière période est la période en cours', () => {
+  const p = project([{ id: 'T1', pct: 100, budget: 1000, actual: 500 }]);
+  const s = Schedule.compute(p);
+  assert.deepEqual(plain(Budget.costCurve(p, s, Dates.parse('2026-06-15'), 'week').real).slice(-1), [500]);
+});
+
+test('courbe des coûts : option « tâches en cours » ajoute le coût réel des tâches non terminées à la période en cours', () => {
+  const p = r74(), s = Schedule.compute(p), today = Dates.parse('2026-01-14');
+  assert.deepEqual(plain(Budget.costCurve(p, s, today, 'week', { ongoing: true }).real), [9000, 19000]);
+  assert.deepEqual(plain(Budget.costCurve(p, s, today, 'week').real), [9000, 9000]);
 });

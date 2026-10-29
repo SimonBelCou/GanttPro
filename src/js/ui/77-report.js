@@ -108,7 +108,7 @@ function reportWindow() {
   const body = h('div', { id: 'rep-win' });
   reportWindow.body = body;
   paintReport(body);
-  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
+  return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
 }
 
 /** Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26). */

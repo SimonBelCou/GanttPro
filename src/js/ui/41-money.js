@@ -30,20 +30,18 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  /** Cellule « Budget / Réel » de la liste : budget puis coût réel, en forme compacte (EF-115). */
-  function pair(amounts) {
-    const wrap = h('span', { class: 'money-pair' });
-    wrap.append(node(amounts.budget, { compact: true }), h('span', { class: 'sr-only', text: ` ${I18n.t('f.actual')} : ` }), h('span', { 'aria-hidden': 'true', text: ' / ' }), node(amounts.actual, { compact: true }));
-    return wrap;
-  }
-
-  return { DOTS, symbol, masked, text, plain, spoken, node, pair };
+  return { DOTS, symbol, masked, text, plain, spoken, node };
 })();
 
-action('toggleMask', () => {
+/** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */
+action('toggleMask', (arg, el) => {
   App.maskAmounts = !App.maskAmounts;
   Settings.set('mask', App.maskAmounts ? 'on' : 'off');
   render();
+  for (const b of document.querySelectorAll('.dlg-mask')) b.setAttribute('aria-pressed', String(App.maskAmounts));
+  if (typeof repaintDashboard === 'function') repaintDashboard();
+  if (baselinesWindow.paint) baselinesWindow.paint();
+  if (reportWindow.body) paintReport(reportWindow.body);
   announce(t('top.mask') + ' : ' + t(App.maskAmounts ? 'state.on' : 'state.off'));
-  const b = $('btn-mask'); if (b) b.focus();
+  const b = el && el.classList && el.classList.contains('dlg-mask') ? el : $('btn-mask'); if (b) b.focus();
 });

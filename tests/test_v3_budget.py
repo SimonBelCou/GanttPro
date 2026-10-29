@@ -5,6 +5,7 @@
 
 Toutes les données sont fictives (EX-12).
 """
+import re
 import json
 import sys
 import tempfile
@@ -78,9 +79,8 @@ def main():
         def cell(id_):
             # Texte visible seulement : le texte réservé aux lecteurs d'écran (.sr-only) est exclu.
             return sp(pg.evaluate("""id => {
-              const td = document.querySelector('#task-rows tr[data-id="' + id + '"] td.money').cloneNode(true);
-              td.querySelectorAll('.sr-only').forEach(n => n.remove());
-              return td.textContent.trim();
+              const tds = [...document.querySelectorAll('#task-rows tr[data-id="' + id + '"] td.money')];
+              const v = tds.map(c => { const td = c.cloneNode(true); td.querySelectorAll('.sr-only').forEach(n => n.remove()); return td.textContent.trim(); }); return v.every(x => !x) ? '' : v.join(' / ');
             }""", id_))
 
         def open_task(id_):
@@ -102,7 +102,9 @@ def main():
         check('raccourcis réaffichés', tip('#btn-undo') == 'Annuler (Ctrl + Z)')
         pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
         # ── Projet vide : pas d'onglet Budget (EF-117) ────────────────────────────────────────
-        check('colonne « Budget / Réel » dans l\'en-tête de la liste', 'Budget / Réel' in pg.inner_text('#tasks-table thead'))
+        heads = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => t.textContent.trim())")
+        check('deux colonnes distinctes « Budget » et « Coût réel » dans la liste', heads[-2:] == ['Budget', 'Coût réel'] and 'Budget / Réel' not in ' '.join(heads), heads)
+        check('chaque ligne a une cellule Budget et une cellule Coût réel', pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id]')].every(tr => tr.querySelectorAll('td.money').length === 2)"))
         pg.click('button[data-click="openDashboard"]')
         check('sans montant, pas d\'onglet Budget', pg.locator('#dash-win [role="tab"]').count() == 2)
         esc()
@@ -256,7 +258,7 @@ def main():
         btn('Importer')
         pg.wait_for_timeout(200)
         un = [r for r in pg.query_selector_all('#task-rows tr[data-id]') if 'Un' in r.inner_text()]
-        check('import : « 1 234,56 » lu en centimes', un and '1 234,56 €' in sp(un[0].query_selector('td.money').inner_text()) and '10,00 €' in sp(un[0].query_selector('td.money').inner_text()), [sp(r.inner_text()) for r in un])
+        check('import : « 1 234,56 » lu en centimes', un and '1 234,56 €' in sp(un[0].query_selector_all('td.money')[0].inner_text()) and '10,00 €' in sp(un[0].query_selector_all('td.money')[1].inner_text()), [sp(r.inner_text()) for r in un])
 
         # ── Modification en masse (EF-116) ───────────────────────────────────────────────────
         load('budget.json')
@@ -287,7 +289,7 @@ def main():
         pg.focus('#task-rows tr[data-id="T1"] button.select')
         pg.keyboard.press('Control+d')
         pg.wait_for_timeout(200)
-        n = pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id] td.money')].filter(td => td.textContent.replace(/\\u00a0/g, ' ').startsWith('100,00 €') && td.textContent.includes('90,00')).length")
+        n = pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id]')].filter(tr => { const c = [...tr.querySelectorAll('td.money')].map(td => td.textContent.replace(/\\u00a0/g, ' ')); return c.length === 2 && c[0].startsWith('100,00 €') && c[1].includes('90,00'); }).length")
         check('dupliquer une tâche conserve son budget et son coût réel', n == 2, n)
 
         # ── Fichiers d'essai de la recette manuelle (docs/recette-manuelle.md) ────────────────────
@@ -496,7 +498,7 @@ def main():
         # Titres de colonnes jamais coupés, même colonnes réduites au minimum (capture de recette G8).
         clip_js = "[...document.querySelectorAll('#tasks-table thead th')].filter(t => t.scrollWidth > t.clientWidth + 1).map(t => t.textContent.trim())"
         check('titres de colonnes entiers à largeur automatique', pg.evaluate(clip_js) == [], pg.evaluate(clip_js))
-        for key in ['dur', 'start', 'rstart', 'deps', 'res', 'status', 'money']:
+        for key in ['dur', 'start', 'rstart', 'deps', 'res', 'status', 'budget', 'actual']:
             sep = pg.locator(f'#tasks-table .col-resize[data-col="{key}"]')
             sep.focus()
             for _ in range(40):
@@ -534,6 +536,39 @@ def main():
                 check(f'EX-30 : « Zoom actuel » découpé en bandes numérotées ({tag})', info['n'] > 1 and all(f'partie {i + 1} sur {info["n"]}' in c for i, c in enumerate(info['caps'])), info['caps'])
             pg.wait_for_timeout(1800)
             check(f'EX-30 : nettoyage après impression ({tag})', pg.evaluate("!document.body.classList.contains('printing')"))
+
+
+        # Courbe des coûts : « aujourd'hui » au-delà de la grille, tâche terminée à 500 € ; option tâches en cours ; bouton des montants dans les fenêtres.
+        last_real = lambda: sp(pg.evaluate("[...document.querySelectorAll('#bud-values tbody tr')].pop().textContent"))
+        def show_values():
+            if not pg.locator('#bud-values').count():
+                pg.click('[data-click="dashCostValues"]')
+        load_fx('budget-courbe-terminee.json')
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); show_values()
+        check('courbe : la tâche terminée (500 €) apparaît dans le réel de la dernière période', '590,00' in last_real(), last_real())
+        esc()
+        load_fx('budget-base.json')
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); show_values()
+        check('courbe : sans l\'option, le coût des tâches en cours n\'est pas dans le réel', '190,00' not in last_real() and '90,00' in last_real(), last_real())
+        check('courbe : case « Inclure le coût réel des tâches en cours » décochée par défaut', not pg.is_checked('#bud-ongoing'))
+        pg.check('#bud-ongoing')
+        check('courbe : avec l\'option, le coût engagé des tâches en cours est ajouté', '190,00' in last_real(), last_real())
+        check('courbe : l\'option change la note explicative', 'période en cours' in sp(pg.inner_text('#dpanel .hint:last-of-type')) or 'période en cours' in sp(pg.inner_text('#dpanel')))
+        check('courbe : le focus reste sur la case', pg.evaluate("document.activeElement.id") == 'bud-ongoing')
+        esc()
+        for label, opener in [('tableau de bord', 'openDashboard'), ('baselines', 'openBaselines'), ('rapport', 'openReport')]:
+            pg.click(f'button[data-click="{opener}"]')
+            if opener == 'openDashboard': pg.click('#dtab-budget')
+            btn = pg.locator('dialog[open] button.dlg-mask')
+            check(f'bouton « Masquer les montants » dans la fenêtre {label}', btn.count() == 1 and btn.get_attribute('aria-pressed') == 'false')
+            btn.click(); pg.wait_for_timeout(120)
+            check(f'masquage depuis la fenêtre {label} : bouton enfoncé, focus conservé', btn.get_attribute('aria-pressed') == 'true' and pg.evaluate("document.activeElement.classList.contains('dlg-mask')"))
+            body = sp(pg.inner_text('dialog[open]'))
+            check(f'masquage depuis la fenêtre {label} : aucun montant en clair', not re.search(r'\d[\d\s]*,\d\d\s?€', body), body[:200])
+            check(f'masquage depuis la fenêtre {label} : la barre du haut suit', pg.get_attribute('#btn-mask', 'aria-pressed') == 'true')
+            pg.locator('dialog[open] button.dlg-mask').click(); pg.wait_for_timeout(120)
+            check(f'démasquage depuis la fenêtre {label}', pg.get_attribute('#btn-mask', 'aria-pressed') == 'false')
+            esc()
 
         check('aucune erreur JavaScript ni violation CSP', not errors, errors)
         browser.close()
