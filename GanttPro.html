@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pncSc1XSmzibdi6NQO7S+sazT7CLVqQkrhiz+99wC9A='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4E8N1T4C9f+BBuWDlFC5Q/tN54NeZGYSyCtZbrox0Mk='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -7752,7 +7752,7 @@ function cpiSpiDiagram(res) {
 function paintEvm(panel) {
   const P = App.project, today = Dates.todayDn();
   const res = Evm.compute(P, App.sched, today);
-  const money = v => h('span', {}, v < 0 ? '−' : '', Money.node(Math.abs(v)));
+  const money = v => Money.node(v); // le signe fait partie du montant : masqué avec lui
   const ratioNode = r => h('span', { class: 'money', text: ratioText(r) });
   const sec = h('section', { class: 'dash-section', id: 'evm', aria: { labelledby: 'evm-h' } },
     h('h3', { id: 'evm-h', text: t('evm.title') }),
@@ -7949,6 +7949,19 @@ function reportSections() {
       tot.remaining < 0 ? { label: `${t('bud.remaining')} : ${t('bud.overrun')} `, cents: -tot.remaining } : L('bud.remaining', tot.remaining)];
     if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
     out.push({ key: 'budget', title: t('rep.b.budget'), lines });
+  }
+  // Valeur acquise (EF-142) : les indices CPI et SPI sont des rapports, lisibles sans montants ; les montants
+  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Budget.hasAmounts(App.project)) {
+    const e = Evm.compute(App.project, App.sched, today);
+    const idx = (k, r) => `${t(k)} : ${r.hundredths == null ? t('evm.na') + ' (' + t('evm.na.' + r.reason) + ')' : I18n.number(r.hundredths / 100, 2) + ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)}`;
+    const lines = [e.ref ? t('evm.refBaseline', { name: e.ref.name }) : t('evm.refPlan'), idx('evm.cpi', e.cpi), idx('evm.spi', e.spi)];
+    if (Report.amounts) {
+      const L = (k, c, signed) => ({ label: t(k) + ' : ', cents: c, signed });
+      lines.push(L('evm.pv', e.pv), L('evm.ev', e.ev), L('evm.ac', e.ac), L('evm.cv', e.cv, true), L('evm.sv', e.sv, true));
+      if (e.eac.byCpi.cents != null) lines.push(L('evm.eac1', e.eac.byCpi.cents));
+    }
+    out.push({ key: 'evm', title: t('evm.title'), lines });
   }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });

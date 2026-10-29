@@ -44,6 +44,19 @@ function reportSections() {
     if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
     out.push({ key: 'budget', title: t('rep.b.budget'), lines });
   }
+  // Valeur acquise (EF-142) : les indices CPI et SPI sont des rapports, lisibles sans montants ; les montants
+  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Budget.hasAmounts(App.project)) {
+    const e = Evm.compute(App.project, App.sched, today);
+    const idx = (k, r) => `${t(k)} : ${r.hundredths == null ? t('evm.na') + ' (' + t('evm.na.' + r.reason) + ')' : I18n.number(r.hundredths / 100, 2) + ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)}`;
+    const lines = [e.ref ? t('evm.refBaseline', { name: e.ref.name }) : t('evm.refPlan'), idx('evm.cpi', e.cpi), idx('evm.spi', e.spi)];
+    if (Report.amounts) {
+      const L = (k, c, signed) => ({ label: t(k) + ' : ', cents: c, signed });
+      lines.push(L('evm.pv', e.pv), L('evm.ev', e.ev), L('evm.ac', e.ac), L('evm.cv', e.cv, true), L('evm.sv', e.sv, true));
+      if (e.eac.byCpi.cents != null) lines.push(L('evm.eac1', e.eac.byCpi.cents));
+    }
+    out.push({ key: 'evm', title: t('evm.title'), lines });
+  }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });
   if (B.milestones) out.push({ key: 'milestones', title: t('rep.milestones'), lines: [

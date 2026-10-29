@@ -91,3 +91,14 @@ test('R-84 produits au-delà de 2^53 sans perte', () => {
   assert.equal(Evm.divRound(1, 3), 0);
   assert.equal(Evm.divRound(1, 2), 1);
 });
+
+test('R-84 les points de situation survivent à la relecture ; l\'export sans montants garde les indices et retire les montants', () => {
+  const p = Model.sanitize({ format: 3, name: 'T', projectStart: '2026-01-05', tasks: [{ id: 'A', name: 'a', type: 'task', dur: 5, budget: 10000 }],
+    statusPoints: [{ date: '2026-01-09', label: 'Revue', cpi: 57, spi: 80, bac: 20000, pv: 10000, ev: 8000, ac: 14000, etc: 100 }] }).project;
+  assert.equal(p.statusPoints.length, 1);
+  const full = Model.serialize(p, { amounts: true }).statusPoints[0];
+  assert.deepEqual(plain([full.cpi, full.spi, full.ev]), [57, 80, 8000]);
+  const bare = Model.serialize(p, { amounts: false }).statusPoints[0];
+  assert.deepEqual(plain([bare.cpi, bare.spi, 'ev' in bare, 'ac' in bare, 'pv' in bare, 'bac' in bare, 'etc' in bare]), [57, 80, false, false, false, false, false]);
+  assert.throws(() => Model.sanitize({ format: 3, name: 'T', projectStart: '2026-01-05', tasks: [{ id: 'A', name: 'a', type: 'task', dur: 1 }], statusPoints: Array.from({ length: 61 }, () => ({ date: '2026-01-09' })) }));
+});

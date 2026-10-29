@@ -97,7 +97,7 @@ function cpiSpiDiagram(res) {
 function paintEvm(panel) {
   const P = App.project, today = Dates.todayDn();
   const res = Evm.compute(P, App.sched, today);
-  const money = v => h('span', {}, v < 0 ? '−' : '', Money.node(Math.abs(v)));
+  const money = v => Money.node(v); // le signe fait partie du montant : masqué avec lui
   const ratioNode = r => h('span', { class: 'money', text: ratioText(r) });
   const sec = h('section', { class: 'dash-section', id: 'evm', aria: { labelledby: 'evm-h' } },
     h('h3', { id: 'evm-h', text: t('evm.title') }),
