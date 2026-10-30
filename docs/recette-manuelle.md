@@ -676,6 +676,7 @@ Départ : ouvrez `colonnes-personnalisees.json` (projet fictif sans montant dont
   dans le projet, Budget et Coût réel disparaissent. Saisissez un budget sur une tâche : les deux colonnes apparaissent
   d'elles-mêmes, en fin de liste.
 - [ ] 11. Contrôle du bouton **Largeurs par défaut** : il rétablit les largeurs, pas les colonnes affichées.
+- [ ] 12b. **Dans chaque navigateur utilisé (Edge, Firefox, Chrome)** : tirez la poignée de largeur d'une colonne, puis d'une autre, puis affichez une colonne avec **Colonnes…**. *Attendu :* toutes les colonnes restent visibles, la liste défile horizontalement si elle est plus large que son cadre ; **Largeurs par défaut** rétablit tout. (Défaut signalé sous Firefox le 30 octobre : seule la première colonne restait visible.)
 - [ ] 12. Clavier : dans la fenêtre, Tab parcourt cases et boutons ; Espace coche ; Entrée active ↑ et ↓ ; Échap ferme
   et rend le focus à **Colonnes…**.
 

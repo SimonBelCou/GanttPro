@@ -254,9 +254,16 @@ function applyColWidths() {
   const all = shown.every(k => App.colWidths[k]);
   if (all) table.style.setProperty('width', shown.reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);
+  // La largeur est posée sur le groupe de colonnes ET sur chaque en-tête : les moteurs ne lisent pas tous le même des deux
+  // en mise en page fixe (Firefox, en particulier, se fie aux cellules de la première ligne).
   for (const col of table.querySelectorAll('col')) {
     const w = App.colWidths[col.dataset.col];
     if (w) col.style.setProperty('width', w + 'px'); else col.style.removeProperty('width');
+  }
+  for (const th of table.querySelectorAll('thead th')) {
+    const w = App.colWidths[th.dataset.col];
+    if (w) { th.style.setProperty('width', w + 'px'); th.style.setProperty('min-width', w + 'px'); th.style.setProperty('max-width', w + 'px'); }
+    else { th.style.removeProperty('width'); th.style.removeProperty('min-width'); th.style.removeProperty('max-width'); }
   }
   for (const sep of table.querySelectorAll('.col-resize')) {
     const k = sep.dataset.col;

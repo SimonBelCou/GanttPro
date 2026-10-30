@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VTK4h3gSIUhk+Ht/1/dXU0odV/92gIJbFqe2p49djUI='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dMvk+L0PHuLewYkPztxaRUODwfWWxmLdQCh8Fd2td8o='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -413,7 +413,7 @@ ul.comments li { align-items: flex-start; }
 .tasks th { position: relative; }
 .col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
-table.tasks.fixed { table-layout: fixed; }
+table.tasks.fixed { table-layout: fixed; min-width: 0; } /* largeurs fixées : la taille intrinsèque « max-content » ne doit plus intervenir */
 table.tasks.fixed td, table.tasks.fixed th { overflow: hidden; text-overflow: ellipsis; }
 .planner.list-collapsed { grid-template-columns: 0 0 1fr; }
 .planner.list-collapsed .splitter { display: none; }
@@ -6294,9 +6294,16 @@ function applyColWidths() {
   const all = shown.every(k => App.colWidths[k]);
   if (all) table.style.setProperty('width', shown.reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);
+  // La largeur est posée sur le groupe de colonnes ET sur chaque en-tête : les moteurs ne lisent pas tous le même des deux
+  // en mise en page fixe (Firefox, en particulier, se fie aux cellules de la première ligne).
   for (const col of table.querySelectorAll('col')) {
     const w = App.colWidths[col.dataset.col];
     if (w) col.style.setProperty('width', w + 'px'); else col.style.removeProperty('width');
+  }
+  for (const th of table.querySelectorAll('thead th')) {
+    const w = App.colWidths[th.dataset.col];
+    if (w) { th.style.setProperty('width', w + 'px'); th.style.setProperty('min-width', w + 'px'); th.style.setProperty('max-width', w + 'px'); }
+    else { th.style.removeProperty('width'); th.style.removeProperty('min-width'); th.style.removeProperty('max-width'); }
   }
   for (const sep of table.querySelectorAll('.col-resize')) {
     const k = sep.dataset.col;
