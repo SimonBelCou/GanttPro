@@ -244,8 +244,9 @@ function snapshotColWidths() {
 function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
-  const all = Object.keys(COL_LIMITS).every(k => App.colWidths[k]);
-  if (all) table.style.setProperty('width', Object.keys(COL_LIMITS).reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
+  const shown = Columns.effective(App.project);
+  const all = shown.every(k => App.colWidths[k]);
+  if (all) table.style.setProperty('width', shown.reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);
   for (const col of table.querySelectorAll('col')) {
     const w = App.colWidths[col.dataset.col];
@@ -259,11 +260,11 @@ function applyColWidths() {
   }
   if (typeof applyFreeze === 'function') applyFreeze();
 }
-function initColumns() {
+/** Poignées de largeur des en-têtes, à refaire chaque fois que l'en-tête est reconstruit (colonnes ou langue). */
+function bindColumnHandles() {
   const ths = $('tasks-table').querySelectorAll('thead th');
-  const keys = ['id', 'name', 'dur', 'start', 'end', 'rstart', 'rend', 'deps', 'res', 'status', 'budget', 'actual'];
-  ths.forEach((th, i) => {
-    const k = keys[i];
+  ths.forEach(th => {
+    const k = th.dataset.col;
     const sep = h('span', { class: 'col-resize', role: 'separator', tabindex: '0', data: { col: k },
       aria: { orientation: 'vertical', valuemin: COL_LIMITS[k][0], valuemax: COL_LIMITS[k][1], label: t('col.resize', { col: th.textContent }),
         valuenow: Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width) || COL_LIMITS[k][0])) } });

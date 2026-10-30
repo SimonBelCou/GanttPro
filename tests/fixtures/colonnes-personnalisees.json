@@ -1,0 +1,12 @@
+{
+  "format": 3,
+  "name": "Projet fictif colonnes choisies",
+  "projectStart": "2025-03-03",
+  "columns": ["name", "id", "start", "end", "status", "budget"],
+  "tasks": [
+    { "id": "T1", "name": "Cadrage", "dur": 3, "pct": 100, "realEnd": "2025-03-05" },
+    { "id": "T2", "name": "Realisation", "dur": 5, "deps": ["T1"], "pct": 40, "assign": [{ "res": "Alice", "units": 100 }] },
+    { "id": "J", "name": "Livraison", "type": "milestone", "dur": 0, "deps": ["T2"] }
+  ],
+  "resources": [{ "name": "Alice" }]
+}
