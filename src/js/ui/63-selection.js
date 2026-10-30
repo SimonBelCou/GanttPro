@@ -245,6 +245,12 @@ function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
   const shown = Columns.effective(App.project);
+  // Dès qu'une largeur est réglée à la main, TOUTE colonne affichée a une largeur bornée : une colonne affichée plus tard
+  // (fenêtre « Colonnes ») prend sa largeur par défaut, au lieu de laisser la table répartir l'espace restant sur elle.
+  if (any) for (const k of shown) {
+    const w = Number(App.colWidths[k]);
+    App.colWidths[k] = Number.isFinite(w) && w > 0 ? Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))) : COL_DEFAULT[k];
+  }
   const all = shown.every(k => App.colWidths[k]);
   if (all) table.style.setProperty('width', shown.reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);

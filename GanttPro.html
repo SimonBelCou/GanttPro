@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fUK7F5fkYXtTU7ezaIMKxMusaeSbmmW4bzFRENNH200='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VTK4h3gSIUhk+Ht/1/dXU0odV/92gIJbFqe2p49djUI='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -6285,6 +6285,12 @@ function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
   const shown = Columns.effective(App.project);
+  // Dès qu'une largeur est réglée à la main, TOUTE colonne affichée a une largeur bornée : une colonne affichée plus tard
+  // (fenêtre « Colonnes ») prend sa largeur par défaut, au lieu de laisser la table répartir l'espace restant sur elle.
+  if (any) for (const k of shown) {
+    const w = Number(App.colWidths[k]);
+    App.colWidths[k] = Number.isFinite(w) && w > 0 ? Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(w))) : COL_DEFAULT[k];
+  }
   const all = shown.every(k => App.colWidths[k]);
   if (all) table.style.setProperty('width', shown.reduce((a, k) => a + App.colWidths[k], 0) + 'px'); else table.style.removeProperty('width');
   table.classList.toggle('fixed', any);

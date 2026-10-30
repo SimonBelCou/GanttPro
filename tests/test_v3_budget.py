@@ -727,6 +727,20 @@ def main():
         pg.click('#col-reset'); pg.wait_for_timeout(100)
         check('RG-52 : l\'ordre d\'origine rétabli n\'affiche Budget et Coût réel que s\'il y a un montant (ici aucun)', pg.evaluate(heads_js) == ['N°', 'Activité', 'Durée', 'Début', 'Fin', 'Début réel', 'Fin réel', 'Dépendances', 'Ressource', 'Statut'], pg.evaluate(heads_js))
         esc()
+        # Défaut signalé en recette (Colonnes 1) : après un réglage de largeur à la main, une colonne affichée ensuite
+        # doit recevoir une largeur bornée, jamais l'espace restant de la table.
+        pg.set_viewport_size({'width': 1909, 'height': 900})
+        load_fx('colonnes-personnalisees.json')
+        sep_box = pg.locator('#tasks-table .col-resize[data-col="start"]').bounding_box()
+        pg.mouse.move(sep_box['x'] + 3, sep_box['y'] + 5); pg.mouse.down(); pg.mouse.move(sep_box['x'] + 43, sep_box['y'] + 5, steps=4); pg.mouse.up(); pg.wait_for_timeout(100)
+        pg.click('#btn-columns'); pg.wait_for_timeout(100); pg.check('#col-show-dur'); pg.check('#col-show-rstart'); pg.check('#col-show-deps'); esc()
+        widths = pg.evaluate("[...document.querySelectorAll('#tasks-table col')].map(c => [c.dataset.col, parseInt(c.style.width) || 0])")
+        check('Colonnes : après un réglage manuel, toute colonne affichée a une largeur fixée', all(w > 0 for _, w in widths) and len(widths) == 9, widths)
+        ths = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => [t.dataset.col, Math.round(t.getBoundingClientRect().width)])")
+        check('Colonnes : aucune colonne ne dépasse sa limite, la table vaut la somme des colonnes', all(w <= {'name': 1000}.get(k, 800) for k, w in ths) and abs(pg.evaluate("Math.round(document.getElementById('tasks-table').getBoundingClientRect().width)") - sum(w for _, w in ths)) <= 2, ths)
+        pg.click('button:has-text("Largeurs par défaut")')
+        pg.set_viewport_size({'width': 1500, 'height': 950})
+
         # Export puis réimport : le choix voyage avec le fichier.
         load_fx('colonnes-personnalisees.json')
         pg.click('#btn-columns'); pg.wait_for_timeout(100)
