@@ -9,7 +9,7 @@ l'import et le refuse en entier, avec un message précis, s'il est incorrect. Ri
 
 ## Avant de commencer : vos données
 
-- **Les montants sont des données sensibles.** Un budget ou un coût réel collé dans une IA en ligne sort de votre poste. Exportez le
+- **Les montants sont des données sensibles.** Un budget, un coût réel ou un taux de ressource collé dans une IA en ligne sort de votre poste. Exportez le
   projet « sans montants » (case « Inclure les montants » décochée) pour le prompt B, puis ressaisissez les montants dans GanttPro.
 
 - **Une IA en ligne est un service tiers.** Ce que vous collez dans le prompt (notes de réunion, noms de personnes, noms de projets)

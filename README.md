@@ -89,7 +89,7 @@ GanttPro.html             ← Application livrée (assemblée par tools/build.py
 src/                      ← Sources : js/core (moteur), js/ui (interface), styles, index.html
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts JSON), recette manuelle, reprise du budget, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de sécurité, d'éthique et de code du projet
 SECURITY.md               ← Politique de sécurité et signalement
@@ -106,6 +106,8 @@ npm install --no-save axe-core               # contrôle d'accessibilité
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
+python3 tests/test_v3_budget.py              # budget, valeur acquise, colonnes, taux des ressources
+python3 tests/test_v3_recette_manuelle.py    # projets d'essai de la recette manuelle (tests/fixtures/)
 ```
 
 Règles de code (détail dans [CLAUDE.md](CLAUDE.md)) : DOM construit avec `h()` (jamais `innerHTML`), aucun gestionnaire

@@ -6,7 +6,8 @@ Ce document guide, pas à pas, la validation de **tout l'outil** par le proprié
   avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
   l'indique).
 - **Partie B — Mises à jour** : un chapitre par évolution (Budget étapes A et B, Colonnes de la liste, Taux des
-  ressources), à suivre pour valider cette évolution seule.
+  ressources), à suivre pour valider cette évolution seule. Le « Contrôle final de la mise à jour », en fin de document,
+  vaut pour chacune.
 
 Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son
 parcours à jour et ses fichiers d'essai**, et les parcours généraux sont adaptés si la mise à jour change un
@@ -40,7 +41,7 @@ comportement existant.
 | `projet-atlas-budget.json` | Projet complet de 49 éléments avec budgets, coûts réels, provision, un montant en millions, une baseline prise avant des dépassements, 4 conflits voulus | B13, et tout parcours sur un grand projet |
 | `projet-noms-pieges.json` | Trois tâches dont le nom ressemble à du code (`<img onerror…>`, `=1+1`, guillemets) | G12 7, G15 6 |
 | `projet-1000-taches.json` | 1 000 tâches fictives liées, pour la fluidité | G15 7 |
-| `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
+| `budget-*.json`, `refus-montant-*.json`, `refus-jalon-avec-montant.json`, `tableur-montants.csv` | Budget (partie B) | B |
 | `valeur-acquise-passe.json` | Projet daté de 2025 : tout est planifié, avancement 55 %, CPI 1,16, SPI 0,55, ETC saisi | B16, B19, B20 |
 | `valeur-acquise-futur.json` | Projet daté de 2035 : rien n'est encore planifié, SPI « non calculable », CPI 0,50 | B17 |
 | `colonnes-personnalisees.json` | Projet de 2025 sans montant, dont la liste affiche six colonnes dans un ordre choisi (Activité, N°, Début, Fin, Statut, Budget) | Colonnes 1 |
@@ -58,7 +59,7 @@ comportement existant.
 | Les ressources, la charge, le nivellement | G5, G6 |
 | La liste, la grille, les gestes | G3, G6, G7, Colonnes 1 |
 | Les fichiers (export, import, chiffrement) | G12, G13, Taux 7 |
-| Les ressources, leurs taux et le coût | G5, Taux 1 à 9 |
+| Les ressources, leurs taux et le coût | G5, Taux 1 à 10 |
 | Le tableau de bord, le rapport, l'impression | G10, G11 |
 | L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
 
@@ -739,8 +740,9 @@ Départ : ouvrez `taux-profils-base.json`.
 - [ ] 4. Dans cette fiche, **Ajouter une ligne de taux** (taux nominatif) et saisissez `650`. *Attendu :* le coût d'Alice passe à
   `6 500,00 €` (le taux nominatif remplace celui du profil) et la liste des ressources indique « (nominatif) ».
   **Supprimer le taux nominatif** : *attendu :* retour à `4 000,00 €`.
-- [ ] 5. Arrondi : donnez à Alice une capacité de 100 % et mettez-la à 33 % sur une tâche d'un jour avec un taux de `123,45`.
-  *Attendu :* `40,74 €` (40,7385 arrondi au centime, une seule fois).
+- [ ] 5. Arrondi : **Ajouter** une tâche « Essai » de durée `1`, affectez-lui Alice à `33` %, enregistrez. Dans la fiche d'Alice,
+  donnez-lui un taux nominatif de `123,45`. *Attendu :* la ligne « Essai » de sa liste de tâches affiche `0,33 j-p` et
+  `40,74 €` (40,7385 arrondi au centime, une seule fois). Supprimez ensuite le taux nominatif et la tâche « Essai ».
 
 ### Taux 4 — Onglet Budget : le coût des ressources face au budget saisi (EF-149, RG-56, R-97)
 
@@ -816,7 +818,7 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 ### Taux 10 — Clavier et lecteur d'écran (EF-147, EF-148)
 
 - [ ] 1. Au clavier seul, ouvrez **Ressources**, **Profils de coût…**, ajoutez un profil et une ligne de taux, saisissez un taux, supprimez la ligne. *Attendu :* tout s'atteint par Tab, les boutons s'activent par Entrée ou Espace, Échap ferme chaque fenêtre et rend le focus au bouton qui l'a ouverte.
-- [ ] 2. Chaque champ a un nom qui contient son texte visible (par exemple « Taux par jour (Analyste, depuis le début) (€) ») ; une erreur est annoncée et le champ est signalé invalide.
+- [ ] 2. Chaque champ a un nom qui contient son texte visible (par exemple « Taux par jour (Analyste, Depuis le début) (€) ») ; une erreur est annoncée et le champ est signalé invalide.
 - [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
 - [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
 

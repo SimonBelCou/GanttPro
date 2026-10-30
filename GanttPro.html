@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xBlQuU7dKPyxeIhVUg5Il8LcFnvXceuaSaOBgy7fX80='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d/0kAgKv4cC2XBNUjzYi+nnyFX0CRb7TWqrQEmke8Lk='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -1614,10 +1614,12 @@ const Model = (() => {
       if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
       const f = reader(l, { ...where, field }, ['from', 'rate'], stats);
       const from = f.date('from');
-      if (!f.present('rate')) fail('imp.field', { ...where, field, rule: 'rule.int', min: 0, max: LIMITS.rate });
+      // Un taux est un montant : même règle et même message qu'un montant (entier de centimes), avec son propre plafond.
+      const rate = l.rate;
+      if (!Number.isSafeInteger(rate) || rate < 0 || rate > LIMITS.rate) fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
       if (seen.has(from)) fail('imp.field', { ...where, field, rule: 'rule.rateOrder' });
       seen.add(from);
-      return { from, rate: f.int('rate', { min: 0, max: LIMITS.rate, def: 0 }) };
+      return { from, rate };
     });
     return out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
   }
@@ -2877,8 +2879,8 @@ const I18n = (() => {
     'rt.errDup': 'Deux lignes de taux ne peuvent pas commencer le même jour.', 'rt.errMax': 'Au plus {max} lignes de taux.',
     'rt.errDate': 'Date de début : saisir une date valide.',
     'rt.maskedLines': 'Les montants sont masqués : désactivez « Masquer les montants » pour modifier les taux.',
-    'rt.own.title': 'Taux nominatif', 'rt.own.hint': 'Facultatif, réservé à un prestataire externe : ces lignes remplacent le taux du profil.',
-    'rt.own.clear': 'Supprimer le taux nominatif', 'rt.cost': 'Coût',
+    'rt.own.hint': 'Facultatif, réservé à un prestataire externe : ces lignes remplacent le taux du profil.',
+    'rt.own.clear': 'Supprimer le taux nominatif',
     'rt.pd': '{n} j-p', 'rt.assignCost': 'Coût des ressources selon le planning enregistré : {pd} · {amount}',
     'rt.assignNone': 'Coût des ressources selon le planning enregistré : {pd} · aucun taux',
     'rt.assignPart': 'Coût des ressources selon le planning enregistré : {pd} · {amount} (partiel : des jours sans taux)',
@@ -3341,8 +3343,8 @@ const I18n = (() => {
     'rt.errDup': 'Two rate lines cannot start on the same day.', 'rt.errMax': 'At most {max} rate lines.',
     'rt.errDate': 'Start date: enter a valid date.',
     'rt.maskedLines': 'Amounts are hidden: turn off “Hide amounts” to edit the rates.',
-    'rt.own.title': 'Personal rate', 'rt.own.hint': 'Optional, for an external contractor: these lines replace the profile rate.',
-    'rt.own.clear': 'Remove the personal rate', 'rt.cost': 'Cost',
+    'rt.own.hint': 'Optional, for an external contractor: these lines replace the profile rate.',
+    'rt.own.clear': 'Remove the personal rate',
     'rt.pd': '{n} pd', 'rt.assignCost': 'Resource cost on the saved schedule: {pd} · {amount}',
     'rt.assignNone': 'Resource cost on the saved schedule: {pd} · no rate',
     'rt.assignPart': 'Resource cost on the saved schedule: {pd} · {amount} (partial: some days have no rate)',
@@ -7708,6 +7710,7 @@ action('rsOwnClear', id => {
   if (!r || !r.rates.length || Money.masked()) return;
   commit(() => { r.rates = []; });
   refreshRateViews();
+  const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
 });
 
 /** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif, jours-personne et coût. */

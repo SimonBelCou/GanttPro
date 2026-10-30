@@ -117,10 +117,12 @@ const Model = (() => {
       if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
       const f = reader(l, { ...where, field }, ['from', 'rate'], stats);
       const from = f.date('from');
-      if (!f.present('rate')) fail('imp.field', { ...where, field, rule: 'rule.int', min: 0, max: LIMITS.rate });
+      // Un taux est un montant : même règle et même message qu'un montant (entier de centimes), avec son propre plafond.
+      const rate = l.rate;
+      if (!Number.isSafeInteger(rate) || rate < 0 || rate > LIMITS.rate) fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
       if (seen.has(from)) fail('imp.field', { ...where, field, rule: 'rule.rateOrder' });
       seen.add(from);
-      return { from, rate: f.int('rate', { min: 0, max: LIMITS.rate, def: 0 }) };
+      return { from, rate };
     });
     return out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
   }

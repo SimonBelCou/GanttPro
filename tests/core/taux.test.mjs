@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';
 
-const { Rates, Model, Schedule, Evm, Dates, Exchange, Xlsx } = loadCore();
+const { Rates, Model, Schedule, Evm, Dates, Exchange, Xlsx, I18n } = loadCore();
 const plain = x => JSON.parse(JSON.stringify(x));
 const eur = x => Math.round(x * 100);
 
@@ -112,7 +112,7 @@ test('R-98 fichier : lignes de taux, profils et références contrôlés, tout r
   assert.equal(key({ profiles: [{ name: 'Dév', rates: [{ from: '', rate: 1.5 }] }] }), 'imp.field:rate', 'jamais de nombre à virgule');
   assert.equal(key({ profiles: [{ name: 'Dév', rates: [{ from: '', rate: Model.LIMITS.rate + 1 }] }] }), 'imp.field:rate');
   assert.equal(key({ profiles: [{ name: 'Dév', rates: [{ from: '', rate: 1 }, { from: 'hier', rate: 2 }] }] }), 'imp.field:from');
-  assert.equal(key({ profiles: [{ name: 'Dév', rates: [{ from: '' }] }] }), 'imp.field:rates', 'taux obligatoire');
+  assert.equal(key({ profiles: [{ name: 'Dév', rates: [{ from: '' }] }] }), 'imp.field:rate', 'taux obligatoire');
   assert.equal(key({ profiles: [{ name: 'Dév', rates: Array.from({ length: 11 }, (_, i) => ({ from: `2026-0${1 + (i % 9)}-0${1 + Math.floor(i / 9)}`, rate: 1 })) }] }), 'imp.field:rates', 'onze lignes');
   assert.equal(key({ profiles: [{ name: 'Dév' }, { name: 'dév' }] }), 'imp.dupProfile', 'noms de profils uniques, casse ignorée');
   assert.equal(key({ resources: [{ name: 'Alice', profile: 'Inconnu' }, { name: 'Bob' }] }), 'imp.unknownProfile');
@@ -178,4 +178,15 @@ test('R-100 exports : coût par tâche et feuille « Taux » avec les montants, 
   assert.deepEqual(plain(anon.find(x => x.name === 'Ressources').rows[0].slice(4)), ['Profil de coût'], 'ni taux du jour ni coût par ressource');
   const xml = Exchange.mspXml(p, s);
   assert.equal(/65000|650[.,]00|40000|Rate/i.test(xml.replace(/StandardRate|OvertimeRate|CostRatePerHour/gi, '')), false, 'MS Project ne reçoit aucun taux');
+});
+
+test('R-98 (défaut corrigé) : un taux refusé est expliqué comme un montant, champ « rate », plafond groupé', () => {
+  const msg = o => { try { Model.sanitize(file(o)); return ''; } catch (e) { return I18n.error(e); } };
+  for (const rates of [[{ from: '', rate: -1 }], [{ from: '' }], [{ from: '', rate: 1.5 }]]) {
+    const m = msg({ profiles: [{ name: 'Dév', rates }] });
+    assert.match(m, /Profil n° 1/);
+    assert.match(m, /« rate »/, m);
+    assert.match(m, /centimes/, m);
+    assert.doesNotMatch(m, /100000000/, 'plafond écrit avec ses groupes de chiffres');
+  }
 });

@@ -221,6 +221,7 @@ action('rsOwnClear', id => {
   if (!r || !r.rates.length || Money.masked()) return;
   commit(() => { r.rates = []; });
   refreshRateViews();
+  const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
 });
 
 /** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif, jours-personne et coût. */

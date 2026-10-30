@@ -124,11 +124,11 @@ Une ressource (personne ou équipe) travaille dans la limite de sa capacité ; G
 
 ### Gérer les ressources
 
-Bouton **Ressources** : ajouter, renommer, changer le rôle, la capacité (1 à 100 %) et la couleur (10 teintes), supprimer. Un nom déjà pris, majuscules comprises, est refusé. Renommer ne casse aucune affectation. Supprimer une ressource utilisée demande une confirmation qui dit combien de tâches deviendront « sans ressource ».
+Bouton **Ressources** : ajouter, renommer, changer le rôle, la capacité (1 à 100 %) et la couleur (10 teintes), supprimer ; dès qu'un profil de coût existe, choisir aussi le profil (voir « Profils de coût et taux des ressources » plus bas). Un nom déjà pris, majuscules comprises, est refusé. Renommer ne casse aucune affectation. Supprimer une ressource utilisée demande une confirmation qui dit combien de tâches deviendront « sans ressource ».
 
 Le bouton **Fiche** d'une ressource montre son avatar, ses tâches avec leurs dates, sa charge totale en jours-personne, sa capacité et ses **absences** (date de début, date de fin facultative, libellé), triées par date. Une capacité inférieure à un taux déjà affecté est refusée avec le nom de la tâche en cause.
 
-Les noms de ressources peuvent être des données personnelles : préférez des prénoms, des initiales ou des fonctions.
+Les noms de ressources peuvent être des données personnelles : préférez des prénoms, des initiales ou des fonctions. Un **taux nominatif** rattaché à une personne nommée l'est aussi (il révèle ce qu'elle coûte) : réservez-le aux prestataires externes, comme le prévoit la décision de valorisation par profil.
 
 ### Affecter
 
@@ -312,7 +312,7 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 
 ### Tableau de bord, onglet « Budget »
 
-Cet onglet n'apparaît que si au moins un montant est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+Cet onglet n'apparaît que si au moins un montant ou un taux de ressource est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
 
 **Coût des ressources** (même onglet, sous le tableau par catégorie, dès qu'un taux existe) : BAC saisi, coût calculé des ressources et écart, puis un tableau par ressource (profil, jours-personne, taux du jour, coût prévu, coût réel estimé) avec son total ; voir la section 5. L'onglet apparaît dès qu'un taux est saisi, même sans autre montant.
 
@@ -363,7 +363,7 @@ Le bouton **Exporter** propose cinq formats ; le fichier s'appelle « nom\_du\_p
 | Format | Contenu | Pour |
 | --- | --- | --- |
 | Projet GanttPro (.json) | Tout le projet, versions et baselines comprises | Sauvegarder, transmettre, rouvrir |
-| Classeur Excel (.xlsx) | Feuilles Tâches, Ressources, Absences, Calendrier, Baselines ; en-tête figée, filtres | Analyser, partager de façon accessible |
+| Classeur Excel (.xlsx) | Feuilles Tâches, Ressources, Absences, Calendrier, Baselines (et Taux, avec les montants) ; en-tête figée, filtres | Analyser, partager de façon accessible |
 | Tableau CSV (.csv) | Une ligne par tâche, séparateur « ; », UTF-8 | Autres outils |
 | MS Project (.xml) | Tâches, jalons, hiérarchie, durées, dates, avancement, liens, contraintes, ressources, affectations, calendrier, première baseline | Échanger avec MS Project |
 | Image du Gantt (.png) | La grille, période au choix, résolution normale ou double, légende, fond blanc ou du thème | Illustrer un document |
@@ -432,7 +432,7 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 
 **Accessibilité.** GanttPro vise le niveau AA des WCAG 2.1 et le RGAA 4.1. Tout ce qui se fait à la souris se fait au clavier ; le focus est toujours visible ; statuts, criticité, conflits et voyants sont écrits en texte et jamais signalés par la seule couleur ; chaque barre porte un nom complet pour les lecteurs d'écran ; la courbe en S et la charge ont un tableau de valeurs ; les animations s'arrêtent si le système demande moins de mouvement ; la page s'utilise sur 360 pixels de large et avec un zoom de 200 %. Les contrôles automatiques (axe-core) ne relèvent aucun défaut sur l'écran principal et chaque fenêtre, mais aucun audit RGAA complet ni essai avec des utilisateurs de technologies d'assistance n'a encore eu lieu : l'application est déclarée partiellement conforme. L'image PNG n'est pas accessible : pour un partage accessible, préférez le classeur ou le rapport d'état.
 
-**Vie privée.** GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ni image externe. Vos projets restent dans l'onglet tant que vous ne les exportez pas ; sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez. Un fichier exporté contient tout le projet, noms des ressources, commentaires et versions compris : protégez-le par un mot de passe, rangez-le dans un espace sûr, ou exportez-le sans noms de personnes. Pour tout effacer : Réglages, « Effacer toutes les données », puis supprimez vos fichiers exportés.
+**Vie privée.** GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ni image externe. Vos projets restent dans l'onglet tant que vous ne les exportez pas ; sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez. Un fichier exporté contient tout le projet, noms des ressources, commentaires et versions compris : protégez-le par un mot de passe, rangez-le dans un espace sûr, ou exportez-le sans noms de personnes. Pour tout effacer : Réglages, « Effacer toutes les données », puis supprimez vos fichiers exportés. Les montants et les taux ne quittent l'application que si vous cochez « Inclure les montants » ; un export « sans noms de personnes » ne contient aucun taux nominatif.
 
 **Sécurité.** Un fichier reçu d'un tiers ne peut pas exécuter de code : tout ce qu'il contient s'affiche comme du texte, chaque champ est contrôlé avant l'ouverture, et le fichier est refusé en entier au moindre défaut. Le chiffrement par mot de passe utilise AES-256-GCM avec une clé dérivée par PBKDF2 (600 000 itérations) ; un mauvais mot de passe et un fichier altéré donnent le même message, « Mot de passe incorrect ou fichier altéré. ». Une faille se signale en privé, par l'onglet Security du dépôt GitHub du projet.
 
@@ -448,6 +448,8 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | Commentaires d'une tâche, absences d'une ressource | 50, 100 |
 | Baselines (dont affichées par vue), versions | 10 (3), 10 |
 | Points de situation | 60 |
+| Profils de coût ; lignes de taux d'un profil ou d'une ressource | 50 ; 10 |
+| Taux par jour ouvré | 0 à 1 000 000,00 |
 | Onglets ouverts, entrées de bibliothèque | 10, 50 |
 | Fichier importé, lignes de tableur | 5 Mo, 1 000 |
 

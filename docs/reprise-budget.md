@@ -5,15 +5,14 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
 ## 1. Où en est-on (30 octobre 2026)
 
-- Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est fusionnée dans `main` (PR #11). L'**étape B** (valeur
-  acquise) est développée sur la branche `budget-etape-b-valeur-acquise` ; la fusion reste la décision de l'utilisateur,
-  après sa recette manuelle (parcours Budget 15 à 20, terminée le 30 octobre ; défaut corrigé : l'onglet Budget reste visible avec des points de situation). Nettoyage fait : `archive/v2.3/` supprimé, README et `docs/guide-ia-json.md` mis à jour (budget et étape B).
+- Dépôt `SimonBelCou/GanttPro`. Fusionnés dans `main` : **étape A** du budget (PR #11), **étape B** valeur acquise (PR #12,
+  après la recette Budget 15 à 20), **colonnes de la liste** (PR #13, recette Colonnes 1).
 - Étape B faite : dix baselines au plus dont trois affichées par vue, baseline initiale protégée, baseline de référence
   enregistrée dans le projet ; PV par palier, EV, AC, CV, SV, CPI, SPI (« non calculable » avec raison), voyants et
   seuils par projet, ETC, EAC en trois hypothèses, VAC, diagramme CPI / SPI, points de situation (60 au plus,
   sans montants à l'export), bloc du rapport. Moteur : `src/js/core/43-evm.js` ; tests `tests/core/evm.test.mjs`,
   `tests/core/baselines.test.mjs`. Reste de l'étape B : courbes PV / EV / AC dans le temps (à proposer).
-- Chantier B (colonnes de la liste) en cours sur la branche `colonnes-liste` : choix et ordre des colonnes enregistrés dans le projet (`columns`), identifiant et nom obligatoires, Budget et Coût réel masquées sans montant ; moteur `src/js/core/44-columns.js`, fenêtre `src/js/ui/74-columns.js`, tests `tests/core/colonnes.test.mjs`, recette « Colonnes 1 ».
+- Colonnes de la liste (fusionné, PR #13) : choix et ordre des colonnes enregistrés dans le projet (`columns`) ; moteur `src/js/core/44-columns.js`, fenêtre `src/js/ui/74-columns.js`, tests `tests/core/colonnes.test.mjs`, recette « Colonnes 1 ».
 - Étape A faite : budget et coût réel par tâche, devise, provision, BAC, baselines, courbe en S des coûts, onglet
   Budget du tableau de bord, bloc du rapport, export et impression « sans montants », masquage à l'écran, affichage
   compact (M, Md en français ; M, B en anglais), import de tableurs avec montants.
@@ -21,7 +20,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   des coûts corrigée quand la date du jour dépasse la grille, option « Inclure le coût réel des tâches en cours »
   (EF-129), bouton « Masquer les montants » dans les fenêtres Tableau de bord, Baselines et Rapport (EF-130) ; recette
   Budget 14 ; thème clair par défaut, raccourcis au survol, icône d'onglet intégrée. Cahier des charges : EX-29 à EX-38.
-  Reste à valider par l'utilisateur : G15 (mobile), puis fusion de la PR.
+  Reste à valider par l'utilisateur : G15 (mobile).
 - **Étape C (taux de ressource)**, développée sur la branche `budget-etape-c-taux-ressources` (PR en attente de la recette
   manuelle « Taux 1 à 10 ») : voir le § 3 bis. Moteur `src/js/core/46-rates.js`, interface `src/js/ui/71-rates.js`, tests
   `tests/core/taux.test.mjs` (R-92 à R-100) et la fin de `tests/test_v3_budget.py`.
@@ -29,7 +28,8 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   suites de l'étape C listées au § 3 bis.
 - Référence : cahier des charges
   (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
-  RG-35 à RG-43 (6.8), recette R-71 à R-84 (9.7), décisions en annexe A.8, exigence EX-28 (recette manuelle).
+  RG-35 à RG-58 (6.8), recette R-71 à R-100 (9.7), décisions en annexe A.8 (lignes 1 à 19), exigences EX-28 (recette manuelle),
+  EX-39 (étape B), EX-40 (colonnes), EX-41 (étape C).
 - Recette : `docs/recette-manuelle.md` (partie A, tout l'outil ; partie B, budget) et les faux projets de
   `tests/fixtures/`. Tests : `tests/test_v3_budget.py`, `tests/core/budget.test.mjs`.
 - Le cadrage d'origine (Claude Doc « GanttPro — Cadrage de la gestion du budget »,
@@ -40,7 +40,9 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
 - Ne jamais modifier `GanttPro.html` à la main : `python3 tools/build.py`.
 - Après toute modification : `python3 tools/build.py`, `node --test tests/core/*.test.mjs`,
-  `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `PERF_FACTOR=2 python3 tests/test_v3_recette.py`.
+  `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `PERF_FACTOR=2 python3 tests/test_v3_recette.py`,
+  `PERF_FACTOR=2 python3 tests/test_v3_budget.py`, `PERF_FACTOR=2 python3 tests/test_v3_recette_manuelle.py` (les deux derniers
+  sont lancés par la CI depuis le 31 octobre).
 - Une exigence nouvelle = un test de plus. Toute fonction ou arbitrage est reporté dans le cahier des charges
   (exigence + annexe A) et, si l'usage change, dans `docs/guide-utilisateur.md`.
 - DOM par `h()` / `textContent`, jamais `innerHTML` ; actions par `data-click` et la table `ACTIONS` ;
@@ -145,8 +147,7 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 ## 7. Autres restes à faire (hors budget)
 
 - Guide de recette manuelle `docs/recette-manuelle.md` + faux projets JSON dans `tests/fixtures/` (règle 5 de `CLAUDE.md`) :
-  à rédiger en commençant par le budget étape A (R-71 à R-84) ; il absorbe la fiche EX-16 (Firefox, Safari, tablette).
+  fait (parties A et B, jusqu'à Taux 10) ; il absorbe la fiche EX-16 (Firefox, Safari, tablette).
 - Plan d'audit RGAA EX-05 dans `docs/`.
-- Mémorisation facultative de la mise en page, **choix et ordre des colonnes** (à proposer après l'étape A : il
-  rendra la colonne « Budget » facultative), hauteur réglable de la zone.
+- Mémorisation facultative de la mise en page et hauteur réglable de la zone (le choix et l'ordre des colonnes sont faits, PR #13).
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.
