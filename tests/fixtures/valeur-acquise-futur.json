@@ -1,0 +1,40 @@
+{
+  "format": 3,
+  "name": "Projet fictif valeur acquise (à venir)",
+  "projectStart": "2035-01-02",
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Etude",
+      "dur": 5,
+      "pct": 10,
+      "cat": "Etudes",
+      "budget": 10000,
+      "actual": 2000
+    },
+    {
+      "id": "T2",
+      "name": "Realisation",
+      "dur": 5,
+      "pct": 0,
+      "cat": "Etudes",
+      "budget": 30000,
+      "actual": 0,
+      "deps": [
+        "T1"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Etudes",
+      "color": "#4d9fff"
+    }
+  ]
+}

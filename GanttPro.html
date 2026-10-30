@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nOJIAWNIi9POL9hGG5UohKyHYMDbtaeaaKDvHyKoSmE='; style-src 'sha256-qh3H4dNjFh1HiGsbkP+wknQI7LKRQ4wu+IKLBOsNMY4='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tgCCSkSpI0e/BaPynZsKchUNow4lyEhmox4B5elvJbg='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -480,6 +480,20 @@ body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Valeur acquise : voyants (forme + texte, jamais la couleur seule), diagramme CPI / SPI */
+.tile.light-green dd .light-tag { color: var(--ok); }
+.tile.light-orange dd .light-tag { color: var(--warning); }
+.tile.light-red dd .light-tag { color: var(--critical); }
+.light-tag { font-size: .8rem; font-weight: 600; white-space: normal; }
+.hint.block { display: block; font-size: .8rem; font-weight: 400; white-space: normal; }
+svg.cpispi { max-width: 420px; }
+.cpispi .zone.ok { fill: color-mix(in srgb, var(--ok) 14%, transparent); }
+.cpispi .now { fill: var(--accent); stroke: var(--text); stroke-width: 1.5; }
+.cpispi .pt { fill: var(--muted); }
+svg.cpispi { width: 100%; height: auto; display: block; }
+.cpispi .grid { stroke: var(--line); stroke-width: 1; }
+.cpispi .axis { fill: var(--muted); font-size: 11px; }
 
 </style>
 </head>
@@ -1498,7 +1512,9 @@ const Model = (() => {
   const MAX_BYTES = 5 * 1024 * 1024;
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
-    comments: 50, absences: 100, calendarDays: 366, baselines: 3, versions: 10, dur: 3650, lag: 365,
+    comments: 50, absences: 100, calendarDays: 366, baselines: 10, baselinesShown: 3, versions: 10, dur: 3650, lag: 365,
+    // Étape B (A.8 lignes 14 à 16) : points de situation, seuils CPI/SPI en centièmes (1,00 = 100).
+    statusPoints: 60, evmMax: 300, ratioMax: 100000,
     // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
     // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
     amount: 5000000000000, currency: 5,
@@ -1660,13 +1676,15 @@ const Model = (() => {
     if (raw.format > FORMAT) fail('imp.newer');
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
-      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision'], stats);
+      'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
     const rawRes = lim(P.list('resources', Infinity), LIMITS.resources, 'resources');
     const rawCats = lim(P.list('categories', Infinity), LIMITS.categories, 'categories');
     const rawBl = lim(P.list('baselines', Infinity), LIMITS.baselines, 'baselines');
+    const rawPts = lim(P.list('statusPoints', Infinity), LIMITS.statusPoints, 'statusPoints');
     const rawVer = nested ? [] : lim(P.list('versions', Infinity), LIMITS.versions, 'versions');
     if (nested && P.present('versions')) fail('imp.field', { obj: 'version', field: 'versions', rule: 'rule.absent' });
 
@@ -1685,7 +1703,14 @@ const Model = (() => {
       // Budget (étape A) : champs facultatifs du format 3 ; absents, la devise vaut « € » et la provision 0 (A.8).
       currency: P.text('currency', { min: 1, max: LIMITS.currency, def: '€', trim: true }) || '€',
       provision: P.amount('provision'),
+      // Étape B : champs facultatifs du format 3, sans changer son numéro (A.8 ligne 8). Seuils en centièmes ; ETC absent = inactif.
+      evmGreen: P.int('evmGreen', { min: 1, max: LIMITS.evmMax, def: 100 }),
+      evmRed: P.int('evmRed', { min: 1, max: LIMITS.evmMax, def: 90 }),
+      etc: P.present('etc') ? P.amount('etc') : null,
+      baselineRef: '', statusPoints: [],
     };
+    if (project.evmRed > project.evmGreen) fail('imp.field', { obj: 'project', field: 'evmRed', rule: 'rule.evmOrder', min: 1, max: project.evmGreen });
+    if (P.present('baselineRef') && (typeof raw.baselineRef !== 'string' || raw.baselineRef.length > 64)) fail('imp.field', { obj: 'project', field: 'baselineRef', rule: 'rule.ident' });
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
@@ -1849,16 +1874,19 @@ const Model = (() => {
     if (cycle) fail('imp.cycle', { path: cycle.join(' → ') });
 
     // Baselines : copies figées, contrôlées pour leur forme.
+    const rawBlIds = new Map(); // identifiant lu dans le fichier -> identifiant interne (B1, B2…), pour la référence de la PV
     const baselines = rawBl.map((b, i) => {
       const where = { obj: 'baseline', n: i + 1 };
       if (!isObj(b)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision'], stats);
+      const f = reader(b, where, ['id', 'name', 'color', 'createdAt', 'projectStart', 'shownOnGantt', 'shownOnScurve', 'tasks', 'provision', 'initial'], stats);
       const bl = {
         id: 'B' + (i + 1), name: f.text('name', { min: 1, max: 100, trim: true }), color: f.color('color', BASELINE_COLORS[i % BASELINE_COLORS.length]),
         createdAt: f.num('createdAt'), projectStart: f.date('projectStart', { def: project.projectStart }),
         shownOnGantt: f.bool('shownOnGantt', true), shownOnScurve: f.bool('shownOnScurve', true), tasks: [], provision: f.amount('provision'),
+        initial: f.bool('initial', false),
       };
       if (f.present('id') && (typeof b.id !== 'string' || b.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
+      if (typeof b.id === 'string' && !rawBlIds.has(b.id)) rawBlIds.set(b.id, bl.id);
       bl.tasks = f.list('tasks', LIMITS.tasks).map((bt, j) => {
         const w = { obj: 'baselineTask', n: j + 1, baseline: i + 1 };
         if (!isObj(bt)) fail('imp.field', { ...w, field: '', rule: 'rule.object' });
@@ -1875,6 +1903,29 @@ const Model = (() => {
       });
       return bl;
     });
+    // Une seule baseline « initiale » ; trois baselines affichées au plus sur chaque vue (A.8 ligne 14) : l'interface
+    // ne produit jamais plus, un fichier modifié à la main est ramené à ces bornes sans être refusé.
+    let seenInitial = false, shownG = 0, shownS = 0;
+    for (const bl of baselines) {
+      if (bl.initial) { if (seenInitial) bl.initial = false; seenInitial = true; }
+      if (bl.shownOnGantt) { if (shownG >= LIMITS.baselinesShown) bl.shownOnGantt = false; else shownG++; }
+      if (bl.shownOnScurve) { if (shownS >= LIMITS.baselinesShown) bl.shownOnScurve = false; else shownS++; }
+    }
+    project.baselineRef = P.present('baselineRef') && rawBlIds.has(raw.baselineRef) ? rawBlIds.get(raw.baselineRef) : '';
+
+    // Points de situation (étape B) : date, libellé, référence, indicateurs et montants capturés. Les montants sont
+    // facultatifs : un fichier « sans montants » ne garde que la date, le libellé et les rapports CPI/SPI.
+    const statusPoints = rawPts.map((s, i) => {
+      const where = { obj: 'statusPoint', n: i + 1 };
+      if (!isObj(s)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
+      const f = reader(s, where, ['id', 'date', 'label', 'ref', 'cpi', 'spi', 'bac', 'pv', 'ev', 'ac', 'etc'], stats);
+      const opt = (k, kind) => (f.present(k) ? (kind === 'amount' ? f.amount(k) : f.int(k, { min: 0, max: LIMITS.ratioMax, def: 0 })) : null);
+      return {
+        id: 'S' + (i + 1), date: f.date('date', { required: true }), label: f.text('label', { max: 100, trim: true }), ref: f.text('ref', { max: 100 }),
+        cpi: opt('cpi', 'ratio'), spi: opt('spi', 'ratio'),
+        bac: opt('bac', 'amount'), pv: opt('pv', 'amount'), ev: opt('ev', 'amount'), ac: opt('ac', 'amount'), etc: opt('etc', 'amount'),
+      };
+    });
 
     // Versions : chaque état est contrôlé comme un projet complet, sans versions imbriquées.
     const versions = rawVer.map((v, i) => {
@@ -1889,7 +1940,7 @@ const Model = (() => {
       return { id: 'V' + (i + 1), label: f.text('label', { min: 1, max: 100, trim: true }), ts: f.num('ts'), state: serialize(inner.project, { withVersions: false }) };
     });
 
-    Object.assign(project, { tasks, resources, categories, baselines, versions });
+    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints });
     // Dernier contrôle : le planning doit pouvoir se calculer (dates dans les bornes 1970-2199).
     try { Schedule.compute(project); } catch (e) { if (e instanceof RangeError) fail('imp.horizon'); throw e; }
     return { project, notices: { unknown: stats.unknown, createdResources, createdCategories } };
@@ -1922,6 +1973,10 @@ const Model = (() => {
       leveling: project.leveling || 'level',
       currency: project.currency || '€',
       provision: project.provision || 0,
+      evmGreen: project.evmGreen || 100, evmRed: project.evmRed || 90,
+      ...(project.etc != null ? { etc: project.etc } : {}),
+      baselineRef: project.baselineRef || '',
+      statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1951,8 +2006,11 @@ const Model = (() => {
   /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
   function stripAmounts(file) {
     delete file.provision;
+    delete file.etc;
     for (const t of file.tasks) { delete t.budget; delete t.actual; }
     for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
+    // Un point de situation ne garde que sa date, son libellé et les rapports CPI/SPI, qui ne sont pas des montants.
+    for (const s of file.statusPoints || []) { delete s.bac; delete s.pv; delete s.ev; delete s.ac; delete s.etc; }
     // L'état d'une version est partagé avec le projet ouvert : on le copie avant de le modifier.
     if (file.versions) file.versions = file.versions.map(v => (isObj(v.state) ? { ...v, state: stripAmounts(JSON.parse(JSON.stringify(v.state))) } : v));
     return file;
@@ -1974,7 +2032,7 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0,
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [],
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
@@ -2164,6 +2222,129 @@ const Budget = (() => {
   }
 
   return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+})();
+
+// ── js/core/43-evm.js ──
+/* Valeur acquise (étape B, EF-131 et suivantes, RG-44 et suivantes) : moteur sans DOM, en centimes entiers.
+ *
+ * Les indicateurs se calculent à une date (la date du jour, A.8 ligne 15), sur une référence : la baseline de
+ * référence du projet, ou le planning actuel quand le projet n'a aucune baseline (A.8 ligne 14). Ils portent sur le
+ * budget des TÂCHES seul : la provision n'est pas du travail réalisé (A.8 ligne 6).
+ *
+ *   BAC = somme des budgets de la référence
+ *   PV  = budget des tâches dont la fin prévue est au plus tard aujourd'hui (par palier, A.8 ligne 12(a))
+ *   EV  = budget de chaque tâche × son avancement (valeur acquise proportionnelle, A.8 ligne 5)
+ *   AC  = coût réel total du projet (RG-37)
+ *   CV = EV − AC ; SV = EV − PV ; CPI = EV / AC ; SPI = EV / PV
+ *   EAC = BAC / CPI  |  AC + ETC  |  AC + BAC − EV ; VAC = BAC − EAC
+ *
+ * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
+ * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48). */
+const Evm = (() => {
+  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0); // même règle que Budget
+  const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
+
+  /**
+   * a × k / b arrondi à l'entier, la moitié vers le haut (a, k >= 0, b > 0), sans perte de précision au-delà de 2^53.
+   * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
+   */
+  function divRound(a, b, k = 1) {
+    const A = BigInt(a) * BigInt(k), B = BigInt(b);
+    const q = (2n * A + B) / (2n * B);
+    return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q);
+  }
+
+  /**
+   * Baseline de référence (RG-44) : celle que désigne le projet ; à défaut la baseline « initiale », à défaut la
+   * première. Sans aucune baseline : null, et le calcul porte sur le planning actuel.
+   */
+  function reference(project) {
+    const list = project.baselines || [];
+    if (!list.length) return null;
+    return list.find(b => b.id === project.baselineRef) || list.find(b => b.initial) || list[0];
+  }
+
+  /** Voyant d'un rapport, décidé sur la valeur AFFICHÉE (arrondie au centième) : vert, orange ou rouge (RG-49). */
+  function lightOf(hundredths, project) {
+    const green = project.evmGreen || 100, red = project.evmRed || 90;
+    return hundredths >= green ? 'green' : hundredths >= red ? 'orange' : 'red';
+  }
+
+  const none = reason => ({ value: null, hundredths: null, light: 'none', reason });
+  function ratio(num, den, project) {
+    const h = divRound(num, den, 100);
+    const hundredths = h == null ? Model.LIMITS.ratioMax : Math.min(h, Model.LIMITS.ratioMax);
+    return { value: num / den, hundredths, light: lightOf(hundredths, project), reason: null };
+  }
+  const amount = (cents, bac) => ({ cents, vac: bac - cents, reason: null });
+  const noAmount = reason => ({ cents: null, vac: null, reason });
+
+  /**
+   * Indicateurs de valeur acquise à la date `today` (numéro de jour).
+   * @returns {{ref, basis:'baseline'|'plan', bac, pv, ev, ac, cv, sv, cpi, spi, eac:{byCpi,byEtc,byEv}, etc,
+   *            added:string[], removed:string[]}}
+   *   cpi, spi : { value, hundredths, light, reason } ; reason vaut null, 'noBudget', 'noActual' ou 'noPlanned'.
+   *   eac.* : { cents, vac, reason } ; reason vaut null, 'noBudget', 'noActual', 'noEarned', 'noEtc' ou 'overflow'.
+   */
+  function compute(project, sched, today) {
+    const ref = reference(project);
+    const entries = [];
+    const added = [], removed = [];
+    if (ref) {
+      // Référence = baseline : budgets et fins prévues figés ; l'avancement est celui d'aujourd'hui. Une tâche supprimée
+      // depuis la capture garde son budget dans le BAC et la PV, sans valeur acquise ; une tâche ajoutée depuis n'est
+      // pas dans le BAC, mais son coût réel est dans AC (RG-47).
+      const byId = new Map(project.tasks.map(t => [t.id, t]));
+      const inRef = new Set();
+      for (const bt of ref.tasks) {
+        inRef.add(bt.id);
+        const t = byId.get(bt.id);
+        const live = !!t && t.type === 'task';
+        entries.push({ budget: amt(bt.budget), endDn: Dates.parse(bt.end), pct: live ? t.pct : 0 });
+        if (!live && amt(bt.budget) > 0) removed.push(bt.id);
+      }
+      for (const t of project.tasks) if (t.type === 'task' && !inRef.has(t.id) && (amt(t.budget) > 0 || amt(t.actual) > 0)) added.push(t.id);
+    } else {
+      for (const t of project.tasks) {
+        if (t.type !== 'task') continue;
+        entries.push({ budget: amt(t.budget), endDn: sched.tasks.get(t.id).endDn, pct: t.pct });
+      }
+    }
+    let bac = 0, pv = 0, ev = 0;
+    for (const e of entries) {
+      bac += e.budget;
+      if (e.endDn <= today) pv += e.budget;
+      ev += divRound(e.budget, 100, e.pct); // budget × avancement, au centime, moitié vers le haut
+    }
+    const ac = Budget.totals(project).actual;
+    const noBudget = bac === 0;
+
+    const cpi = noBudget ? none('noBudget') : ac === 0 ? none('noActual') : ratio(ev, ac, project);
+    const spi = noBudget ? none('noBudget') : pv === 0 ? none('noPlanned') : ratio(ev, pv, project);
+
+    let byCpi;
+    if (noBudget) byCpi = noAmount('noBudget');
+    else if (ac === 0) byCpi = noAmount('noActual');
+    else if (ev === 0) byCpi = noAmount('noEarned');
+    else { const c = divRound(bac, ev, ac); byCpi = c == null ? noAmount('overflow') : amount(c, bac); }
+    const hasEtc = project.etc != null;
+    const eac = {
+      byCpi, // BAC / CPI sans arrondir le CPI : 350,00 et non 351 (A.8 ligne 12(b))
+      byEtc: hasEtc ? amount(ac + amt(project.etc), bac) : noAmount('noEtc'),
+      byEv: noBudget ? noAmount('noBudget') : amount(ac + bac - ev, bac),
+    };
+    return { ref, basis: ref ? 'baseline' : 'plan', today, bac, pv, ev, ac, cv: ev - ac, sv: ev - pv, cpi, spi, eac, etc: hasEtc ? amt(project.etc) : null, added, removed };
+  }
+
+  /** Point de situation (RG-51) : photo des indicateurs à la date du jour, enregistrée sur geste explicite. */
+  function point(res, label = '') {
+    return {
+      date: Dates.toISO(res.today), label: String(label).trim().slice(0, 100), ref: res.ref ? res.ref.name : '',
+      cpi: res.cpi.hundredths, spi: res.spi.hundredths, bac: res.bac, pv: res.pv, ev: res.ev, ac: res.ac, etc: res.etc,
+    };
+  }
+
+  return { LIGHTS, divRound, reference, lightOf, compute, point };
 })();
 
 // ── js/core/45-view.js ──
@@ -2407,7 +2588,8 @@ const I18n = (() => {
     'imp.version': 'Version n° {n} : {inner}',
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
     'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
-    'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier',
+    'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier', 'obj.statusPoint': 'Point de situation n° ',
+    'rule.evmOrder': 'entier de {min} à {max} : le seuil rouge ne dépasse pas le seuil vert',
     'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
     'rule.bool': 'vrai ou faux', 'rule.date': 'date AAAA-MM-JJ entre 1970 et 2199', 'rule.color': 'couleur #rgb ou #rrggbb',
     'rule.enum': 'une valeur parmi {values}', 'rule.list': 'liste de {max} éléments au plus', 'rule.object': 'objet attendu',
@@ -2438,6 +2620,62 @@ const I18n = (() => {
     'bud.curve': 'Courbe en S des coûts',
     'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
     'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
+    'evm.title': 'Valeur acquise',
+    'evm.refBaseline': 'Référence : baseline « {name} » (budgets et dates figés à la capture, avancement et coût réel d\'aujourd\'hui).',
+    'evm.refPlan': 'Référence : planning actuel (aucune baseline capturée). Capturez une baseline pour mesurer l\'écart avec le plan d\'origine.',
+    'evm.asOf': 'Situation au {date}',
+    'evm.pv': 'PV, valeur planifiée',
+    'evm.ev': 'EV, valeur acquise',
+    'evm.ac': 'AC, coût réel',
+    'evm.cv': 'CV, écart de coût',
+    'evm.sv': 'SV, écart de délai',
+    'evm.cpi': 'CPI, indice de coût',
+    'evm.spi': 'SPI, indice de délai',
+    'evm.na': 'non calculable',
+    'evm.na.noBudget': 'aucun budget de tâche saisi',
+    'evm.na.noActual': 'aucun coût réel saisi',
+    'evm.na.noPlanned': 'aucun budget n\'est planifié à ce jour',
+    'evm.na.noEarned': 'aucune valeur acquise (avancement à 0 %)',
+    'evm.na.noEtc': 'reste à faire non saisi (réglages du projet)',
+    'evm.na.overflow': 'résultat trop grand',
+    'evm.light.green': 'conforme',
+    'evm.light.orange': 'à surveiller',
+    'evm.light.red': 'en dérive',
+    'evm.light.none': 'non évalué',
+    'evm.scope': 'Depuis la baseline : {added} tâche(s) ajoutée(s) (leur coût réel pèse sur le CPI), {removed} supprimée(s) (leur budget reste dans le BAC).',
+    'evm.pvNote': 'La valeur planifiée se compte par palier : le budget d\'une tâche entre dans la PV le jour de sa fin prévue. Le SPI est donc non calculable avant la première fin prévue, et favorable pour une tâche en cours.',
+    'evm.eac': 'Prévision à terminaison',
+    'evm.eacMethod': 'Hypothèse',
+    'evm.eacValue': 'EAC, coût final prévu',
+    'evm.vac': 'VAC, écart final',
+    'evm.eac1': 'Dérive durable : BAC / CPI',
+    'evm.eac2': 'Reste à faire estimé : AC + ETC',
+    'evm.eac3': 'Dérive exceptionnelle : AC + BAC − EV',
+    'evm.endNote': 'En fin de projet, ces indicateurs sont moins pertinents : privilégiez le coût réel final.',
+    'evm.diagram': 'Diagramme CPI / SPI',
+    'evm.diagramDesc': 'Position à ce jour : CPI {cpi}, SPI {spi}. Zones : en haut à droite, coût et délai maîtrisés.',
+    'evm.diagramNone': 'Position non calculable : au moins un des deux indices manque.',
+    'evm.axisCpi': 'CPI',
+    'evm.axisSpi': 'SPI',
+    'evm.points': 'Points de situation',
+    'evm.pointsNone': 'Aucun point de situation enregistré.',
+    'evm.pointAdd': 'Enregistrer un point de situation',
+    'evm.pointLabel': 'Libellé du point (facultatif)',
+    'evm.pointDelete': 'Supprimer le point du {date}',
+    'evm.pointLimit': '{max} points de situation au plus.',
+    'evm.pointDone': 'Point de situation du {date} enregistré.',
+    'evm.pointNoRatio': '—',
+    'evm.colDate': 'Date',
+    'evm.colLabel': 'Libellé',
+    'evm.colRef': 'Référence',
+    'evm.colCpi': 'CPI',
+    'evm.colSpi': 'SPI',
+    'evm.pointsHint': 'Un point est une photo enregistrée à votre demande, dans le projet ; il n\'est jamais créé automatiquement.',
+    'proj.evmGroup': 'Valeur acquise',
+    'proj.evmGreen': 'Seuil vert des indices CPI et SPI (%)',
+    'proj.evmRed': 'Seuil rouge des indices CPI et SPI (%)',
+    'proj.evmNote': 'Un indice est vert à partir du seuil vert, rouge sous le seuil rouge, orange entre les deux (100 % et 90 % par défaut).',
+    'proj.etc': 'Reste à faire estimé, ETC',
     'bud.ongoing': 'Inclure le coût réel des tâches en cours',
     'bud.noteOngoing': 'Le coût réel des tâches non terminées est compté dans la période en cours (coût engagé à ce jour). La provision ne figure pas dans la courbe.',
     'bud.note': 'Le coût réel d\'une tâche non terminée ne figure pas dans la courbe ; il est compté dans le coût réel total. La provision ne figure pas dans la courbe.',
@@ -2499,8 +2737,18 @@ const I18n = (() => {
     'bl.none': "Aucune baseline : capturez l'état actuel du planning pour pouvoir le comparer plus tard.",
     'bl.capture': 'Capturer une baseline', 'bl.onGantt': 'Sur le Gantt', 'bl.onScurve': 'Sur la courbe en S', 'bl.content': 'Contenu',
     'bl.captured': { one: 'Capturée le {date}, {count} tâche', other: 'Capturée le {date}, {count} tâches' },
-    'bl.limit': 'Trois baselines au plus ({max}) : supprimez-en une pour en capturer une nouvelle.',
+    'bl.limit': '{max} baselines au plus : supprimez-en une pour en capturer une nouvelle.',
     'bl.done': 'Baseline « {name} » capturée.', 'bl.delete': 'Supprimer la baseline {name} ?',
+    'bl.initial': 'Initiale', 'bl.ref': 'Référence',
+    'bl.refAria': 'Référence de la valeur acquise : {name}',
+    'bl.refHint': 'La valeur planifiée et la valeur acquise se calculent sur la baseline de référence : par défaut la baseline initiale ; sans baseline, sur le planning actuel.',
+    'bl.shownHint': 'Affichées : {gantt} sur 3 sur le Gantt, {scurve} sur 3 sur la courbe en S. Cochez et décochez pour choisir celles qui s\'affichent.',
+    'bl.maxShownGantt': 'Trois baselines au plus sont affichées sur le Gantt : décochez-en une d\'abord.',
+    'bl.maxShownScurve': 'Trois baselines au plus sont affichées sur la courbe en S : décochez-en une d\'abord.',
+    'bl.doneNotShown': 'Baseline « {name} » capturée. Elle n\'est pas affichée sur {where}, car trois baselines le sont déjà : cochez-la dans la fenêtre pour la montrer.',
+    'bl.whereGantt': 'le Gantt', 'bl.whereScurve': 'la courbe en S', 'bl.whereBoth': 'le Gantt ni sur la courbe en S',
+    'bl.deleteInitial': 'Supprimer la baseline initiale {name} ?',
+    'bl.deleteInitialWhy': 'C\'est la référence d\'origine du projet : les écarts de planning, de budget et de valeur acquise se mesurent par rapport à elle. Une fois supprimée, elle ne se rétablit que par « Annuler ».',
     'dash.curve': 'Courbe en S', 'dash.curveDesc': 'Cumul prévu {planned} à la fin du planning ; cumul réel {real} à ce jour.',
     'dash.planned': 'Prévu', 'dash.real': 'Réel', 'dash.dashed': 'pointillé', 'dash.unit': 'Période', 'dash.week': 'Semaines', 'dash.month': 'Mois',
     'dash.showValues': 'Afficher les valeurs', 'dash.hideValues': 'Masquer les valeurs', 'dash.valuesCaption': 'Valeurs de la courbe en S (cumul en pourcentage)',
@@ -2758,7 +3006,8 @@ const I18n = (() => {
     'imp.linkSummary': 'Task #{n}: predecessor {pred} is a summary task.', 'imp.linkHierarchy': 'Task #{n}: the link with {pred} connects a task to its own summary task.',
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
     'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
-    'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar',
+    'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar', 'obj.statusPoint': 'Status point #',
+    'rule.evmOrder': 'whole number from {min} to {max}: the red threshold does not exceed the green threshold',
     'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
     'rule.bool': 'true or false', 'rule.date': 'YYYY-MM-DD date between 1970 and 2199', 'rule.color': '#rgb or #rrggbb colour',
     'rule.enum': 'one of {values}', 'rule.list': 'list of at most {max} items', 'rule.object': 'object expected', 'rule.link': 'invalid link',
@@ -2788,6 +3037,62 @@ const I18n = (() => {
     'bud.curve': 'Cost S-curve',
     'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
     'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
+    'evm.title': 'Earned value',
+    'evm.refBaseline': 'Reference: baseline “{name}” (budgets and dates frozen at capture, today\'s progress and actual cost).',
+    'evm.refPlan': 'Reference: current schedule (no baseline captured). Capture a baseline to measure the gap with the original plan.',
+    'evm.asOf': 'Status as of {date}',
+    'evm.pv': 'PV, planned value',
+    'evm.ev': 'EV, earned value',
+    'evm.ac': 'AC, actual cost',
+    'evm.cv': 'CV, cost variance',
+    'evm.sv': 'SV, schedule variance',
+    'evm.cpi': 'CPI, cost index',
+    'evm.spi': 'SPI, schedule index',
+    'evm.na': 'not computable',
+    'evm.na.noBudget': 'no task budget entered',
+    'evm.na.noActual': 'no actual cost entered',
+    'evm.na.noPlanned': 'no budget is planned yet',
+    'evm.na.noEarned': 'no earned value (progress at 0%)',
+    'evm.na.noEtc': 'estimate to complete not entered (project settings)',
+    'evm.na.overflow': 'result too large',
+    'evm.light.green': 'on track',
+    'evm.light.orange': 'watch',
+    'evm.light.red': 'off track',
+    'evm.light.none': 'not rated',
+    'evm.scope': 'Since the baseline: {added} task(s) added (their actual cost weighs on the CPI), {removed} removed (their budget stays in the BAC).',
+    'evm.pvNote': 'Planned value is counted in steps: a task\'s budget enters the PV on its planned finish day. The SPI is therefore not computable before the first planned finish, and favourable for a task in progress.',
+    'evm.eac': 'Estimate at completion',
+    'evm.eacMethod': 'Assumption',
+    'evm.eacValue': 'EAC, forecast final cost',
+    'evm.vac': 'VAC, final variance',
+    'evm.eac1': 'Lasting drift: BAC / CPI',
+    'evm.eac2': 'Estimated remaining work: AC + ETC',
+    'evm.eac3': 'One-off drift: AC + BAC − EV',
+    'evm.endNote': 'At the end of a project these indicators are less relevant: rely on the final actual cost.',
+    'evm.diagram': 'CPI / SPI diagram',
+    'evm.diagramDesc': 'Position today: CPI {cpi}, SPI {spi}. Zones: top right, cost and schedule under control.',
+    'evm.diagramNone': 'Position not computable: at least one of the two indices is missing.',
+    'evm.axisCpi': 'CPI',
+    'evm.axisSpi': 'SPI',
+    'evm.points': 'Status points',
+    'evm.pointsNone': 'No status point saved.',
+    'evm.pointAdd': 'Save a status point',
+    'evm.pointLabel': 'Point label (optional)',
+    'evm.pointDelete': 'Delete the point of {date}',
+    'evm.pointLimit': 'At most {max} status points.',
+    'evm.pointDone': 'Status point of {date} saved.',
+    'evm.pointNoRatio': '—',
+    'evm.colDate': 'Date',
+    'evm.colLabel': 'Label',
+    'evm.colRef': 'Reference',
+    'evm.colCpi': 'CPI',
+    'evm.colSpi': 'SPI',
+    'evm.pointsHint': 'A point is a snapshot saved at your request, inside the project; it is never created automatically.',
+    'proj.evmGroup': 'Earned value',
+    'proj.evmGreen': 'Green threshold of the CPI and SPI indices (%)',
+    'proj.evmRed': 'Red threshold of the CPI and SPI indices (%)',
+    'proj.evmNote': 'An index is green from the green threshold up, red below the red threshold, orange in between (100% and 90% by default).',
+    'proj.etc': 'Estimate to complete, ETC',
     'bud.ongoing': 'Include the actual cost of tasks in progress',
     'bud.noteOngoing': 'The actual cost of unfinished tasks is counted in the current period (cost incurred to date). The provision is not in the curve.',
     'bud.note': 'The actual cost of an unfinished task is not in the curve; it is counted in the total actual cost. The provision is not in the curve.',
@@ -2829,8 +3134,18 @@ const I18n = (() => {
     'bl.none': 'No baseline: capture the current schedule to compare it later.',
     'bl.capture': 'Capture a baseline', 'bl.onGantt': 'On the Gantt', 'bl.onScurve': 'On the S-curve', 'bl.content': 'Content',
     'bl.captured': { one: 'Captured on {date}, {count} task', other: 'Captured on {date}, {count} tasks' },
-    'bl.limit': 'At most three baselines ({max}): delete one to capture a new one.',
+    'bl.limit': 'At most {max} baselines: delete one to capture a new one.',
     'bl.done': 'Baseline “{name}” captured.', 'bl.delete': 'Delete baseline {name}?',
+    'bl.initial': 'Initial', 'bl.ref': 'Reference',
+    'bl.refAria': 'Earned value reference: {name}',
+    'bl.refHint': 'Planned value and earned value are computed on the reference baseline: the initial baseline by default; with no baseline, on the current schedule.',
+    'bl.shownHint': 'Shown: {gantt} of 3 on the Gantt, {scurve} of 3 on the S-curve. Tick and untick to choose which ones are displayed.',
+    'bl.maxShownGantt': 'At most three baselines are shown on the Gantt: untick one first.',
+    'bl.maxShownScurve': 'At most three baselines are shown on the S-curve: untick one first.',
+    'bl.doneNotShown': 'Baseline “{name}” captured. It is not shown on {where}, because three baselines already are: tick it in the window to show it.',
+    'bl.whereGantt': 'the Gantt', 'bl.whereScurve': 'the S-curve', 'bl.whereBoth': 'the Gantt nor on the S-curve',
+    'bl.deleteInitial': 'Delete the initial baseline {name}?',
+    'bl.deleteInitialWhy': 'It is the project\'s original reference: schedule, budget and earned value variances are measured against it. Once deleted, it can only be brought back with "Undo".',
     'dash.curve': 'S-curve', 'dash.curveDesc': 'Planned cumulative {planned} at the end of the schedule; actual {real} to date.',
     'dash.planned': 'Planned', 'dash.real': 'Actual', 'dash.dashed': 'dashed', 'dash.unit': 'Period', 'dash.week': 'Weeks', 'dash.month': 'Months',
     'dash.showValues': 'Show values', 'dash.hideValues': 'Hide values', 'dash.valuesCaption': 'S-curve values (cumulative percentage)',
@@ -6428,10 +6743,19 @@ async function editProjectWindow() {
     h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
     masked ? h('p', { class: 'note', text: t('f.maskedFields') }) : null,
     h('div', { class: 'field' }, h('label', { for: 'p-provision', text: `${t('proj.provision')} (${p.currency || '€'})` }), provision, h('p', { class: 'field-error', id: 'p-provision-err', hidden: true })));
+  // Valeur acquise : seuils des voyants CPI / SPI (en %) et reste à faire estimé (ETC), propres au projet.
+  const evmGreen = h('input', { type: 'text', id: 'p-evmgreen', value: String(p.evmGreen), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const evmRed = h('input', { type: 'text', id: 'p-evmred', value: String(p.evmRed), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
+  const etc = h('input', { type: 'text', id: 'p-etc', value: masked ? Money.DOTS : (p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang())), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-etc-err' } });
+  const evmBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('proj.evmGroup') }),
+    h('p', { class: 'hint', text: t('proj.evmNote') }),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmgreen', text: t('proj.evmGreen') }), evmGreen),
+    h('div', { class: 'field' }, h('label', { for: 'p-evmred', text: t('proj.evmRed') }), evmRed, h('p', { class: 'field-error', id: 'p-evm-err', hidden: true })),
+    h('div', { class: 'field' }, h('label', { for: 'p-etc', text: `${t('proj.etc')} (${p.currency || '€'})` }), etc, h('p', { class: 'field-error', id: 'p-etc-err', hidden: true })));
   await Dialog.open({
     title: t('dlg.project'),
     body: [h('div', { class: 'field' }, h('label', { for: 'p-name', text: t('f.name') }), name, h('p', { class: 'field-error', id: 'p-name-err', hidden: true })),
-      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox],
+      h('div', { class: 'field' }, h('label', { for: 'p-desc', text: t('dlg.desc') }), desc), emojis, budgetBox, evmBox],
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('edit.save'), value: 'ok', kind: 'primary' }],
     onAction: v => {
       if (v !== 'ok') return true;
@@ -6460,9 +6784,31 @@ async function editProjectWindow() {
         }
         prov = r.cents;
       }
+      const intOf = el => (/^\d{1,3}$/.test(el.value.trim()) ? Number(el.value.trim()) : NaN);
+      const g = intOf(evmGreen), rd = intOf(evmRed), mx = Model.LIMITS.evmMax;
+      if (!(g >= 1 && g <= mx) || !(rd >= 1 && rd <= mx) || rd > g) {
+        const err = $('p-evm-err');
+        err.textContent = t('err.int', { field: `${t('proj.evmGreen')} / ${t('proj.evmRed')}`, min: 1, max: mx }) + ' ' + t('rule.evmOrder', { min: 1, max: mx }); err.hidden = false;
+        (!(g >= 1 && g <= mx) ? evmGreen : evmRed).setAttribute('aria-invalid', 'true'); (!(g >= 1 && g <= mx) ? evmGreen : evmRed).focus();
+        return false;
+      }
+      let etcCents = p.etc;
+      if (!masked) {
+        if (etc.value.trim() === '') etcCents = null;
+        else {
+          const r = Budget.parse(etc.value);
+          if (!r.ok) {
+            const err = $('p-etc-err');
+            err.textContent = t('err.amount.' + r.reason, { field: t('proj.etc'), max: Budget.format(Budget.MAX, { lang: I18n.getLang(), symbol: cur }) }); err.hidden = false;
+            etc.setAttribute('aria-invalid', 'true'); etc.focus();
+            return false;
+          }
+          etcCents = r.cents;
+        }
+      }
       const checked = document.querySelector('input[name="p-emoji"]:checked');
       const emoji = checked && Model.EMOJIS.includes(checked.value) ? checked.value : p.emoji;
-      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; });
+      commit(pr => { pr.name = n; pr.desc = desc.value.slice(0, 500); pr.emoji = emoji; pr.currency = cur; pr.provision = prov; pr.evmGreen = g; pr.evmRed = rd; pr.etc = etcCents; });
       return true;
     },
   });
@@ -6819,13 +7165,19 @@ action('rsAbsRemove', arg => {
 });
 
 // ── js/ui/72-baselines.js ──
-/* Baselines (EF-33 à EF-36, RG-22) : copies figées des dates calculées, trois au plus. */
+/* Baselines (EF-33 à EF-36, RG-22, EF-131 à EF-133) : copies figées des dates calculées, dix au plus, dont trois au
+ * plus affichées sur chaque vue (Gantt, courbe en S) ; la première capturée est la baseline « initiale », protégée à
+ * la suppression ; une baseline est la référence de la valeur acquise (RG-44). */
+
+const shownCount = (p, key) => p.baselines.filter(b => b[key]).length;
 
 function captureBaseline(p, sched, name, color) {
   const catName = id => (p.categories.find(c => c.id === id) || { name: '' }).name;
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
   return {
-    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, shownOnGantt: true, shownOnScurve: true,
+    id: 'B' + n, name, color, createdAt: Date.now(), projectStart: p.projectStart, initial: p.baselines.length === 0,
+    // Trois baselines affichées au plus par vue : la nouvelle ne s'affiche que s'il reste de la place (RG-45).
+    shownOnGantt: shownCount(p, 'shownOnGantt') < Model.LIMITS.baselinesShown, shownOnScurve: shownCount(p, 'shownOnScurve') < Model.LIMITS.baselinesShown,
     provision: p.provision || 0, // RG-39 : budget des tâches et provision sont capturés, pas le coût réel
     tasks: p.tasks.filter(x => x.type !== 'summary').map(x => {
       const r = sched.tasks.get(x.id);
@@ -6834,11 +7186,14 @@ function captureBaseline(p, sched, name, color) {
   };
 }
 
+const shownText = () => t('bl.shownHint', { gantt: shownCount(App.project, 'shownOnGantt'), scurve: shownCount(App.project, 'shownOnScurve') });
+
 function baselinesWindow() {
   const body = h('div', { id: 'bl-win' });
   const paint = () => {
     clear(body);
     const list = App.project.baselines;
+    const ref = Evm.reference(App.project);
     if (!list.length) body.append(h('p', { class: 'hint', text: t('bl.none') }));
     else {
       const tb = h('tbody');
@@ -6846,9 +7201,12 @@ function baselinesWindow() {
         const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(b.color));
         tb.append(h('tr', {},
           h('td', {}, h('input', { type: 'text', value: b.name, maxlength: 100, aria: { label: `${t('res.name')} (${b.name})`, describedby: 'blerr-' + b.id }, data: { change: 'blField', arg: b.id + ':name' } }),
+            b.initial ? h('span', { class: 'tag-pill', text: t('bl.initial') }) : null,
             h('p', { class: 'field-error', id: 'blerr-' + b.id, hidden: true })),
           h('td', {}, sw, h('select', { aria: { label: `${t('res.color')} (${b.name})` }, data: { change: 'blField', arg: b.id + ':color' } },
             Model.BASELINE_COLORS.map((c, i) => h('option', { value: c, selected: c === b.color }, t('color.pick', { n: i + 1 }))))),
+          h('td', {}, h('input', { type: 'radio', name: 'bl-ref', id: 'blr-' + b.id, checked: !!ref && ref.id === b.id, aria: { label: t('bl.refAria', { name: b.name }) }, data: { change: 'blRef', arg: b.id } }),
+            h('label', { for: 'blr-' + b.id, text: ' ' + t('bl.ref') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'blg-' + b.id, checked: b.shownOnGantt, data: { change: 'blField', arg: b.id + ':gantt' } }),
             h('label', { for: 'blg-' + b.id, text: ' ' + t('bl.onGantt') })),
           h('td', {}, h('input', { type: 'checkbox', id: 'bls-' + b.id, checked: b.shownOnScurve, data: { change: 'blField', arg: b.id + ':scurve' } }),
@@ -6858,7 +7216,8 @@ function baselinesWindow() {
           h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'blDelete', arg: b.id } }, `${t('edit.delete')} ${b.name}`))));
       }
       body.append(h('table', { class: 'manage' },
-        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+        h('thead', {}, h('tr', {}, [t('res.name'), t('res.color'), t('bl.ref'), t('bl.onGantt'), t('bl.onScurve'), t('bl.content'), t('bl.bac'), ''].map(x => h('th', { scope: 'col', text: x })))), tb));
+      body.append(h('p', { class: 'hint', text: t('bl.refHint') }), h('p', { class: 'hint', id: 'bl-shown', text: shownText() }));
     }
     if (list.length) body.append(h('p', { class: 'hint', id: 'bl-bac' }, t('bl.projectBac') + ' ', Money.node(Budget.totals(App.project).bac)));
     body.append(h('button', { type: 'button', class: 'primary', data: { click: 'blCapture' } }, t('bl.capture')));
@@ -6879,7 +7238,13 @@ action('blCapture', () => {
   const color = Model.BASELINE_COLORS.find(c => !used.has(c)) || Model.BASELINE_COLORS[0];
   const b = captureBaseline(p, App.sched, `Baseline ${n}`, color);
   commit(pr => pr.baselines.push(b));
-  announce(t('bl.done', { name: b.name }));
+  if (b.shownOnGantt && b.shownOnScurve) announce(t('bl.done', { name: b.name }));
+  else {
+    // Trois baselines sont déjà affichées sur au moins une vue : la nouvelle n'y apparaît pas, et on le dit (RG-45).
+    const where = t(!b.shownOnGantt && !b.shownOnScurve ? 'bl.whereBoth' : !b.shownOnGantt ? 'bl.whereGantt' : 'bl.whereScurve');
+    const msg = t('bl.doneNotShown', { name: b.name, where });
+    announce(msg); toast(msg);
+  }
   if (baselinesWindow.paint) { baselinesWindow.paint(); const inp = document.querySelector('#bl-win tbody tr:last-child input'); if (inp) inp.focus(); }
 });
 
@@ -6898,16 +7263,36 @@ action('blField', (arg, el) => {
     commit(() => { b.color = el.value; });
   } else if (k === 'gantt' || k === 'scurve') {
     // Afficher ou masquer n'est pas une modification de données (EF-53) : pas d'historique.
-    b[k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve'] = el.checked;
+    // Trois baselines au plus par vue (RG-45) : une quatrième case est refusée avec un message, la case se décoche.
+    const key = k === 'gantt' ? 'shownOnGantt' : 'shownOnScurve';
+    if (el.checked && App.project.baselines.filter(x => x.id !== id && x[key]).length >= Model.LIMITS.baselinesShown) {
+      el.checked = false;
+      const msg = t(k === 'gantt' ? 'bl.maxShownGantt' : 'bl.maxShownScurve');
+      announce(msg); toast(msg);
+      return;
+    }
+    b[key] = el.checked;
+    const hint = $('bl-shown'); if (hint) hint.textContent = shownText();
     render();
   }
+});
+
+// Référence de la valeur acquise (RG-44) : enregistrée dans le projet, annulable comme une modification.
+action('blRef', id => {
+  if (!App.project.baselines.some(x => x.id === id)) return;
+  commit(p => { p.baselineRef = id; });
+  if (baselinesWindow.paint) { baselinesWindow.paint(); const r = $('blr-' + id); if (r) r.focus(); }
 });
 
 action('blDelete', async id => {
   const b = App.project.baselines.find(x => x.id === id);
   if (!b) return;
-  if (!(await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete')))) return;
-  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); });
+  // La baseline initiale est la référence d'origine : confirmation renforcée qui explique pourquoi elle compte (RG-46).
+  const ok = b.initial
+    ? await Dialog.confirm(t('bl.deleteInitial', { name: b.name }), [t('bl.deleteInitialWhy')], t('edit.delete'))
+    : await Dialog.confirm(t('bl.delete', { name: b.name }), [], t('edit.delete'));
+  if (!ok) return;
+  commit(p => { p.baselines = p.baselines.filter(x => x.id !== id); if (p.baselineRef === id) p.baselineRef = ''; });
   if (baselinesWindow.paint) baselinesWindow.paint();
 });
 
@@ -7187,10 +7572,10 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
-/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141). */
 function dashTabs() {
   const tabs = ['summary', 'load'];
-  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
   if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
   return tabs;
 }
@@ -7321,7 +7706,107 @@ function paintBudget(panel) {
     h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+  paintEvm(panel);
 }
+
+/* Valeur acquise (EF-131 et suivantes) : indicateurs à la date du jour, diagramme CPI / SPI, prévisions à terminaison,
+ * points de situation. Un indice qui ne se calcule pas s'affiche « non calculable » avec sa raison, jamais 0. */
+const LIGHT_MARK = { green: '●', orange: '▲', red: '■', none: '○' }; // forme + texte : la couleur ne porte jamais seule le sens
+
+function ratioText(r) {
+  return r.hundredths == null ? t('evm.na') : I18n.number(r.hundredths / 100, 2);
+}
+
+function evmTile(label, node, r) {
+  const dd = h('dd', {}, node);
+  const tileEl = h('div', { class: 'tile' }, h('dt', { text: label }), dd);
+  if (r && r.light) {
+    tileEl.classList.add('light-' + r.light);
+    dd.append(h('span', { class: 'light-tag' }, ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)));
+    if (r.reason) dd.append(h('span', { class: 'hint block', text: t('evm.na.' + r.reason) }));
+  }
+  return tileEl;
+}
+
+function cpiSpiDiagram(res) {
+  const W = 360, H = 300, m = { l: 44, r: 16, t: 14, b: 38 }, MAX = 2;
+  const px = v => m.l + (Math.min(Math.max(v, 0), MAX) / MAX) * (W - m.l - m.r);
+  const py = v => H - m.b - (Math.min(Math.max(v, 0), MAX) / MAX) * (H - m.t - m.b);
+  const ok = res.cpi.value != null && res.spi.value != null;
+  const desc = ok ? t('evm.diagramDesc', { cpi: ratioText(res.cpi), spi: ratioText(res.spi) }) : t('evm.diagramNone');
+  const c = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'cpispi', role: 'img', 'aria-labelledby': 'evmd-title evmd-desc', id: 'evm-diagram' });
+  c.append(svg('title', { id: 'evmd-title', text: t('evm.diagram') }), svg('desc', { id: 'evmd-desc', text: desc }));
+  c.append(svg('rect', { x: px(1), y: m.t, width: px(MAX) - px(1), height: py(1) - m.t, class: 'zone ok' }));
+  for (const v of [0, 0.5, 1, 1.5, 2]) {
+    c.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }), svg('line', { x1: px(v), x2: px(v), y1: m.t, y2: H - m.b, class: 'grid' }),
+      svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: I18n.number(v, 1) }),
+      svg('text', { x: px(v), y: H - m.b + 16, class: 'axis', 'text-anchor': 'middle', text: I18n.number(v, 1) }));
+  }
+  c.append(svg('text', { x: (m.l + W - m.r) / 2, y: H - 6, class: 'axis', 'text-anchor': 'middle', text: t('evm.axisCpi') }),
+    svg('text', { x: 10, y: m.t + 8, class: 'axis', text: t('evm.axisSpi') }));
+  for (const p of App.project.statusPoints) if (p.cpi != null && p.spi != null) c.append(svg('circle', { cx: px(p.cpi / 100), cy: py(p.spi / 100), r: 3.5, class: 'pt' }));
+  if (ok) c.append(svg('circle', { cx: px(res.cpi.value), cy: py(res.spi.value), r: 6, class: 'now' }));
+  return c;
+}
+
+function paintEvm(panel) {
+  const P = App.project, today = Dates.todayDn();
+  const res = Evm.compute(P, App.sched, today);
+  const money = v => Money.node(v); // le signe fait partie du montant : masqué avec lui
+  const ratioNode = r => h('span', { class: 'money', text: ratioText(r) });
+  const sec = h('section', { class: 'dash-section', id: 'evm', aria: { labelledby: 'evm-h' } },
+    h('h3', { id: 'evm-h', text: t('evm.title') }),
+    h('p', { class: 'hint', id: 'evm-ref', text: res.ref ? t('evm.refBaseline', { name: res.ref.name }) : t('evm.refPlan') }),
+    h('p', { class: 'hint', text: t('evm.asOf', { date: I18n.date(today) }) }));
+  if (res.added.length || res.removed.length) sec.append(h('p', { class: 'note', id: 'evm-scope', text: t('evm.scope', { added: res.added.length, removed: res.removed.length }) }));
+  sec.append(h('dl', { class: 'tiles amounts', id: 'evm-tiles' },
+    evmTile(t('evm.pv'), Money.node(res.pv)), evmTile(t('evm.ev'), Money.node(res.ev)), evmTile(t('evm.ac'), Money.node(res.ac)),
+    evmTile(t('evm.cv'), money(res.cv)), evmTile(t('evm.sv'), money(res.sv)),
+    evmTile(t('evm.cpi'), ratioNode(res.cpi), res.cpi), evmTile(t('evm.spi'), ratioNode(res.spi), res.spi)),
+    h('p', { class: 'hint', text: t('evm.pvNote') }));
+
+  // Prévisions à terminaison : trois hypothèses, jamais une seule présentée comme la vérité.
+  const eacRow = (key, e) => h('tr', {}, h('th', { scope: 'row', text: t(key) }),
+    h('td', { class: 'num' }, e.cents == null ? h('span', { text: t('evm.na') + ' (' + t('evm.na.' + e.reason) + ')' }) : Money.node(e.cents)),
+    h('td', { class: 'num' }, e.cents == null ? '' : money(e.vac)));
+  sec.append(h('h4', { text: t('evm.eac') }), h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'evm-eac' },
+    h('thead', {}, h('tr', {}, [t('evm.eacMethod'), t('evm.eacValue'), t('evm.vac')].map(x => h('th', { scope: 'col', text: x })))),
+    h('tbody', {}, eacRow('evm.eac1', res.eac.byCpi), eacRow('evm.eac2', res.eac.byEtc), eacRow('evm.eac3', res.eac.byEv)))),
+    h('p', { class: 'hint', text: t('evm.endNote') }));
+
+  sec.append(h('h4', { text: t('evm.diagram') }), cpiSpiDiagram(res));
+
+  // Points de situation : photo enregistrée sur geste explicite (RG-51), 60 au plus.
+  const pts = P.statusPoints;
+  const cell = v => h('td', { class: 'num', text: v == null ? t('evm.pointNoRatio') : I18n.number(v / 100, 2) });
+  sec.append(h('h4', { text: t('evm.points') }), h('p', { class: 'hint', text: t('evm.pointsHint') }),
+    pts.length ? h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'evm-points' },
+      h('thead', {}, h('tr', {}, [t('evm.colDate'), t('evm.colLabel'), t('evm.colRef'), t('evm.colCpi'), t('evm.colSpi'), ''].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, pts.map(p => h('tr', {}, h('td', { text: I18n.date(Dates.parse(p.date)) }), h('td', { text: p.label }), h('td', { text: p.ref }), cell(p.cpi), cell(p.spi),
+        h('td', {}, h('button', { type: 'button', class: 'danger', data: { click: 'evmPointDelete', arg: p.id } }, t('evm.pointDelete', { date: I18n.date(Dates.parse(p.date)) }))))))))
+      : h('p', { class: 'hint', text: t('evm.pointsNone') }),
+    h('div', { class: 'field' }, h('label', { for: 'evm-label', text: t('evm.pointLabel') }), h('input', { type: 'text', id: 'evm-label', maxlength: 100 })),
+    h('button', { type: 'button', id: 'evm-add', data: { click: 'evmPointAdd' } }, t('evm.pointAdd')));
+  panel.append(sec);
+}
+
+action('evmPointAdd', () => {
+  const P = App.project;
+  if (P.statusPoints.length >= Model.LIMITS.statusPoints) { Dialog.message(t('evm.points'), t('evm.pointLimit', { max: Model.LIMITS.statusPoints })); return; }
+  const res = Evm.compute(P, App.sched, Dates.todayDn());
+  const label = $('evm-label') ? $('evm-label').value : '';
+  let n = 1; while (P.statusPoints.some(x => x.id === 'S' + n)) n++;
+  const pt = { id: 'S' + n, ...Evm.point(res, label) };
+  commit(pr => pr.statusPoints.push(pt));
+  announce(t('evm.pointDone', { date: I18n.date(Dates.parse(pt.date)) }));
+  repaintDashboard('#evm-add');
+});
+
+action('evmPointDelete', id => {
+  if (!App.project.statusPoints.some(x => x.id === id)) return;
+  commit(pr => { pr.statusPoints = pr.statusPoints.filter(x => x.id !== id); });
+  repaintDashboard('#evm-add');
+});
 
 // ── js/ui/76-load.js ──
 /* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à
@@ -7464,6 +7949,19 @@ function reportSections() {
       tot.remaining < 0 ? { label: `${t('bud.remaining')} : ${t('bud.overrun')} `, cents: -tot.remaining } : L('bud.remaining', tot.remaining)];
     if (bl) lines.push({ label: t('rep.bacVar', { name: bl.name, value: '' }), cents: Budget.bacVariation(App.project, bl), signed: true });
     out.push({ key: 'budget', title: t('rep.b.budget'), lines });
+  }
+  // Valeur acquise (EF-142) : les indices CPI et SPI sont des rapports, lisibles sans montants ; les montants
+  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124).
+  if (B.budget && Budget.hasAmounts(App.project)) {
+    const e = Evm.compute(App.project, App.sched, today);
+    const idx = (k, r) => `${t(k)} : ${r.hundredths == null ? t('evm.na') + ' (' + t('evm.na.' + r.reason) + ')' : I18n.number(r.hundredths / 100, 2) + ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)}`;
+    const lines = [e.ref ? t('evm.refBaseline', { name: e.ref.name }) : t('evm.refPlan'), idx('evm.cpi', e.cpi), idx('evm.spi', e.spi)];
+    if (Report.amounts) {
+      const L = (k, c, signed) => ({ label: t(k) + ' : ', cents: c, signed });
+      lines.push(L('evm.pv', e.pv), L('evm.ev', e.ev), L('evm.ac', e.ac), L('evm.cv', e.cv, true), L('evm.sv', e.sv, true));
+      if (e.eac.byCpi.cents != null) lines.push(L('evm.eac1', e.eac.byCpi.cents));
+    }
+    out.push({ key: 'evm', title: t('evm.title'), lines });
   }
   if (B.late) out.push({ key: 'late', title: t('rep.late'), lines: r.late.length ? r.late.map(x => `${taskLabel(x.id)} — ${t('dash.dev')} ${signed(x.dev)}`) : [t('rep.none')] });
   if (B.soon) out.push({ key: 'soon', title: t('rep.soon'), lines: r.soon.length ? r.soon.map(id => `${I18n.shortDate(s.tasks.get(id).startDn)} — ${taskLabel(id)}`) : [t('rep.none')] });

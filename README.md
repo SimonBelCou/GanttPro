@@ -33,8 +33,12 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 ### 📈 Suivi et compte rendu
 - Avancement, dates réelles, statuts, écarts en jours ouvrés
-- Baselines (3) et versions (10) ; tableau de bord avec courbe en S et tableau de suivi
+- Baselines (10, dont 3 affichées par vue ; la première est la baseline initiale) et versions (10) ; tableau de bord avec courbe en S et tableau de suivi
 - Rapport d'état avec voyant, à imprimer, enregistrer en PDF ou copier en texte ; impression du Gantt
+
+### 💶 Budget et valeur acquise
+- Budget et coût réel par tâche, provision, BAC, courbe en S des coûts, budget par catégorie ; montants facultatifs, masquables à l'écran, exclus à la demande des exports et du rapport
+- Valeur acquise à la date du jour sur la baseline de référence : PV, EV, AC, CV, SV, CPI, SPI avec voyants, prévisions à terminaison (EAC, VAC), diagramme CPI / SPI, points de situation
 
 ### 💾 Fichiers et projets
 - Export JSON (protection par mot de passe en option), Excel, CSV, MS Project XML, image PNG ; export sans noms de personnes
@@ -85,7 +89,6 @@ src/                      ← Sources : js/core (moteur), js/ui (interface), sty
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
 docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), captures d'écran
-archive/v2.3/             ← Ancienne version, pour mémoire (non maintenue)
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de sécurité, d'éthique et de code du projet
 SECURITY.md               ← Politique de sécurité et signalement

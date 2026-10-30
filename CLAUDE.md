@@ -140,7 +140,6 @@ Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout cod
   `python3 tools/build.py --check` (CI) échoue si le fichier n'est pas à jour.
 - Le build refuse `eval`, `new Function`, `document.write`, `onclick=`, `style=`, `setAttribute('style'|'on…')`,
   `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`.
-- `archive/v2.3/` conserve l'ancienne version, pour mémoire : elle n'est plus maintenue ni testée.
 
 ## Obligatoire à chaque modification
 1. `python3 tools/build.py`

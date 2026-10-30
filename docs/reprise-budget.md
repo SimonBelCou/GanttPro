@@ -3,10 +3,16 @@
 Document de passage pour démarrer une conversation neuve. Lisez-le en entier avant de coder.
 Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
-## 1. Où en est-on (29 octobre 2026)
+## 1. Où en est-on (30 octobre 2026)
 
-- Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est développée sur la branche `budget-etape-a-moteur` (PR
-  ouverte vers `main`). La fusion reste la décision de l'utilisateur, après sa recette manuelle.
+- Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est fusionnée dans `main` (PR #11). L'**étape B** (valeur
+  acquise) est développée sur la branche `budget-etape-b-valeur-acquise` ; la fusion reste la décision de l'utilisateur,
+  après sa recette manuelle (parcours Budget 15 à 20, terminée le 30 octobre ; défaut corrigé : l'onglet Budget reste visible avec des points de situation). Nettoyage fait : `archive/v2.3/` supprimé, README et `docs/guide-ia-json.md` mis à jour (budget et étape B).
+- Étape B faite : dix baselines au plus dont trois affichées par vue, baseline initiale protégée, baseline de référence
+  enregistrée dans le projet ; PV par palier, EV, AC, CV, SV, CPI, SPI (« non calculable » avec raison), voyants et
+  seuils par projet, ETC, EAC en trois hypothèses, VAC, diagramme CPI / SPI, points de situation (60 au plus,
+  sans montants à l'export), bloc du rapport. Moteur : `src/js/core/43-evm.js` ; tests `tests/core/evm.test.mjs`,
+  `tests/core/baselines.test.mjs`. Reste de l'étape B : courbes PV / EV / AC dans le temps (à proposer).
 - Étape A faite : budget et coût réel par tâche, devise, provision, BAC, baselines, courbe en S des coûts, onglet
   Budget du tableau de bord, bloc du rapport, export et impression « sans montants », masquage à l'écran, affichage
   compact (M, Md en français ; M, B en anglais), import de tableurs avec montants.
@@ -15,8 +21,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   (EF-129), bouton « Masquer les montants » dans les fenêtres Tableau de bord, Baselines et Rapport (EF-130) ; recette
   Budget 14 ; thème clair par défaut, raccourcis au survol, icône d'onglet intégrée. Cahier des charges : EX-29 à EX-38.
   Reste à valider par l'utilisateur : G15 (mobile), puis fusion de la PR.
-- Reste à faire : étape B (valeur acquise, PV, EV, CV, SV, CPI, SPI, EAC ; décisions en A.8 lignes 5, 6 et 12) puis
-  étape C (taux de ressource) ; options de colonnes de la liste ; nouvelle tâche « versionnement ».
+- Reste à faire : étape C (taux de ressource) ; options de colonnes de la liste ; nouvelle tâche « versionnement ».
 - Référence : cahier des charges
   (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
   RG-35 à RG-43 (6.8), recette R-71 à R-84 (9.7), décisions en annexe A.8, exigence EX-28 (recette manuelle).

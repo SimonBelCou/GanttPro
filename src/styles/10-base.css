@@ -465,3 +465,17 @@ body.planner-full { overflow: hidden; }
 .full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .full-bar[hidden] { display: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Valeur acquise : voyants (forme + texte, jamais la couleur seule), diagramme CPI / SPI */
+.tile.light-green dd .light-tag { color: var(--ok); }
+.tile.light-orange dd .light-tag { color: var(--warning); }
+.tile.light-red dd .light-tag { color: var(--critical); }
+.light-tag { font-size: .8rem; font-weight: 600; white-space: normal; }
+.hint.block { display: block; font-size: .8rem; font-weight: 400; white-space: normal; }
+svg.cpispi { max-width: 420px; }
+.cpispi .zone.ok { fill: color-mix(in srgb, var(--ok) 14%, transparent); }
+.cpispi .now { fill: var(--accent); stroke: var(--text); stroke-width: 1.5; }
+.cpispi .pt { fill: var(--muted); }
+svg.cpispi { width: 100%; height: auto; display: block; }
+.cpispi .grid { stroke: var(--line); stroke-width: 1; }
+.cpispi .axis { fill: var(--muted); font-size: 11px; }

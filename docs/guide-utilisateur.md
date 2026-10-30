@@ -273,10 +273,12 @@ Chaque tâche peut recevoir un **budget** (ce qu'elle doit coûter) et un **coû
 
 Une baseline fige les dates du planning pour les comparer plus tard ; une version garde tout le projet pour pouvoir y revenir.
 
-**Baselines** (bouton « Baselines », trois au plus) :
+**Baselines** (bouton « Baselines », dix au plus, dont trois affichées sur chaque vue) :
 
 - « Capturer une baseline » copie aussitôt les dates calculées de toutes les tâches sous le nom « Baseline 1 », « Baseline 2 »…, que vous pouvez changer dans la liste, comme sa couleur.
-- Deux cases par baseline : l'afficher sur le Gantt (fine barre sous chaque tâche) et sur la courbe en S (en pointillé).
+- Deux cases par baseline : l'afficher sur le Gantt (fine barre sous chaque tâche) et sur la courbe en S (en pointillé). **Trois baselines au plus sont affichées sur chaque vue** : une quatrième case est refusée avec un message, et une baseline capturée alors que trois sont déjà affichées n'apparaît pas (cochez-la après en avoir décoché une autre). Un fichier qui en demande davantage est ramené à trois à l'ouverture.
+- La **première baseline capturée est la baseline « initiale »** (pastille « Initiale »), le plan d'origine du projet. Sa suppression demande une confirmation renforcée. Capturez-la avant que le projet ne dérive.
+- La case **Référence** désigne la baseline sur laquelle se calcule la valeur acquise (onglet Budget) ; par défaut l'initiale. Ce choix est enregistré dans le projet et s'annule comme une modification.
 - Une baseline ne bouge plus quand le planning change ; seul le renommage d'un identifiant de tâche y est reporté. Une tâche créée après la capture n'a pas de barre de baseline.
 - Une baseline fige aussi le **budget** des tâches et la provision ; la fenêtre affiche son **BAC**, à comparer au BAC actuel du projet. Le coût réel n'est pas figé.
 - Le tableau de suivi et le rapport d'état comparent la fin prévue à celle de la baseline choisie.
@@ -295,7 +297,19 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 
 ### Tableau de bord, onglet « Budget »
 
-Cet onglet n'apparaît que si au moins un montant est saisi. Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+Cet onglet n'apparaît que si au moins un montant est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+
+**Valeur acquise** (même onglet, sous la courbe) : elle compare ce que le projet devait avoir produit, ce qu'il a produit et ce qu'il a coûté, à la **date du jour**.
+
+- **Référence** : la baseline désignée dans la fenêtre Baselines (par défaut l'initiale), dont les budgets et les fins prévues sont figés ; l'avancement et le coût réel sont ceux d'aujourd'hui. Sans baseline, c'est le planning actuel, et l'écart avec le plan d'origine ne se voit pas : capturez une baseline. Si des tâches ont été ajoutées ou supprimées depuis la baseline, un encadré le dit : le coût réel des tâches ajoutées pèse sur le CPI, le budget des tâches supprimées reste dans le BAC.
+- **PV** (valeur planifiée) : le budget des tâches dont la fin prévue est atteinte (par palier : le budget d'une tâche entre dans la PV le jour de sa fin prévue). **EV** (valeur acquise) : budget de chaque tâche × son avancement (40 % de 200 = 80). **AC** : le coût réel total. La provision n'entre pas dans ces valeurs.
+- **CV = EV − AC** (écart de coût), **SV = EV − PV** (écart de délai), **CPI = EV / AC**, **SPI = EV / PV**. Au-dessus de 1, c'est favorable. Comme la PV se compte par palier, le SPI est « non calculable » tant qu'aucune fin prévue n'est atteinte, et trop favorable pour une tâche commencée avant sa fin prévue ; lisez-le avec le Gantt.
+- Un indice qui ne peut pas se calculer (pas de budget, pas de coût réel, rien de planifié) affiche **« non calculable »** avec la raison, jamais 0 ni l'infini.
+- Voyants des indices (forme et texte, pas seulement la couleur) : « ● conforme » à partir du seuil vert, « ■ en dérive » sous le seuil rouge, « ▲ à surveiller » entre les deux. Seuils par défaut 100 % et 90 % ; modifiables dans la fenêtre du projet (groupe « Valeur acquise »), comme le **reste à faire estimé (ETC)** facultatif.
+- **Prévision à terminaison** (EAC), trois hypothèses côte à côte : BAC / CPI (la dérive durera), AC + ETC (votre estimation du reste à faire ; non calculable tant qu'il n'est pas saisi), AC + BAC − EV (la dérive était exceptionnelle). VAC = BAC − EAC. En fin de projet ces indicateurs sont moins pertinents : regardez le coût réel final.
+- **Diagramme CPI / SPI** : un point courant (et les points de situation en gris) ; la zone en haut à droite est celle où coût et délai sont maîtrisés.
+- **Points de situation** : « Enregistrer un point de situation » garde une photo (date, libellé facultatif, référence, CPI, SPI et montants) dans le projet, 60 au plus. Rien n'est enregistré automatiquement. L'export « sans montants » en retire les montants et garde les indices.
+- Le CPI et le SPI ne sont pas des montants : ils restent visibles quand les montants sont masqués. Le rapport d'état les reprend dans le bloc Budget ; les montants n'y figurent que si « Inclure les montants » est coché.
 
 ### Tableau de bord, onglet « Charge »
 
@@ -415,7 +429,8 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | Liens d'une tâche, affectations d'une tâche | 50, 10 |
 | Étiquettes d'une tâche, du projet | 10, 200 |
 | Commentaires d'une tâche, absences d'une ressource | 50, 100 |
-| Baselines, versions | 3, 10 |
+| Baselines (dont affichées par vue), versions | 10 (3), 10 |
+| Points de situation | 60 |
 | Onglets ouverts, entrées de bibliothèque | 10, 50 |
 | Fichier importé, lignes de tableur | 5 Mo, 1 000 |
 

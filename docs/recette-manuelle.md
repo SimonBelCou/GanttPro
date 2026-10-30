@@ -5,7 +5,7 @@ Ce document guide, pas à pas, la validation de **tout l'outil** par le proprié
 - **Partie A — Recette générale** : les parcours G1 à G15 couvrent l'ensemble des fonctions. On les rejoue en entier
   avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
   l'indique).
-- **Partie B — Mises à jour** : un chapitre par évolution (Budget étape A pour l'instant), à suivre pour valider cette
+- **Partie B — Mises à jour** : un chapitre par évolution (Budget, étapes A et B, pour l'instant), à suivre pour valider cette
   évolution seule.
 
 Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son
@@ -41,6 +41,9 @@ comportement existant.
 | `projet-noms-pieges.json` | Trois tâches dont le nom ressemble à du code (`<img onerror…>`, `=1+1`, guillemets) | G12 7, G15 6 |
 | `projet-1000-taches.json` | 1 000 tâches fictives liées, pour la fluidité | G15 7 |
 | `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
+| `valeur-acquise-passe.json` | Projet daté de 2025 : tout est planifié, avancement 55 %, CPI 1,16, SPI 0,55, ETC saisi | B16, B19, B20 |
+| `valeur-acquise-futur.json` | Projet daté de 2035 : rien n'est encore planifié, SPI « non calculable », CPI 0,50 | B17 |
+| `valeur-acquise-derive.json` | Projet de 2025 avec deux baselines (initiale et replanifiée), une tâche ajoutée depuis | B15, B18 |
 
 ### Quand rejouer quoi
 
@@ -254,7 +257,7 @@ Départ : `projet-exemple.json` ouvert.
 - [ ] 2. Allongez T3 de 3 jours. *Attendu :* la baseline ne bouge pas ; une fine barre sous T3 montre l'ancienne
   position ; son nom apparaît au survol.
 - [ ] 3. Tableau de bord : choisissez la colonne « Écart vs baseline » : la différence de fin apparaît.
-- [ ] 4. Renommez la baseline, changez sa couleur ; capturez-en trois en tout, la quatrième est refusée.
+- [ ] 4. Renommez la baseline, changez sa couleur ; capturez-en jusqu'à dix en tout, la onzième est refusée (voir aussi Budget 15 pour l'affichage, limité à trois).
 - [ ] 5. **Versions** : nommez « V1 », **Enregistrer l'état actuel**. Modifiez le projet, puis **Restaurer** :
   confirmation, projet remis dans l'état de V1 ; **Annuler** annule la restauration.
 
@@ -370,7 +373,9 @@ Départ : `projet-exemple.json` ouvert.
 
 ---
 
-## Partie B — Mises à jour : Budget, étape A
+## Partie B — Mises à jour : Budget, étapes A et B
+
+*Étape B (valeur acquise) : parcours Budget 15 à 20, fichiers `valeur-acquise-*.json`, exigences EF-131 à EF-141, RG-44 à RG-51, scénarios R-80 à R-82 et R-85 à R-88.*
 
 Exigences : EF-112 à EF-127, RG-35 à RG-43. Scénarios : R-71 à R-84.
 Fichiers (dans `tests/fixtures/`) : `budget-base.json`, `budget-avec-baseline.json`, `budget-montants-geants.json`, `budget-sans-montant.json`,
@@ -576,6 +581,71 @@ Départ : ouvrez `budget-courbe-terminee.json` (projet fictif ancien : la date d
   et le bouton de la barre du haut est lui aussi enfoncé. Recliquez : les montants reviennent.
 - [ ] 5. Faites de même dans **Baselines** et **Rapport d'état** (le bouton est dans leur en-tête). *Attendu :* même
   comportement ; le réglage est le même que celui de la barre du haut.
+
+### Budget 15 — Baselines : dix au plus, trois affichées, initiale protégée (EF-131 à EF-133, RG-44 à RG-46, R-85)
+
+Départ : ouvrez `valeur-acquise-derive.json`, puis **Baselines**.
+
+- [ ] 1. Observez le tableau. *Attendu :* deux baselines ; « Baseline initiale » porte la pastille **Initiale** ; une
+  seule case radio **Référence** est cochée (sur l'initiale) ; une phrase indique « 2 sur 3 » baselines affichées sur chaque vue.
+- [ ] 2. Cliquez **Capturer une baseline** deux fois. *Attendu :* 4 baselines ; la quatrième n'est cochée ni sur le Gantt
+  ni sur la courbe, et un message dit qu'elle n'est pas affichée parce que trois le sont déjà.
+- [ ] 3. Essayez de cocher **Sur le Gantt** pour la quatrième. *Attendu :* la case se décoche d'elle-même avec un message
+  « Trois baselines au plus… » ; décochez-en une autre, puis recochez la quatrième : cela fonctionne.
+- [ ] 4. Capturez jusqu'à 10 baselines, puis une onzième. *Attendu :* la onzième est refusée avec un message (« 10 baselines au plus »).
+- [ ] 5. Cochez la case **Référence** d'une autre baseline. *Attendu :* le focus reste sur la case ; **Annuler** de la barre du
+  haut annule ce choix.
+- [ ] 6. Supprimez la baseline **initiale**. *Attendu :* une confirmation renforcée explique qu'il s'agit de la référence
+  d'origine ; le bouton par défaut est **Annuler**. Annulez : elle est toujours là. Recommencez et confirmez : elle disparaît ;
+  si elle était la référence, la première baseline restante la remplace.
+
+### Budget 16 — Valeur acquise à la date du jour (EF-134 à EF-138, RG-47 à RG-50, R-80)
+
+Départ : ouvrez `valeur-acquise-passe.json` (budgets : Etude `100,00 €` terminée, coût réel `90,00 €` ; Realisation
+`300,00 €` à 40 %, coût réel `100,00 €` ; provision `40,00 €`), **Tableau de bord**, onglet **Budget**, section **Valeur acquise**.
+
+- [ ] 1. Lisez la ligne de référence. *Attendu :* « Référence : planning actuel (aucune baseline capturée) ».
+- [ ] 2. Lisez les tuiles. *Attendu :* PV `400,00 €` (tout est planifié à ce jour) ; EV `220,00 €` (100 + 40 % de 300) ;
+  AC `190,00 €` ; CV `30,00 €` ; SV `−180,00 €` ; CPI `1,16` « ● conforme » ; SPI `0,55` « ■ en dérive ». La provision n'entre pas dans ces valeurs.
+- [ ] 3. Lisez le tableau **Prévision à terminaison**. *Attendu :* BAC / CPI = `345,45 €` (et non 351 : le CPI n'est pas
+  arrondi avant la division) ; AC + ETC = `290,00 €` (ETC saisi à `100,00 €`) ; AC + BAC − EV = `370,00 €` ; les écarts finaux (VAC) sont `+54,55 €`, `+110,00 €`, `+30,00 €`. Une phrase rappelle que ces indicateurs sont moins pertinents en fin de projet.
+- [ ] 4. Observez le diagramme CPI / SPI. *Attendu :* un point courant placé à droite de la ligne CPI = 1 et sous la ligne SPI = 1 (zone « coût maîtrisé, délai en retard ») ; un titre et une description sont lus par un lecteur d'écran.
+- [ ] 5. *(Contrôle du masquage, utile quand vous partagez votre écran : le but n'est pas de lire les valeurs mais de vérifier qu'on peut montrer l'état du projet sans montrer d'argent.)* Cliquez **Masquer les montants**. *Attendu :* PV, EV, AC, CV, SV et les prévisions deviennent `••••` ; CPI et SPI (des rapports, pas des montants) restent lisibles, avec leur voyant. Cliquez à nouveau : les montants reviennent.
+
+### Budget 17 — Un indice qui ne se calcule pas n'est jamais 0 (RG-48, R-82)
+
+Départ : ouvrez `valeur-acquise-futur.json` (projet daté de 2035), onglet **Budget**.
+
+- [ ] 1. *Attendu :* PV `0,00 €` ; EV `10,00 €` ; AC `20,00 €` ; CPI `0,50` « ■ en dérive » ; SPI affiché **« non calculable »** avec la raison « aucun budget n'est planifié à ce jour » (ni 0, ni infini).
+- [ ] 2. Dans le tableau des prévisions, la ligne AC + ETC dit « non calculable (reste à faire non saisi) ».
+- [ ] 3. Le diagramme CPI / SPI n'a pas de point courant et sa description dit que la position n'est pas calculable.
+
+### Budget 18 — Référence : baseline ou planning actuel (EF-131, RG-44, RG-47, R-87)
+
+Départ : ouvrez `valeur-acquise-derive.json`, onglet **Budget**. (La tâche « Recette » a été ajoutée depuis la baseline initiale ; « Realisation » a changé de budget et de durée.)
+
+- [ ] 1. *Attendu (référence = Baseline initiale)* : BAC `400,00 €` ; PV `400,00 €` ; EV `220,00 €` ; AC `210,00 €` ; CPI `1,05` ; SPI `0,55` ; un encadré dit « 1 tâche ajoutée, 0 supprimée » (le coût réel de la tâche ajoutée pèse sur le CPI).
+- [ ] 2. **Baselines** → cochez la référence **Baseline replanifiee**, fermez. *Attendu :* BAC `510,00 €` ; PV `510,00 €` ; EV `244,00 €` ; AC `210,00 €` ; CPI `1,16` ; SPI `0,48` ; plus d'encadré de tâche ajoutée.
+- [ ] 3. Rouvrez **Baselines** et supprimez toutes les baselines restantes. *Attendu :* la ligne de référence redevient « planning actuel ».
+
+### Budget 19 — Seuils des voyants et reste à faire (EF-139, EF-140, RG-49, R-82)
+
+Départ : `valeur-acquise-passe.json`, **Projet** (clic sur le nom du projet).
+
+- [ ] 1. Dans le groupe **Valeur acquise**, mettez le seuil vert à `80` et le seuil rouge à `90`, **Enregistrer**. *Attendu :* refus avec un message (le seuil rouge ne dépasse pas le vert), le champ fautif reçoit le focus.
+- [ ] 2. Mettez vert `120`, rouge `110`, vide l'ETC, **Enregistrer**. *Attendu :* onglet Budget : CPI `1,16` passe à « ▲ à surveiller » ; la ligne AC + ETC devient « non calculable ».
+- [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, le champ ETC est désactivé et affiche `••••`.
+- [ ] 4. Barre du haut, **Annuler**. *Attendu :* les seuils reviennent à leur valeur précédente.
+
+### Budget 20 — Points de situation (EF-141, RG-51, R-88)
+
+Départ : `valeur-acquise-passe.json`, onglet **Budget**, section **Points de situation**.
+
+- [ ] 1. Saisissez le libellé « Revue 1 », **Enregistrer un point de situation**. *Attendu :* une ligne apparaît avec la date du jour, le libellé, la référence, CPI `1,16`, SPI `0,55`, le focus revient sur le bouton ; le projet est marqué modifié.
+- [ ] 2. Un point se supprime par son bouton « Supprimer le point du … ». *Attendu :* la ligne disparaît (annulable).
+- [ ] 3. Enregistrez un point, puis **Exporter** sans montants et réimportez le fichier. *Attendu :* le projet n'a plus aucun montant, mais l'onglet **Budget** du tableau de bord reste présent grâce au point de situation ; dans **Points de situation**, la ligne garde sa date, son libellé, CPI `1,16` et SPI `0,55` (PV, EV, AC et ETC ne sont plus dans le fichier). Un projet sans montant et sans point n'a pas d'onglet Budget.
+- [ ] 4. **Rapport d'état** : *Attendu :* le bloc Budget affiche CPI et SPI avec leur voyant, sans aucun montant ; en cochant « Inclure les montants », PV, EV, AC, CV, SV et l'EAC (BAC / CPI) s'ajoutent.
+- [ ] 5. Aucun point ne se crée tout seul : rouvrez le projet, la liste est telle que vous l'avez laissée.
 
 ### Contrôle final de la mise à jour
 
