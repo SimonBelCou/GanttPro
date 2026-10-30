@@ -5,7 +5,7 @@ Ce document guide, pas à pas, la validation de **tout l'outil** par le proprié
 - **Partie A — Recette générale** : les parcours G1 à G15 couvrent l'ensemble des fonctions. On les rejoue en entier
   avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
   l'indique).
-- **Partie B — Mises à jour** : un chapitre par évolution (Budget étape A pour l'instant), à suivre pour valider cette
+- **Partie B — Mises à jour** : un chapitre par évolution (Budget, étapes A et B, pour l'instant), à suivre pour valider cette
   évolution seule.
 
 Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son

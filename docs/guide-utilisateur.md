@@ -429,7 +429,8 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | Liens d'une tâche, affectations d'une tâche | 50, 10 |
 | Étiquettes d'une tâche, du projet | 10, 200 |
 | Commentaires d'une tâche, absences d'une ressource | 50, 100 |
-| Baselines, versions | 3, 10 |
+| Baselines (dont affichées par vue), versions | 10 (3), 10 |
+| Points de situation | 60 |
 | Onglets ouverts, entrées de bibliothèque | 10, 50 |
 | Fichier importé, lignes de tableur | 5 Mo, 1 000 |
 

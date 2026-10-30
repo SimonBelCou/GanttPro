@@ -61,7 +61,7 @@ Détail des mesures :
   et déclarer l'action dans la table `ACTIONS`.
 - Tout projet importé ou relu passe par `Model.sanitize` / `Model.parseFile`.
 - Lancer les tests (`node --test tests/core/*.test.mjs`, `tests/test_v3.py`, `tests/test_v3_espace.py`,
-  `tests/test_v3_recette.py`) : import malveillant, CSP réellement appliquée, parcours clavier, accessibilité.
+  `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py`) : import malveillant, CSP réellement appliquée, parcours clavier, accessibilité.
 - Détection de secrets dans la CI (gitleaks) ; protection de la branche `main` (revue et CI verte obligatoires).
 
 Seule la version courante de `GanttPro.html` est maintenue : les anciennes versions ne reçoivent plus de correctifs.
