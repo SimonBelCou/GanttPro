@@ -3,11 +3,11 @@
 Document de passage pour démarrer une conversation neuve. Lisez-le en entier avant de coder.
 Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 
-## 1. Où en est-on (29 octobre 2026)
+## 1. Où en est-on (30 octobre 2026)
 
 - Dépôt `SimonBelCou/GanttPro`. L'**étape A** du budget est fusionnée dans `main` (PR #11). L'**étape B** (valeur
   acquise) est développée sur la branche `budget-etape-b-valeur-acquise` ; la fusion reste la décision de l'utilisateur,
-  après sa recette manuelle (parcours Budget 15 à 20).
+  après sa recette manuelle (parcours Budget 15 à 20, terminée le 30 octobre ; défaut corrigé : l'onglet Budget reste visible avec des points de situation). Nettoyage fait : `archive/v2.3/` supprimé, README et `docs/guide-ia-json.md` mis à jour (budget et étape B).
 - Étape B faite : dix baselines au plus dont trois affichées par vue, baseline initiale protégée, baseline de référence
   enregistrée dans le projet ; PV par palier, EV, AC, CV, SV, CPI, SPI (« non calculable » avec raison), voyants et
   seuils par projet, ETC, EAC en trois hypothèses, VAC, diagramme CPI / SPI, points de situation (60 au plus,

@@ -610,7 +610,7 @@ Départ : ouvrez `valeur-acquise-passe.json` (budgets : Etude `100,00 €` termi
 - [ ] 3. Lisez le tableau **Prévision à terminaison**. *Attendu :* BAC / CPI = `345,45 €` (et non 351 : le CPI n'est pas
   arrondi avant la division) ; AC + ETC = `290,00 €` (ETC saisi à `100,00 €`) ; AC + BAC − EV = `370,00 €` ; les écarts finaux (VAC) sont `+54,55 €`, `+110,00 €`, `+30,00 €`. Une phrase rappelle que ces indicateurs sont moins pertinents en fin de projet.
 - [ ] 4. Observez le diagramme CPI / SPI. *Attendu :* un point courant placé à droite de la ligne CPI = 1 et sous la ligne SPI = 1 (zone « coût maîtrisé, délai en retard ») ; un titre et une description sont lus par un lecteur d'écran.
-- [ ] 5. Cliquez **Masquer les montants**. *Attendu :* les montants deviennent `••••`, mais CPI et SPI (des rapports, pas des montants) restent lisibles. Réaffichez.
+- [ ] 5. *(Contrôle du masquage, utile quand vous partagez votre écran : le but n'est pas de lire les valeurs mais de vérifier qu'on peut montrer l'état du projet sans montrer d'argent.)* Cliquez **Masquer les montants**. *Attendu :* PV, EV, AC, CV, SV et les prévisions deviennent `••••` ; CPI et SPI (des rapports, pas des montants) restent lisibles, avec leur voyant. Cliquez à nouveau : les montants reviennent.
 
 ### Budget 17 — Un indice qui ne se calcule pas n'est jamais 0 (RG-48, R-82)
 
@@ -643,7 +643,7 @@ Départ : `valeur-acquise-passe.json`, onglet **Budget**, section **Points de si
 
 - [ ] 1. Saisissez le libellé « Revue 1 », **Enregistrer un point de situation**. *Attendu :* une ligne apparaît avec la date du jour, le libellé, la référence, CPI `1,16`, SPI `0,55`, le focus revient sur le bouton ; le projet est marqué modifié.
 - [ ] 2. Un point se supprime par son bouton « Supprimer le point du … ». *Attendu :* la ligne disparaît (annulable).
-- [ ] 3. Enregistrez un point, puis **Exporter** sans montants et réimportez le fichier. *Attendu :* le point est conservé avec ses indices CPI / SPI, mais sans aucun montant (PV, EV, AC, ETC absents du fichier).
+- [ ] 3. Enregistrez un point, puis **Exporter** sans montants et réimportez le fichier. *Attendu :* le projet n'a plus aucun montant, mais l'onglet **Budget** du tableau de bord reste présent grâce au point de situation ; dans **Points de situation**, la ligne garde sa date, son libellé, CPI `1,16` et SPI `0,55` (PV, EV, AC et ETC ne sont plus dans le fichier). Un projet sans montant et sans point n'a pas d'onglet Budget.
 - [ ] 4. **Rapport d'état** : *Attendu :* le bloc Budget affiche CPI et SPI avec leur voyant, sans aucun montant ; en cochant « Inclure les montants », PV, EV, AC, CV, SV et l'EAC (BAC / CPI) s'ajoutent.
 - [ ] 5. Aucun point ne se crée tout seul : rouvrez le projet, la liste est telle que vous l'avez laissée.
 

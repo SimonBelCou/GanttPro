@@ -297,7 +297,7 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 
 ### Tableau de bord, onglet « Budget »
 
-Cet onglet n'apparaît que si au moins un montant est saisi. Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+Cet onglet n'apparaît que si au moins un montant est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
 
 **Valeur acquise** (même onglet, sous la courbe) : elle compare ce que le projet devait avoir produit, ce qu'il a produit et ce qu'il a coûté, à la **date du jour**.
 

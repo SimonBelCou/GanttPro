@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4E8N1T4C9f+BBuWDlFC5Q/tN54NeZGYSyCtZbrox0Mk='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tgCCSkSpI0e/BaPynZsKchUNow4lyEhmox4B5elvJbg='; style-src 'sha256-Mhvf03Z4n5F7jcvE2Ji1vcw/37ZhsGRvN13j3k9z1RA='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -7572,10 +7572,10 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
-/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141). */
 function dashTabs() {
   const tabs = ['summary', 'load'];
-  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
   if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
   return tabs;
 }

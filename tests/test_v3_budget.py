@@ -648,6 +648,22 @@ def main():
         check('R-81 : ETC 100,00 → AC + ETC = 290,00 €', '290,00 €' in eac, eac)
         esc()
 
+        # Défaut trouvé en recette (Budget 20 étape 3) : après export sans montants et réimport, les points restent lisibles.
+        write('points-sans-montants.json', {'format': 3, 'name': 'Points seuls', 'projectStart': '2026-01-05',
+              'tasks': [{'id': 'A', 'name': 'a', 'dur': 5}],
+              'statusPoints': [{'date': '2026-01-09', 'label': 'Revue 1', 'cpi': 116, 'spi': 55}]})
+        load('points-sans-montants.json')
+        pg.click('button[data-click="openDashboard"]')
+        check('R-88 : sans aucun montant mais avec un point de situation, l\'onglet Budget reste là', pg.locator('#dtab-budget').count() == 1)
+        pg.click('#dtab-budget')
+        pts = sp(pg.inner_text('#evm-points'))
+        check('R-88 : le point réimporté montre CPI 1,16 et SPI 0,55 sans montant', 'Revue 1' in pts and '1,16' in pts and '0,55' in pts, pts)
+        esc()
+        load_fx('budget-sans-montant.json')
+        pg.click('button[data-click="openDashboard"]')
+        check('R-88 : sans montant ni point de situation, pas d\'onglet Budget (EF-117)', pg.locator('#dtab-budget').count() == 0)
+        esc()
+
         # Parcours de la recette Budget 16 à 18, avec les projets d'essai fournis.
         def evm_text(sel='#evm-tiles'):
             pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget')

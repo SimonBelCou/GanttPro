@@ -156,10 +156,10 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
-/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117). */
+/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141). */
 function dashTabs() {
   const tabs = ['summary', 'load'];
-  if (Budget.hasAmounts(App.project)) tabs.push('budget');
+  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
   if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
   return tabs;
 }

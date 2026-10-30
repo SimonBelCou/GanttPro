@@ -9,6 +9,9 @@ l'import et le refuse en entier, avec un message précis, s'il est incorrect. Ri
 
 ## Avant de commencer : vos données
 
+- **Les montants sont des données sensibles.** Un budget ou un coût réel collé dans une IA en ligne sort de votre poste. Exportez le
+  projet « sans montants » (case « Inclure les montants » décochée) pour le prompt B, puis ressaisissez les montants dans GanttPro.
+
 - **Une IA en ligne est un service tiers.** Ce que vous collez dans le prompt (notes de réunion, noms de personnes, noms de projets)
   est transmis à ce service. Les noms de ressources sont des **données personnelles** : utilisez des prénoms, des initiales ou des
   fonctions (« Dev 1 », « Chef de projet »), et vérifiez la politique de votre organisation avant d'envoyer des informations
@@ -43,8 +46,9 @@ INFORMATIONS DU PROJET
 - Tâches, ordre et contraintes : [notes de réunion, liste de tâches, jalons, échéances]
 
 RÈGLES DU FORMAT (à respecter strictement)
-1. Racine : { "format": 3, "name", "desc", "emoji", "projectStart", "calendar", "leveling", "resources", "categories", "tasks" }.
-   Ne mets ni "id", ni "createdAt", ni "baselines", ni "versions".
+1. Racine : { "format": 3, "name", "desc", "emoji", "projectStart", "calendar", "leveling", "currency", "provision", "etc", "evmGreen", "evmRed",
+   "resources", "categories", "tasks" } (tous facultatifs sauf "format", "name", "projectStart" et "tasks").
+   Ne mets ni "id", ni "createdAt", ni "baselines", ni "baselineRef", ni "statusPoints", ni "versions".
 2. "emoji" : l'un de 🚁 🚀 🏗️ 💡 🎯 📱 🌍 ⚙️ 🔬 🎨 🏭 📦 🔧 🛸 🌿 🏆 📊 🔐 🚂 💊 📁.
 3. Dates au format "AAAA-MM-JJ", entre 1970 et 2199.
 4. "calendar" : { "workDays": [lun, mar, mer, jeu, ven, sam, dim] avec 1 = travaillé et 0 = non (au moins un 1),
@@ -70,9 +74,15 @@ RÈGLES DU FORMAT (à respecter strictement)
    - "forcedStart" : date imposée (à n'utiliser que si la date est réellement contractuelle) ; "notBefore" : ne pas commencer avant ;
      "deadline" : échéance.
    - "notes" : 2 000 caractères maximum.
+   - "budget" (budget de la tâche) et "actual" (coût réel cumulé) : montants en CENTIMES, entiers de 0 à 5 000 000 000 000
+     (1 234,56 € s'écrit 123456). Seulement sur une tâche ("task") : jamais sur un jalon ni sur une récapitulative. N'invente aucun
+     montant : omets ces champs s'ils ne figurent pas dans mes informations.
 9. Ne mets aucune date de début ou de fin calculable : GanttPro calcule le planning à partir des durées, des liens, du calendrier
    et des ressources. N'utilise "forcedStart" que pour une contrainte réelle.
-10. Aucun champ en dehors de ceux listés ci-dessus.
+10. Budget du projet (facultatif) : "currency" : symbole de 1 à 5 caractères (défaut « € ») ; "provision" : réserve globale en centimes ;
+    "etc" : reste à faire estimé en centimes ; "evmGreen" et "evmRed" : seuils des voyants CPI et SPI en %, entiers de 1 à 300
+    (défaut 100 et 90 ; "evmRed" ne dépasse pas "evmGreen").
+11. Aucun champ en dehors de ceux listés ci-dessus.
 
 MÉTHODE
 - Découpe en tâches de 1 à 20 jours ouvrés ; regroupe-les sous des récapitulatives par phase.
@@ -98,8 +108,8 @@ FICHIER ACTUEL
 [colle ici le JSON exporté de GanttPro]
 
 RÈGLES
-- Ne change que ce que les décisions imposent. Recopie tel quel tout le reste, y compris "id", "createdAt", "baselines" et "versions"
-  s'ils existent. Si le fichier est trop long pour être recopié en entier, dis-le au lieu de le tronquer.
+- Ne change que ce que les décisions imposent. Recopie tel quel tout le reste, y compris "id", "createdAt", "baselines", "baselineRef", "statusPoints" et "versions"
+  s'ils existent, ainsi que les montants ("budget", "actual", "provision", "etc") que les décisions ne changent pas. Si le fichier est trop long pour être recopié en entier, dis-le au lieu de le tronquer.
 - Garde les ids des tâches existantes ; pour une nouvelle tâche, choisis un id libre (texte de 1 à 12 caractères parmi A-Z, 0-9, ".", "-", "_").
 - Pour une tâche supprimée, retire-la aussi des "deps" des autres tâches (ou remplace le lien par un lien vers son prédécesseur) et
   signale-le dans ta liste.

@@ -64,4 +64,4 @@ Détail des mesures :
   `tests/test_v3_recette.py`) : import malveillant, CSP réellement appliquée, parcours clavier, accessibilité.
 - Détection de secrets dans la CI (gitleaks) ; protection de la branche `main` (revue et CI verte obligatoires).
 
-La version 2.3, conservée dans `archive/v2.3/` pour mémoire, n'est plus maintenue : utilisez `GanttPro.html`.
+Seule la version courante de `GanttPro.html` est maintenue : les anciennes versions ne reçoivent plus de correctifs.
