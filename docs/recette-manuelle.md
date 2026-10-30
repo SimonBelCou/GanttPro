@@ -5,8 +5,8 @@ Ce document guide, pas à pas, la validation de **tout l'outil** par le proprié
 - **Partie A — Recette générale** : les parcours G1 à G15 couvrent l'ensemble des fonctions. On les rejoue en entier
   avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
   l'indique).
-- **Partie B — Mises à jour** : un chapitre par évolution (Budget, étapes A et B, pour l'instant), à suivre pour valider cette
-  évolution seule.
+- **Partie B — Mises à jour** : un chapitre par évolution (Budget étapes A et B, Colonnes de la liste, Taux des
+  ressources), à suivre pour valider cette évolution seule.
 
 Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son
 parcours à jour et ses fichiers d'essai**, et les parcours généraux sont adaptés si la mise à jour change un
@@ -45,6 +45,10 @@ comportement existant.
 | `valeur-acquise-futur.json` | Projet daté de 2035 : rien n'est encore planifié, SPI « non calculable », CPI 0,50 | B17 |
 | `colonnes-personnalisees.json` | Projet de 2025 sans montant, dont la liste affiche six colonnes dans un ordre choisi (Activité, N°, Début, Fin, Statut, Budget) | Colonnes 1 |
 | `valeur-acquise-derive.json` | Projet de 2025 avec deux baselines (initiale et replanifiée), une tâche ajoutée depuis | B15, B18 |
+| `taux-profils-base.json` | Trois tâches, deux profils de coût (Analyste 400,00 € et Développeur 450,00 € par jour), BAC saisi 14 500,00 €, coût des ressources 13 000,00 € | Taux 2 à 4, 7, 9 |
+| `taux-historique.json` | Un profil dont le taux passe de 400,00 € à 420,00 € le 08/01/2026, et un prestataire externe à taux nominatif de 700,00 € | Taux 5, 7 |
+| `taux-sans-taux.json` | Trois ressources dont deux sans taux (un profil sans ligne de taux, une ressource sans profil) | Taux 6 |
+| `refus-taux-negatif.json`, `refus-taux-profil-inconnu.json` | Deux fichiers refusés : taux négatif, profil qui n'existe pas | Taux 8 |
 
 ### Quand rejouer quoi
 
@@ -53,7 +57,8 @@ comportement existant.
 | Le calcul des dates, des liens, du calendrier | G2, G4, G9 |
 | Les ressources, la charge, le nivellement | G5, G6 |
 | La liste, la grille, les gestes | G3, G6, G7, Colonnes 1 |
-| Les fichiers (export, import, chiffrement) | G12, G13 |
+| Les fichiers (export, import, chiffrement) | G12, G13, Taux 7 |
+| Les ressources, leurs taux et le coût | G5, Taux 1 à 9 |
 | Le tableau de bord, le rapport, l'impression | G10, G11 |
 | L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
 
@@ -679,6 +684,141 @@ Départ : ouvrez `colonnes-personnalisees.json` (projet fictif sans montant dont
 - [ ] 12b. **Dans chaque navigateur utilisé (Edge, Firefox, Chrome)** : tirez la poignée de largeur d'une colonne, puis d'une autre, puis affichez une colonne avec **Colonnes…**. *Attendu :* toutes les colonnes restent visibles, la liste défile horizontalement si elle est plus large que son cadre ; **Largeurs par défaut** rétablit tout. (Défaut signalé sous Firefox le 30 octobre : seule la première colonne restait visible.)
 - [ ] 12. Clavier : dans la fenêtre, Tab parcourt cases et boutons ; Espace coche ; Entrée active ↑ et ↓ ; Échap ferme
   et rend le focus à **Colonnes…**.
+
+## Partie B — Taux des ressources (étape C)
+
+Exigences : EF-147 à EF-150, RG-54 à RG-58, EX-41. Scénarios : R-92 à R-100. Fichiers : `taux-*.json`, `refus-taux-*.json`.
+
+À savoir avant de commencer : le **budget saisi** de chaque tâche reste la référence du BAC, de la valeur acquise et des
+baselines. Le coût des ressources (jours ouvrés × taux d'occupation × taux du jour) est **calculé à côté** pour le contrôler :
+il ne modifie jamais le budget tout seul. Les montants sont des exemples fictifs.
+
+### Taux 1 — Sans profil ni taux, rien ne change (EF-147)
+
+Départ : ouvrez `budget-base.json` (projet avec budgets, sans aucun profil de coût).
+
+- [ ] 1. Ouvrez **Ressources**. *Attendu :* les colonnes sont celles d'avant (Nom, Rôle, Capacité, Couleur, nombre de tâches) ;
+  il n'y a **ni colonne « Profil de coût » ni colonne « Taux par jour »**. Un bouton **Profils de coût…** est présent sous le tableau.
+- [ ] 2. Cliquez **Fiche** d'une ressource. *Attendu :* la fiche n'a pas de rubrique « Coût des ressources ».
+- [ ] 3. Ouvrez **Tableau de bord**, onglet **Budget**. *Attendu :* aucune section « Coût des ressources ».
+- [ ] 4. Ouvrez la fiche d'une tâche qui a une ressource. *Attendu :* aucune ligne de coût sous les affectations.
+
+### Taux 2 — Créer des profils et des lignes de taux (EF-147, EF-148, RG-54, R-98)
+
+Départ : ouvrez `taux-profils-base.json`, puis **Ressources**.
+
+- [ ] 1. *Attendu :* deux colonnes de plus, **Profil de coût** (Alice : Analyste, Bob : Développeur) et **Taux par jour**
+  (`400,00 €` et `450,00 €`, chacun suivi de « (profil) »).
+- [ ] 2. Cliquez **Profils de coût…**. *Attendu :* une fenêtre avec deux cartes, Analyste et Développeur, chacune avec son nom,
+  sa ligne « Depuis le début » et son taux, « 1 ressource utilise ce profil. » et un bouton « Supprimer le profil … ».
+- [ ] 3. **Ajouter un profil**. *Attendu :* une carte « Profil 3 » apparaît, le focus est sur son nom. Renommez-le
+  « Chef de projet » (Tab pour valider). Tentez ensuite « analyste » : *Attendu :* refusé, message sous le champ (nom déjà pris, majuscules ignorées).
+- [ ] 4. Dans « Chef de projet », **Ajouter une ligne de taux**. *Attendu :* une ligne « Depuis le début » à 0 ; le focus est sur son taux.
+  Saisissez `600` puis Tab. *Attendu :* la valeur reste `600`.
+- [ ] 5. Saisissez `12abc` : *attendu :* refusé avec une explication (écrire un montant comme « 1 234,56 ») ; le champ est signalé en erreur.
+  Saisissez `2000000` : *attendu :* refusé (au plus 1 000 000,00). Remettez `600`.
+- [ ] 6. **Ajouter une ligne de taux** deux fois. *Attendu :* deux lignes « À partir du » apparaissent, aux dates libres
+  d'aujourd'hui et du lendemain, au dernier taux connu (`600`).
+- [ ] 7. Mettez la date de la dernière ligne à la même date que l'autre. *Attendu :* refusé (« Deux lignes de taux ne
+  peuvent pas commencer le même jour ») ; rien n'est modifié. Mettez une date plus ancienne : *attendu :* les lignes se
+  retrient par date, le focus suit la ligne déplacée.
+- [ ] 8. Supprimez une ligne par son bouton ✕ (« Supprimer la ligne de taux … »). *Attendu :* elle disparaît ; **Annuler** (barre du haut) la rétablit.
+- [ ] 9. Fermez la fenêtre (Échap). Dans **Ressources**, choisissez « Chef de projet » comme profil de Bob. *Attendu :* son taux
+  du jour affiche le taux de la ligne en vigueur aujourd'hui ; le focus reste sur la liste.
+
+### Taux 3 — Le coût dans les fiches (RG-55, R-92, R-94)
+
+Départ : ouvrez `taux-profils-base.json`.
+
+- [ ] 1. Ouvrez la fiche de la tâche **T1** (Conception, 10 j, Alice à 50 %). *Attendu :* sous les affectations, « Coût des
+  ressources selon le planning enregistré : 5 j-p · 2 000,00 € » (10 jours × 50 % = 5 jours-personne, × 400,00 €).
+- [ ] 2. Fiche de **T2** (20 j, Bob à 100 %). *Attendu :* `20 j-p · 9 000,00 €`. Fiche de **T3** (5 j, Alice à 100 %) : `5 j-p · 2 000,00 €`.
+- [ ] 3. Ouvrez **Ressources**, **Fiche** d'Alice. *Attendu :* une rubrique « Coût des ressources » avec son profil, son taux du
+  jour, « Jours-personne : 10 j-p · Coût prévu : 4 000,00 € » ; dans la liste de ses tâches, deux colonnes
+  Jours-personne et Coût prévu (T1 : `5 j-p`, `2 000,00 €` ; T3 : `5 j-p`, `2 000,00 €`).
+- [ ] 4. Dans cette fiche, **Ajouter une ligne de taux** (taux nominatif) et saisissez `650`. *Attendu :* le coût d'Alice passe à
+  `6 500,00 €` (le taux nominatif remplace celui du profil) et la liste des ressources indique « (nominatif) ».
+  **Supprimer le taux nominatif** : *attendu :* retour à `4 000,00 €`.
+- [ ] 5. Arrondi : donnez à Alice une capacité de 100 % et mettez-la à 33 % sur une tâche d'un jour avec un taux de `123,45`.
+  *Attendu :* `40,74 €` (40,7385 arrondi au centime, une seule fois).
+
+### Taux 4 — Onglet Budget : le coût des ressources face au budget saisi (EF-149, RG-56, R-97)
+
+Départ : `taux-profils-base.json`, **Tableau de bord**, onglet **Budget**.
+
+- [ ] 1. Section **Coût des ressources**. *Attendu :* trois tuiles, **BAC `14 500,00 €`**, **Coût des ressources `13 000,00 €`**
+  et **Budget des tâches moins coût des ressources `1 500,00 €`**. Le BAC de la section Budget reste `14 500,00 €` (pas modifié par les taux).
+- [ ] 2. Tableau par ressource. *Attendu :* Alice `10 j-p`, `4 000,00 €`, coût réel estimé `2 000,00 €` ; Bob `20 j-p`,
+  `9 000,00 €`, estimé `4 500,00 €` ; ligne **Total** `30 j-p`, `13 000,00 €`, `6 500,00 €`. Aucun message « Total partiel ».
+- [ ] 3. Lisez la note sous le tableau. *Attendu :* elle dit que le coût réel estimé (coût prévu × avancement) est indicatif et
+  **n'entre ni dans le coût réel ni dans la valeur acquise**.
+- [ ] 4. Section **Valeur acquise**. *Attendu :* EV `7 500,00 €` (2 500 + 50 % de 10 000) et AC `5 400,00 €` (coûts réels saisis 2 400 + 3 000) :
+  ces valeurs ne dépendent ni des taux ni de la date du jour. Supprimez tous les profils ou rendez-leur un taux différent : EV et AC ne bougent pas.
+- [ ] 5. Basculez entre **Semaine** et **Mois** : la courbe des coûts n'est pas modifiée par les taux.
+
+### Taux 5 — Révision de taux et prestataire externe (EF-148, RG-54, R-93, R-96)
+
+Départ : ouvrez `taux-historique.json` (A : Alice, 5 j, du lundi 05/01 au vendredi 09/01/2026 ; B : Dave, 2 j).
+
+- [ ] 1. **Tableau de bord**, onglet **Budget**, section **Coût des ressources**. *Attendu :* Alice `2 040,00 €` (3 jours à 400,00 €
+  puis 2 jours à 420,00 €, le taux changeant le 08/01), Dave `1 400,00 €` (2 j × 700,00 €, taux nominatif, noté « (nominatif) »), total `3 440,00 €`.
+- [ ] 2. **Profils de coût…**, profil Analyste : mettez la date de la deuxième ligne au `09/01/2026`. *Attendu :* Alice `2 020,00 €`
+  (4 jours à 400,00 €, 1 jour à 420,00 €) ; total `3 420,00 €`.
+- [ ] 3. Mettez-la au `06/01/2026`. *Attendu :* Alice `2 080,00 €` (1 jour à 400,00 €, 4 jours à 420,00 €).
+- [ ] 4. Supprimez la ligne « Depuis le début » du profil. *Attendu :* les jours avant la première date n'ont plus de taux :
+  Alice est « partielle » (voir Taux 6).
+
+### Taux 6 — Une ressource sans taux est signalée, jamais valorisée en silence (RG-57, R-95)
+
+Départ : ouvrez `taux-sans-taux.json`.
+
+- [ ] 1. **Ressources**. *Attendu :* Alice `400,00 €` ; Bob (profil sans ligne de taux) et Camille (aucun profil) affichent « sans taux ».
+- [ ] 2. **Tableau de bord**, onglet **Budget**. *Attendu :* coût des ressources `2 000,00 €` (Alice seule), message **« Total partiel : 2
+  affectations n'ont pas de taux pour tous leurs jours »** ; les lignes de Bob et Camille montrent `0,00 €` et « sans taux ».
+- [ ] 3. Fiche de la tâche B (Bob, 4 j). *Attendu :* « Coût des ressources selon le planning enregistré : 4 j-p · aucun taux ».
+- [ ] 4. **Profils de coût…**, profil « Sans taux encore » : ajoutez une ligne et saisissez `500`. *Attendu :* Bob passe à
+  `2 000,00 €`, le total à `4 000,00 €` et le message devient « 1 affectation ».
+
+### Taux 7 — Masquer, exporter, ré-importer (EF-150, RG-58, R-98 à R-100)
+
+Départ : `taux-historique.json`.
+
+- [ ] 1. Cliquez **Masquer les montants**. *Attendu :* dans **Ressources**, les taux du jour sont `••••` ; dans **Profils de coût…**,
+  les lignes de taux sont grisées et un message explique qu'il faut désactiver le masquage ; l'onglet Budget montre `••••` pour tous
+  les montants mais garde les jours-personne. Réactivez les montants.
+- [ ] 2. **Exporter** (JSON), **sans** « Inclure les montants ». Ouvrez le fichier dans un éditeur de texte. *Attendu :* aucune
+  valeur de taux ; les profils gardent leur nom avec `"rates": []`.
+- [ ] 3. Exportez **avec** « Inclure les montants ». *Attendu :* `profiles` avec leurs lignes (`"rate": 40000`, en centimes) et le taux
+  nominatif de Dave dans sa ressource. Réimportez ce fichier : le coût `3 440,00 €` est identique.
+- [ ] 4. Exportez avec les montants **et** « Exporter sans noms de personnes ». *Attendu :* aucun nom, **aucun taux nominatif**
+  (le `70000` de Dave n'apparaît pas), le taux du profil reste.
+- [ ] 5. **Excel** avec les montants. *Attendu :* feuille **Tâches** avec une dernière colonne « Coût des ressources » ; feuille
+  **Ressources** avec Profil de coût, Taux par jour, Coût prévu, Coût réel estimé ; une feuille **Taux** (profil ou ressource, nature, à partir du, taux).
+  Sans les montants : ni la feuille Taux ni ces colonnes (seul le profil reste). Anonymisé : pas de taux nominatif ni de coût par ressource.
+- [ ] 6. **CSV** avec les montants : dernière colonne « Coût des ressources ». Sans : absente.
+- [ ] 7. **MS Project** : ouvrez le fichier `.xml` dans un éditeur de texte. *Attendu :* aucun taux ni coût (les montants ne partent jamais vers MS Project).
+
+### Taux 8 — Fichiers refusés (R-98)
+
+- [ ] 1. Importez `refus-taux-negatif.json`. *Attendu :* refusé en entier, le message nomme le profil n° 1 et le champ « rate ».
+- [ ] 2. Importez `refus-taux-profil-inconnu.json`. *Attendu :* refusé, le message nomme la ressource n° 1 et le profil « Directeur » qui n'existe pas.
+- [ ] 3. *Attendu dans les deux cas :* le projet ouvert n'est pas modifié.
+
+### Taux 9 — Supprimer un profil, annuler (EF-147)
+
+Départ : `taux-profils-base.json`, **Profils de coût…**.
+
+- [ ] 1. **Supprimer le profil Analyste**. *Attendu :* une confirmation nomme le profil et dit que « 1 ressource perdra son profil et
+  ne sera plus valorisée » ; « Annuler » a le focus par défaut. Annulez : le profil est toujours là.
+- [ ] 2. Recommencez et confirmez. *Attendu :* le profil disparaît, Alice n'a plus de profil (« sans taux »), le focus passe sur **Ajouter un profil**.
+- [ ] 3. **Annuler** (barre du haut). *Attendu :* le profil et le profil d'Alice reviennent ensemble.
+
+### Taux 10 — Clavier et lecteur d'écran (EF-147, EF-148)
+
+- [ ] 1. Au clavier seul, ouvrez **Ressources**, **Profils de coût…**, ajoutez un profil et une ligne de taux, saisissez un taux, supprimez la ligne. *Attendu :* tout s'atteint par Tab, les boutons s'activent par Entrée ou Espace, Échap ferme chaque fenêtre et rend le focus au bouton qui l'a ouverte.
+- [ ] 2. Chaque champ a un nom qui contient son texte visible (par exemple « Taux par jour (Analyste, depuis le début) (€) ») ; une erreur est annoncée et le champ est signalé invalide.
+- [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
+- [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
 
 ### Contrôle final de la mise à jour
 

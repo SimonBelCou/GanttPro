@@ -38,6 +38,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 ### 💶 Budget et valeur acquise
 - Budget et coût réel par tâche, provision, BAC, courbe en S des coûts, budget par catégorie ; montants facultatifs, masquables à l'écran, exclus à la demande des exports et du rapport
+- Profils de coût et taux des ressources (par jour ouvré, avec lignes datées et taux nominatif des prestataires) : coût des ressources par tâche, par ressource et face au budget saisi, signalement des ressources sans taux ; le budget saisi reste la référence
 - Valeur acquise à la date du jour sur la baseline de référence : PV, EV, AC, CV, SV, CPI, SPI avec voyants, prévisions à terminaison (EAC, VAC), diagramme CPI / SPI, points de situation
 
 ### 💾 Fichiers et projets

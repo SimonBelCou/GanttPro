@@ -47,7 +47,7 @@ INFORMATIONS DU PROJET
 
 RÈGLES DU FORMAT (à respecter strictement)
 1. Racine : { "format": 3, "name", "desc", "emoji", "projectStart", "calendar", "leveling", "currency", "provision", "etc", "evmGreen", "evmRed",
-   "resources", "categories", "tasks" } (tous facultatifs sauf "format", "name", "projectStart" et "tasks").
+   "profiles", "resources", "categories", "tasks" } (tous facultatifs sauf "format", "name", "projectStart" et "tasks").
    Ne mets ni "id", ni "createdAt", ni "baselines", ni "baselineRef", ni "statusPoints", ni "versions".
 2. "emoji" : l'un de 🚁 🚀 🏗️ 💡 🎯 📱 🌍 ⚙️ 🔬 🎨 🏭 📦 🔧 🛸 🌿 🏆 📊 🔐 🚂 💊 📁.
 3. Dates au format "AAAA-MM-JJ", entre 1970 et 2199.
@@ -82,7 +82,12 @@ RÈGLES DU FORMAT (à respecter strictement)
 10. Budget du projet (facultatif) : "currency" : symbole de 1 à 5 caractères (défaut « € ») ; "provision" : réserve globale en centimes ;
     "etc" : reste à faire estimé en centimes ; "evmGreen" et "evmRed" : seuils des voyants CPI et SPI en %, entiers de 1 à 300
     (défaut 100 et 90 ; "evmRed" ne dépasse pas "evmGreen").
-11. Aucun champ en dehors de ceux listés ci-dessus.
+11. Taux des ressources (facultatif, à ne remplir que si je te donne les taux ; n'invente aucun taux) : "profiles" : [{ "name" (unique, 100 car. max),
+    "rates": [{ "from": "AAAA-MM-JJ" ou "" pour « depuis le début », "rate": taux PAR JOUR OUVRÉ en CENTIMES, entier de 0 à 100 000 000 }] }]
+    (10 lignes au plus par profil, une seule par date, 50 profils au plus). Une ressource référence un profil par son nom :
+    "resources" : [{ "name", "profile": "nom d'un profil de \"profiles\"" }] ; elle peut avoir ses propres lignes "rates" (même forme), qui remplacent
+    celles du profil (prestataire externe seulement).
+12. Aucun champ en dehors de ceux listés ci-dessus.
 
 MÉTHODE
 - Découpe en tâches de 1 à 20 jours ouvrés ; regroupe-les sous des récapitulatives par phase.
@@ -109,7 +114,7 @@ FICHIER ACTUEL
 
 RÈGLES
 - Ne change que ce que les décisions imposent. Recopie tel quel tout le reste, y compris "id", "createdAt", "baselines", "baselineRef", "statusPoints" et "versions"
-  s'ils existent, ainsi que les montants ("budget", "actual", "provision", "etc") que les décisions ne changent pas. Si le fichier est trop long pour être recopié en entier, dis-le au lieu de le tronquer.
+  s'ils existent, ainsi que les montants ("budget", "actual", "provision", "etc") et les taux ("profiles", "profile", "rates") que les décisions ne changent pas. Si le fichier est trop long pour être recopié en entier, dis-le au lieu de le tronquer.
 - Garde les ids des tâches existantes ; pour une nouvelle tâche, choisis un id libre (texte de 1 à 12 caractères parmi A-Z, 0-9, ".", "-", "_").
 - Pour une tâche supprimée, retire-la aussi des "deps" des autres tâches (ou remplace le lien par un lien vers son prédécesseur) et
   signale-le dans ta liste.
@@ -183,6 +188,10 @@ accepté, la construction échouerait.
   (`12345` = 123,45), de 0 à 5 000 000 000 000 ; le projet accepte `currency` (1 à 5 caractères) et `provision` (centimes).
   Un montant hors limite refuse le fichier en entier. Les montants sont des données sensibles : ne les confiez à une IA
   que si votre organisation l'autorise, ou exportez le projet **sans les montants** (case décochée par défaut).
+- **Taux des ressources** : le projet accepte `profiles` (nom unique, lignes `rates` avec `from` et `rate` en **centimes par jour ouvré**,
+  de 0 à 100 000 000, 10 lignes au plus par profil, une seule ligne par date) et chaque ressource un `profile` (nom d'un profil) et
+  des `rates` propres. Un profil inconnu, un taux négatif ou à virgule, ou deux lignes à la même date refusent le fichier en entier.
+  Les taux sont des montants : un export « sans montants » n'en contient aucun, un export « sans noms de personnes » ne garde pas les taux nominatifs.
 - Un champ inconnu n'est pas une erreur : il est ignoré, et l'aperçu d'import indique combien ont été ignorés.
 - Les ressources ou catégories citées par une tâche mais absentes des listes sont **créées** à l'import, et l'aperçu les mentionne :
   relisez-les, une faute de frappe crée une ressource en trop.
