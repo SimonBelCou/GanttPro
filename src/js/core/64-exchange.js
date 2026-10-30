@@ -28,9 +28,13 @@ const Exchange = (() => {
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
+    // Étape C (EF-150) : coût des ressources par tâche, avec les montants et sans anonymisation (un coût par tâche trahirait
+    // un taux nominatif). Une récapitulative donne la somme de ses enfants.
+    const ratesOn = amounts && !anonymize && Rates.hasRates(project);
+    const rc = ratesOn ? Rates.compute(project, sched) : null;
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
       'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
-      ...(amounts ? ['xp.budget', 'xp.actual'] : [])].map(k => t(k));
+      ...(amounts ? ['xp.budget', 'xp.actual'] : []), ...(ratesOn ? ['xp.resCost'] : [])].map(k => t(k));
     // Budget et coût réel (EF-123) : seulement si l'export les inclut (EF-124) ; une récapitulative donne la somme de ses enfants.
     const sums = amounts ? Budget.amounts(project) : null;
     const money = c => ({ n: c / 100 });
@@ -45,6 +49,7 @@ const Exchange = (() => {
         st ? t('status.' + st) : '', r && r.critical && x.type !== 'summary' ? t('xp.yes') : '', x.type !== 'summary' && r ? r.slack : '',
         x.realStart, x.realEnd, x.forcedStart, x.notBefore, x.deadline, x.tags.join('; '), x.notes,
         ...(amounts ? [money(sums.get(x.id).budget), money(sums.get(x.id).actual)] : []),
+        ...(ratesOn ? [money(rc.byTask.get(x.id).cents)] : []),
       ]);
     }
     return rows;
@@ -53,15 +58,32 @@ const Exchange = (() => {
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
 
-  /** Classeur de cinq feuilles (EF-94). */
+  /** Taux du jour d'une ressource pour une feuille : montant, ou vide s'il n'y en a pas. */
+  function rateOf(project, r, today) {
+    const lines = Rates.linesOf(project, r), c = lines.length ? Rates.rateOn(lines, today) : null;
+    return c == null ? '' : { n: c / 100 };
+  }
+
+  /** Classeur de cinq feuilles (EF-94), plus la feuille « Taux » quand les montants et des taux sont exportés. */
   function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
+    // Étape C (EF-150) : le profil est un intitulé, il reste ; taux et coûts exigent les montants et les noms (RG-58).
+    const profOn = Rates.inUse(project), ratesOn = amounts && !anonymize && Rates.hasRates(project);
+    const rc = ratesOn ? Rates.compute(project, sched) : null;
+    const money = c => ({ n: c / 100 });
+    const profName = r => ((project.profiles || []).find(p => p.id === r.profile) || { name: '' }).name;
+    const rateSheet = amounts && Rates.hasRates(project) ? [{ name: t('xp.sheet.rates'), rows: [[t('xp.rateOwner'), t('xp.kind'), t('rt.from'), t('rt.rate')],
+      ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
+      ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
       { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
-      { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd')],
-        ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10])] },
+      { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd'), ...(profOn ? [t('rt.profile')] : []), ...(ratesOn ? [t('rt.rateCol'), t('rt.colCost'), t('rt.colEst')] : [])],
+        ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10,
+          ...(profOn ? [profName(r)] : []),
+          ...(ratesOn ? [rateOf(project, r, today), money(rc.byRes.get(r.id).cents), money(rc.byRes.get(r.id).est)] : [])])] },
+      ...rateSheet,
       { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
         ...(anonymize ? [] : project.resources.flatMap((r, i) => r.absences.map(a => [rName(r, i), a.start, a.end, a.label])))] },
       { name: t('xp.sheet.calendar'), rows: [[t('xp.kind'), t('cal.from'), t('xp.to'), t('cal.label')],

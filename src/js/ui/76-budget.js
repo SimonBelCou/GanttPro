@@ -34,6 +34,8 @@ function paintBudget(panel) {
       h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
       h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
 
+  if (Rates.hasRates(P)) paintRatesCost(panel, tot);
+
   // Courbe en S des coûts (RG-38, RG-39).
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
   const scale = costScale(curve);
@@ -52,6 +54,35 @@ function paintBudget(panel) {
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
   paintEvm(panel);
+}
+
+/**
+ * Coût des ressources (étape C, EF-149, RG-55 à RG-58) : tableau par ressource, comparé au budget saisi des tâches, qui reste
+ * la référence du BAC (A.8 ligne 18). Le total est dit PARTIEL quand une affectation n'a pas de taux pour tous ses jours.
+ */
+function paintRatesCost(panel, tot) {
+  const P = App.project, costs = Rates.compute(P, App.sched);
+  const num = c => h('td', { class: 'num' }, Money.node(c));
+  const gap = tot.bac - costs.total.cents;
+  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+  const rows = P.resources.filter(r => costs.byRes.get(r.id).assignments > 0).map(r => {
+    const c = costs.byRes.get(r.id), pf = (P.profiles || []).find(x => x.id === r.profile);
+    return h('tr', {}, h('th', { scope: 'row', text: r.name }), h('td', { text: pf ? pf.name : '' }), h('td', { class: 'num', text: pdText(c.pd) }),
+      h('td', { class: 'num' }, rateTodayNode(r)), num(c.cents), num(c.est));
+  });
+  const tt = costs.total;
+  panel.append(h('section', { class: 'dash-section', id: 'bud-rates', aria: { labelledby: 'bud-rates-h' } },
+    h('h3', { id: 'bud-rates-h', text: t('rt.tab') }),
+    h('p', { class: 'hint', text: t('rt.tabIntro') }),
+    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, tile(t('bud.bac'), Money.node(tot.bac)), tile(t('rt.costTotal'), Money.node(tt.cents)),
+      tile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
+    tt.unrated ? h('p', { class: 'note', id: 'bud-rates-partial', role: 'status', text: t('rt.partial', { count: tt.unrated }) }) : null,
+    h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-rates-table' },
+      h('caption', { class: 'sr-only', text: t('rt.tab') }),
+      h('thead', {}, h('tr', {}, [t('rt.colRes'), t('rt.colProfile'), t('rt.colPd'), t('rt.colRate'), t('rt.colCost'), t('rt.colEst')].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, rows),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), num(tt.cents), num(tt.est))))),
+    h('p', { class: 'hint', text: t('rt.estNote') })));
 }
 
 /* Valeur acquise (EF-131 et suivantes) : indicateurs à la date du jour, diagramme CPI / SPI, prévisions à terminaison,
