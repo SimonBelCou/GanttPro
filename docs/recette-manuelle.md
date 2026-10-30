@@ -43,6 +43,7 @@ comportement existant.
 | `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
 | `valeur-acquise-passe.json` | Projet daté de 2025 : tout est planifié, avancement 55 %, CPI 1,16, SPI 0,55, ETC saisi | B16, B19, B20 |
 | `valeur-acquise-futur.json` | Projet daté de 2035 : rien n'est encore planifié, SPI « non calculable », CPI 0,50 | B17 |
+| `colonnes-personnalisees.json` | Projet de 2025 sans montant, dont la liste affiche six colonnes dans un ordre choisi (Activité, N°, Début, Fin, Statut, Budget) | Colonnes 1 |
 | `valeur-acquise-derive.json` | Projet de 2025 avec deux baselines (initiale et replanifiée), une tâche ajoutée depuis | B15, B18 |
 
 ### Quand rejouer quoi
@@ -51,7 +52,7 @@ comportement existant.
 | --- | --- |
 | Le calcul des dates, des liens, du calendrier | G2, G4, G9 |
 | Les ressources, la charge, le nivellement | G5, G6 |
-| La liste, la grille, les gestes | G3, G6, G7 |
+| La liste, la grille, les gestes | G3, G6, G7, Colonnes 1 |
 | Les fichiers (export, import, chiffrement) | G12, G13 |
 | Le tableau de bord, le rapport, l'impression | G10, G11 |
 | L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
@@ -184,11 +185,11 @@ Départ : `projet-exemple.json` ouvert, puis `projet-surcharge.json` pour les co
 - [ ] 7. Reliez deux barres par leurs poignées rondes : un lien est créé. Essayez de créer une boucle : refus.
 - [ ] 8. Tirez le triangle sous une barre : l'avancement change par pas de 5 %. Annulez.
 - [ ] 9. Tirez la séparation liste / Gantt ; double-clic dessus : la largeur par défaut revient. Tirez le bord d'un
-  en-tête de colonne ; **Colonnes par défaut** rétablit.
+  en-tête de colonne ; **Largeurs par défaut** rétablit.
   *Attendu aussi :* les titres de colonnes ne sont jamais coupés, même en réduisant une colonne au minimum ou en
   rétrécissant la fenêtre (la liste défile alors horizontalement) ; un double-clic sur la poignée d'une colonne
   rétablit **sa** largeur par défaut, les autres gardent la leur.
-- [ ] 10. **Figer** l'identifiant et le nom, défilez la liste vers la droite : ils restent visibles.
+- [ ] 10. **Figer** les deux premières colonnes, défilez la liste vers la droite : ils restent visibles.
 - [ ] 11. **Plein écran du Gantt**, puis Échap. *Attendu :* le reste de la page est désactivé pendant le plein
   écran ; le focus revient au bouton à la sortie.
 - [ ] 12. Même geste au clavier uniquement : Alt + → sur une tâche sélectionnée déplace sa date imposée d'un jour.
@@ -646,6 +647,38 @@ Départ : `valeur-acquise-passe.json`, onglet **Budget**, section **Points de si
 - [ ] 3. Enregistrez un point, puis **Exporter** sans montants et réimportez le fichier. *Attendu :* le projet n'a plus aucun montant, mais l'onglet **Budget** du tableau de bord reste présent grâce au point de situation ; dans **Points de situation**, la ligne garde sa date, son libellé, CPI `1,16` et SPI `0,55` (PV, EV, AC et ETC ne sont plus dans le fichier). Un projet sans montant et sans point n'a pas d'onglet Budget.
 - [ ] 4. **Rapport d'état** : *Attendu :* le bloc Budget affiche CPI et SPI avec leur voyant, sans aucun montant ; en cochant « Inclure les montants », PV, EV, AC, CV, SV et l'EAC (BAC / CPI) s'ajoutent.
 - [ ] 5. Aucun point ne se crée tout seul : rouvrez le projet, la liste est telle que vous l'avez laissée.
+
+## Partie B — Colonnes de la liste
+
+Exigences : EF-143 à EF-146, RG-52, RG-53. Scénarios : R-89 à R-91. Fichier : `colonnes-personnalisees.json`.
+
+### Colonnes 1 — Choisir, ordonner et enregistrer les colonnes de la liste (EF-143 à EF-146, RG-52, RG-53, R-89 à R-91)
+
+Départ : ouvrez `colonnes-personnalisees.json` (projet fictif sans montant dont la liste affiche déjà six colonnes).
+
+- [ ] 1. Lisez les en-têtes de la liste. *Attendu :* **Activité, N°, Début, Fin, Statut, Budget** dans cet ordre ; la colonne
+  Budget est affichée bien que le projet n'ait aucun montant, parce que le projet l'a demandée.
+- [ ] 2. Cliquez **Colonnes…** (barre de la liste). *Attendu :* une fenêtre liste les 12 colonnes ; les six affichées sont
+  cochées, dans l'ordre, avec leur rang ; **N°** et **Activité** portent « obligatoire » et leur case est grisée ;
+  Activité n'a pas de bouton ↑, Budget (dernière affichée) pas de bouton ↓.
+- [ ] 3. Cochez **Durée**. *Attendu :* la colonne apparaît juste après N° (son rang d'origine) ; le focus reste sur la case.
+- [ ] 4. Décochez **Statut**. *Attendu :* la colonne disparaît de la liste, sans fermer la fenêtre.
+- [ ] 5. Cliquez le bouton **Monter Fin**. *Attendu :* Fin passe avant Début, dans la fenêtre et dans la liste ; le focus
+  reste sur le même bouton ; un lecteur d'écran annonce la nouvelle position.
+- [ ] 6. Cliquez **Descendre Activité**. *Attendu :* N° devient la première colonne, Activité la deuxième.
+- [ ] 7. Fermez la fenêtre. Choisissez **Figer : les deux premières colonnes** et faites défiler la liste vers la droite.
+  *Attendu :* N° et Activité (les deux premières colonnes affichées, pas forcément l'identifiant et le nom) restent
+  visibles. Remettez **Figer : Aucune colonne**.
+- [ ] 8. Le projet est marqué « modifié » : **Annuler** (barre du haut) défait le dernier changement de colonnes.
+- [ ] 9. **Exporter** le projet (JSON), ouvrez-le de nouveau avec **Importer**. *Attendu :* mêmes colonnes, même ordre.
+  Dans un autre projet, les colonnes sont celles de **ce** projet (le choix n'est pas global).
+- [ ] 10. Rouvrez la fenêtre, cliquez **Rétablir l'ordre d'origine**. *Attendu :* ordre d'origine ; ici, sans montant
+  dans le projet, Budget et Coût réel disparaissent. Saisissez un budget sur une tâche : les deux colonnes apparaissent
+  d'elles-mêmes, en fin de liste.
+- [ ] 11. Contrôle du bouton **Largeurs par défaut** : il rétablit les largeurs, pas les colonnes affichées.
+- [ ] 12b. **Dans chaque navigateur utilisé (Edge, Firefox, Chrome)** : tirez la poignée de largeur d'une colonne, puis d'une autre, puis affichez une colonne avec **Colonnes…**. *Attendu :* toutes les colonnes restent visibles, la liste défile horizontalement si elle est plus large que son cadre ; **Largeurs par défaut** rétablit tout. (Défaut signalé sous Firefox le 30 octobre : seule la première colonne restait visible.)
+- [ ] 12. Clavier : dans la fenêtre, Tab parcourt cases et boutons ; Espace coche ; Entrée active ↑ et ↓ ; Échap ferme
+  et rend le focus à **Colonnes…**.
 
 ### Contrôle final de la mise à jour
 

@@ -13,6 +13,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   seuils par projet, ETC, EAC en trois hypothèses, VAC, diagramme CPI / SPI, points de situation (60 au plus,
   sans montants à l'export), bloc du rapport. Moteur : `src/js/core/43-evm.js` ; tests `tests/core/evm.test.mjs`,
   `tests/core/baselines.test.mjs`. Reste de l'étape B : courbes PV / EV / AC dans le temps (à proposer).
+- Chantier B (colonnes de la liste) en cours sur la branche `colonnes-liste` : choix et ordre des colonnes enregistrés dans le projet (`columns`), identifiant et nom obligatoires, Budget et Coût réel masquées sans montant ; moteur `src/js/core/44-columns.js`, fenêtre `src/js/ui/74-columns.js`, tests `tests/core/colonnes.test.mjs`, recette « Colonnes 1 ».
 - Étape A faite : budget et coût réel par tâche, devise, provision, BAC, baselines, courbe en S des coûts, onglet
   Budget du tableau de bord, bloc du rapport, export et impression « sans montants », masquage à l'écran, affichage
   compact (M, Md en français ; M, B en anglais), import de tableurs avec montants.

@@ -398,7 +398,7 @@ ul.comments li { align-items: flex-start; }
 .tasks th { position: relative; }
 .col-resize { position: absolute; right: 0; top: 2px; bottom: 2px; width: 12px; cursor: col-resize; border-right: 3px solid var(--line); touch-action: none; }
 .col-resize:hover, .col-resize:focus-visible { border-right-color: var(--accent); }
-table.tasks.fixed { table-layout: fixed; }
+table.tasks.fixed { table-layout: fixed; min-width: 0; } /* largeurs fixées : la taille intrinsèque « max-content » ne doit plus intervenir */
 table.tasks.fixed td, table.tasks.fixed th { overflow: hidden; text-overflow: ellipsis; }
 .planner.list-collapsed { grid-template-columns: 0 0 1fr; }
 .planner.list-collapsed .splitter { display: none; }

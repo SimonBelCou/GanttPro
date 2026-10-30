@@ -176,7 +176,7 @@ const Model = (() => {
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
-      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints'], stats);
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -207,8 +207,16 @@ const Model = (() => {
       evmRed: P.int('evmRed', { min: 1, max: LIMITS.evmMax, def: 90 }),
       etc: P.present('etc') ? P.amount('etc') : null,
       baselineRef: '', statusPoints: [],
+      // Colonnes de la liste (A.8 ligne 17) : liste ordonnée des colonnes affichées ; absente = ordre d'origine.
+      columns: null,
     };
     if (project.evmRed > project.evmGreen) fail('imp.field', { obj: 'project', field: 'evmRed', rule: 'rule.evmOrder', min: 1, max: project.evmGreen });
+    if (P.present('columns')) {
+      const cols = raw.columns;
+      if (!Array.isArray(cols)) fail('imp.field', { obj: 'project', field: 'columns', rule: 'rule.list', max: Columns.ALL.length });
+      if (!Columns.valid(cols)) fail('imp.field', { obj: 'project', field: 'columns', rule: 'rule.columns' });
+      project.columns = cols.slice();
+    }
     if (P.present('baselineRef') && (typeof raw.baselineRef !== 'string' || raw.baselineRef.length > 64)) fail('imp.field', { obj: 'project', field: 'baselineRef', rule: 'rule.ident' });
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
@@ -476,6 +484,7 @@ const Model = (() => {
       ...(project.etc != null ? { etc: project.etc } : {}),
       baselineRef: project.baselineRef || '',
       statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
+      ...(Array.isArray(project.columns) ? { columns: project.columns.slice() } : {}),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -531,7 +540,7 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [],
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [], columns: null,
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
       resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],

@@ -140,7 +140,6 @@ function init() {
   Tooltip.init();
   initViewbar();
   initShortcuts();
-  initColumns();
   initRowDrag();
   initListKeys();
   initGestures();

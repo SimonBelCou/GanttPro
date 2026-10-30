@@ -163,20 +163,37 @@ function moneyCell(task, amts, key) {
   return td;
 }
 
+/** En-tête et groupe de colonnes de la liste, reconstruits seulement quand les colonnes ou la langue changent (EF-143).
+ *  @returns {string[]} les colonnes affichées, dans l'ordre. */
+let headSignature = '';
+function renderListHead() {
+  const cols = Columns.effective(App.project);
+  const sig = cols.join(',') + '|' + I18n.getLang();
+  if (sig === headSignature) return cols;
+  headSignature = sig;
+  const table = $('tasks-table');
+  clear(table.querySelector('colgroup')).append(...cols.map(k => h('col', { data: { col: k } })));
+  clear(table.querySelector('thead tr')).append(...cols.map(k => h('th', { scope: 'col', data: { col: k } }, h('span', { text: t('col.' + k) }))));
+  bindColumnHandles();
+  applyColWidths();
+  return cols;
+}
+
 function renderList(items, fl) {
   const noRes = t('list.noRes');
   const body = clear($('task-rows'));
   const s = App.sched;
   const frag = document.createDocumentFragment();
   const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
+  const cols = renderListHead(); // colonnes affichées, dans l'ordre du projet (EF-143)
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
-    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'), h('td'));
+    h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), cols.slice(2).map(() => h('td')));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
   for (const it of items) {
     if (it.group) {
       const { name, totals } = groupLabel(it.group);
       const open = !App.view.collapsedGroups.has(it.group.key);
-      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: 12 },
+      frag.append(h('tr', { class: 'group-row' }, h('td', { colspan: cols.length },
         h('button', { type: 'button', class: 'toggle', data: { click: 'toggleGroup', arg: it.group.key }, aria: { expanded: String(open) } },
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
@@ -215,11 +232,16 @@ function renderList(items, fl) {
     const idCell = textCell(task.id, 'id');
     if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
     const rs = Dates.parse(task.realStart), re = Dates.parse(task.realEnd);
-    tr.append(idCell, nameCell, textCell(durText(task, r)),
-      textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
-      textCell(rs != null ? I18n.numDate(rs) : '', 'date'), textCell(re != null ? I18n.numDate(re) : '', 'date'), textCell(depsText(task)),
-      textCell(task.type === 'task' ? (resText(task) || noRes) : ''), textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
-      moneyCell(task, amts, 'budget'), moneyCell(task, amts, 'actual'));
+    // Une cellule par colonne affichée, dans l'ordre choisi ; chaque cellule n'est construite que si sa colonne l'est.
+    const cell = {
+      id: () => idCell, name: () => nameCell, dur: () => textCell(durText(task, r)),
+      start: () => textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), end: () => textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
+      rstart: () => textCell(rs != null ? I18n.numDate(rs) : '', 'date'), rend: () => textCell(re != null ? I18n.numDate(re) : '', 'date'),
+      deps: () => textCell(depsText(task)), res: () => textCell(task.type === 'task' ? (resText(task) || noRes) : ''),
+      status: () => textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
+      budget: () => moneyCell(task, amts, 'budget'), actual: () => moneyCell(task, amts, 'actual'),
+    };
+    tr.append(...cols.map(k => cell[k]()));
     frag.append(tr);
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));

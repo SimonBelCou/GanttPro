@@ -116,6 +116,7 @@
         <option value="1" data-i18n="lay.freeze.1"></option>
         <option value="2" data-i18n="lay.freeze.2"></option>
       </select>
+      <button type="button" id="btn-columns" data-click="openColumns" aria-haspopup="dialog" data-i18n="cols.button"></button>
       <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
       <button type="button" id="btn-full" data-click="toggleFull" aria-pressed="false" aria-keyshortcuts="Escape" data-i18n="lay.full"></button>
       <span id="view-count" class="view-count" role="status"></span>
@@ -127,13 +128,8 @@
   <div class="planner" id="planner">
     <section class="list" id="list" data-i18n-label="list.label" aria-label="Liste des tâches">
       <table class="tasks" id="tasks-table">
-        <colgroup><col data-col="id"><col data-col="name"><col data-col="dur"><col data-col="start"><col data-col="end"><col data-col="rstart"><col data-col="rend"><col data-col="deps"><col data-col="res"><col data-col="status"><col data-col="budget"><col data-col="actual"></colgroup>
-        <thead><tr>
-          <th scope="col"><span data-i18n="col.id"></span></th><th scope="col"><span data-i18n="col.name"></span></th><th scope="col"><span data-i18n="col.dur"></span></th>
-          <th scope="col"><span data-i18n="col.start"></span></th><th scope="col"><span data-i18n="col.end"></span></th><th scope="col"><span data-i18n="col.rstart"></span></th><th scope="col"><span data-i18n="col.rend"></span></th>
-          <th scope="col"><span data-i18n="col.deps"></span></th><th scope="col"><span data-i18n="col.res"></span></th><th scope="col"><span data-i18n="col.status"></span></th>
-          <th scope="col"><span data-i18n="col.budget"></span></th><th scope="col"><span data-i18n="col.actual"></span></th>
-        </tr></thead>
+        <colgroup></colgroup>
+        <thead><tr></tr></thead>
         <tbody id="task-rows"></tbody>
       </table>
     </section>

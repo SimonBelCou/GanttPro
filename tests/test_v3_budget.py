@@ -103,14 +103,17 @@ def main():
         pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
         # ── Projet vide : pas d'onglet Budget (EF-117) ────────────────────────────────────────
         heads = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => t.textContent.trim())")
-        check('deux colonnes distinctes « Budget » et « Coût réel » dans la liste', heads[-2:] == ['Budget', 'Coût réel'] and 'Budget / Réel' not in ' '.join(heads), heads)
-        check('chaque ligne a une cellule Budget et une cellule Coût réel', pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id]')].every(tr => tr.querySelectorAll('td.money').length === 2)"))
+        check('RG-52 : un projet sans montant n\'affiche ni Budget ni Coût réel dans la liste', 'Budget' not in heads and 'Coût réel' not in heads, heads)
+        check('sans montant, aucune cellule de montant dans les lignes', pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id]')].every(tr => tr.querySelectorAll('td.money').length === 0)"))
         pg.click('button[data-click="openDashboard"]')
         check('sans montant, pas d\'onglet Budget', pg.locator('#dash-win [role="tab"]').count() == 2)
         esc()
 
         # ── R-74 : colonne, fiche, onglet ────────────────────────────────────────────────────
         load('budget.json')
+        heads = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => t.textContent.trim())")
+        check('RG-52 : dès le premier montant, deux colonnes distinctes « Budget » et « Coût réel » en fin de liste', heads[-2:] == ['Budget', 'Coût réel'] and 'Budget / Réel' not in ' '.join(heads), heads)
+        check('chaque ligne a une cellule Budget et une cellule Coût réel', pg.evaluate("[...document.querySelectorAll('#task-rows tr[data-id]')].every(tr => tr.querySelectorAll('td.money').length === 2)"))
         check('colonne : budget puis coût réel de T1', '100,00 € / 90,00 €' in cell('T1'), cell('T1'))
         check('colonne : un jalon n\'a aucun montant', cell('J') == '')
 
@@ -508,7 +511,7 @@ def main():
             for _ in range(40):
                 pg.keyboard.press('ArrowLeft')
         check('titres de colonnes entiers même colonnes réduites au minimum', pg.evaluate(clip_js) == [], pg.evaluate(clip_js))
-        pg.click('button:has-text("Colonnes par défaut")')
+        pg.click('button:has-text("Largeurs par défaut")')
 
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
@@ -691,6 +694,58 @@ def main():
         tl = evm_text()
         check('Budget 18 : référence replanifiée BAC 510, EV 244, CPI 1,16, SPI 0,48, plus de tâche ajoutée', all(x in tl for x in ['510,00 €', '244,00 €', '1,16', '0,48']) and pg.locator('#evm-scope').count() == 0, tl)
         esc()
+
+        # ── Colonnes de la liste (EF-143 à EF-146, RG-52, RG-53, R-89 à R-91) ─────────────────────
+        heads_js = "[...document.querySelectorAll('#tasks-table thead th')].map(t => t.textContent.trim())"
+        load_fx('colonnes-personnalisees.json')
+        check('R-89 : le projet ouvert garde ses colonnes et leur ordre (Budget affiché sans montant)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Début', 'Fin', 'Statut', 'Budget'], pg.evaluate(heads_js))
+        check('R-89 : chaque ligne a autant de cellules que de colonnes', pg.evaluate("[...document.querySelectorAll('#task-rows tr')].every(tr => tr.querySelectorAll('td').length === 6 || tr.classList.contains('group-row'))"))
+        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        check('RG-52 : identifiant et nom sont obligatoires (cases désactivées)', pg.is_disabled('#col-show-id') and pg.is_disabled('#col-show-name') and pg.is_enabled('#col-show-dur'))
+        check('RG-53 : les cases cochées sont celles du projet, dans l\'ordre', pg.evaluate("[...document.querySelectorAll('#cols-table tbody tr')].slice(0, 6).map(r => r.querySelector('label').textContent.trim())") == ['Activité', 'N°', 'Début', 'Fin', 'Statut', 'Budget'])
+        check('RG-53 : la première colonne n\'a pas de bouton Monter, la dernière affichée pas de bouton Descendre', pg.is_disabled('#col-up-name') and pg.is_disabled('#col-down-budget') and pg.is_disabled('#col-down-actual'))
+        axe_check(pg, 'fenêtre des colonnes')
+        pg.check('#col-show-dur'); pg.wait_for_timeout(100)
+        check('R-91 : afficher Durée la place à son rang d\'origine (après N°)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Durée', 'Début', 'Fin', 'Statut', 'Budget'], pg.evaluate(heads_js))
+        check('R-91 : le focus reste sur la case', pg.evaluate("document.activeElement.id") == 'col-show-dur')
+        pg.uncheck('#col-show-status'); pg.wait_for_timeout(100)
+        check('R-91 : masquer Statut', 'Statut' not in pg.evaluate(heads_js))
+        pg.click('#col-up-end'); pg.wait_for_timeout(100)
+        check('R-91 : Monter Fin la place avant Début, le focus reste sur le bouton', pg.evaluate(heads_js) == ['Activité', 'N°', 'Durée', 'Fin', 'Début', 'Budget'] and pg.evaluate("document.activeElement.id") == 'col-up-end', pg.evaluate(heads_js))
+        check('R-91 : le déplacement est annoncé', 'Fin : position' in sp(pg.inner_text('body')))
+        pg.click('#col-down-name'); pg.wait_for_timeout(100)
+        check('R-91 : Descendre Activité la place après N°', pg.evaluate(heads_js)[:2] == ['N°', 'Activité'], pg.evaluate(heads_js))
+        axe_check(pg, 'fenêtre des colonnes après modifications')
+        esc()
+        check('EF-143 : le choix est une modification du projet (annulable)', not pg.is_disabled('#btn-undo'))
+        pg.select_option('#freeze-cols', '2'); pg.wait_for_timeout(100)
+        check('EF-146 : « Figer » garde les deux premières colonnes affichées, quelles qu\'elles soient', pg.evaluate("document.querySelectorAll('#tasks-table thead th')[1].getBoundingClientRect().width > 0") and pg.evaluate("getComputedStyle(document.querySelectorAll('#tasks-table thead th')[1]).position") == 'sticky')
+        pg.select_option('#freeze-cols', '0')
+        pg.click('#btn-undo'); pg.wait_for_timeout(100)
+        check('EF-143 : Annuler annule le dernier changement de colonnes', pg.evaluate(heads_js) != ['N°', 'Activité', 'Durée', 'Fin', 'Début', 'Budget'])
+        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        pg.click('#col-reset'); pg.wait_for_timeout(100)
+        check('RG-52 : l\'ordre d\'origine rétabli n\'affiche Budget et Coût réel que s\'il y a un montant (ici aucun)', pg.evaluate(heads_js) == ['N°', 'Activité', 'Durée', 'Début', 'Fin', 'Début réel', 'Fin réel', 'Dépendances', 'Ressource', 'Statut'], pg.evaluate(heads_js))
+        esc()
+        # Défaut signalé en recette (Colonnes 1) : après un réglage de largeur à la main, une colonne affichée ensuite
+        # doit recevoir une largeur bornée, jamais l'espace restant de la table.
+        pg.set_viewport_size({'width': 1909, 'height': 900})
+        load_fx('colonnes-personnalisees.json')
+        sep_box = pg.locator('#tasks-table .col-resize[data-col="start"]').bounding_box()
+        pg.mouse.move(sep_box['x'] + 3, sep_box['y'] + 5); pg.mouse.down(); pg.mouse.move(sep_box['x'] + 43, sep_box['y'] + 5, steps=4); pg.mouse.up(); pg.wait_for_timeout(100)
+        pg.click('#btn-columns'); pg.wait_for_timeout(100); pg.check('#col-show-dur'); pg.check('#col-show-rstart'); pg.check('#col-show-deps'); esc()
+        widths = pg.evaluate("[...document.querySelectorAll('#tasks-table col')].map(c => [c.dataset.col, parseInt(c.style.width) || 0])")
+        check('Colonnes : après un réglage manuel, toute colonne affichée a une largeur fixée', all(w > 0 for _, w in widths) and len(widths) == 9, widths)
+        ths = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => [t.dataset.col, Math.round(t.getBoundingClientRect().width)])")
+        check('Colonnes : aucune colonne ne dépasse sa limite, la table vaut la somme des colonnes', all(w <= {'name': 1000}.get(k, 800) for k, w in ths) and abs(pg.evaluate("Math.round(document.getElementById('tasks-table').getBoundingClientRect().width)") - sum(w for _, w in ths)) <= 2, ths)
+        pg.click('button:has-text("Largeurs par défaut")')
+        pg.set_viewport_size({'width': 1500, 'height': 950})
+
+        # Export puis réimport : le choix voyage avec le fichier.
+        load_fx('colonnes-personnalisees.json')
+        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        pg.uncheck('#col-show-budget'); pg.wait_for_timeout(100); esc()
+        check('EF-144 : masquer Budget laisse la liste choisie (la persistance est vérifiée par R-90)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Début', 'Fin', 'Statut'], pg.evaluate(heads_js))
 
         check('aucune erreur JavaScript ni violation CSP', not errors, errors)
         browser.close()
