@@ -101,8 +101,9 @@ function resourcesWindow() {
   const paint = () => {
     clear(body);
     body.append(h('p', { class: 'hint', text: t('res.privacy') }));
+    const showRates = Rates.inUse(App.project); // étape C : rien de nouveau tant que le projet n'a ni profil ni taux (EF-147)
     const table = h('table', { class: 'manage' },
-      h('thead', {}, h('tr', {}, [t('res.name'), t('res.role'), t('res.capacity'), t('res.color'), '', ''].map(x => h('th', { scope: 'col', text: x })))));
+      h('thead', {}, h('tr', {}, [t('res.name'), t('res.role'), t('res.capacity'), t('res.color'), ...(showRates ? [t('rt.profile'), t('rt.rateCol')] : []), '', ''].map(x => h('th', { scope: 'col', text: x })))));
     const tb = h('tbody');
     App.project.resources.forEach(r => {
       const used = App.project.tasks.filter(x => x.assign.some(a => a.res === r.id)).length;
@@ -115,12 +116,14 @@ function resourcesWindow() {
       tb.append(h('tr', {},
         h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
+        showRates ? h('td', {}, profileSelect(r)) : null, showRates ? h('td', {}, rateTodayNode(r)) : null,
         h('td', { text: t('res.tasks', { count: used }) }),
         h('td', {}, h('button', { type: 'button', data: { click: 'openResourceSheet', arg: r.id } }, `${t('rs.open')} ${r.name}`),
           ' ', h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
     });
     table.append(tb);
-    body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')));
+    body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')), ' ',
+      h('button', { type: 'button', id: 'btn-profiles', data: { click: 'openProfiles' } }, t('rt.open')));
   };
   resourcesWindow.paint = paint;
   paint();
@@ -159,7 +162,7 @@ action('resAdd', () => {
   const used = new Set(App.project.resources.map(r => r.color));
   const color = Model.PALETTE.find(c => !used.has(c)) || Model.PALETTE[0];
   let id = 1; while (resById('R' + id)) id++;
-  commit(p => p.resources.push({ id: 'R' + id, name, role: '', color, capacity: 100, absences: [] }));
+  commit(p => p.resources.push({ id: 'R' + id, name, role: '', color, capacity: 100, absences: [], profile: '', rates: [] }));
   resourcesWindow.paint && resourcesWindow.paint();
   const inputs = document.querySelectorAll('#res-win tbody tr:last-child input');
   if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }

@@ -125,7 +125,7 @@ Application en **un seul fichier** `GanttPro.html` (HTML + CSS + JS vanilla), ou
 Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout code produit ou modifié.
 
 ## Références
-- Cahier des charges fonctionnel (exigences EF/RG/EX, recette R-01 à R-70, annexes A d'arbitrages) :
+- Cahier des charges fonctionnel (exigences EF/RG/EX, recette R-01 à R-100, annexes A d'arbitrages) :
   https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7
 - Guide utilisateur : `docs/guide-utilisateur.md`.
 - Toute fonction ajoutée ou tout arbitrage est reporté dans le cahier des charges (exigence + annexe A) et,
@@ -139,7 +139,8 @@ Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout cod
   calcule la CSP (script ET style autorisés par empreinte SHA-256, **aucun `'unsafe-inline'`**).
   `python3 tools/build.py --check` (CI) échoue si le fichier n'est pas à jour.
 - Le build refuse `eval`, `new Function`, `document.write`, `onclick=`, `style=`, `setAttribute('style'|'on…')`,
-  `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`.
+  `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`. Il refuse aussi un nom
+  déclaré deux fois au premier niveau des sources : une fois assemblées, elles partagent une seule portée.
 
 ## Obligatoire à chaque modification
 1. `python3 tools/build.py`

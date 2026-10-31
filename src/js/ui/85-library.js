@@ -291,5 +291,4 @@ async function openLibrary(focusSel) {
 }
 
 action('openLibrary', () => openLibrary());
-action('saveLibrary', () => saveToLibrary());
 action('newFromTemplate', () => newFromTemplate());

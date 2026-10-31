@@ -124,11 +124,11 @@ Une ressource (personne ou équipe) travaille dans la limite de sa capacité ; G
 
 ### Gérer les ressources
 
-Bouton **Ressources** : ajouter, renommer, changer le rôle, la capacité (1 à 100 %) et la couleur (10 teintes), supprimer. Un nom déjà pris, majuscules comprises, est refusé. Renommer ne casse aucune affectation. Supprimer une ressource utilisée demande une confirmation qui dit combien de tâches deviendront « sans ressource ».
+Bouton **Ressources** : ajouter, renommer, changer le rôle, la capacité (1 à 100 %) et la couleur (10 teintes), supprimer ; dès qu'un profil de coût existe, choisir aussi le profil (voir « Profils de coût et taux des ressources » plus bas). Un nom déjà pris, majuscules comprises, est refusé. Renommer ne casse aucune affectation. Supprimer une ressource utilisée demande une confirmation qui dit combien de tâches deviendront « sans ressource ».
 
 Le bouton **Fiche** d'une ressource montre son avatar, ses tâches avec leurs dates, sa charge totale en jours-personne, sa capacité et ses **absences** (date de début, date de fin facultative, libellé), triées par date. Une capacité inférieure à un taux déjà affecté est refusée avec le nom de la tâche en cause.
 
-Les noms de ressources peuvent être des données personnelles : préférez des prénoms, des initiales ou des fonctions.
+Les noms de ressources peuvent être des données personnelles : préférez des prénoms, des initiales ou des fonctions. Un **taux nominatif** rattaché à une personne nommée l'est aussi (il révèle ce qu'elle coûte) : réservez-le aux prestataires externes, comme le prévoit la décision de valorisation par profil.
 
 ### Affecter
 
@@ -160,6 +160,20 @@ Un conflit est une période où une ressource dépasse sa capacité (« Alice es
 Rien ne change avant votre clic sur **Appliquer** ; chaque correction s'annule par « Annuler ».
 
 ![Fenêtre Résoudre les conflits : propositions simulées avec leur effet](img/05-resoudre.png)
+
+### Profils de coût et taux des ressources
+
+Pour valoriser le travail des ressources, GanttPro calcule un **coût** à côté du budget que vous saisissez : jours ouvrés de chaque tâche × taux d'occupation × taux du jour. Rien ne change dans un projet qui n'a ni profil ni taux.
+
+- **Profils de coût** (bouton **Profils de coût…** de la fenêtre **Ressources**). Un profil regroupe les ressources qui ont le même **taux moyen par jour ouvré**, tel que le fixe la comptabilité (par exemple « Analyste 400,00 € », « Développeur 450,00 € »). Chaque ressource choisit son profil dans la colonne **Profil de coût**. Un nom de profil est unique (majuscules ignorées) ; 50 profils au plus.
+- **Lignes de taux datées.** Un taux peut changer en cours de projet. Un profil a une ligne « Depuis le début » et, au besoin, d'autres lignes « À partir du… » (10 au plus, une seule par date). Le coût se calcule **jour ouvré par jour ouvré** au taux en vigueur ce jour-là : une tâche de 5 jours d'un lundi à un vendredi, avec 400,00 € puis 420,00 € à partir du jeudi, coûte 3 × 400,00 + 2 × 420,00 = 2 040,00 €. Un taux va de 0 à 1 000 000,00 par jour.
+- **Taux nominatif** (exception pour un prestataire externe). Dans la fiche d'une ressource, des lignes de taux qui lui sont propres **remplacent** celles de son profil ; « Supprimer le taux nominatif » rend la main au profil.
+- **Où lire le coût.** Dans la fiche d'une tâche (sous les affectations, « selon le planning enregistré »), dans la fiche d'une ressource (jours-personne et coût de chacune de ses tâches) et dans l'onglet **Budget** du tableau de bord (section **Coût des ressources**).
+- **Jours-personne** : 10 jours à 50 % font 5 jours-personne (notés « j-p »). Le coût d'une affectation est arrondi **une seule fois** au centime, moitié vers le haut : 1 jour à 33 % de 123,45 € donne 40,74 €. Une récapitulative somme ses tâches ; un jalon ne coûte rien.
+- **Ressource sans taux.** Elle n'est pas valorisée (0) mais **toujours signalée** : « sans taux » dans les listes, « Total partiel : n affectations n'ont pas de taux pour tous leurs jours » dans l'onglet Budget. Un zéro n'est jamais présenté sans explication.
+- **Le budget saisi reste la référence.** Le coût calculé des ressources **ne modifie jamais** le budget des tâches, le BAC, la valeur acquise ni les baselines : l'onglet Budget compare le BAC saisi au coût des ressources et montre l'écart (le BAC comprend aussi ce qui n'est pas du travail de ressource, comme une licence). Vous ajustez le budget vous-même si vous le souhaitez.
+- **Coût réel estimé.** Le tableau par ressource donne aussi le coût prévu × l'avancement de la tâche. C'est une **estimation indicative** : elle n'entre ni dans le coût réel (qui reste les factures engagées saisies sur la tâche, comme dans le cours) ni dans les indicateurs de valeur acquise.
+- Un taux est un **montant** : il se masque avec « Masquer les montants » (la saisie des taux est alors désactivée) et ne figure dans un fichier qu'avec « Inclure les montants » (section 12).
 
 ## 6. La grille de Gantt
 
@@ -298,7 +312,9 @@ Quatre vues servent à rendre compte : le tableau de bord pour piloter, la charg
 
 ### Tableau de bord, onglet « Budget »
 
-Cet onglet n'apparaît que si au moins un montant est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+Cet onglet n'apparaît que si au moins un montant ou un taux de ressource est saisi, ou si le projet contient un point de situation (un projet rouvert depuis un export « sans montants » garde ainsi ses indices CPI et SPI lisibles). Il affiche le BAC, la provision, le budget total, le coût réel total et le reste, un **budget par catégorie** (budget, coût réel, écart) et une **courbe en S des coûts**, par semaine ou par mois. Le budget d'une tâche est acquis à sa fin prévue (courbe prévue) ou à sa fin réelle (courbe réelle) ; le coût réel d'une tâche non terminée est compté dans le total mais pas dans la courbe, et la provision n'y figure pas. « Afficher les valeurs » donne les chiffres de la courbe.
+
+**Coût des ressources** (même onglet, sous le tableau par catégorie, dès qu'un taux existe) : BAC saisi, coût calculé des ressources et écart, puis un tableau par ressource (profil, jours-personne, taux du jour, coût prévu, coût réel estimé) avec son total ; voir la section 5. L'onglet apparaît dès qu'un taux est saisi, même sans autre montant.
 
 **Valeur acquise** (même onglet, sous la courbe) : elle compare ce que le projet devait avoir produit, ce qu'il a produit et ce qu'il a coûté, à la **date du jour**.
 
@@ -347,12 +363,12 @@ Le bouton **Exporter** propose cinq formats ; le fichier s'appelle « nom\_du\_p
 | Format | Contenu | Pour |
 | --- | --- | --- |
 | Projet GanttPro (.json) | Tout le projet, versions et baselines comprises | Sauvegarder, transmettre, rouvrir |
-| Classeur Excel (.xlsx) | Feuilles Tâches, Ressources, Absences, Calendrier, Baselines ; en-tête figée, filtres | Analyser, partager de façon accessible |
+| Classeur Excel (.xlsx) | Feuilles Tâches, Ressources, Absences, Calendrier, Baselines (et Taux, avec les montants) ; en-tête figée, filtres | Analyser, partager de façon accessible |
 | Tableau CSV (.csv) | Une ligne par tâche, séparateur « ; », UTF-8 | Autres outils |
 | MS Project (.xml) | Tâches, jalons, hiérarchie, durées, dates, avancement, liens, contraintes, ressources, affectations, calendrier, première baseline | Échanger avec MS Project |
 | Image du Gantt (.png) | La grille, période au choix, résolution normale ou double, légende, fond blanc ou du thème | Illustrer un document |
 
-Options : **Inclure les montants** (JSON, Excel, CSV) est **décochée à chaque ouverture** : sans elle, le fichier ne contient ni budget, ni coût réel, ni provision (baselines et versions comprises), seulement la devise. Le masquage à l'écran n'y change rien : une case cochée exporte les montants. **Exporter sans noms de personnes** remplace les ressources par « Ressource 1 », « Ressource 2 »… et vide les rôles. **Protéger par mot de passe** (JSON) chiffre le fichier : 12 caractères au moins, une phrase convient très bien. Un mot de passe perdu rend le fichier irrécupérable : GanttPro ne le garde jamais. Dans un tableur, un texte qui commence par =, +, − ou @ est précédé d'une apostrophe pour ne jamais s'exécuter comme une formule. MS Project ne reçoit aucun montant, ni catégories, ni étiquettes, ni commentaires, ni versions, ni absences.
+Options : **Inclure les montants** (JSON, Excel, CSV) est **décochée à chaque ouverture** : sans elle, le fichier ne contient ni budget, ni coût réel, ni provision (baselines et versions comprises), seulement la devise. Le masquage à l'écran n'y change rien : une case cochée exporte les montants. **Exporter sans noms de personnes** remplace les ressources par « Ressource 1 », « Ressource 2 »… et vide les rôles. **Protéger par mot de passe** (JSON) chiffre le fichier : 12 caractères au moins, une phrase convient très bien. Un mot de passe perdu rend le fichier irrécupérable : GanttPro ne le garde jamais. Dans un tableur, un texte qui commence par =, +, − ou @ est précédé d'une apostrophe pour ne jamais s'exécuter comme une formule. Avec les montants, les taux et le coût des ressources voyagent aussi : le JSON porte les profils et les lignes de taux (en centimes) ; l'Excel ajoute une colonne « Coût des ressources » aux tâches, les colonnes Profil de coût, Taux par jour, Coût prévu et Coût réel estimé à la feuille Ressources et une feuille **Taux** ; le CSV ajoute la colonne « Coût des ressources ». Sans les montants, aucune valeur de taux n'est écrite (les profils gardent leur nom). Dans un fichier **sans noms de personnes**, le taux nominatif est retiré (il désignerait une personne) et les colonnes de coût par ressource sont omises ; le profil et ses lignes de taux, qui ne sont pas une personne, restent dans le JSON. MS Project ne reçoit aucun montant, ni catégories, ni étiquettes, ni commentaires, ni versions, ni absences.
 
 ![Fenêtre Exporter : choix du format et options](img/16-export.png)
 
@@ -416,7 +432,7 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 
 **Accessibilité.** GanttPro vise le niveau AA des WCAG 2.1 et le RGAA 4.1. Tout ce qui se fait à la souris se fait au clavier ; le focus est toujours visible ; statuts, criticité, conflits et voyants sont écrits en texte et jamais signalés par la seule couleur ; chaque barre porte un nom complet pour les lecteurs d'écran ; la courbe en S et la charge ont un tableau de valeurs ; les animations s'arrêtent si le système demande moins de mouvement ; la page s'utilise sur 360 pixels de large et avec un zoom de 200 %. Les contrôles automatiques (axe-core) ne relèvent aucun défaut sur l'écran principal et chaque fenêtre, mais aucun audit RGAA complet ni essai avec des utilisateurs de technologies d'assistance n'a encore eu lieu : l'application est déclarée partiellement conforme. L'image PNG n'est pas accessible : pour un partage accessible, préférez le classeur ou le rapport d'état.
 
-**Vie privée.** GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ni image externe. Vos projets restent dans l'onglet tant que vous ne les exportez pas ; sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez. Un fichier exporté contient tout le projet, noms des ressources, commentaires et versions compris : protégez-le par un mot de passe, rangez-le dans un espace sûr, ou exportez-le sans noms de personnes. Pour tout effacer : Réglages, « Effacer toutes les données », puis supprimez vos fichiers exportés.
+**Vie privée.** GanttPro n'envoie rien : aucune connexion, aucun cookie, aucun traceur, aucune police ni image externe. Vos projets restent dans l'onglet tant que vous ne les exportez pas ; sur l'appareil ne sont gardés que les réglages, et la bibliothèque ou la sauvegarde automatique si vous les utilisez. Un fichier exporté contient tout le projet, noms des ressources, commentaires et versions compris : protégez-le par un mot de passe, rangez-le dans un espace sûr, ou exportez-le sans noms de personnes. Pour tout effacer : Réglages, « Effacer toutes les données », puis supprimez vos fichiers exportés. Les montants et les taux ne quittent l'application que si vous cochez « Inclure les montants » ; un export « sans noms de personnes » ne contient aucun taux nominatif.
 
 **Sécurité.** Un fichier reçu d'un tiers ne peut pas exécuter de code : tout ce qu'il contient s'affiche comme du texte, chaque champ est contrôlé avant l'ouverture, et le fichier est refusé en entier au moindre défaut. Le chiffrement par mot de passe utilise AES-256-GCM avec une clé dérivée par PBKDF2 (600 000 itérations) ; un mauvais mot de passe et un fichier altéré donnent le même message, « Mot de passe incorrect ou fichier altéré. ». Une faille se signale en privé, par l'onglet Security du dépôt GitHub du projet.
 
@@ -432,6 +448,8 @@ Ils sont inactifs pendant la saisie dans un champ, sauf Ctrl + S. Sur Mac, Cmd r
 | Commentaires d'une tâche, absences d'une ressource | 50, 100 |
 | Baselines (dont affichées par vue), versions | 10 (3), 10 |
 | Points de situation | 60 |
+| Profils de coût ; lignes de taux d'un profil ou d'une ressource | 50 ; 10 |
+| Taux par jour ouvré | 0 à 1 000 000,00 |
 | Onglets ouverts, entrées de bibliothèque | 10, 50 |
 | Fichier importé, lignes de tableur | 5 Mo, 1 000 |
 

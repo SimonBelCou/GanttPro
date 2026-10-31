@@ -1,0 +1,35 @@
+{
+  "format": 3,
+  "name": "Refus – taux négatif",
+  "projectStart": "2026-01-05",
+  "profiles": [
+    {
+      "name": "Analyste",
+      "rates": [
+        {
+          "from": "",
+          "rate": -100
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice",
+      "profile": "Analyste"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "A",
+      "name": "Analyse",
+      "dur": 3,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ]
+    }
+  ]
+}

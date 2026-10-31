@@ -38,6 +38,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 ### 💶 Budget et valeur acquise
 - Budget et coût réel par tâche, provision, BAC, courbe en S des coûts, budget par catégorie ; montants facultatifs, masquables à l'écran, exclus à la demande des exports et du rapport
+- Profils de coût et taux des ressources (par jour ouvré, avec lignes datées et taux nominatif des prestataires) : coût des ressources par tâche, par ressource et face au budget saisi, signalement des ressources sans taux ; le budget saisi reste la référence
 - Valeur acquise à la date du jour sur la baseline de référence : PV, EV, AC, CV, SV, CPI, SPI avec voyants, prévisions à terminaison (EAC, VAC), diagramme CPI / SPI, points de situation
 
 ### 💾 Fichiers et projets
@@ -88,7 +89,7 @@ GanttPro.html             ← Application livrée (assemblée par tools/build.py
 src/                      ← Sources : js/core (moteur), js/ui (interface), styles, index.html
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts JSON), recette manuelle, reprise du budget, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de sécurité, d'éthique et de code du projet
 SECURITY.md               ← Politique de sécurité et signalement
@@ -105,6 +106,8 @@ npm install --no-save axe-core               # contrôle d'accessibilité
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
+python3 tests/test_v3_budget.py              # budget, valeur acquise, colonnes, taux des ressources
+python3 tests/test_v3_recette_manuelle.py    # projets d'essai de la recette manuelle (tests/fixtures/)
 ```
 
 Règles de code (détail dans [CLAUDE.md](CLAUDE.md)) : DOM construit avec `h()` (jamais `innerHTML`), aucun gestionnaire

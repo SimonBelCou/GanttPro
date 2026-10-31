@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dMvk+L0PHuLewYkPztxaRUODwfWWxmLdQCh8Fd2td8o='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eq7y9gMsniPQ74sUz+11DZBFfvEYlogdrm2HNIy4PFM='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -1514,6 +1514,9 @@ const Model = (() => {
     // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
     // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
     amount: 5000000000000, currency: 5,
+    // Étape C (A.8 ligne 18) : profils de coût, lignes de taux datées, taux en centimes par jour (1 000 000,00 au plus :
+    // 3 650 jours x 10 affectations x 1 000 tâches x 1 000 000,00 reste sous la limite des entiers exacts).
+    profiles: 50, rateLines: 10, rate: 100000000,
   });
   const ID_RE = /^[A-Z0-9._-]{1,12}$/;
   const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -1600,6 +1603,23 @@ const Model = (() => {
     };
   }
 
+  /**
+   * Lignes de taux datées (étape C, RG-54) : « à partir du » (vide = depuis le début) et taux en centimes par jour ouvré.
+   * Triées par date (la ligne sans date d'abord) ; deux lignes à la même date sont refusées.
+   */
+  function rateLines(list, where, field, stats) {
+    if (list.length > LIMITS.rateLines) fail('imp.field', { ...where, field, rule: 'rule.list', max: LIMITS.rateLines });
+    const lines = list.map(l => {
+      if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
+      return { from: reader(l, { ...where, field }, ['from', 'rate'], stats).date('from'), rate: l.rate };
+    });
+    // Mêmes règles que la saisie (Rates.normalize). Un taux est un montant : même message qu'un montant, son propre plafond.
+    const n = Rates.normalize(lines);
+    if (n.ok) return n.lines;
+    if (n.reason === 'rate') fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
+    fail('imp.field', { ...where, field, rule: 'rule.rateOrder' }); // 'dup' : la longueur et les dates sont déjà contrôlées
+  }
+
   function ranges(list, where, field, stats, maxDays) {
     let days = 0;
     return list.map((r, i) => {
@@ -1673,7 +1693,7 @@ const Model = (() => {
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
-      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns'], stats);
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns', 'profiles'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -1681,6 +1701,7 @@ const Model = (() => {
     const rawCats = lim(P.list('categories', Infinity), LIMITS.categories, 'categories');
     const rawBl = lim(P.list('baselines', Infinity), LIMITS.baselines, 'baselines');
     const rawPts = lim(P.list('statusPoints', Infinity), LIMITS.statusPoints, 'statusPoints');
+    const rawProf = lim(P.list('profiles', Infinity), LIMITS.profiles, 'profiles');
     const rawVer = nested ? [] : lim(P.list('versions', Infinity), LIMITS.versions, 'versions');
     if (nested && P.present('versions')) fail('imp.field', { obj: 'version', field: 'versions', rule: 'rule.absent' });
 
@@ -1718,12 +1739,25 @@ const Model = (() => {
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
+    // Profils de coût (étape C) : un nom unique (casse ignorée) et des lignes de taux ; les ressources y renvoient par le nom.
+    const profiles = [], profByName = new Map();
+    rawProf.forEach((pr, i) => {
+      const where = { obj: 'profile', n: i + 1 };
+      if (!isObj(pr)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
+      const f = reader(pr, where, ['id', 'name', 'rates'], stats);
+      const name = f.text('name', { min: 1, max: 100, trim: true });
+      if (profByName.has(lower(name))) fail('imp.dupProfile', { name });
+      if (f.present('id') && (typeof pr.id !== 'string' || pr.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
+      const prof = { id: 'P' + (i + 1), name, rates: rateLines(f.list('rates', Infinity), where, 'rates', stats) };
+      profiles.push(prof); profByName.set(lower(name), prof);
+    });
+
     // Ressources et catégories : identités internes neuves ; les noms doivent être uniques (casse ignorée).
     const resources = [], resByName = new Map();
     rawRes.forEach((r, i) => {
       const where = { obj: 'resource', n: i + 1 };
       if (!isObj(r)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(r, where, ['id', 'name', 'role', 'color', 'capacity', 'absences'], stats);
+      const f = reader(r, where, ['id', 'name', 'role', 'color', 'capacity', 'absences', 'profile', 'rates'], stats);
       const name = f.text('name', { min: 1, max: 100, trim: true });
       if (resByName.has(lower(name))) fail('imp.dupResource', { name });
       const res = {
@@ -1731,7 +1765,14 @@ const Model = (() => {
         color: f.color('color', PALETTE[i % PALETTE.length]),
         capacity: f.int('capacity', { min: 1, max: 100, def: 100 }),
         absences: ranges(f.list('absences', LIMITS.absences), where, 'absences', stats),
+        profile: '', rates: rateLines(f.list('rates', Infinity), where, 'rates', stats),
       };
+      const profName = f.text('profile', { max: 100, trim: true });
+      if (profName) {
+        const pf = profByName.get(lower(profName));
+        if (!pf) fail('imp.unknownProfile', { n: i + 1, name: profName });
+        res.profile = pf.id;
+      }
       if (f.present('id') && (typeof r.id !== 'string' || r.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
       resources.push(res); resByName.set(lower(name), res);
     });
@@ -1751,7 +1792,7 @@ const Model = (() => {
       let r = resByName.get(lower(name));
       if (!r) {
         if (resources.length >= LIMITS.resources) fail('imp.tooMany', { what: 'resources', max: LIMITS.resources });
-        r = { id: 'R' + (resources.length + 1), name, role: '', color: PALETTE[resources.length % PALETTE.length], capacity: 100, absences: [] };
+        r = { id: 'R' + (resources.length + 1), name, role: '', color: PALETTE[resources.length % PALETTE.length], capacity: 100, absences: [], profile: '', rates: [] };
         resources.push(r); resByName.set(lower(name), r); createdResources.push(name);
       }
       return r;
@@ -1944,7 +1985,7 @@ const Model = (() => {
       return { id: 'V' + (i + 1), label: f.text('label', { min: 1, max: 100, trim: true }), ts: f.num('ts'), state: serialize(inner.project, { withVersions: false }) };
     });
 
-    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints });
+    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints, profiles });
     // Dernier contrôle : le planning doit pouvoir se calculer (dates dans les bornes 1970-2199).
     try { Schedule.compute(project); } catch (e) { if (e instanceof RangeError) fail('imp.horizon'); throw e; }
     return { project, notices: { unknown: stats.unknown, createdResources, createdCategories } };
@@ -1964,6 +2005,7 @@ const Model = (() => {
   }
 
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
+  const profName = (project, id) => ((project.profiles || []).find(p => p.id === id) || { name: '' }).name;
 
   /** Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51). */
   function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
@@ -1982,6 +2024,7 @@ const Model = (() => {
       baselineRef: project.baselineRef || '',
       statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       ...(Array.isArray(project.columns) ? { columns: project.columns.slice() } : {}),
+      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pf.name, rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -1996,6 +2039,10 @@ const Model = (() => {
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
+        // Étape C : le profil (un intitulé de coût, pas une personne) reste ; le taux nominatif, lié à une personne, est vidé
+        // dans un fichier anonymisé (A.8 ligne 18).
+        ...(r.profile ? { profile: profName(project, r.profile) } : {}),
+        ...(!anonymize && (r.rates || []).length ? { rates: r.rates.map(l => ({ from: l.from, rate: l.rate })) } : {}),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
       baselines: project.baselines.map(b => ({ ...b, provision: b.provision || 0, tasks: b.tasks.map(bt => ({ ...bt, budget: bt.budget || 0, deps: bt.deps.slice() })) })),
@@ -2012,6 +2059,9 @@ const Model = (() => {
   function stripAmounts(file) {
     delete file.provision;
     delete file.etc;
+    // Un taux est un montant (A.8 ligne 18) : les profils gardent leur nom, plus aucune ligne de taux.
+    if (file.profiles) file.profiles = file.profiles.map(pf => ({ ...pf, rates: [] }));
+    for (const r of file.resources || []) delete r.rates;
     for (const t of file.tasks) { delete t.budget; delete t.actual; }
     for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
     // Un point de situation ne garde que sa date, son libellé et les rapports CPI/SPI, qui ne sont pas des montants.
@@ -2037,10 +2087,10 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [], columns: null,
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [], columns: null, profiles: [],
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
-      resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
+      resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [], profile: '', rates: [] }],
       categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
     };
@@ -2226,7 +2276,7 @@ const Budget = (() => {
     return { periods: ps, planned, real, baselines };
   }
 
-  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+  return { MAX, amt, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();
 
 // ── js/core/43-evm.js ──
@@ -2246,14 +2296,20 @@ const Budget = (() => {
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48). */
 const Evm = (() => {
-  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0); // même règle que Budget
+  const amt = Budget.amt;
   const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
 
   /**
    * a × k / b arrondi à l'entier, la moitié vers le haut (a, k >= 0, b > 0), sans perte de précision au-delà de 2^53.
    * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
    */
+  const FAST = 2 ** 52; // en dessous, numérateur et dénominateur sont des entiers exacts, quotient et reste aussi
   function divRound(a, b, k = 1) {
+    const n = 2 * a * k + b, d = 2 * b;
+    if (n <= FAST && d <= FAST) { // cas courant : sans BigInt, même résultat exact (quotient corrigé par le reste)
+      const q = Math.floor(n / d), r = n - q * d;
+      return r < 0 ? q - 1 : r >= d ? q + 1 : q;
+    }
     const A = BigInt(a) * BigInt(k), B = BigInt(b);
     const q = (2n * A + B) / (2n * B);
     return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q);
@@ -2511,6 +2567,145 @@ const View = (() => {
   return { EMPTY, fold, matches, isActive, select, group };
 })();
 
+// ── js/core/46-rates.js ──
+/* Taux des ressources (étape C, EF-147 et suivantes, RG-54 et suivantes) : moteur sans DOM, en centimes entiers.
+ *
+ * Un taux est un montant en centimes par JOUR ouvré (A.8 ligne 18). Il est porté par un profil de coût (taux moyen fixé
+ * par la comptabilité) ou, en exception, par la ressource elle-même (taux nominatif, prestataire externe). Il peut
+ * changer en cours de projet : des lignes « à partir du » ; le coût se calcule au taux en vigueur chaque jour ouvré.
+ *
+ *   jours-personne d'une affectation = jours ouvrés de la tâche x taux d'occupation (en centièmes de jour-personne)
+ *   coût prévu  = somme, jour ouvré par jour ouvré, du taux du jour x taux d'occupation, arrondie UNE fois au centime
+ *   coût réel estimé = coût prévu x avancement de la tâche : une ESTIMATION indicative, jamais injectée dans le coût
+ *                      réel (AC) ni dans les indicateurs de valeur acquise (A.8 ligne 18).
+ *
+ * Le budget saisi de chaque tâche reste la référence du BAC, de l'EVM et des baselines (A.8 ligne 18, option 1).
+ * Une ressource sans taux n'est pas valorisée (0) et est signalée : jamais un 0 sans explication (RG-57). */
+const Rates = (() => {
+  const byFrom = (a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0); // la ligne sans date ('') d'abord
+
+  /** Profil de coût d'une ressource, ou null. */
+  function profileOf(project, res) {
+    return (res && res.profile && (project.profiles || []).find(p => p.id === res.profile)) || null;
+  }
+
+  /** Lignes de taux en vigueur pour une ressource : les siennes (nominatives) sinon celles de son profil. */
+  function linesOf(project, res) {
+    if (res && (res.rates || []).length) return res.rates;
+    const pf = profileOf(project, res);
+    return pf ? pf.rates : [];
+  }
+
+  /** D'où vient le taux d'une ressource : 'own' (nominatif), 'profile' ou 'none'. */
+  function sourceOf(project, res) {
+    if (res && (res.rates || []).length) return 'own';
+    const pf = profileOf(project, res);
+    return pf && pf.rates.length ? 'profile' : 'none';
+  }
+
+  /** Taux en vigueur un jour (numéro de jour) : la dernière ligne dont la date est atteinte ; null avant la première. */
+  function rateOn(lines, dn) {
+    let rate = null;
+    for (const l of lines) {
+      if (l.from === '' || Dates.parse(l.from) <= dn) rate = l.rate; else break;
+    }
+    return rate;
+  }
+
+  /** Taux d'une ressource un jour donné (centimes), ou null s'il n'y en a pas. */
+  const rateFor = (project, res, dn) => rateOn(linesOf(project, res), dn);
+
+  /** Lignes ramenées une fois pour toutes en index de jours ouvrés (« depuis le début » = -Infinity). */
+  const indexed = (lines, cal) => lines.map(l => ({ i: l.from === '' ? -Infinity : cal.ceil(Dates.parse(l.from)), rate: l.rate }));
+
+  /**
+   * Coût d'une affectation (RG-55), à partir des lignes indexées : { pd (centièmes de jour-personne), cents, est (coût réel
+   * estimé), unrated (jours sans taux) }. Le taux est sommé par tranche entre deux lignes (pas de boucle jour par jour),
+   * puis multiplié par le taux d'occupation et arrondi une seule fois, moitié vers le haut (BigInt au-delà de 2^53).
+   */
+  function costOf(lines, st, units, pct) {
+    const days = Math.max(0, st.e - st.s + 1);
+    let sum = 0, rated = 0;
+    for (let k = 0; k < lines.length; k++) {
+      const from = Math.max(st.s, lines[k].i), to = Math.min(st.e, k + 1 < lines.length ? lines[k + 1].i - 1 : st.e);
+      if (to < from) continue;
+      sum += (to - from + 1) * lines[k].rate;
+      rated += to - from + 1;
+    }
+    const cents = Evm.divRound(sum, 100, units);
+    const est = cents == null ? null : Evm.divRound(cents, 100, Math.min(100, Math.max(0, pct || 0)));
+    return { pd: days * units, cents, est, unrated: days - rated };
+  }
+
+  const zero = () => ({ pd: 0, cents: 0, est: 0, unrated: 0, assignments: 0 });
+  /** Ajoute un coût d'affectation à un total ; unrated y compte les affectations PARTIELLES (RG-57). */
+  const add = (o, c) => { o.pd += c.pd; o.cents += c.cents || 0; o.est += c.est || 0; o.unrated += c.unrated > 0 ? 1 : 0; o.assignments++; return o; };
+
+  /** Coût d'une affectation d'une tâche (fiche de ressource). */
+  function assignment(project, sched, task, a) {
+    const res = project.resources.find(r => r.id === a.res);
+    return costOf(indexed(linesOf(project, res), sched.cal), sched.tasks.get(task.id), a.units, task.pct);
+  }
+
+  /** Coût d'une seule tâche, toutes affectations (fiche de tâche) : sans calculer tout le projet. */
+  function ofTask(project, sched, task) {
+    return (task.assign || []).reduce((o, a) => (project.resources.some(r => r.id === a.res) ? add(o, assignment(project, sched, task, a)) : o), zero());
+  }
+
+  /**
+   * Coûts de tout le projet (RG-56) : par tâche (une récapitulative somme sa descendance), par ressource et au total.
+   * Les lignes de chaque ressource sont indexées une seule fois.
+   * @returns {{byTask:Map<string,object>, byRes:Map<string,object>, total:object}}
+   */
+  function compute(project, sched) {
+    const byTask = new Map(project.tasks.map(t => [t.id, zero()]));
+    const byRes = new Map(project.resources.map(r => [r.id, zero()]));
+    const lines = new Map(project.resources.map(r => [r.id, indexed(linesOf(project, r), sched.cal)]));
+    const byId = new Map(project.tasks.map(t => [t.id, t]));
+    const total = zero();
+    for (const t of project.tasks) {
+      if (t.type !== 'task') continue;
+      const st = sched.tasks.get(t.id);
+      for (const a of t.assign || []) {
+        if (!lines.has(a.res)) continue;
+        const c = costOf(lines.get(a.res), st, a.units, t.pct);
+        add(byRes.get(a.res), c); add(total, c);
+        for (let cur = t, guard = 0; cur && guard++ <= Model.LIMITS.depth + 1; cur = cur.parent ? byId.get(cur.parent) : null) add(byTask.get(cur.id), c);
+      }
+    }
+    return { byTask, byRes, total };
+  }
+
+  /** Au moins une ligne de taux dans le projet (EF-147 : sinon rien de nouveau n'apparaît). */
+  function hasRates(project) {
+    return (project.profiles || []).some(p => p.rates.length) || project.resources.some(r => (r.rates || []).length);
+  }
+
+  /** Le projet utilise-t-il la valorisation : un profil, un taux, ou une ressource rattachée à un profil. */
+  function inUse(project) {
+    return (project.profiles || []).length > 0 || project.resources.some(r => (r.rates || []).length || r.profile);
+  }
+
+  /**
+   * Règles des lignes de taux, communes à l'import (Model.sanitize) et à la saisie (RG-54) : 10 lignes au plus, date
+   * valide ou vide, une seule ligne par date, taux entier de centimes de 0 à LIMITS.rate. Renvoie les lignes triées ou
+   * la raison du refus : 'max', 'date', 'dup' ou 'rate'.
+   */
+  function normalize(lines) {
+    if (lines.length > Model.LIMITS.rateLines) return { ok: false, reason: 'max' };
+    const seen = new Set();
+    for (const l of lines) {
+      if (l.from !== '' && Dates.parse(l.from) == null) return { ok: false, reason: 'date' };
+      if (seen.has(l.from)) return { ok: false, reason: 'dup' };
+      seen.add(l.from);
+      if (!Number.isSafeInteger(l.rate) || l.rate < 0 || l.rate > Model.LIMITS.rate) return { ok: false, reason: 'rate' };
+    }
+    return { ok: true, lines: lines.map(l => ({ from: l.from, rate: l.rate })).sort(byFrom) };
+  }
+
+  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofTask, compute, hasRates, inUse, normalize };
+})();
+
 // ── js/core/50-i18n.js ──
 /* Traductions (EF-103, EX-24, RG-32) : un catalogue par langue, repli sur le français,
  * pluriels (« 1 conflit », « 2 conflits »). Les paramètres sont insérés comme TEXTE : l'interface
@@ -2627,6 +2822,8 @@ const I18n = (() => {
     'imp.calendarClash': 'Calendrier : le {date} est à la fois chômé et travaillé.',
     'imp.dupResource': 'Deux ressources portent le nom {name}.',
     'imp.dupCategory': 'Deux catégories portent le nom {name}.',
+    'imp.dupProfile': 'Deux profils de coût portent le nom {name}.',
+    'imp.unknownProfile': 'Ressource n° {n} : le profil {name} n\'existe pas.',
     'imp.dupAssign': 'Tâche n° {n} : la ressource {name} est affectée deux fois.',
     'imp.overCapacity': 'Tâche n° {n} : le taux de {units} % dépasse la capacité de {capacity} % de {name}.',
     'imp.milestoneRes': "Tâche n° {n} : un jalon n'a pas de ressource.",
@@ -2645,7 +2842,7 @@ const I18n = (() => {
     'imp.cycle': 'Boucle de dépendances : {path}.',
     'imp.version': 'Version n° {n} : {inner}',
     'imp.horizon': 'Le planning dépasserait l\'année 2199 : fichier refusé.',
-    'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
+    'obj.project': 'Projet', 'obj.task': 'Tâche n° ', 'obj.resource': 'Ressource n° ', 'obj.profile': 'Profil n° ', 'obj.category': 'Catégorie n° ', 'obj.baseline': 'Baseline n° ',
     'obj.baselineTask': 'Tâche de baseline n° ', 'obj.version': 'Version n° ', 'obj.calendar': 'Calendrier', 'obj.statusPoint': 'Point de situation n° ',
     'rule.evmOrder': 'entier de {min} à {max} : le seuil rouge ne dépasse pas le seuil vert',
     'rule.text': 'texte de {min} à {max} caractères', 'rule.int': 'entier de {min} à {max}', 'rule.number': 'nombre positif', 'rule.amount': 'entier de centimes de {min} à {max}',
@@ -2675,10 +2872,36 @@ const I18n = (() => {
     'bud.cat': 'Catégorie',
     'bud.gap': 'Écart',
     'bud.sum': 'Total',
+    'rt.title': 'Profils de coût', 'rt.open': 'Profils de coût…',
+    'rt.intro': 'Un profil de coût regroupe les ressources qui ont le même taux moyen, fixé par la comptabilité. Le taux est un montant par jour ouvré. Une ressource peut avoir son propre taux (prestataire externe) : il remplace alors celui de son profil.',
+    'rt.add': 'Ajouter un profil', 'rt.new': 'Profil', 'rt.name': 'Nom du profil',
+    'rt.delete': 'Supprimer le profil {name}', 'rt.deleteTitle': 'Supprimer le profil {name} ?',
+    'rt.deleteUsed': { one: '{count} ressource perdra son profil et ne sera plus valorisée.', other: '{count} ressources perdront leur profil et ne seront plus valorisées.' },
+    'rt.usedBy': { one: '{count} ressource utilise ce profil.', other: '{count} ressources utilisent ce profil.' },
+    'rt.none': 'Aucun profil', 'rt.profile': 'Profil de coût', 'rt.rateCol': 'Taux par jour', 'rt.noRate': 'sans taux',
+    'rt.srcProfile': 'profil', 'rt.srcOwn': 'nominatif',
+    'rt.lines': 'Taux par jour ouvré', 'rt.from': 'À partir du', 'rt.fromStart': 'Depuis le début', 'rt.rate': 'Taux par jour',
+    'rt.addLine': 'Ajouter une ligne de taux', 'rt.removeLine': 'Supprimer la ligne de taux {name}',
+    'rt.errDup': 'Deux lignes de taux ne peuvent pas commencer le même jour.', 'rt.errMax': 'Au plus {max} lignes de taux.',
+    'rt.errDate': 'Date de début : saisir une date valide.',
+    'rt.maskedLines': 'Les montants sont masqués : désactivez « Masquer les montants » pour modifier les taux.',
+    'rt.own.hint': 'Facultatif, réservé à un prestataire externe : ces lignes remplacent le taux du profil.',
+    'rt.own.clear': 'Supprimer le taux nominatif',
+    'rt.pd': '{n} j-p', 'rt.assignCost': 'Coût des ressources selon le planning enregistré : {pd} · {amount}',
+    'rt.assignNone': 'Coût des ressources selon le planning enregistré : {pd} · aucun taux',
+    'rt.assignPart': 'Coût des ressources selon le planning enregistré : {pd} · {amount} (partiel : des jours sans taux)',
+    'rt.tab': 'Coût des ressources',
+    'rt.tabIntro': 'Jours ouvrés de chaque tâche × taux d\'occupation × taux du jour. Le budget saisi de chaque tâche reste la référence du BAC et des indicateurs ; le coût calculé sert à le contrôler.',
+    'rt.colRes': 'Ressource', 'rt.colProfile': 'Profil', 'rt.colPd': 'Jours-personne', 'rt.colRate': 'Taux aujourd\'hui', 'rt.colCost': 'Coût prévu', 'rt.colEst': 'Coût réel estimé',
+    'rt.costTotal': 'Coût des ressources', 'rt.gap': 'Budget des tâches moins coût des ressources',
+    'rt.partial': { one: 'Total partiel : {count} affectation n\'a pas de taux pour tous ses jours.', other: 'Total partiel : {count} affectations n\'ont pas de taux pour tous leurs jours.' },
+    'rt.estNote': 'Le coût réel estimé (coût prévu × avancement de la tâche) est une estimation indicative : il n\'entre ni dans le coût réel ni dans les indicateurs de valeur acquise. Pour un coût réel, saisissez les factures engagées sur la tâche.',
+    'rs.costTitle': 'Coût des ressources', 'rs.pd': 'Jours-personne', 'rs.cost': 'Coût prévu',
     'bud.curve': 'Courbe en S des coûts',
     'bud.curveDesc': 'Coût cumulé à la dernière période : prévu {planned}, réel {real}.',
     'bud.valuesCaption': 'Valeurs de la courbe des coûts (cumul en montants)',
     'rule.columns': 'liste ordonnée de colonnes connues, sans doublon, avec « id » et « name »',
+    'rule.rateOrder': 'deux lignes de taux ne peuvent pas avoir la même date de début',
     'cols.button': 'Colonnes…',
     'cols.title': 'Colonnes de la liste',
     'cols.hint': 'Choisissez les colonnes affichées et leur ordre. Le choix est enregistré dans le projet (et dans ses exports) ; l\'identifiant et le nom sont obligatoires. « Figer » garde les premières colonnes affichées.',
@@ -2909,7 +3132,7 @@ const I18n = (() => {
     'xp.outline': 'N°', 'xp.id': 'Identifiant', 'xp.name': 'Nom', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Durée', 'xp.start': 'Début', 'xp.end': 'Fin',
     'xp.deps': 'Prédécesseurs', 'xp.res': 'Ressources', 'xp.cat': 'Catégorie', 'xp.pct': 'Avancement', 'xp.status': 'Statut', 'xp.critical': 'Critique', 'xp.slack': 'Marge',
     'xp.realStart': 'Début réel', 'xp.realEnd': 'Fin réelle', 'xp.forced': 'Début imposé', 'xp.notBefore': 'Ne pas commencer avant', 'xp.deadline': 'Échéance',
-    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Coût réel', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
+    'xp.tags': 'Étiquettes', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Coût réel', 'xp.resCost': 'Coût des ressources', 'xp.sheet.rates': 'Taux', 'xp.rateOwner': 'Profil ou ressource', 'rt.kindProfile': 'Profil', 'rt.kindOwn': 'Taux nominatif', 'xp.yes': 'oui', 'xp.to': 'Au', 'xp.kind': 'Nature', 'xp.loadPd': 'Charge totale (jours-personne)',
     'xp.sheet.tasks': 'Tâches', 'xp.sheet.resources': 'Ressources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendrier', 'xp.sheet.baselines': 'Baselines',
     'imp.durFormat': 'écrire « 5 », « 5j » ou « 5 j »', 'imp.depFormat': '« {value} » ne se lit pas (ex. « A; B DD+2; C FF-1 »)', 'imp.missingDep': 'la tâche {id} est introuvable', 'imp.amountIgnored': '« {value} » n\'est pas un montant valide : valeur ignorée',
     'imp.resFormat': '« {value} » ne se lit pas (ex. « Alice 50 %; Bob »)',
@@ -3072,7 +3295,9 @@ const I18n = (() => {
     'imp.dupId': 'Duplicate task ID: {id}.', 'imp.field': '{obj}{n}: invalid field “{field}” ({rule}).',
     'imp.rangeOrder': '{obj}: range #{n} — the end is before the start.', 'imp.noWorkday': 'Calendar: no working day in the week.',
     'imp.calendarClash': 'Calendar: {date} is both a day off and a working day.', 'imp.dupResource': 'Two resources are named {name}.',
-    'imp.dupCategory': 'Two categories are named {name}.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
+    'imp.dupCategory': 'Two categories are named {name}.',
+    'imp.dupProfile': 'Two cost profiles are named {name}.',
+    'imp.unknownProfile': 'Resource #{n}: the profile {name} does not exist.', 'imp.dupAssign': 'Task #{n}: resource {name} is assigned twice.',
     'imp.overCapacity': 'Task #{n}: {units}% exceeds the {capacity}% capacity of {name}.', 'imp.milestoneRes': 'Task #{n}: a milestone has no resource.',
     'imp.summaryField': 'Task #{n}: a summary task has no link, assignment, fixed date or constraint.',
     'imp.noAmount': 'Task #{n}: a milestone or summary task has no budget or actual cost of its own.',
@@ -3082,7 +3307,7 @@ const I18n = (() => {
     'imp.selfLink': 'Task #{n}: a task cannot depend on itself.', 'imp.dupLink': 'Task #{n}: predecessor {pred} is linked twice.',
     'imp.linkSummary': 'Task #{n}: predecessor {pred} is a summary task.', 'imp.linkHierarchy': 'Task #{n}: the link with {pred} connects a task to its own summary task.',
     'imp.cycle': 'Dependency loop: {path}.', 'imp.version': 'Version #{n}: {inner}', 'imp.horizon': 'The schedule would go beyond 2199: file rejected.',
-    'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
+    'obj.project': 'Project', 'obj.task': 'Task #', 'obj.resource': 'Resource #', 'obj.profile': 'Profile #', 'obj.category': 'Category #', 'obj.baseline': 'Baseline #',
     'obj.baselineTask': 'Baseline task #', 'obj.version': 'Version #', 'obj.calendar': 'Calendar', 'obj.statusPoint': 'Status point #',
     'rule.evmOrder': 'whole number from {min} to {max}: the red threshold does not exceed the green threshold',
     'rule.text': 'text of {min} to {max} characters', 'rule.int': 'whole number from {min} to {max}', 'rule.number': 'positive number', 'rule.amount': 'whole number of cents from {min} to {max}',
@@ -3111,10 +3336,36 @@ const I18n = (() => {
     'bud.cat': 'Category',
     'bud.gap': 'Variance',
     'bud.sum': 'Total',
+    'rt.title': 'Cost profiles', 'rt.open': 'Cost profiles…',
+    'rt.intro': 'A cost profile groups the resources that share the same average rate, set by accounting. The rate is an amount per working day. A resource can have its own rate (external contractor), which then replaces its profile rate.',
+    'rt.add': 'Add a profile', 'rt.new': 'Profile', 'rt.name': 'Profile name',
+    'rt.delete': 'Delete profile {name}', 'rt.deleteTitle': 'Delete profile {name}?',
+    'rt.deleteUsed': { one: '{count} resource will lose its profile and will no longer be costed.', other: '{count} resources will lose their profile and will no longer be costed.' },
+    'rt.usedBy': { one: '{count} resource uses this profile.', other: '{count} resources use this profile.' },
+    'rt.none': 'No profile', 'rt.profile': 'Cost profile', 'rt.rateCol': 'Daily rate', 'rt.noRate': 'no rate',
+    'rt.srcProfile': 'profile', 'rt.srcOwn': 'personal',
+    'rt.lines': 'Rate per working day', 'rt.from': 'From', 'rt.fromStart': 'From the start', 'rt.rate': 'Daily rate',
+    'rt.addLine': 'Add a rate line', 'rt.removeLine': 'Remove rate line {name}',
+    'rt.errDup': 'Two rate lines cannot start on the same day.', 'rt.errMax': 'At most {max} rate lines.',
+    'rt.errDate': 'Start date: enter a valid date.',
+    'rt.maskedLines': 'Amounts are hidden: turn off “Hide amounts” to edit the rates.',
+    'rt.own.hint': 'Optional, for an external contractor: these lines replace the profile rate.',
+    'rt.own.clear': 'Remove the personal rate',
+    'rt.pd': '{n} pd', 'rt.assignCost': 'Resource cost on the saved schedule: {pd} · {amount}',
+    'rt.assignNone': 'Resource cost on the saved schedule: {pd} · no rate',
+    'rt.assignPart': 'Resource cost on the saved schedule: {pd} · {amount} (partial: some days have no rate)',
+    'rt.tab': 'Resource cost',
+    'rt.tabIntro': 'Working days of each task × assignment units × the rate of the day. The budget entered on each task remains the reference for the BAC and the indicators; the computed cost is there to check it.',
+    'rt.colRes': 'Resource', 'rt.colProfile': 'Profile', 'rt.colPd': 'Person-days', 'rt.colRate': 'Rate today', 'rt.colCost': 'Planned cost', 'rt.colEst': 'Estimated actual cost',
+    'rt.costTotal': 'Resource cost', 'rt.gap': 'Task budget minus resource cost',
+    'rt.partial': { one: 'Partial total: {count} assignment has no rate for some of its days.', other: 'Partial total: {count} assignments have no rate for some of their days.' },
+    'rt.estNote': 'The estimated actual cost (planned cost × task progress) is only an indication: it enters neither the actual cost nor the earned-value indicators. For a real actual cost, enter the committed invoices on the task.',
+    'rs.costTitle': 'Resource cost', 'rs.pd': 'Person-days', 'rs.cost': 'Planned cost',
     'bud.curve': 'Cost S-curve',
     'bud.curveDesc': 'Cumulative cost at the last period: planned {planned}, actual {real}.',
     'bud.valuesCaption': 'Cost curve values (cumulative amounts)',
     'rule.columns': 'ordered list of known columns, without duplicates, including "id" and "name"',
+    'rule.rateOrder': 'two rate lines cannot start on the same date',
     'cols.button': 'Columns…',
     'cols.title': 'List columns',
     'cols.hint': 'Choose the columns shown and their order. The choice is saved in the project (and in its exports); the identifier and the name are required. “Freeze” keeps the first columns shown.',
@@ -3325,7 +3576,7 @@ const I18n = (() => {
     'xp.outline': 'No.', 'xp.id': 'ID', 'xp.name': 'Name', 'xp.type': 'Type', 'xp.parent': 'Parent', 'xp.dur': 'Duration', 'xp.start': 'Start', 'xp.end': 'Finish',
     'xp.deps': 'Predecessors', 'xp.res': 'Resources', 'xp.cat': 'Category', 'xp.pct': 'Progress', 'xp.status': 'Status', 'xp.critical': 'Critical', 'xp.slack': 'Slack',
     'xp.realStart': 'Actual start', 'xp.realEnd': 'Actual finish', 'xp.forced': 'Fixed start date', 'xp.notBefore': 'Start no earlier than', 'xp.deadline': 'Deadline',
-    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Actual cost', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
+    'xp.tags': 'Tags', 'xp.notes': 'Notes', 'xp.budget': 'Budget', 'xp.actual': 'Actual cost', 'xp.resCost': 'Resource cost', 'xp.sheet.rates': 'Rates', 'xp.rateOwner': 'Profile or resource', 'rt.kindProfile': 'Profile', 'rt.kindOwn': 'Personal rate', 'xp.yes': 'yes', 'xp.to': 'To', 'xp.kind': 'Kind', 'xp.loadPd': 'Total workload (person-days)',
     'xp.sheet.tasks': 'Tasks', 'xp.sheet.resources': 'Resources', 'xp.sheet.absences': 'Absences', 'xp.sheet.calendar': 'Calendar', 'xp.sheet.baselines': 'Baselines',
     'imp.durFormat': 'write “5”, “5d” or “5 d”', 'imp.depFormat': '“{value}” cannot be read (e.g. “A; B SS+2; C FF-1”)', 'imp.missingDep': 'task {id} cannot be found', 'imp.amountIgnored': '“{value}” is not a valid amount: value ignored',
     'imp.resFormat': '“{value}” cannot be read (e.g. “Alice 50 %; Bob”)',
@@ -3889,6 +4140,8 @@ const Exchange = (() => {
   const t = (k, p) => I18n.t(k, p);
   const LINK_FR = { FS: 'FD', SS: 'DD', FF: 'FF', SF: 'DF' };
   const LINK_IN = { FD: 'FS', DD: 'SS', FF: 'FF', DF: 'SF', FS: 'FS', SS: 'SS', SF: 'SF' };
+  /** Montant d'une cellule de tableur : nombre en unités (deux décimales à l'écriture). */
+  const money = cents => ({ n: cents / 100 });
 
   /** Numérotation hiérarchique 1, 1.1, 1.2, 2… selon l'ordre de la liste. */
   function outline(project) {
@@ -3913,12 +4166,15 @@ const Exchange = (() => {
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
+    // Étape C (EF-150) : coût des ressources par tâche, avec les montants et sans anonymisation (un coût par tâche trahirait
+    // un taux nominatif). Une récapitulative donne la somme de ses enfants.
+    const ratesOn = amounts && !anonymize && Rates.hasRates(project);
+    const rc = ratesOn ? Rates.compute(project, sched) : null;
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
       'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
-      ...(amounts ? ['xp.budget', 'xp.actual'] : [])].map(k => t(k));
+      ...(amounts ? ['xp.budget', 'xp.actual'] : []), ...(ratesOn ? ['xp.resCost'] : [])].map(k => t(k));
     // Budget et coût réel (EF-123) : seulement si l'export les inclut (EF-124) ; une récapitulative donne la somme de ses enfants.
     const sums = amounts ? Budget.amounts(project) : null;
-    const money = c => ({ n: c / 100 });
     const rows = [head];
     for (const x of project.tasks) {
       const r = sched.tasks.get(x.id);
@@ -3930,6 +4186,7 @@ const Exchange = (() => {
         st ? t('status.' + st) : '', r && r.critical && x.type !== 'summary' ? t('xp.yes') : '', x.type !== 'summary' && r ? r.slack : '',
         x.realStart, x.realEnd, x.forcedStart, x.notBefore, x.deadline, x.tags.join('; '), x.notes,
         ...(amounts ? [money(sums.get(x.id).budget), money(sums.get(x.id).actual)] : []),
+        ...(ratesOn ? [money(rc.byTask.get(x.id).cents)] : []),
       ]);
     }
     return rows;
@@ -3938,15 +4195,26 @@ const Exchange = (() => {
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
 
-  /** Classeur de cinq feuilles (EF-94). */
+  /** Classeur de cinq feuilles (EF-94), plus la feuille « Taux » quand les montants et des taux sont exportés. */
   function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
+    // Étape C (EF-150) : le profil est un intitulé, il reste ; taux et coûts exigent les montants et les noms (RG-58).
+    const profOn = Rates.inUse(project), ratesOn = amounts && !anonymize && Rates.hasRates(project);
+    const rc = ratesOn ? Rates.compute(project, sched) : null;
+    const profName = r => (Rates.profileOf(project, r) || { name: '' }).name;
+    const rateOf = r => { const c = Rates.rateFor(project, r, today); return c == null ? '' : money(c); };
+    const rateSheet = amounts && Rates.hasRates(project) ? [{ name: t('xp.sheet.rates'), rows: [[t('xp.rateOwner'), t('xp.kind'), t('rt.from'), t('rt.rate')],
+      ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
+      ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
       { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
-      { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd')],
-        ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10])] },
+      { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd'), ...(profOn ? [t('rt.profile')] : []), ...(ratesOn ? [t('rt.rateCol'), t('rt.colCost'), t('rt.colEst')] : [])],
+        ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10,
+          ...(profOn ? [profName(r)] : []),
+          ...(ratesOn ? [rateOf(r), money(rc.byRes.get(r.id).cents), money(rc.byRes.get(r.id).est)] : [])])] },
+      ...rateSheet,
       { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
         ...(anonymize ? [] : project.resources.flatMap((r, i) => r.absences.map(a => [rName(r, i), a.start, a.end, a.label])))] },
       { name: t('xp.sheet.calendar'), rows: [[t('xp.kind'), t('cal.from'), t('xp.to'), t('cal.label')],
@@ -4770,8 +5038,6 @@ const Money = (() => {
   function plain(cents, { compact = false } = {}) {
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
-  /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
-  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
   /**
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
@@ -4784,7 +5050,7 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, spoken, node };
+  return { DOTS, symbol, masked, text, plain, node };
 })();
 
 /** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */
@@ -5638,6 +5904,13 @@ const Editor = (() => {
       pick.id = 'res-pick';
       pick.setAttribute('aria-label', t('f.resPick'));
       box.append(h('div', { class: 'add-row' }, pick, h('button', { type: 'button', data: { click: 'draftAddAssign' } }, t('f.addAssign'))));
+    }
+    // Étape C : coût des ressources de la tâche enregistrée (le planning enregistré, pas le brouillon en cours de saisie).
+    const saved = draft.id && App.project.tasks.find(x => x.id === draft.id && x.type === 'task');
+    if (saved && saved.assign.length && App.sched && Rates.inUse(App.project)) {
+      const c = Rates.ofTask(App.project, App.sched, saved), pd = pdText(c.pd);
+      box.append(h('p', { class: 'hint', id: 'assign-cost' }, c.unrated && !c.cents ? t('rt.assignNone', { pd })
+        : amountSentence(c.unrated ? 'rt.assignPart' : 'rt.assignCost', { pd }, c.cents)));
     }
     box.append(h('p', { class: 'field-error', id: 'assign-err', hidden: true, role: 'alert' }));
     return box;
@@ -6959,8 +7232,9 @@ function resourcesWindow() {
   const paint = () => {
     clear(body);
     body.append(h('p', { class: 'hint', text: t('res.privacy') }));
+    const showRates = Rates.inUse(App.project); // étape C : rien de nouveau tant que le projet n'a ni profil ni taux (EF-147)
     const table = h('table', { class: 'manage' },
-      h('thead', {}, h('tr', {}, [t('res.name'), t('res.role'), t('res.capacity'), t('res.color'), '', ''].map(x => h('th', { scope: 'col', text: x })))));
+      h('thead', {}, h('tr', {}, [t('res.name'), t('res.role'), t('res.capacity'), t('res.color'), ...(showRates ? [t('rt.profile'), t('rt.rateCol')] : []), '', ''].map(x => h('th', { scope: 'col', text: x })))));
     const tb = h('tbody');
     App.project.resources.forEach(r => {
       const used = App.project.tasks.filter(x => x.assign.some(a => a.res === r.id)).length;
@@ -6973,12 +7247,14 @@ function resourcesWindow() {
       tb.append(h('tr', {},
         h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
+        showRates ? h('td', {}, profileSelect(r)) : null, showRates ? h('td', {}, rateTodayNode(r)) : null,
         h('td', { text: t('res.tasks', { count: used }) }),
         h('td', {}, h('button', { type: 'button', data: { click: 'openResourceSheet', arg: r.id } }, `${t('rs.open')} ${r.name}`),
           ' ', h('button', { type: 'button', class: 'danger', data: { click: 'resDelete', arg: r.id } }, `${t('edit.delete')} ${r.name}`))));
     });
     table.append(tb);
-    body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')));
+    body.append(table, h('button', { type: 'button', data: { click: 'resAdd' } }, t('res.add')), ' ',
+      h('button', { type: 'button', id: 'btn-profiles', data: { click: 'openProfiles' } }, t('rt.open')));
   };
   resourcesWindow.paint = paint;
   paint();
@@ -7017,7 +7293,7 @@ action('resAdd', () => {
   const used = new Set(App.project.resources.map(r => r.color));
   const color = Model.PALETTE.find(c => !used.has(c)) || Model.PALETTE[0];
   let id = 1; while (resById('R' + id)) id++;
-  commit(p => p.resources.push({ id: 'R' + id, name, role: '', color, capacity: 100, absences: [] }));
+  commit(p => p.resources.push({ id: 'R' + id, name, role: '', color, capacity: 100, absences: [], profile: '', rates: [] }));
   resourcesWindow.paint && resourcesWindow.paint();
   const inputs = document.querySelectorAll('#res-win tbody tr:last-child input');
   if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }
@@ -7209,6 +7485,239 @@ action('tagDelete', async name => {
   tagsWindow.paint && tagsWindow.paint();
 });
 
+// ── js/ui/71-rates.js ──
+/* Profils de coût et taux des ressources (étape C, EF-147 à EF-150, RG-54 à RG-58).
+ * Un profil porte un taux moyen par jour ouvré, fixé par la comptabilité ; une ressource peut avoir son propre taux
+ * (prestataire externe). Un taux peut changer en cours de projet : des lignes « à partir du ». Un taux est un montant :
+ * il suit le masquage à l'écran (saisie désactivée) et la case « Inclure les montants » des fichiers. */
+
+const pdText = hundredths => t('rt.pd', { n: I18n.number(hundredths / 100, hundredths % 100 ? (hundredths % 10 ? 2 : 1) : 0) });
+
+/** Phrase traduite qui contient un montant ({amount}) : le montant est un nœud, masquable (RG-41). */
+function amountSentence(key, params, cents) {
+  const [before, after = ''] = t(key, { ...params, amount: '\u0001' }).split('\u0001');
+  return [before, Money.node(cents), after];
+}
+
+/** Taux du jour d'une ressource, avec son origine (profil ou nominatif), ou « sans taux ». */
+function rateTodayNode(r) {
+  const cents = Rates.rateFor(App.project, r, Dates.todayDn());
+  if (cents == null) return h('span', { class: 'hint', text: t('rt.noRate') });
+  return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(Rates.sourceOf(App.project, r) === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
+}
+
+/** Les vues ouvertes qui montrent des taux ou des coûts sont redessinées après une modification. */
+function refreshRateViews() {
+  if (profilesWindow.paint) profilesWindow.paint();
+  if (resourcesWindow.paint) resourcesWindow.paint();
+  if (resourceSheet.body) paintResourceSheet(resourceSheet.body, resourceSheet.id);
+  if (typeof repaintDashboard === 'function') repaintDashboard();
+}
+
+/** Propriétaire d'une liste de lignes de taux : un profil ('p') ou une ressource ('r', taux nominatif). */
+function rateOwner(kind, id) {
+  return kind === 'p' ? (App.project.profiles || []).find(x => x.id === id) : resById(id);
+}
+
+/**
+ * Éditeur des lignes de taux d'un propriétaire (EF-148). La ligne sans date vaut « depuis le début » ; les autres
+ * s'appliquent à partir de leur date. Saisie désactivée quand les montants sont masqués.
+ */
+function rateLinesEditor(kind, id, label) {
+  const owner = rateOwner(kind, id), key = kind + id, masked = Money.masked(), lang = I18n.getLang();
+  const box = h('fieldset', { class: 'sub', id: 'rl-' + key }, h('legend', { text: t('rt.lines') }));
+  if (masked) box.append(h('p', { class: 'note', text: t('rt.maskedLines') }));
+  const list = h('ul', { class: 'rows' });
+  owner.rates.forEach((l, i) => {
+    const when = l.from === '' ? t('rt.fromStart') : I18n.date(Dates.parse(l.from));
+    const arg = f => `${kind}:${id}:${i}:${f}`;
+    const from = l.from === ''
+      ? h('span', { class: 'who', text: t('rt.fromStart') })
+      : h('span', { class: 'who' }, h('label', { for: `rl-${key}-from-${i}`, text: t('rt.from') + ' ' }),
+        h('input', { type: 'date', id: `rl-${key}-from-${i}`, value: l.from, min: '1970-01-01', max: '2199-12-31', disabled: masked,
+          aria: { label: `${t('rt.from')} (${label})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('from') } }));
+    const rate = h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20, disabled: masked,
+      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${t('rt.rate')} (${label}, ${when}) (${Money.symbol()})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
+    list.append(h('li', {}, from, rate,
+      h('button', { type: 'button', class: 'icon', disabled: masked, data: { click: 'rlRemove', arg: `${kind}:${id}:${i}` }, aria: { label: t('rt.removeLine', { name: `${label}, ${when}` }) } }, '✕')));
+  });
+  box.append(list, h('p', { class: 'field-error', id: 'rl-err-' + key, role: 'alert', hidden: true }));
+  if (owner.rates.length < Model.LIMITS.rateLines) {
+    box.append(h('button', { type: 'button', id: `rl-${key}-add`, disabled: masked, data: { click: 'rlAdd', arg: `${kind}:${id}` } }, t('rt.addLine')));
+  }
+  return box;
+}
+
+function rlError(key, msg, el) {
+  const e = $('rl-err-' + key);
+  if (e) { e.textContent = msg; e.hidden = false; }
+  if (el) el.setAttribute('aria-invalid', 'true');
+  announce(msg);
+  if (el) el.focus();
+}
+
+/** Applique de nouvelles lignes à un propriétaire (contrôle commun avec l'import) ; renvoie les lignes triées ou null. */
+function rlApply(kind, id, key, lines, focusEl) {
+  const norm = Rates.normalize(lines);
+  if (!norm.ok) {
+    const msg = norm.reason === 'dup' ? t('rt.errDup') : norm.reason === 'max' ? t('rt.errMax', { max: Model.LIMITS.rateLines }) : t('rt.errDate');
+    rlError(key, msg, focusEl); return null;
+  }
+  commit(p => { (kind === 'p' ? p.profiles.find(x => x.id === id) : p.resources.find(x => x.id === id)).rates = norm.lines; });
+  return norm.lines;
+}
+
+action('rlField', (arg, el) => {
+  const [kind, id, idx, field] = arg.split(':'), i = Number(idx), key = kind + id, owner = rateOwner(kind, id);
+  if (!owner || !owner.rates[i] || Money.masked()) return;
+  const e = $('rl-err-' + key); if (e) e.hidden = true;
+  el.removeAttribute('aria-invalid');
+  const lines = owner.rates.map(l => ({ ...l }));
+  if (field === 'rate') {
+    const r = Budget.parse(el.value, Money.symbol());
+    if (!r.ok) return rlError(key, t('err.amount.' + r.reason, { field: t('rt.rate'), max: Budget.format(Model.LIMITS.rate, { lang: I18n.getLang(), symbol: Money.symbol() }) }), el);
+    if (r.cents > Model.LIMITS.rate) return rlError(key, t('err.amount.max', { field: t('rt.rate'), max: Budget.format(Model.LIMITS.rate, { lang: I18n.getLang(), symbol: Money.symbol() }) }), el);
+    lines[i].rate = r.cents;
+  } else {
+    if (Dates.parse(el.value) == null) return rlError(key, t('rt.errDate'), el);
+    lines[i].from = el.value;
+  }
+  const done = rlApply(kind, id, key, lines, el);
+  if (!done) return;
+  refreshRateViews();
+  const j = done.findIndex(l => l.from === lines[i].from && l.rate === lines[i].rate);
+  const target = document.getElementById(`rl-${key}-${field}-${Math.max(0, j)}`);
+  if (target) target.focus();
+});
+
+action('rlAdd', arg => {
+  const [kind, id] = arg.split(':'), key = kind + id, owner = rateOwner(kind, id);
+  if (!owner || Money.masked()) return;
+  // Première ligne : depuis le début. Suivantes : un jour libre à partir d'aujourd'hui, au dernier taux connu.
+  const used = new Set(owner.rates.map(l => l.from));
+  let from = '';
+  if (owner.rates.length) { let dn = Dates.todayDn(); while (used.has(Dates.toISO(dn))) dn++; from = Dates.toISO(dn); }
+  const last = owner.rates.length ? owner.rates[owner.rates.length - 1].rate : 0;
+  const done = rlApply(kind, id, key, [...owner.rates.map(l => ({ ...l })), { from, rate: last }], $(`rl-${key}-add`));
+  if (!done) return;
+  refreshRateViews();
+  const j = done.findIndex(l => l.from === from);
+  const target = document.getElementById(`rl-${key}-${from === '' ? 'rate' : 'from'}-${Math.max(0, j)}`);
+  if (target) target.focus();
+});
+
+action('rlRemove', arg => {
+  const [kind, id, idx] = arg.split(':'), i = Number(idx), key = kind + id, owner = rateOwner(kind, id);
+  if (!owner || !owner.rates[i] || Money.masked()) return;
+  commit(p => { (kind === 'p' ? p.profiles.find(x => x.id === id) : p.resources.find(x => x.id === id)).rates.splice(i, 1); });
+  refreshRateViews();
+  const next = document.getElementById(`rl-${key}-add`) || document.getElementById(`rl-${key}`);
+  if (next) next.focus();
+});
+
+/* ---------- Fenêtre « Profils de coût » (EF-147) ---------- */
+
+function profilesWindow() {
+  const body = h('div', { id: 'prof-win' });
+  const paint = () => {
+    const keep = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : '';
+    clear(body);
+    body.append(h('p', { class: 'hint', text: t('rt.intro') }));
+    const profiles = App.project.profiles || [];
+    profiles.forEach(pf => {
+      const used = App.project.resources.filter(r => r.profile === pf.id).length;
+      const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
+      body.append(h('section', { class: 'prof-card', aria: { label: pf.name } },
+        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, hidden: true })),
+        rateLinesEditor('p', pf.id, pf.name),
+        h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
+        h('button', { type: 'button', class: 'danger', data: { click: 'profDelete', arg: pf.id } }, t('rt.delete', { name: pf.name }))));
+    });
+    if (profiles.length < Model.LIMITS.profiles) body.append(h('button', { type: 'button', id: 'prof-add', data: { click: 'profAdd' } }, t('rt.add')));
+    const again = keep && document.getElementById(keep); if (again) again.focus();
+  };
+  profilesWindow.paint = paint;
+  paint();
+  return Dialog.open({ title: t('rt.title'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] })
+    .then(() => {
+      profilesWindow.paint = null;
+      if (resourcesWindow.paint) { resourcesWindow.paint(); const b = $('btn-profiles'); if (b) b.focus(); } // le bouton a été redessiné : le focus lui revient
+    });
+}
+
+action('openProfiles', () => profilesWindow());
+
+action('profAdd', () => {
+  const list = App.project.profiles || [];
+  if (list.length >= Model.LIMITS.profiles) { Dialog.message(t('rt.title'), t('err.limit', { max: Model.LIMITS.profiles, what: t('rt.title').toLowerCase() })); return; }
+  let n = list.length + 1, name;
+  do { name = `${t('rt.new')} ${n++}`; } while (nameError(list, '', name, ''));
+  let k = 1; while (list.some(x => x.id === 'P' + k)) k++;
+  commit(p => { p.profiles = p.profiles || []; p.profiles.push({ id: 'P' + k, name, rates: [] }); });
+  refreshRateViews();
+  const inp = $('prof-name-P' + k); if (inp) { inp.focus(); inp.select(); }
+});
+
+action('profName', (id, el) => {
+  const err = $('perr-' + id), list = App.project.profiles;
+  if (err) err.hidden = true; el.removeAttribute('aria-invalid');
+  const e = nameError(list, id, el.value, t('rt.name'));
+  if (e) { err.textContent = e; err.hidden = false; el.setAttribute('aria-invalid', 'true'); announce(e); el.focus(); return; }
+  commit(p => { p.profiles.find(x => x.id === id).name = el.value.trim(); });
+  refreshRateViews();
+});
+
+action('profDelete', async id => {
+  const pf = (App.project.profiles || []).find(x => x.id === id);
+  if (!pf) return;
+  const used = App.project.resources.filter(r => r.profile === id).length;
+  const ok = await Dialog.confirm(t('rt.deleteTitle', { name: pf.name }), [used ? t('rt.deleteUsed', { count: used }) : ''], t('edit.delete'));
+  if (!ok) return;
+  commit(p => { p.profiles = p.profiles.filter(x => x.id !== id); for (const r of p.resources) if (r.profile === id) r.profile = ''; });
+  refreshRateViews();
+  const add = $('prof-add'); if (add) add.focus();
+});
+
+/* ---------- Dans la fenêtre Ressources et la fiche d'une ressource ---------- */
+
+/** Liste déroulante du profil d'une ressource. */
+function profileSelect(r, idAttr) {
+  const sel = h('select', { id: idAttr, aria: { label: `${t('rt.profile')} (${r.name})` }, data: { change: 'resProfile', arg: r.id } },
+    h('option', { value: '', selected: !r.profile }, t('rt.none')),
+    (App.project.profiles || []).map(pf => h('option', { value: pf.id, selected: pf.id === r.profile }, pf.name)));
+  return sel;
+}
+
+action('resProfile', (id, el) => {
+  const r = resById(id);
+  if (!r || (el.value && !(App.project.profiles || []).some(x => x.id === el.value))) return;
+  commit(() => { r.profile = el.value; });
+  refreshRateViews();
+  // La liste modifiée peut être celle de la fiche ou celle de la fenêtre Ressources : on cherche dans la fenêtre du dessus.
+  const top = [...document.querySelectorAll('dialog[open]')].pop();
+  const again = top && top.querySelector(`[data-change="resProfile"][data-arg="${CSS.escape(id)}"]`); if (again) again.focus();
+});
+
+action('rsOwnClear', id => {
+  const r = resById(id);
+  if (!r || !r.rates.length || Money.masked()) return;
+  commit(() => { r.rates = []; });
+  refreshRateViews();
+  const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
+});
+
+/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif et coût total (c : son total). */
+function resourceCostSection(r, c) {
+  const box = h('fieldset', { class: 'sub', id: 'rs-cost' }, h('legend', { text: t('rs.costTitle') }));
+  box.append(h('div', { class: 'field' }, h('label', { for: 'rs-profile', text: t('rt.profile') }), profileSelect(r, 'rs-profile')));
+  box.append(h('p', {}, t('rt.rateCol'), ' : ', rateTodayNode(r)));
+  box.append(h('p', { class: 'hint', text: t('rt.own.hint') }), rateLinesEditor('r', r.id, r.name));
+  if (r.rates.length) box.append(h('button', { type: 'button', disabled: Money.masked(), data: { click: 'rsOwnClear', arg: r.id } }, t('rt.own.clear')));
+  // Les jours-personne sont déjà la « Charge totale » de la fiche : seul le coût est ajouté ici.
+  box.append(h('p', { id: 'rs-cost-total' }, `${t('rs.cost')} : `, Money.node(c.cents), c.unrated ? ` — ${t('rt.partial', { count: c.unrated })}` : ''));
+  return box;
+}
+
 // ── js/ui/71-resource-sheet.js ──
 /* Fiche de ressource (EF-26, EF-71) : avatar, rôle, capacité, absences, tâches et charge. */
 
@@ -7226,6 +7735,11 @@ function paintResourceSheet(body, id, focusSel) {
   body.append(h('div', { class: 'field' }, h('label', { for: 'rs-cap', text: t('res.capacity') }),
     h('input', { type: 'number', id: 'rs-cap', min: 1, max: 100, step: 1, inputmode: 'numeric', value: r.capacity, data: { change: 'rsCapacity', arg: id }, aria: { describedby: 'rs-err' } })));
 
+  // Étape C : coût de chacune de ses tâches, seulement si le projet utilise des profils ou des taux (EF-147).
+  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
+  const costs = Rates.inUse(App.project) && App.sched ? tasks.map(x => Rates.assignment(App.project, App.sched, x, x.assign.find(a => a.res === id))) : null;
+  if (costs) body.append(resourceCostSection(r, { cents: costs.reduce((s, c) => s + (c.cents || 0), 0), unrated: costs.filter(c => c.unrated).length }));
+
   const abs = [...r.absences].map((a, i) => ({ ...a, i })).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   const absBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('rs.absences') }));
   if (!abs.length) absBox.append(h('p', { class: 'hint', text: t('cal.none') }));
@@ -7241,17 +7755,19 @@ function paintResourceSheet(body, id, focusSel) {
     h('button', { type: 'button', data: { click: 'rsAbsAdd', arg: id } }, t('rs.addAbsence'))));
   body.append(absBox);
 
-  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
   let load = 0;
-  const rows = tasks.map(x => {
+  const rows = tasks.map((x, k) => {
     const a = x.assign.find(z => z.res === id), sr = App.sched && App.sched.tasks.get(x.id);
     load += x.dur * a.units / 100;
+    const ac = costs && costs[k];
     return h('tr', {}, h('td', { class: 'id', text: x.id }), h('td', { text: x.name }), h('td', { text: `${a.units} %` }),
-      h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }));
+      h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }),
+      ac ? h('td', { class: 'num', text: pdText(ac.pd) }) : null,
+      ac ? h('td', { class: 'num' }, Money.node(ac.cents || 0), ac.unrated ? h('span', { class: 'hint', text: ` (${t('rt.noRate')})` }) : null) : null);
   });
   body.append(h('h3', { text: t('rs.tasks', { count: tasks.length }) }),
     h('p', { text: t('rs.load', { load: I18n.number(load, load % 1 ? 1 : 0) }) }),
-    tasks.length ? h('table', { class: 'manage' }, h('thead', {}, h('tr', {}, [t('col.id'), t('col.name'), t('rs.units'), t('dash.pStart'), t('dash.pEnd')].map(x => h('th', { scope: 'col', text: x })))), h('tbody', {}, rows)) : null);
+    tasks.length ? h('table', { class: 'manage' }, h('thead', {}, h('tr', {}, [t('col.id'), t('col.name'), t('rs.units'), t('dash.pStart'), t('dash.pEnd'), ...(costs ? [t('rs.pd'), t('rs.cost')] : [])].map(x => h('th', { scope: 'col', text: x })))), h('tbody', {}, rows)) : null);
   const el = focusSel && body.querySelector(focusSel);
   if (el) el.focus();
 }
@@ -7773,7 +8289,7 @@ function trackingTable() {
 /** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141). */
 function dashTabs() {
   const tabs = ['summary', 'load'];
-  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
+  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length || Rates.hasRates(App.project)) tabs.push('budget');
   if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
   return tabs;
 }
@@ -7867,25 +8383,29 @@ function costScale(curve) {
   return { max: top, ticks };
 }
 
+/** Tuile d'indicateur (titre, valeur) et cellule de montant, communes aux sections de l'onglet Budget. */
+const budgetTile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+const amountCell = cents => h('td', { class: 'num' }, Money.node(cents));
+
 function paintBudget(panel) {
   const P = App.project, tot = Budget.totals(P);
-  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
   const remaining = tot.remaining < 0
     ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
     : [Money.node(tot.remaining)];
   panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
-    tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
-    tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
+    budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('bud.provision'), Money.node(tot.provision)), budgetTile(t('bud.total'), Money.node(tot.total)),
+    budgetTile(t('bud.actual'), Money.node(tot.actual)), budgetTile(t('bud.remaining'), ...remaining)));
 
   // Tableau par catégorie (RG-40).
   const cats = Budget.byCategory(P);
-  const num = c => h('td', { class: 'num' }, Money.node(c));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-cat-h' } },
     h('h3', { id: 'bud-cat-h', text: t('bud.byCat') }),
     h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-cats' },
       h('thead', {}, h('tr', {}, [t('bud.cat'), t('f.budget'), t('f.actual'), t('bud.gap')].map(x => h('th', { scope: 'col', text: x })))),
-      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
-      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
+      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), amountCell(r.budget), amountCell(r.actual), amountCell(r.gap)))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), amountCell(cats.total.budget), amountCell(cats.total.actual), amountCell(cats.total.gap)))))));
+
+  if (Rates.hasRates(P)) paintRatesCost(panel, tot);
 
   // Courbe en S des coûts (RG-38, RG-39).
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
@@ -7905,6 +8425,33 @@ function paintBudget(panel) {
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
   paintEvm(panel);
+}
+
+/**
+ * Coût des ressources (étape C, EF-149, RG-55 à RG-58) : tableau par ressource, comparé au budget saisi des tâches, qui reste
+ * la référence du BAC (A.8 ligne 18). Le total est dit PARTIEL quand une affectation n'a pas de taux pour tous ses jours.
+ */
+function paintRatesCost(panel, tot) {
+  const P = App.project, costs = Rates.compute(P, App.sched);
+  const gap = tot.bac - costs.total.cents;
+  const rows = P.resources.filter(r => costs.byRes.get(r.id).assignments > 0).map(r => {
+    const c = costs.byRes.get(r.id), pf = (P.profiles || []).find(x => x.id === r.profile);
+    return h('tr', {}, h('th', { scope: 'row', text: r.name }), h('td', { text: pf ? pf.name : '' }), h('td', { class: 'num', text: pdText(c.pd) }),
+      h('td', { class: 'num' }, rateTodayNode(r)), amountCell(c.cents), amountCell(c.est));
+  });
+  const tt = costs.total;
+  panel.append(h('section', { class: 'dash-section', id: 'bud-rates', aria: { labelledby: 'bud-rates-h' } },
+    h('h3', { id: 'bud-rates-h', text: t('rt.tab') }),
+    h('p', { class: 'hint', text: t('rt.tabIntro') }),
+    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('rt.costTotal'), Money.node(tt.cents)),
+      budgetTile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
+    tt.unrated ? h('p', { class: 'note', id: 'bud-rates-partial', role: 'status', text: t('rt.partial', { count: tt.unrated }) }) : null,
+    h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-rates-table' },
+      h('caption', { class: 'sr-only', text: t('rt.tab') }),
+      h('thead', {}, h('tr', {}, [t('rt.colRes'), t('rt.colProfile'), t('rt.colPd'), t('rt.colRate'), t('rt.colCost'), t('rt.colEst')].map(x => h('th', { scope: 'col', text: x })))),
+      h('tbody', {}, rows),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), amountCell(tt.cents), amountCell(tt.est))))),
+    h('p', { class: 'hint', text: t('rt.estNote') })));
 }
 
 /* Valeur acquise (EF-131 et suivantes) : indicateurs à la date du jour, diagramme CPI / SPI, prévisions à terminaison,
@@ -9336,7 +9883,6 @@ async function openLibrary(focusSel) {
 }
 
 action('openLibrary', () => openLibrary());
-action('saveLibrary', () => saveToLibrary());
 action('newFromTemplate', () => newFromTemplate());
 
 // ── js/ui/86-recovery.js ──

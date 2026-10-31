@@ -26,7 +26,7 @@ Mesures en place :
 | A02 – Données au repos | Chiffrement facultatif par mot de passe (PBKDF2-SHA256 600 000 itérations, AES-256-GCM, Web Crypto) |
 | A06 – Composants vulnérables | Aucune dépendance d'exécution ; polices intégrées (pas de CDN) ; Dependabot pour les actions de la CI |
 | A09 – Journalisation | Aucune journalisation (le build refuse `console.*`) : aucune donnée personnelle ni secret ne peut fuiter par la console |
-| Données personnelles (RGPD) | Aucun cookie, aucun traceur, aucun envoi ; stockage local seulement à la demande ; effacement complet depuis les réglages |
+| Données personnelles (RGPD) | Aucun cookie, aucun traceur, aucun envoi ; stockage local seulement à la demande ; effacement complet depuis les réglages ; montants et taux exclus des exports par défaut, taux nominatifs retirés d'un export « sans noms de personnes » |
 
 Détail des mesures :
 

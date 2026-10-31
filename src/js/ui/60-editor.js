@@ -64,6 +64,13 @@ const Editor = (() => {
       pick.setAttribute('aria-label', t('f.resPick'));
       box.append(h('div', { class: 'add-row' }, pick, h('button', { type: 'button', data: { click: 'draftAddAssign' } }, t('f.addAssign'))));
     }
+    // Étape C : coût des ressources de la tâche enregistrée (le planning enregistré, pas le brouillon en cours de saisie).
+    const saved = draft.id && App.project.tasks.find(x => x.id === draft.id && x.type === 'task');
+    if (saved && saved.assign.length && App.sched && Rates.inUse(App.project)) {
+      const c = Rates.ofTask(App.project, App.sched, saved), pd = pdText(c.pd);
+      box.append(h('p', { class: 'hint', id: 'assign-cost' }, c.unrated && !c.cents ? t('rt.assignNone', { pd })
+        : amountSentence(c.unrated ? 'rt.assignPart' : 'rt.assignCost', { pd }, c.cents)));
+    }
     box.append(h('p', { class: 'field-error', id: 'assign-err', hidden: true, role: 'alert' }));
     return box;
   }

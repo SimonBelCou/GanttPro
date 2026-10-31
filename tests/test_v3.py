@@ -82,6 +82,20 @@ def main():
     write('level.json', project(leveling='level', tasks=[
         {'id': 'A', 'name': 'Conception', 'dur': 3, 'res': 'Alice'}, {'id': 'B', 'name': 'Revue', 'dur': 2, 'res': 'Alice'}]))
 
+    # Build : un nom déclaré deux fois au premier niveau (toutes les sources partagent une portée) est refusé avec les
+    # deux endroits, au lieu d'une application qui ne démarre plus (défaut rencontré le 31/10/2026).
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('gp_build', ROOT / 'tools' / 'build.py')
+    build = importlib.util.module_from_spec(spec); spec.loader.exec_module(build)
+    (tmp / 'a.js').write_text('function aide() {}\nconst Truc = (() => {\n  const local = 1;\n})();\n', encoding='utf-8')
+    (tmp / 'b.js').write_text('const aide = 2;\n  const local = 3;\n', encoding='utf-8')
+    build.ROOT = tmp
+    dups = build.duplicate_declarations([tmp / 'a.js', tmp / 'b.js'])
+    check('build : déclaration en double refusée, avec ses deux emplacements (les noms internes aux modules sont libres)',
+          len(dups) == 1 and 'b.js:1' in dups[0] and 'aide' in dups[0] and 'a.js:1' in dups[0], dups)
+    build.ROOT = ROOT
+    check('build : aucune déclaration en double dans les sources', build.duplicate_declarations(build.js_files()) == [])
+
     with sync_playwright() as p:
         browser = p.chromium.launch(args=['--no-sandbox'])
         ctx = browser.new_context(viewport={'width': 1500, 'height': 950}, locale='fr-FR', accept_downloads=True)

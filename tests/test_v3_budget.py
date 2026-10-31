@@ -747,6 +747,183 @@ def main():
         pg.uncheck('#col-show-budget'); pg.wait_for_timeout(100); esc()
         check('EF-144 : masquer Budget laisse la liste choisie (la persistance est vérifiée par R-90)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Début', 'Fin', 'Statut'], pg.evaluate(heads_js))
 
+        # ── Étape C : taux des ressources (EF-147 à EF-150, RG-54 à RG-58, R-92 à R-99) ───────────────
+        mask_off = lambda: pg.get_attribute('#btn-mask', 'aria-pressed') != 'true' or pg.click('#btn-mask')
+        mask_off()
+        load('budget.json')
+        pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
+        heads = pg.evaluate("[...document.querySelectorAll('#res-win thead th')].map(t => t.textContent)")
+        check('EF-147 : sans profil ni taux, la fenêtre Ressources garde ses colonnes d\'avant', 'Profil de coût' not in heads and 'Taux par jour' not in heads, heads)
+        check('EF-147 : le bouton « Profils de coût… » est toujours là', pg.locator('#btn-profiles').count() == 1)
+        pg.click('button[data-click="openResourceSheet"]'); pg.wait_for_timeout(100)
+        check('EF-147 : la fiche ressource n\'a pas de rubrique de coût sans profil ni taux', pg.locator('#rs-cost').count() == 0)
+        esc(); esc()
+
+        load_fx('taux-profils-base.json')
+        pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
+        heads = pg.evaluate("[...document.querySelectorAll('#res-win thead th')].map(t => t.textContent)")
+        res_txt = sp(pg.inner_text('#res-win'))
+        check('EF-147 : avec des profils, colonnes « Profil de coût » et « Taux par jour »', 'Profil de coût' in heads and 'Taux par jour' in heads, heads)
+        check('R-92 : taux du jour affichés, 400,00 € pour Alice et 450,00 € pour Bob, avec leur origine « profil »', '400,00 €' in res_txt and '450,00 €' in res_txt and res_txt.count('(profil)') == 2, res_txt)
+        check('les listes déroulantes de profil portent le profil de chaque ressource',
+              pg.evaluate("[...document.querySelectorAll('#res-win select[data-change=resProfile]')].map(s => s.selectedOptions[0].textContent)") == ['Analyste', 'Développeur'])
+        axe_check(pg, 'fenêtre Ressources avec profils et taux')
+
+        # Fenêtre des profils : ajouter, renommer, lignes de taux, doublon refusé, supprimer.
+        pg.click('#btn-profiles'); pg.wait_for_timeout(120)
+        check('EF-147 : la fenêtre des profils liste les deux profils', pg.locator('#prof-win .prof-card').count() == 2)
+        axe_check(pg, 'fenêtre des profils de coût')
+        pg.click('#prof-add'); pg.wait_for_timeout(100)
+        check('EF-147 : un profil ajouté a le focus sur son nom', pg.evaluate("document.activeElement.id") == 'prof-name-P3')
+        pg.fill('#prof-name-P3', 'Chef de projet'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
+        check('EF-147 : renommer un profil', pg.input_value('#prof-name-P3') == 'Chef de projet' and 'Chef de projet' in sp(pg.inner_text('#prof-win')))
+        pg.fill('#prof-name-P3', 'analyste'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
+        check('EF-147 : un nom de profil déjà pris (casse ignorée) est refusé, message près du champ', not pg.locator('#perr-P3').is_hidden() and pg.get_attribute('#prof-name-P3', 'aria-invalid') == 'true')
+        pg.fill('#prof-name-P3', 'Chef de projet'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
+        pg.click('#rl-pP3-add'); pg.wait_for_timeout(100)
+        check('EF-148 : première ligne « Depuis le début », focus sur son taux', 'Depuis le début' in sp(pg.inner_text('#rl-pP3')) and pg.evaluate("document.activeElement.id") == 'rl-pP3-rate-0')
+        pg.fill('#rl-pP3-rate-0', '600'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        check('EF-148 : « 600 » est gardé et relu tel quel (60 000 centimes)', pg.input_value('#rl-pP3-rate-0') == '600' and pg.locator('#rl-err-pP3').is_hidden())
+        pg.fill('#rl-pP3-rate-0', '12abc'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        check('EF-148 : un taux illisible est refusé et dit pourquoi', 'montant' in pg.inner_text('#rl-err-pP3') and pg.get_attribute('#rl-pP3-rate-0', 'aria-invalid') == 'true', pg.inner_text('#rl-err-pP3'))
+        pg.fill('#rl-pP3-rate-0', '600'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        pg.fill('#rl-pP3-rate-0', '2000000'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        check('RG-54 : un taux au-dessus de 1 000 000,00 par jour est refusé', not pg.locator('#rl-err-pP3').is_hidden() and '1 000 000,00' in sp(pg.inner_text('#rl-err-pP3')), pg.inner_text('#rl-err-pP3'))
+        pg.fill('#rl-pP3-rate-0', '600'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        pg.click('#rl-pP3-add'); pg.wait_for_timeout(100)
+        check('EF-148 : une deuxième ligne démarre un jour libre (14/01/2026) au dernier taux', pg.evaluate("[...document.querySelectorAll('#rl-pP3 input[type=date]')].map(i => i.value)") == ['2026-01-14'] and pg.input_value('#rl-pP3-rate-1') == '600')
+        pg.click('#rl-pP3-add'); pg.wait_for_timeout(100)
+        check('EF-148 : une troisième ligne prend le jour libre suivant', pg.evaluate("[...document.querySelectorAll('#rl-pP3 input[type=date]')].map(i => i.value)") == ['2026-01-14', '2026-01-15'])
+        pg.fill('#rl-pP3-from-2', '2026-01-14'); pg.press('#rl-pP3-from-2', 'Tab'); pg.wait_for_timeout(100)
+        check('RG-54 : deux lignes le même jour sont refusées, rien n\'est modifié', pg.evaluate("[...document.querySelectorAll('#rl-pP3 input[type=date]')].map(i => i.value)") == ['2026-01-14', '2026-01-14'] and 'même jour' in pg.inner_text('#rl-err-pP3') and pg.get_attribute('#rl-pP3-from-2', 'aria-invalid') == 'true')
+        pg.fill('#rl-pP3-from-2', '2026-01-10'); pg.press('#rl-pP3-from-2', 'Tab'); pg.wait_for_timeout(100)
+        check('RG-54 : les lignes restent triées par date après une modification', pg.evaluate("[...document.querySelectorAll('#rl-pP3 input[type=date]')].map(i => i.value)") == ['2026-01-10', '2026-01-14'])
+        axe_check(pg, 'fenêtre des profils avec lignes de taux et erreur')
+        pg.click('#rl-pP3 button.icon >> nth=0'); pg.wait_for_timeout(100)
+        check('EF-148 : supprimer une ligne de taux', pg.locator('#rl-pP3 li').count() == 2)
+        check('annulable comme une modification', not pg.is_disabled('#btn-undo'))
+        pg.click('#prof-win button:has-text("Supprimer le profil Chef de projet")'); pg.wait_for_timeout(100)
+        check('EF-147 : la confirmation nomme le profil et « Annuler » a le focus', 'Chef de projet' in sp(pg.locator('dialog[open]').last.inner_text()) and pg.evaluate("document.activeElement.textContent.trim()") == 'Annuler')
+        pg.locator('dialog[open]').last.locator('button:has-text("Supprimer")').click(); pg.wait_for_timeout(120)
+        check('EF-147 : profil supprimé après confirmation, le focus passe sur « Ajouter un profil »', pg.locator('#prof-win .prof-card').count() == 2 and 'Chef de projet' not in sp(pg.inner_text('#prof-win')) and pg.evaluate("document.activeElement.id") == 'prof-add')
+        # Un profil utilisé : la confirmation dit combien de ressources le perdent, et Annuler rend tout d'un coup.
+        pg.click('#prof-win button:has-text("Supprimer le profil Analyste")'); pg.wait_for_timeout(100)
+        check('EF-147 : la confirmation dit qu\'une ressource perdra son profil', '1 ressource perdra son profil' in sp(pg.locator('dialog[open]').last.inner_text()), sp(pg.locator('dialog[open]').last.inner_text()))
+        pg.locator('dialog[open]').last.locator('button:has-text("Supprimer")').click(); pg.wait_for_timeout(120)
+        check('EF-147 : après suppression, Alice n\'a plus de profil', pg.locator('#prof-win .prof-card').count() == 1)
+        esc()
+        check('EF-147 : la fenêtre Ressources montre Alice « sans taux »', 'sans taux' in sp(pg.inner_text('#res-win')))
+        esc()
+        pg.click('#btn-undo'); pg.wait_for_timeout(120)
+        pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
+        check('EF-147 : Annuler rend le profil et le lien d\'Alice en un seul pas', pg.input_value('#res-win select[data-change=resProfile] >> nth=0') == 'P1' and '400,00 €' in sp(pg.inner_text('#res-win')))
+        pg.click('#btn-profiles'); pg.wait_for_timeout(100)
+        esc()
+        check('EF-147 : à la fermeture de la fenêtre des profils, le focus revient sur « Profils de coût… »', pg.evaluate("document.activeElement.id") == 'btn-profiles')
+        # Un profil supprimé libère ses ressources : elles ne sont plus valorisées (signalé).
+        pg.select_option('#res-win select[data-change=resProfile] >> nth=0', ''); pg.wait_for_timeout(100)
+        check('EF-147 : « Aucun profil » retire le profil d\'une ressource, le focus reste sur la liste', pg.input_value('#res-win select[data-change=resProfile] >> nth=0') == '' and 'sans taux' in sp(pg.inner_text('#res-win')) and pg.evaluate("document.activeElement.dataset.change") == 'resProfile')
+        pg.select_option('#res-win select[data-change=resProfile] >> nth=0', 'P1'); pg.wait_for_timeout(100)
+        check('retour au profil Analyste', pg.input_value('#res-win select[data-change=resProfile] >> nth=0') == 'P1' and '400,00 €' in sp(pg.inner_text('#res-win')))
+
+        # Fiche d'une ressource : taux nominatif, jours-personne et coût.
+        pg.click('#res-win button[data-click="openResourceSheet"] >> nth=0'); pg.wait_for_timeout(120)
+        sheet = sp(pg.inner_text('#rs-win'))
+        check('RG-55 : fiche d\'Alice, charge totale 10 jours-personne, coût 4 000,00 € (T1 : 5 j-p, T3 : 5 j-p à 400,00 €)', 'Charge totale : 10 jours-personne' in sheet and 'Coût prévu : 4 000,00 €' in sheet and sheet.count('5 j-p') == 2, sheet)
+        check('la charge n\'est écrite qu\'une fois dans la fiche (pas de « 10 j-p » en double)', '10 j-p' not in sp(pg.inner_text('#rs-cost')))
+        pg.select_option('#rs-profile', ''); pg.wait_for_timeout(100)
+        check('EF-147 : changer le profil dans la fiche garde le focus sur cette liste, dans la fiche', pg.evaluate("document.activeElement.id") == 'rs-profile' and 'sans taux' in sp(pg.inner_text('#rs-win')))
+        pg.select_option('#rs-profile', 'P1'); pg.wait_for_timeout(100)
+        check('retour au profil Analyste dans la fiche', '4 000,00 €' in sp(pg.inner_text('#rs-win')))
+        axe_check(pg, 'fiche ressource avec rubrique de coût')
+        pg.click('#rl-rR1-add'); pg.wait_for_timeout(100)
+        pg.fill('#rl-rR1-rate-0', '650'); pg.press('#rl-rR1-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        sheet = sp(pg.inner_text('#rs-win'))
+        check('RG-54 : le taux nominatif (650,00 €) remplace celui du profil : 10 j-p = 6 500,00 €', '6 500,00 €' in sheet and pg.input_value('#rl-rR1-rate-0') == '650', sheet)
+        pg.click('#rs-win button:has-text("Supprimer le taux nominatif")'); pg.wait_for_timeout(100)
+        check('retour au taux du profil après suppression du taux nominatif', '4 000,00 €' in sp(pg.inner_text('#rs-win')) and pg.locator('#rl-rR1 li').count() == 0)
+        esc(); esc()
+
+        # Fiche de tâche.
+        open_task('T1')
+        hint = sp(pg.inner_text('#assign-cost'))
+        check('RG-55 : fiche de T1, « 5 j-p · 2 000,00 € » selon le planning enregistré', '5 j-p' in hint and '2 000,00 €' in hint, hint)
+        axe_check(pg, 'fiche de tâche avec le coût des ressources')
+        esc()
+
+        # Onglet Budget : coût des ressources comparé au budget saisi (option 1 : le budget saisi reste la référence).
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); pg.wait_for_timeout(120)
+        tiles = sp(pg.inner_text('#bud-rates-tiles'))
+        check('RG-56 : BAC saisi 14 500,00 €, coût des ressources 13 000,00 €, écart 1 500,00 €', all(x in tiles for x in ['14 500,00 €', '13 000,00 €', '1 500,00 €']), tiles)
+        table = sp(pg.inner_text('#bud-rates-table'))
+        check('RG-56 : Alice 10 j-p 4 000,00 € (estimé 2 000,00 €), Bob 20 j-p 9 000,00 € (estimé 4 500,00 €)', all(x in table for x in ['10 j-p', '20 j-p', '4 000,00 €', '9 000,00 €', '2 000,00 €', '4 500,00 €']), table)
+        check('RG-56 : total en pied, 30 j-p, 13 000,00 € et 6 500,00 € estimés', '30 j-p' in table.split('Total')[-1] and '6 500,00 €' in table.split('Total')[-1], table)
+        check('RG-57 : aucun total partiel quand chaque affectation a un taux', pg.locator('#bud-rates-partial').count() == 0)
+        evm = sp(pg.inner_text('#evm-tiles'))
+        check('R-97 : l\'EVM ne bouge pas : EV 7 500,00 € (2 500 + 50 % de 10 000), AC 5 400,00 €', '7 500,00 €' in evm and '5 400,00 €' in evm, evm)
+        axe_check(pg, 'onglet Budget avec le coût des ressources')
+        esc()
+
+        # Masquage : un taux est un montant (RG-41).
+        pg.click('#btn-mask'); pg.wait_for_timeout(100)
+        pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
+        check('RG-41 : taux masqués dans la fenêtre Ressources', '400,00' not in sp(pg.inner_text('#res-win')) and '••••' in pg.inner_text('#res-win'))
+        pg.click('#btn-profiles'); pg.wait_for_timeout(100)
+        check('RG-41 : lignes de taux désactivées et expliquées quand les montants sont masqués', pg.locator('#prof-win input[id^="rl-"]:not([disabled])').count() == 0 and 'masqués' in pg.inner_text('#prof-win'))
+        axe_check(pg, 'fenêtre des profils, montants masqués')
+        esc(); esc()
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); pg.wait_for_timeout(100)
+        check('RG-41 : coût des ressources masqué dans l\'onglet Budget', '13 000' not in sp(pg.inner_text('#bud-rates')) and '30 j-p' in sp(pg.inner_text('#bud-rates')))
+        esc()
+        pg.click('#btn-mask'); pg.wait_for_timeout(100)
+
+        # Fichiers : « Inclure les montants » et export anonymisé (RG-58).
+        load_fx('taux-historique.json')
+
+        def export_c(amounts, anon=False):
+            pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-json')
+            if amounts:
+                pg.check('#exp-amounts')
+            if anon:
+                pg.check('#exp-anon')
+            with pg.expect_download() as dl:
+                pg.locator('dialog[open]').last.locator('button:has-text("Exporter")').first.click()
+            return Path(dl.value.path()).read_text(encoding='utf-8')
+
+        j_bare = export_c(False)
+        jb = json.loads(j_bare)
+        check('RG-58 : sans montants, aucun taux dans le fichier (le profil garde son nom, ses lignes sont vides)',
+              '"rate"' not in j_bare and jb['profiles'] == [{'id': 'P1', 'name': 'Analyste', 'rates': []}] and all('rates' not in r for r in jb['resources']), json.dumps(jb['profiles']))
+        j_full = json.loads(export_c(True))
+        check('RG-58 : avec montants, lignes de taux écrites en centimes (profil et prestataire)',
+              j_full['profiles'][0]['rates'] == [{'from': '', 'rate': 40000}, {'from': '2026-01-08', 'rate': 42000}]
+              and j_full['resources'][1]['rates'] == [{'from': '', 'rate': 70000}] and j_full['resources'][0]['profile'] == 'Analyste', json.dumps(j_full['profiles']))
+        j_anon = export_c(True, anon=True)
+        check('RG-58 : fichier anonymisé avec montants : plus de taux nominatif, le taux du profil reste, aucun nom', '70000' not in j_anon and '40000' in j_anon and 'Dave' not in j_anon and 'Alice' not in j_anon, j_anon[:500])
+
+        # Révision de taux, taux nominatif d'un prestataire, ressource sans taux.
+        load_fx('taux-historique.json')
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); pg.wait_for_timeout(120)
+        t2 = sp(pg.inner_text('#bud-rates'))
+        check('R-93 : Alice 5 j du lundi au vendredi, 3 j à 400,00 € puis 2 j à 420,00 € = 2 040,00 €', '2 040,00 €' in t2, t2)
+        check('R-96 : le prestataire a son taux nominatif, 2 j à 700,00 € = 1 400,00 € ; total 3 440,00 €', '1 400,00 €' in t2 and '3 440,00 €' in t2 and '(nominatif)' in t2, t2)
+        esc()
+        load_fx('taux-sans-taux.json')
+        pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); pg.wait_for_timeout(120)
+        t3 = sp(pg.inner_text('#bud-rates'))
+        check('R-95 : deux affectations sans taux, total partiel annoncé (Bob : profil sans taux ; Camille : aucun profil)', '2 affectations' in t3 and 'Total partiel' in t3 and '2 000,00 €' in t3, t3)
+        check('R-95 : une ressource sans taux est dite « sans taux », jamais valorisée à 0 en silence', t3.count('sans taux') >= 2, t3)
+        axe_check(pg, 'onglet Budget avec un total partiel')
+        esc()
+
+        # Fichiers refusés.
+        for name, needle in [('refus-taux-negatif.json', 'Profil n° 1'), ('refus-taux-profil-inconnu.json', 'Directeur')]:
+            pg.set_input_files('#file-input', str(fx / name)); pg.wait_for_selector('dialog[open]')
+            msg = sp(pg.locator('dialog[open]').last.inner_text())
+            check(f'R-98 : {name} refusé en nommant la cause', needle in msg, msg)
+            while pg.locator('dialog[open]').count():
+                esc()
+
         check('aucune erreur JavaScript ni violation CSP', not errors, errors)
         browser.close()
 
