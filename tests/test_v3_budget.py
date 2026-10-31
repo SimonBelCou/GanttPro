@@ -829,7 +829,8 @@ def main():
         # Fiche d'une ressource : taux nominatif, jours-personne et coût.
         pg.click('#res-win button[data-click="openResourceSheet"] >> nth=0'); pg.wait_for_timeout(120)
         sheet = sp(pg.inner_text('#rs-win'))
-        check('RG-55 : fiche d\'Alice, 10 jours-personne et 4 000,00 € (T1 : 5 j-p, T3 : 5 j-p à 400,00 €)', '10 j-p' in sheet and '4 000,00 €' in sheet, sheet)
+        check('RG-55 : fiche d\'Alice, charge totale 10 jours-personne, coût 4 000,00 € (T1 : 5 j-p, T3 : 5 j-p à 400,00 €)', 'Charge totale : 10 jours-personne' in sheet and 'Coût prévu : 4 000,00 €' in sheet and sheet.count('5 j-p') == 2, sheet)
+        check('la charge n\'est écrite qu\'une fois dans la fiche (pas de « 10 j-p » en double)', '10 j-p' not in sp(pg.inner_text('#rs-cost')))
         pg.select_option('#rs-profile', ''); pg.wait_for_timeout(100)
         check('EF-147 : changer le profil dans la fiche garde le focus sur cette liste, dans la fiche', pg.evaluate("document.activeElement.id") == 'rs-profile' and 'sans taux' in sp(pg.inner_text('#rs-win')))
         pg.select_option('#rs-profile', 'P1'); pg.wait_for_timeout(100)

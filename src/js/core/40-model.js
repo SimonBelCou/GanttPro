@@ -112,19 +112,15 @@ const Model = (() => {
    */
   function rateLines(list, where, field, stats) {
     if (list.length > LIMITS.rateLines) fail('imp.field', { ...where, field, rule: 'rule.list', max: LIMITS.rateLines });
-    const seen = new Set();
-    const out = list.map(l => {
+    const lines = list.map(l => {
       if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
-      const f = reader(l, { ...where, field }, ['from', 'rate'], stats);
-      const from = f.date('from');
-      // Un taux est un montant : même règle et même message qu'un montant (entier de centimes), avec son propre plafond.
-      const rate = l.rate;
-      if (!Number.isSafeInteger(rate) || rate < 0 || rate > LIMITS.rate) fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
-      if (seen.has(from)) fail('imp.field', { ...where, field, rule: 'rule.rateOrder' });
-      seen.add(from);
-      return { from, rate };
+      return { from: reader(l, { ...where, field }, ['from', 'rate'], stats).date('from'), rate: l.rate };
     });
-    return out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+    // Mêmes règles que la saisie (Rates.normalize). Un taux est un montant : même message qu'un montant, son propre plafond.
+    const n = Rates.normalize(lines);
+    if (n.ok) return n.lines;
+    if (n.reason === 'rate') fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
+    fail('imp.field', { ...where, field, rule: 'rule.rateOrder' }); // 'dup' : la longueur et les dates sont déjà contrôlées
   }
 
   function ranges(list, where, field, stats, maxDays) {

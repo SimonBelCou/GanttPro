@@ -79,6 +79,23 @@ def lint(path: Path, code: str) -> list[str]:
     return errors
 
 
+TOP_DECL = re.compile(r'^(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)', re.M)
+
+
+def duplicate_declarations(files: list[Path]) -> list[str]:
+    """Toutes les sources partagent une seule portée une fois assemblées : un même nom déclaré au premier niveau de deux
+    fichiers (ou deux fois dans un fichier) empêcherait l'application de démarrer. On le refuse ici, avec les deux endroits."""
+    seen, errors = {}, []
+    for p in files:
+        for m in TOP_DECL.finditer(p.read_text(encoding='utf-8')):
+            where = f"{p.relative_to(ROOT)}:{p.read_text(encoding='utf-8')[:m.start()].count(chr(10)) + 1}"
+            if m.group(1) in seen:
+                errors.append(f"{where}: « {m.group(1)} » est déjà déclaré dans {seen[m.group(1)]}")
+            else:
+                seen[m.group(1)] = where
+    return errors
+
+
 def js_files() -> list[Path]:
     return sorted((SRC / 'js' / 'core').glob('*.js')) + sorted((SRC / 'js' / 'ui').glob('*.js'))
 
@@ -91,6 +108,7 @@ def assemble() -> str:
         code = p.read_text(encoding='utf-8')
         errors += lint(p, code)
         parts.append(f"// ── {p.relative_to(SRC)} ──\n{code.rstrip()}\n")
+    errors += duplicate_declarations(js_files())
     if errors:
         raise SystemExit("Build refusé :\n  " + "\n  ".join(errors))
     if re.search(r'\sstyle\s*=|\son[a-z]+\s*=', re.sub(r'<!--.*?-->', '', template, flags=re.S)):

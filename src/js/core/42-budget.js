@@ -171,5 +171,5 @@ const Budget = (() => {
     return { periods: ps, planned, real, baselines };
   }
 
-  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+  return { MAX, amt, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();

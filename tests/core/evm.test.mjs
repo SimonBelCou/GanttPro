@@ -102,3 +102,15 @@ test('R-88 les points de situation survivent à la relecture ; l\'export sans mo
   assert.deepEqual(plain([bare.cpi, bare.spi, 'ev' in bare, 'ac' in bare, 'pv' in bare, 'bac' in bare, 'etc' in bare]), [57, 80, false, false, false, false, false]);
   assert.throws(() => Model.sanitize({ format: 3, name: 'T', projectStart: '2026-01-05', tasks: [{ id: 'A', name: 'a', type: 'task', dur: 1 }], statusPoints: Array.from({ length: 61 }, () => ({ date: '2026-01-09' })) }));
 });
+
+test('divRound : le calcul rapide sans BigInt donne exactement le même arrondi que BigInt', () => {
+  const ref = (a, b, k) => { const A = BigInt(a) * BigInt(k), B = BigInt(b), q = (2n * A + B) / (2n * B); return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q); };
+  let seed = 7; const rnd = m => { seed = (seed * 1103515245 + 12345) % 2147483648; return Math.floor((seed / 2147483648) * m); };
+  const cases = [[0, 1, 1], [1, 2, 1], [3, 2, 1], [5, 10, 1], [15, 10, 1], [25, 10, 1], [12345, 100, 33], [10010 * 3, 100, 33],
+    [2 ** 52, 3, 1], [2 ** 51, 7, 3], [Model.LIMITS.amount, 100, 100], [Model.LIMITS.amount * 1000, 7, 1], [9007199254740991, 2, 1]];
+  for (let i = 0; i < 20000; i++) {
+    const big = i % 4 === 0;
+    cases.push([rnd(big ? 2 ** 30 : 1e6) * (big ? 2 ** 20 : 1), 1 + rnd(big ? 2 ** 30 : 1000), rnd(big ? 2 ** 10 : 101)]);
+  }
+  for (const [a, b, k] of cases) assert.equal(Evm.divRound(a, b, k), ref(a, b, k), `${a} x ${k} / ${b}`);
+});

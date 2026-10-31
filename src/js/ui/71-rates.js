@@ -11,17 +11,11 @@ function amountSentence(key, params, cents) {
   return [before, Money.node(cents), after];
 }
 
-/** Taux en vigueur aujourd'hui pour une ressource : { cents|null, source:'own'|'profile'|'none' }. */
-function rateToday(r) {
-  const lines = Rates.linesOf(App.project, r);
-  return { cents: lines.length ? Rates.rateOn(lines, Dates.todayDn()) : null, source: Rates.sourceOf(App.project, r) };
-}
-
-/** Texte du taux du jour d'une ressource, ou « sans taux ». */
+/** Taux du jour d'une ressource, avec son origine (profil ou nominatif), ou « sans taux ». */
 function rateTodayNode(r) {
-  const { cents, source } = rateToday(r);
+  const cents = Rates.rateFor(App.project, r, Dates.todayDn());
   if (cents == null) return h('span', { class: 'hint', text: t('rt.noRate') });
-  return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(source === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
+  return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(Rates.sourceOf(App.project, r) === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
 }
 
 /** Les vues ouvertes qui montrent des taux ou des coûts sont redessinées après une modification. */
@@ -224,14 +218,14 @@ action('rsOwnClear', id => {
   const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
 });
 
-/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif, jours-personne et coût. */
-function resourceCostSection(r, costs) {
+/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif et coût total (c : son total). */
+function resourceCostSection(r, c) {
   const box = h('fieldset', { class: 'sub', id: 'rs-cost' }, h('legend', { text: t('rs.costTitle') }));
   box.append(h('div', { class: 'field' }, h('label', { for: 'rs-profile', text: t('rt.profile') }), profileSelect(r, 'rs-profile')));
   box.append(h('p', {}, t('rt.rateCol'), ' : ', rateTodayNode(r)));
   box.append(h('p', { class: 'hint', text: t('rt.own.hint') }), rateLinesEditor('r', r.id, r.name));
   if (r.rates.length) box.append(h('button', { type: 'button', disabled: Money.masked(), data: { click: 'rsOwnClear', arg: r.id } }, t('rt.own.clear')));
-  const c = costs.byRes.get(r.id);
-  box.append(h('p', { id: 'rs-cost-total' }, `${t('rs.pd')} : ${pdText(c.pd)} · ${t('rs.cost')} : `, Money.node(c.cents), c.unrated ? ` — ${t('rt.partial', { count: c.unrated })}` : ''));
+  // Les jours-personne sont déjà la « Charge totale » de la fiche : seul le coût est ajouté ici.
+  box.append(h('p', { id: 'rs-cost-total' }, `${t('rs.cost')} : `, Money.node(c.cents), c.unrated ? ` — ${t('rt.partial', { count: c.unrated })}` : ''));
   return box;
 }

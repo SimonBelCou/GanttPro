@@ -67,7 +67,7 @@ const Editor = (() => {
     // Étape C : coût des ressources de la tâche enregistrée (le planning enregistré, pas le brouillon en cours de saisie).
     const saved = draft.id && App.project.tasks.find(x => x.id === draft.id && x.type === 'task');
     if (saved && saved.assign.length && App.sched && Rates.inUse(App.project)) {
-      const c = Rates.compute(App.project, App.sched).byTask.get(saved.id), pd = pdText(c.pd);
+      const c = Rates.ofTask(App.project, App.sched, saved), pd = pdText(c.pd);
       box.append(h('p', { class: 'hint', id: 'assign-cost' }, c.unrated && !c.cents ? t('rt.assignNone', { pd })
         : amountSentence(c.unrated ? 'rt.assignPart' : 'rt.assignCost', { pd }, c.cents)));
     }

@@ -735,7 +735,7 @@ Départ : ouvrez `taux-profils-base.json`.
   ressources selon le planning enregistré : 5 j-p · 2 000,00 € » (10 jours × 50 % = 5 jours-personne, × 400,00 €).
 - [ ] 2. Fiche de **T2** (20 j, Bob à 100 %). *Attendu :* `20 j-p · 9 000,00 €`. Fiche de **T3** (5 j, Alice à 100 %) : `5 j-p · 2 000,00 €`.
 - [ ] 3. Ouvrez **Ressources**, **Fiche** d'Alice. *Attendu :* une rubrique « Coût des ressources » avec son profil, son taux du
-  jour, « Jours-personne : 10 j-p · Coût prévu : 4 000,00 € » ; dans la liste de ses tâches, deux colonnes
+  jour et « Coût prévu : 4 000,00 € » ; plus bas, « Charge totale : 10 jours-personne » ; dans la liste de ses tâches, deux colonnes
   Jours-personne et Coût prévu (T1 : `5 j-p`, `2 000,00 €` ; T3 : `5 j-p`, `2 000,00 €`).
 - [ ] 4. Dans cette fiche, **Ajouter une ligne de taux** (taux nominatif) et saisissez `650`. *Attendu :* le coût d'Alice passe à
   `6 500,00 €` (le taux nominatif remplace celui du profil) et la liste des ressources indique « (nominatif) ».

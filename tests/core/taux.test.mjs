@@ -29,7 +29,7 @@ test('R-92 coût d\'une affectation : jours ouvrés x taux d\'occupation x taux 
   assert.equal(c.total.cents, eur(2000));
   assert.equal(c.byRes.get('R1').cents, eur(2000));
   assert.equal(c.byRes.get('R2').cents, 0);
-  assert.equal(c.any, true);
+  assert.equal(Rates.hasRates(p), true);
 });
 
 test('R-93 taux daté : le coût suit le taux en vigueur chaque jour ouvré', () => {
@@ -92,7 +92,7 @@ test('R-96 le taux nominatif remplace celui du profil ; une récapitulative somm
   assert.equal(c.byTask.get('S').cents, eur(2450));
   assert.equal(c.byTask.get('S').pd, 200 + 150);
   assert.equal(c.byTask.get('M').cents, 0, 'un jalon ne coûte rien');
-  assert.equal(c.byProfile.get('P1').cents, eur(2450));
+  assert.deepEqual(plain(Rates.ofTask(p, Schedule.compute(p), p.tasks[1])), plain(c.byTask.get('A')), 'le coût d\'une tâche seule égale celui du calcul complet');
 });
 
 test('R-97 coût réel estimé = coût prévu x avancement, et il n\'entre ni dans le coût réel ni dans l\'EVM', () => {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d/0kAgKv4cC2XBNUjzYi+nnyFX0CRb7TWqrQEmke8Lk='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eq7y9gMsniPQ74sUz+11DZBFfvEYlogdrm2HNIy4PFM='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -1609,19 +1609,15 @@ const Model = (() => {
    */
   function rateLines(list, where, field, stats) {
     if (list.length > LIMITS.rateLines) fail('imp.field', { ...where, field, rule: 'rule.list', max: LIMITS.rateLines });
-    const seen = new Set();
-    const out = list.map(l => {
+    const lines = list.map(l => {
       if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
-      const f = reader(l, { ...where, field }, ['from', 'rate'], stats);
-      const from = f.date('from');
-      // Un taux est un montant : même règle et même message qu'un montant (entier de centimes), avec son propre plafond.
-      const rate = l.rate;
-      if (!Number.isSafeInteger(rate) || rate < 0 || rate > LIMITS.rate) fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
-      if (seen.has(from)) fail('imp.field', { ...where, field, rule: 'rule.rateOrder' });
-      seen.add(from);
-      return { from, rate };
+      return { from: reader(l, { ...where, field }, ['from', 'rate'], stats).date('from'), rate: l.rate };
     });
-    return out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+    // Mêmes règles que la saisie (Rates.normalize). Un taux est un montant : même message qu'un montant, son propre plafond.
+    const n = Rates.normalize(lines);
+    if (n.ok) return n.lines;
+    if (n.reason === 'rate') fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
+    fail('imp.field', { ...where, field, rule: 'rule.rateOrder' }); // 'dup' : la longueur et les dates sont déjà contrôlées
   }
 
   function ranges(list, where, field, stats, maxDays) {
@@ -2280,7 +2276,7 @@ const Budget = (() => {
     return { periods: ps, planned, real, baselines };
   }
 
-  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+  return { MAX, amt, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();
 
 // ── js/core/43-evm.js ──
@@ -2300,14 +2296,20 @@ const Budget = (() => {
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48). */
 const Evm = (() => {
-  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0); // même règle que Budget
+  const amt = Budget.amt;
   const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
 
   /**
    * a × k / b arrondi à l'entier, la moitié vers le haut (a, k >= 0, b > 0), sans perte de précision au-delà de 2^53.
    * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
    */
+  const FAST = 2 ** 52; // en dessous, numérateur et dénominateur sont des entiers exacts, quotient et reste aussi
   function divRound(a, b, k = 1) {
+    const n = 2 * a * k + b, d = 2 * b;
+    if (n <= FAST && d <= FAST) { // cas courant : sans BigInt, même résultat exact (quotient corrigé par le reste)
+      const q = Math.floor(n / d), r = n - q * d;
+      return r < 0 ? q - 1 : r >= d ? q + 1 : q;
+    }
     const A = BigInt(a) * BigInt(k), B = BigInt(b);
     const q = (2n * A + B) / (2n * B);
     return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q);
@@ -2580,19 +2582,24 @@ const View = (() => {
  * Le budget saisi de chaque tâche reste la référence du BAC, de l'EVM et des baselines (A.8 ligne 18, option 1).
  * Une ressource sans taux n'est pas valorisée (0) et est signalée : jamais un 0 sans explication (RG-57). */
 const Rates = (() => {
-  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0);
+  const byFrom = (a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0); // la ligne sans date ('') d'abord
+
+  /** Profil de coût d'une ressource, ou null. */
+  function profileOf(project, res) {
+    return (res && res.profile && (project.profiles || []).find(p => p.id === res.profile)) || null;
+  }
 
   /** Lignes de taux en vigueur pour une ressource : les siennes (nominatives) sinon celles de son profil. */
   function linesOf(project, res) {
     if (res && (res.rates || []).length) return res.rates;
-    const pf = res && res.profile ? (project.profiles || []).find(p => p.id === res.profile) : null;
+    const pf = profileOf(project, res);
     return pf ? pf.rates : [];
   }
 
   /** D'où vient le taux d'une ressource : 'own' (nominatif), 'profile' ou 'none'. */
   function sourceOf(project, res) {
     if (res && (res.rates || []).length) return 'own';
-    const pf = res && res.profile ? (project.profiles || []).find(p => p.id === res.profile) : null;
+    const pf = profileOf(project, res);
     return pf && pf.rates.length ? 'profile' : 'none';
   }
 
@@ -2605,73 +2612,68 @@ const Rates = (() => {
     return rate;
   }
 
+  /** Taux d'une ressource un jour donné (centimes), ou null s'il n'y en a pas. */
+  const rateFor = (project, res, dn) => rateOn(linesOf(project, res), dn);
+
+  /** Lignes ramenées une fois pour toutes en index de jours ouvrés (« depuis le début » = -Infinity). */
+  const indexed = (lines, cal) => lines.map(l => ({ i: l.from === '' ? -Infinity : cal.ceil(Dates.parse(l.from)), rate: l.rate }));
+
   /**
-   * Somme des taux de chaque jour ouvré d'une tâche, et nombre de jours sans taux (avant la première ligne datée, ou aucune
-   * ligne). Par tranches entre deux lignes : pas de boucle jour par jour. Indices en jours ouvrés (sched.cal).
-   * @returns {{days:number, sum:number, unrated:number}}
+   * Coût d'une affectation (RG-55), à partir des lignes indexées : { pd (centièmes de jour-personne), cents, est (coût réel
+   * estimé), unrated (jours sans taux) }. Le taux est sommé par tranche entre deux lignes (pas de boucle jour par jour),
+   * puis multiplié par le taux d'occupation et arrondi une seule fois, moitié vers le haut (BigInt au-delà de 2^53).
    */
-  function weighted(lines, cal, s, e) {
-    const days = e - s + 1;
-    if (days <= 0) return { days: 0, sum: 0, unrated: 0 };
-    if (!lines.length) return { days, sum: 0, unrated: days };
+  function costOf(lines, st, units, pct) {
+    const days = Math.max(0, st.e - st.s + 1);
     let sum = 0, rated = 0;
     for (let k = 0; k < lines.length; k++) {
-      const from = lines[k].from === '' ? s : Math.max(s, cal.ceil(Dates.parse(lines[k].from)));
-      const to = k + 1 < lines.length ? Math.min(e, cal.ceil(Dates.parse(lines[k + 1].from)) - 1) : e;
+      const from = Math.max(st.s, lines[k].i), to = Math.min(st.e, k + 1 < lines.length ? lines[k + 1].i - 1 : st.e);
       if (to < from) continue;
       sum += (to - from + 1) * lines[k].rate;
       rated += to - from + 1;
     }
-    return { days, sum, unrated: days - rated };
-  }
-
-  /**
-   * Coût d'une affectation (RG-55) : { pd (centièmes de jour-personne), cents, est (coût réel estimé), unrated (jours sans taux) }.
-   * Arrondi à la moitié vers le haut, une seule fois, sur des entiers (BigInt au-delà de 2^53).
-   */
-  function assignment(project, sched, task, a) {
-    const res = project.resources.find(r => r.id === a.res);
-    const st = sched.tasks.get(task.id);
-    const w = weighted(linesOf(project, res), sched.cal, st.s, st.e);
-    const cents = Evm.divRound(w.sum, 100, a.units);
-    const pct = Math.min(100, Math.max(0, task.pct || 0));
-    const est = cents == null ? null : Evm.divRound(cents, 100, pct);
-    return { pd: w.days * a.units, cents, est, unrated: w.unrated };
+    const cents = Evm.divRound(sum, 100, units);
+    const est = cents == null ? null : Evm.divRound(cents, 100, Math.min(100, Math.max(0, pct || 0)));
+    return { pd: days * units, cents, est, unrated: days - rated };
   }
 
   const zero = () => ({ pd: 0, cents: 0, est: 0, unrated: 0, assignments: 0 });
-  const add = (o, c) => { o.pd += c.pd; o.cents += amt(c.cents); o.est += amt(c.est); o.unrated += c.unrated > 0 ? 1 : 0; o.assignments++; };
+  /** Ajoute un coût d'affectation à un total ; unrated y compte les affectations PARTIELLES (RG-57). */
+  const add = (o, c) => { o.pd += c.pd; o.cents += c.cents || 0; o.est += c.est || 0; o.unrated += c.unrated > 0 ? 1 : 0; o.assignments++; return o; };
+
+  /** Coût d'une affectation d'une tâche (fiche de ressource). */
+  function assignment(project, sched, task, a) {
+    const res = project.resources.find(r => r.id === a.res);
+    return costOf(indexed(linesOf(project, res), sched.cal), sched.tasks.get(task.id), a.units, task.pct);
+  }
+
+  /** Coût d'une seule tâche, toutes affectations (fiche de tâche) : sans calculer tout le projet. */
+  function ofTask(project, sched, task) {
+    return (task.assign || []).reduce((o, a) => (project.resources.some(r => r.id === a.res) ? add(o, assignment(project, sched, task, a)) : o), zero());
+  }
 
   /**
-   * Coûts de tous les projets (RG-56) : par tâche (une récapitulative somme sa descendance), par ressource et au total.
-   * unrated = nombre d'affectations dont au moins un jour est sans taux (le total est alors PARTIEL, RG-57).
-   * @returns {{byTask:Map<string,object>, byRes:Map<string,object>, byProfile:Map<string,object>, total:object, any:boolean}}
+   * Coûts de tout le projet (RG-56) : par tâche (une récapitulative somme sa descendance), par ressource et au total.
+   * Les lignes de chaque ressource sont indexées une seule fois.
+   * @returns {{byTask:Map<string,object>, byRes:Map<string,object>, total:object}}
    */
   function compute(project, sched) {
     const byTask = new Map(project.tasks.map(t => [t.id, zero()]));
     const byRes = new Map(project.resources.map(r => [r.id, zero()]));
+    const lines = new Map(project.resources.map(r => [r.id, indexed(linesOf(project, r), sched.cal)]));
     const byId = new Map(project.tasks.map(t => [t.id, t]));
-    const resById = new Map(project.resources.map(r => [r.id, r]));
     const total = zero();
     for (const t of project.tasks) {
       if (t.type !== 'task') continue;
+      const st = sched.tasks.get(t.id);
       for (const a of t.assign || []) {
-        if (!resById.has(a.res)) continue;
-        const c = assignment(project, sched, t, a);
+        if (!lines.has(a.res)) continue;
+        const c = costOf(lines.get(a.res), st, a.units, t.pct);
         add(byRes.get(a.res), c); add(total, c);
-        let cur = t, guard = 0;
-        while (cur && guard++ <= Model.LIMITS.depth + 1) { add(byTask.get(cur.id), c); cur = cur.parent ? byId.get(cur.parent) : null; }
+        for (let cur = t, guard = 0; cur && guard++ <= Model.LIMITS.depth + 1; cur = cur.parent ? byId.get(cur.parent) : null) add(byTask.get(cur.id), c);
       }
     }
-    // Par profil : une ressource sans profil est rangée sous '' (taux nominatif ou aucun).
-    const byProfile = new Map();
-    for (const r of project.resources) {
-      const key = r.profile || '';
-      if (!byProfile.has(key)) byProfile.set(key, zero());
-      const o = byProfile.get(key), c = byRes.get(r.id);
-      o.pd += c.pd; o.cents += c.cents; o.est += c.est; o.unrated += c.unrated; o.assignments += c.assignments;
-    }
-    return { byTask, byRes, byProfile, total, any: hasRates(project) };
+    return { byTask, byRes, total };
   }
 
   /** Au moins une ligne de taux dans le projet (EF-147 : sinon rien de nouveau n'apparaît). */
@@ -2679,12 +2681,16 @@ const Rates = (() => {
     return (project.profiles || []).some(p => p.rates.length) || project.resources.some(r => (r.rates || []).length);
   }
 
-  /** Le projet utilise-t-il la valorisation : un profil, un taux, ou une affectation à valoriser. */
+  /** Le projet utilise-t-il la valorisation : un profil, un taux, ou une ressource rattachée à un profil. */
   function inUse(project) {
     return (project.profiles || []).length > 0 || project.resources.some(r => (r.rates || []).length || r.profile);
   }
 
-  /** Contrôle des lignes saisies dans l'interface (mêmes règles qu'à l'import) : renvoie la liste triée ou une raison. */
+  /**
+   * Règles des lignes de taux, communes à l'import (Model.sanitize) et à la saisie (RG-54) : 10 lignes au plus, date
+   * valide ou vide, une seule ligne par date, taux entier de centimes de 0 à LIMITS.rate. Renvoie les lignes triées ou
+   * la raison du refus : 'max', 'date', 'dup' ou 'rate'.
+   */
   function normalize(lines) {
     if (lines.length > Model.LIMITS.rateLines) return { ok: false, reason: 'max' };
     const seen = new Set();
@@ -2694,10 +2700,10 @@ const Rates = (() => {
       seen.add(l.from);
       if (!Number.isSafeInteger(l.rate) || l.rate < 0 || l.rate > Model.LIMITS.rate) return { ok: false, reason: 'rate' };
     }
-    return { ok: true, lines: lines.map(l => ({ from: l.from, rate: l.rate })).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0)) };
+    return { ok: true, lines: lines.map(l => ({ from: l.from, rate: l.rate })).sort(byFrom) };
   }
 
-  return { linesOf, sourceOf, rateOn, weighted, assignment, compute, hasRates, inUse, normalize };
+  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofTask, compute, hasRates, inUse, normalize };
 })();
 
 // ── js/core/50-i18n.js ──
@@ -4134,6 +4140,8 @@ const Exchange = (() => {
   const t = (k, p) => I18n.t(k, p);
   const LINK_FR = { FS: 'FD', SS: 'DD', FF: 'FF', SF: 'DF' };
   const LINK_IN = { FD: 'FS', DD: 'SS', FF: 'FF', DF: 'SF', FS: 'FS', SS: 'SS', SF: 'SF' };
+  /** Montant d'une cellule de tableur : nombre en unités (deux décimales à l'écriture). */
+  const money = cents => ({ n: cents / 100 });
 
   /** Numérotation hiérarchique 1, 1.1, 1.2, 2… selon l'ordre de la liste. */
   function outline(project) {
@@ -4167,7 +4175,6 @@ const Exchange = (() => {
       ...(amounts ? ['xp.budget', 'xp.actual'] : []), ...(ratesOn ? ['xp.resCost'] : [])].map(k => t(k));
     // Budget et coût réel (EF-123) : seulement si l'export les inclut (EF-124) ; une récapitulative donne la somme de ses enfants.
     const sums = amounts ? Budget.amounts(project) : null;
-    const money = c => ({ n: c / 100 });
     const rows = [head];
     for (const x of project.tasks) {
       const r = sched.tasks.get(x.id);
@@ -4188,12 +4195,6 @@ const Exchange = (() => {
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
 
-  /** Taux du jour d'une ressource pour une feuille : montant, ou vide s'il n'y en a pas. */
-  function rateOf(project, r, today) {
-    const lines = Rates.linesOf(project, r), c = lines.length ? Rates.rateOn(lines, today) : null;
-    return c == null ? '' : { n: c / 100 };
-  }
-
   /** Classeur de cinq feuilles (EF-94), plus la feuille « Taux » quand les montants et des taux sont exportés. */
   function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
@@ -4202,8 +4203,8 @@ const Exchange = (() => {
     // Étape C (EF-150) : le profil est un intitulé, il reste ; taux et coûts exigent les montants et les noms (RG-58).
     const profOn = Rates.inUse(project), ratesOn = amounts && !anonymize && Rates.hasRates(project);
     const rc = ratesOn ? Rates.compute(project, sched) : null;
-    const money = c => ({ n: c / 100 });
-    const profName = r => ((project.profiles || []).find(p => p.id === r.profile) || { name: '' }).name;
+    const profName = r => (Rates.profileOf(project, r) || { name: '' }).name;
+    const rateOf = r => { const c = Rates.rateFor(project, r, today); return c == null ? '' : money(c); };
     const rateSheet = amounts && Rates.hasRates(project) ? [{ name: t('xp.sheet.rates'), rows: [[t('xp.rateOwner'), t('xp.kind'), t('rt.from'), t('rt.rate')],
       ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
       ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
@@ -4212,7 +4213,7 @@ const Exchange = (() => {
       { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd'), ...(profOn ? [t('rt.profile')] : []), ...(ratesOn ? [t('rt.rateCol'), t('rt.colCost'), t('rt.colEst')] : [])],
         ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10,
           ...(profOn ? [profName(r)] : []),
-          ...(ratesOn ? [rateOf(project, r, today), money(rc.byRes.get(r.id).cents), money(rc.byRes.get(r.id).est)] : [])])] },
+          ...(ratesOn ? [rateOf(r), money(rc.byRes.get(r.id).cents), money(rc.byRes.get(r.id).est)] : [])])] },
       ...rateSheet,
       { name: t('xp.sheet.absences'), rows: [[t('res.name'), t('cal.from'), t('xp.to'), t('cal.label')],
         ...(anonymize ? [] : project.resources.flatMap((r, i) => r.absences.map(a => [rName(r, i), a.start, a.end, a.label])))] },
@@ -5037,8 +5038,6 @@ const Money = (() => {
   function plain(cents, { compact = false } = {}) {
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
-  /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
-  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
   /**
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
@@ -5051,7 +5050,7 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, spoken, node };
+  return { DOTS, symbol, masked, text, plain, node };
 })();
 
 /** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */
@@ -5909,7 +5908,7 @@ const Editor = (() => {
     // Étape C : coût des ressources de la tâche enregistrée (le planning enregistré, pas le brouillon en cours de saisie).
     const saved = draft.id && App.project.tasks.find(x => x.id === draft.id && x.type === 'task');
     if (saved && saved.assign.length && App.sched && Rates.inUse(App.project)) {
-      const c = Rates.compute(App.project, App.sched).byTask.get(saved.id), pd = pdText(c.pd);
+      const c = Rates.ofTask(App.project, App.sched, saved), pd = pdText(c.pd);
       box.append(h('p', { class: 'hint', id: 'assign-cost' }, c.unrated && !c.cents ? t('rt.assignNone', { pd })
         : amountSentence(c.unrated ? 'rt.assignPart' : 'rt.assignCost', { pd }, c.cents)));
     }
@@ -7500,17 +7499,11 @@ function amountSentence(key, params, cents) {
   return [before, Money.node(cents), after];
 }
 
-/** Taux en vigueur aujourd'hui pour une ressource : { cents|null, source:'own'|'profile'|'none' }. */
-function rateToday(r) {
-  const lines = Rates.linesOf(App.project, r);
-  return { cents: lines.length ? Rates.rateOn(lines, Dates.todayDn()) : null, source: Rates.sourceOf(App.project, r) };
-}
-
-/** Texte du taux du jour d'une ressource, ou « sans taux ». */
+/** Taux du jour d'une ressource, avec son origine (profil ou nominatif), ou « sans taux ». */
 function rateTodayNode(r) {
-  const { cents, source } = rateToday(r);
+  const cents = Rates.rateFor(App.project, r, Dates.todayDn());
   if (cents == null) return h('span', { class: 'hint', text: t('rt.noRate') });
-  return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(source === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
+  return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(Rates.sourceOf(App.project, r) === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
 }
 
 /** Les vues ouvertes qui montrent des taux ou des coûts sont redessinées après une modification. */
@@ -7713,15 +7706,15 @@ action('rsOwnClear', id => {
   const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
 });
 
-/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif, jours-personne et coût. */
-function resourceCostSection(r, costs) {
+/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif et coût total (c : son total). */
+function resourceCostSection(r, c) {
   const box = h('fieldset', { class: 'sub', id: 'rs-cost' }, h('legend', { text: t('rs.costTitle') }));
   box.append(h('div', { class: 'field' }, h('label', { for: 'rs-profile', text: t('rt.profile') }), profileSelect(r, 'rs-profile')));
   box.append(h('p', {}, t('rt.rateCol'), ' : ', rateTodayNode(r)));
   box.append(h('p', { class: 'hint', text: t('rt.own.hint') }), rateLinesEditor('r', r.id, r.name));
   if (r.rates.length) box.append(h('button', { type: 'button', disabled: Money.masked(), data: { click: 'rsOwnClear', arg: r.id } }, t('rt.own.clear')));
-  const c = costs.byRes.get(r.id);
-  box.append(h('p', { id: 'rs-cost-total' }, `${t('rs.pd')} : ${pdText(c.pd)} · ${t('rs.cost')} : `, Money.node(c.cents), c.unrated ? ` — ${t('rt.partial', { count: c.unrated })}` : ''));
+  // Les jours-personne sont déjà la « Charge totale » de la fiche : seul le coût est ajouté ici.
+  box.append(h('p', { id: 'rs-cost-total' }, `${t('rs.cost')} : `, Money.node(c.cents), c.unrated ? ` — ${t('rt.partial', { count: c.unrated })}` : ''));
   return box;
 }
 
@@ -7742,9 +7735,10 @@ function paintResourceSheet(body, id, focusSel) {
   body.append(h('div', { class: 'field' }, h('label', { for: 'rs-cap', text: t('res.capacity') }),
     h('input', { type: 'number', id: 'rs-cap', min: 1, max: 100, step: 1, inputmode: 'numeric', value: r.capacity, data: { change: 'rsCapacity', arg: id }, aria: { describedby: 'rs-err' } })));
 
-  // Étape C : coût de la ressource, seulement si le projet utilise des profils ou des taux (EF-147).
-  const showRates = Rates.inUse(App.project), costs = showRates && App.sched ? Rates.compute(App.project, App.sched) : null;
-  if (costs) body.append(resourceCostSection(r, costs));
+  // Étape C : coût de chacune de ses tâches, seulement si le projet utilise des profils ou des taux (EF-147).
+  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
+  const costs = Rates.inUse(App.project) && App.sched ? tasks.map(x => Rates.assignment(App.project, App.sched, x, x.assign.find(a => a.res === id))) : null;
+  if (costs) body.append(resourceCostSection(r, { cents: costs.reduce((s, c) => s + (c.cents || 0), 0), unrated: costs.filter(c => c.unrated).length }));
 
   const abs = [...r.absences].map((a, i) => ({ ...a, i })).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   const absBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('rs.absences') }));
@@ -7761,12 +7755,11 @@ function paintResourceSheet(body, id, focusSel) {
     h('button', { type: 'button', data: { click: 'rsAbsAdd', arg: id } }, t('rs.addAbsence'))));
   body.append(absBox);
 
-  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
   let load = 0;
-  const rows = tasks.map(x => {
+  const rows = tasks.map((x, k) => {
     const a = x.assign.find(z => z.res === id), sr = App.sched && App.sched.tasks.get(x.id);
     load += x.dur * a.units / 100;
-    const ac = costs ? Rates.assignment(App.project, App.sched, x, a) : null;
+    const ac = costs && costs[k];
     return h('tr', {}, h('td', { class: 'id', text: x.id }), h('td', { text: x.name }), h('td', { text: `${a.units} %` }),
       h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }),
       ac ? h('td', { class: 'num', text: pdText(ac.pd) }) : null,
@@ -8390,25 +8383,27 @@ function costScale(curve) {
   return { max: top, ticks };
 }
 
+/** Tuile d'indicateur (titre, valeur) et cellule de montant, communes aux sections de l'onglet Budget. */
+const budgetTile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+const amountCell = cents => h('td', { class: 'num' }, Money.node(cents));
+
 function paintBudget(panel) {
   const P = App.project, tot = Budget.totals(P);
-  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
   const remaining = tot.remaining < 0
     ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
     : [Money.node(tot.remaining)];
   panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
-    tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
-    tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
+    budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('bud.provision'), Money.node(tot.provision)), budgetTile(t('bud.total'), Money.node(tot.total)),
+    budgetTile(t('bud.actual'), Money.node(tot.actual)), budgetTile(t('bud.remaining'), ...remaining)));
 
   // Tableau par catégorie (RG-40).
   const cats = Budget.byCategory(P);
-  const num = c => h('td', { class: 'num' }, Money.node(c));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-cat-h' } },
     h('h3', { id: 'bud-cat-h', text: t('bud.byCat') }),
     h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-cats' },
       h('thead', {}, h('tr', {}, [t('bud.cat'), t('f.budget'), t('f.actual'), t('bud.gap')].map(x => h('th', { scope: 'col', text: x })))),
-      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
-      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
+      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), amountCell(r.budget), amountCell(r.actual), amountCell(r.gap)))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), amountCell(cats.total.budget), amountCell(cats.total.actual), amountCell(cats.total.gap)))))));
 
   if (Rates.hasRates(P)) paintRatesCost(panel, tot);
 
@@ -8438,26 +8433,24 @@ function paintBudget(panel) {
  */
 function paintRatesCost(panel, tot) {
   const P = App.project, costs = Rates.compute(P, App.sched);
-  const num = c => h('td', { class: 'num' }, Money.node(c));
   const gap = tot.bac - costs.total.cents;
-  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
   const rows = P.resources.filter(r => costs.byRes.get(r.id).assignments > 0).map(r => {
     const c = costs.byRes.get(r.id), pf = (P.profiles || []).find(x => x.id === r.profile);
     return h('tr', {}, h('th', { scope: 'row', text: r.name }), h('td', { text: pf ? pf.name : '' }), h('td', { class: 'num', text: pdText(c.pd) }),
-      h('td', { class: 'num' }, rateTodayNode(r)), num(c.cents), num(c.est));
+      h('td', { class: 'num' }, rateTodayNode(r)), amountCell(c.cents), amountCell(c.est));
   });
   const tt = costs.total;
   panel.append(h('section', { class: 'dash-section', id: 'bud-rates', aria: { labelledby: 'bud-rates-h' } },
     h('h3', { id: 'bud-rates-h', text: t('rt.tab') }),
     h('p', { class: 'hint', text: t('rt.tabIntro') }),
-    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, tile(t('bud.bac'), Money.node(tot.bac)), tile(t('rt.costTotal'), Money.node(tt.cents)),
-      tile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
+    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('rt.costTotal'), Money.node(tt.cents)),
+      budgetTile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
     tt.unrated ? h('p', { class: 'note', id: 'bud-rates-partial', role: 'status', text: t('rt.partial', { count: tt.unrated }) }) : null,
     h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-rates-table' },
       h('caption', { class: 'sr-only', text: t('rt.tab') }),
       h('thead', {}, h('tr', {}, [t('rt.colRes'), t('rt.colProfile'), t('rt.colPd'), t('rt.colRate'), t('rt.colCost'), t('rt.colEst')].map(x => h('th', { scope: 'col', text: x })))),
       h('tbody', {}, rows),
-      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), num(tt.cents), num(tt.est))))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), amountCell(tt.cents), amountCell(tt.est))))),
     h('p', { class: 'hint', text: t('rt.estNote') })));
 }
 
@@ -9890,7 +9883,6 @@ async function openLibrary(focusSel) {
 }
 
 action('openLibrary', () => openLibrary());
-action('saveLibrary', () => saveToLibrary());
 action('newFromTemplate', () => newFromTemplate());
 
 // ── js/ui/86-recovery.js ──

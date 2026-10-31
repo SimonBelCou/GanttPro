@@ -14,25 +14,27 @@ function costScale(curve) {
   return { max: top, ticks };
 }
 
+/** Tuile d'indicateur (titre, valeur) et cellule de montant, communes aux sections de l'onglet Budget. */
+const budgetTile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
+const amountCell = cents => h('td', { class: 'num' }, Money.node(cents));
+
 function paintBudget(panel) {
   const P = App.project, tot = Budget.totals(P);
-  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
   const remaining = tot.remaining < 0
     ? [t('bud.overrun') + ' ', Money.node(-tot.remaining)]
     : [Money.node(tot.remaining)];
   panel.append(h('dl', { class: 'tiles amounts', id: 'bud-tiles' },
-    tile(t('bud.bac'), Money.node(tot.bac)), tile(t('bud.provision'), Money.node(tot.provision)), tile(t('bud.total'), Money.node(tot.total)),
-    tile(t('bud.actual'), Money.node(tot.actual)), tile(t('bud.remaining'), ...remaining)));
+    budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('bud.provision'), Money.node(tot.provision)), budgetTile(t('bud.total'), Money.node(tot.total)),
+    budgetTile(t('bud.actual'), Money.node(tot.actual)), budgetTile(t('bud.remaining'), ...remaining)));
 
   // Tableau par catégorie (RG-40).
   const cats = Budget.byCategory(P);
-  const num = c => h('td', { class: 'num' }, Money.node(c));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-cat-h' } },
     h('h3', { id: 'bud-cat-h', text: t('bud.byCat') }),
     h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-cats' },
       h('thead', {}, h('tr', {}, [t('bud.cat'), t('f.budget'), t('f.actual'), t('bud.gap')].map(x => h('th', { scope: 'col', text: x })))),
-      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), num(r.budget), num(r.actual), num(r.gap)))),
-      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), num(cats.total.budget), num(cats.total.actual), num(cats.total.gap)))))));
+      h('tbody', {}, cats.rows.map(r => h('tr', {}, h('th', { scope: 'row', text: r.id ? r.name : t('view.noCat') }), amountCell(r.budget), amountCell(r.actual), amountCell(r.gap)))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), amountCell(cats.total.budget), amountCell(cats.total.actual), amountCell(cats.total.gap)))))));
 
   if (Rates.hasRates(P)) paintRatesCost(panel, tot);
 
@@ -62,26 +64,24 @@ function paintBudget(panel) {
  */
 function paintRatesCost(panel, tot) {
   const P = App.project, costs = Rates.compute(P, App.sched);
-  const num = c => h('td', { class: 'num' }, Money.node(c));
   const gap = tot.bac - costs.total.cents;
-  const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
   const rows = P.resources.filter(r => costs.byRes.get(r.id).assignments > 0).map(r => {
     const c = costs.byRes.get(r.id), pf = (P.profiles || []).find(x => x.id === r.profile);
     return h('tr', {}, h('th', { scope: 'row', text: r.name }), h('td', { text: pf ? pf.name : '' }), h('td', { class: 'num', text: pdText(c.pd) }),
-      h('td', { class: 'num' }, rateTodayNode(r)), num(c.cents), num(c.est));
+      h('td', { class: 'num' }, rateTodayNode(r)), amountCell(c.cents), amountCell(c.est));
   });
   const tt = costs.total;
   panel.append(h('section', { class: 'dash-section', id: 'bud-rates', aria: { labelledby: 'bud-rates-h' } },
     h('h3', { id: 'bud-rates-h', text: t('rt.tab') }),
     h('p', { class: 'hint', text: t('rt.tabIntro') }),
-    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, tile(t('bud.bac'), Money.node(tot.bac)), tile(t('rt.costTotal'), Money.node(tt.cents)),
-      tile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
+    h('dl', { class: 'tiles amounts', id: 'bud-rates-tiles' }, budgetTile(t('bud.bac'), Money.node(tot.bac)), budgetTile(t('rt.costTotal'), Money.node(tt.cents)),
+      budgetTile(t('rt.gap'), gap < 0 ? [t('bud.overrun') + ' ', Money.node(-gap)] : [Money.node(gap)])),
     tt.unrated ? h('p', { class: 'note', id: 'bud-rates-partial', role: 'status', text: t('rt.partial', { count: tt.unrated }) }) : null,
     h('div', { class: 'table-scroll' }, h('table', { class: 'manage', id: 'bud-rates-table' },
       h('caption', { class: 'sr-only', text: t('rt.tab') }),
       h('thead', {}, h('tr', {}, [t('rt.colRes'), t('rt.colProfile'), t('rt.colPd'), t('rt.colRate'), t('rt.colCost'), t('rt.colEst')].map(x => h('th', { scope: 'col', text: x })))),
       h('tbody', {}, rows),
-      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), num(tt.cents), num(tt.est))))),
+      h('tfoot', {}, h('tr', {}, h('th', { scope: 'row', text: t('bud.sum') }), h('td'), h('td', { class: 'num', text: pdText(tt.pd) }), h('td'), amountCell(tt.cents), amountCell(tt.est))))),
     h('p', { class: 'hint', text: t('rt.estNote') })));
 }
 

@@ -16,8 +16,6 @@ const Money = (() => {
   function plain(cents, { compact = false } = {}) {
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
-  /** Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ». */
-  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
   /**
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
@@ -30,7 +28,7 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, spoken, node };
+  return { DOTS, symbol, masked, text, plain, node };
 })();
 
 /** Bouton de la barre du haut ou d'une fenêtre : même réglage. Les fenêtres ouvertes à montants sont redessinées. */

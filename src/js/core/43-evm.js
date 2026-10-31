@@ -14,14 +14,20 @@
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48). */
 const Evm = (() => {
-  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0); // même règle que Budget
+  const amt = Budget.amt;
   const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
 
   /**
    * a × k / b arrondi à l'entier, la moitié vers le haut (a, k >= 0, b > 0), sans perte de précision au-delà de 2^53.
    * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
    */
+  const FAST = 2 ** 52; // en dessous, numérateur et dénominateur sont des entiers exacts, quotient et reste aussi
   function divRound(a, b, k = 1) {
+    const n = 2 * a * k + b, d = 2 * b;
+    if (n <= FAST && d <= FAST) { // cas courant : sans BigInt, même résultat exact (quotient corrigé par le reste)
+      const q = Math.floor(n / d), r = n - q * d;
+      return r < 0 ? q - 1 : r >= d ? q + 1 : q;
+    }
     const A = BigInt(a) * BigInt(k), B = BigInt(b);
     const q = (2n * A + B) / (2n * B);
     return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q);

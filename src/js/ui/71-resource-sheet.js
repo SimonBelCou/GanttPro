@@ -14,9 +14,10 @@ function paintResourceSheet(body, id, focusSel) {
   body.append(h('div', { class: 'field' }, h('label', { for: 'rs-cap', text: t('res.capacity') }),
     h('input', { type: 'number', id: 'rs-cap', min: 1, max: 100, step: 1, inputmode: 'numeric', value: r.capacity, data: { change: 'rsCapacity', arg: id }, aria: { describedby: 'rs-err' } })));
 
-  // Étape C : coût de la ressource, seulement si le projet utilise des profils ou des taux (EF-147).
-  const showRates = Rates.inUse(App.project), costs = showRates && App.sched ? Rates.compute(App.project, App.sched) : null;
-  if (costs) body.append(resourceCostSection(r, costs));
+  // Étape C : coût de chacune de ses tâches, seulement si le projet utilise des profils ou des taux (EF-147).
+  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
+  const costs = Rates.inUse(App.project) && App.sched ? tasks.map(x => Rates.assignment(App.project, App.sched, x, x.assign.find(a => a.res === id))) : null;
+  if (costs) body.append(resourceCostSection(r, { cents: costs.reduce((s, c) => s + (c.cents || 0), 0), unrated: costs.filter(c => c.unrated).length }));
 
   const abs = [...r.absences].map((a, i) => ({ ...a, i })).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   const absBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('rs.absences') }));
@@ -33,12 +34,11 @@ function paintResourceSheet(body, id, focusSel) {
     h('button', { type: 'button', data: { click: 'rsAbsAdd', arg: id } }, t('rs.addAbsence'))));
   body.append(absBox);
 
-  const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
   let load = 0;
-  const rows = tasks.map(x => {
+  const rows = tasks.map((x, k) => {
     const a = x.assign.find(z => z.res === id), sr = App.sched && App.sched.tasks.get(x.id);
     load += x.dur * a.units / 100;
-    const ac = costs ? Rates.assignment(App.project, App.sched, x, a) : null;
+    const ac = costs && costs[k];
     return h('tr', {}, h('td', { class: 'id', text: x.id }), h('td', { text: x.name }), h('td', { text: `${a.units} %` }),
       h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }),
       ac ? h('td', { class: 'num', text: pdText(ac.pd) }) : null,

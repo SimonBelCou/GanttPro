@@ -139,7 +139,8 @@ Ces consignes complètent les règles ci-dessus ; elles s'appliquent à tout cod
   calcule la CSP (script ET style autorisés par empreinte SHA-256, **aucun `'unsafe-inline'`**).
   `python3 tools/build.py --check` (CI) échoue si le fichier n'est pas à jour.
 - Le build refuse `eval`, `new Function`, `document.write`, `onclick=`, `style=`, `setAttribute('style'|'on…')`,
-  `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`.
+  `console.*`, tout appel réseau et tout accès au stockage hors de `src/js/ui/10-storage.js`. Il refuse aussi un nom
+  déclaré deux fois au premier niveau des sources : une fois assemblées, elles partagent une seule portée.
 
 ## Obligatoire à chaque modification
 1. `python3 tools/build.py`
