@@ -7,8 +7,9 @@
 credentials*
 secrets*
 
-# Exports de projets : peuvent contenir des données personnelles (noms, rôles)
-*_gantt.json
+# Exports de projets (JSON, Excel, CSV, MS Project, image) : « <nom>_gantt.<ext> » ; peuvent contenir des données
+# personnelles (noms, rôles) ou des montants réels (CLAUDE.md §3)
+*_gantt.*
 
 # Outils et artefacts de test
 node_modules/

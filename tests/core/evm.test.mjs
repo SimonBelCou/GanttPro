@@ -1,4 +1,4 @@
-// Étape B, valeur acquise : scénarios R-80 à R-82 (cahier des charges, 9.7), calcul seul.
+// Étape B, valeur acquise : scénarios R-80 à R-82 (Specs_fonctionnelles.md, 9.7), calcul seul.
 //   node --test tests/core/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -23,8 +23,8 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   Budget 14 ; thème clair par défaut, raccourcis au survol, icône d'onglet intégrée. Cahier des charges : EX-29 à EX-38.
   Reste à valider par l'utilisateur : G15 (mobile), puis fusion de la PR.
 - Reste à faire : étape C (taux de ressource) ; options de colonnes de la liste ; nouvelle tâche « versionnement ».
-- Référence : cahier des charges
-  (https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
+- Référence : `Specs_fonctionnelles.md` (source unique depuis le 2 novembre 2026 ; l'ancien cahier des charges en ligne
+  est figé) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
   RG-35 à RG-43 (6.8), recette R-71 à R-84 (9.7), décisions en annexe A.8, exigence EX-28 (recette manuelle).
 - Recette : `docs/recette-manuelle.md` (partie A, tout l'outil ; partie B, budget) et les faux projets de
   `tests/fixtures/`. Tests : `tests/test_v3_budget.py`, `tests/core/budget.test.mjs`.
@@ -37,8 +37,8 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 - Ne jamais modifier `GanttPro.html` à la main : `python3 tools/build.py`.
 - Après toute modification : `python3 tools/build.py`, `node --test tests/core/*.test.mjs`,
   `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `PERF_FACTOR=2 python3 tests/test_v3_recette.py`.
-- Une exigence nouvelle = un test de plus. Toute fonction ou arbitrage est reporté dans le cahier des charges
-  (exigence + annexe A) et, si l'usage change, dans `docs/guide-utilisateur.md`.
+- Une exigence nouvelle = un test de plus. Toute fonction ou arbitrage est reporté dans `Specs_fonctionnelles.md`
+  (exigence + annexe A ou journal C) et, si l'usage change, dans `docs/guide-utilisateur.md`.
 - DOM par `h()` / `textContent`, jamais `innerHTML` ; actions par `data-click` et la table `ACTIONS` ;
   fenêtres par `Dialog` ; libellés par `I18n.t()` en français ET en anglais ; imports par `Model.sanitize`.
 - Aucun appel réseau ; stockage seulement dans `src/js/ui/10-storage.js` ; aucun montant réel dans le dépôt.
@@ -111,9 +111,9 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 
 ## 6. Ordre de travail proposé pour la conversation neuve
 
-1. Lire ce fichier, `CLAUDE.md`, le cadrage (section 8 incluse) et l'annexe A du cahier des charges.
+1. Lire ce fichier, `CLAUDE.md`, le cadrage (section 8 incluse) et l'annexe A de `Specs_fonctionnelles.md`.
 2. (Fait le 16 octobre 2026 : toutes les valeurs du paragraphe 3 sont confirmées.)
-3. Écrire dans le cahier des charges : exigences EF (étape A), règles de gestion, scénarios chiffrés de recette,
+3. Écrire dans `Specs_fonctionnelles.md` : exigences EF (étape A), règles de gestion, scénarios chiffrés de recette,
    annexe A (arbitrages ci-dessus).
 4. Développer l'étape A : modèle et moteur d'abord (tests `tests/core/`), puis interface, traductions, exports,
    guide utilisateur, tests d'interface et axe-core.

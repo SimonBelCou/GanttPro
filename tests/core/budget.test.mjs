@@ -1,4 +1,4 @@
-// Budget, étape A : scénarios de la recette R-71 à R-79 et R-83 (cahier des charges, 9.7), calcul seul.
+// Budget, étape A : scénarios de la recette R-71 à R-79 et R-83 (Specs_fonctionnelles.md, 9.7), calcul seul.
 //   node --test tests/core/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

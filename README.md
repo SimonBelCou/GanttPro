@@ -5,6 +5,8 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 **Mode d'emploi complet : [docs/guide-utilisateur.md](docs/guide-utilisateur.md).** Faire créer ou modifier un projet par une IA : [docs/guide-ia-json.md](docs/guide-ia-json.md).
 
+**Pour reprendre le projet :** [Specs_fonctionnelles.md](Specs_fonctionnelles.md) (spécifications, source unique) · [Architecture.md](Architecture.md) (structure et schémas) · [PCA.md](PCA.md) (continuité, reprise, codes d'erreur) · [CHANGELOG.md](CHANGELOG.md) (historique) · [docs/veille-securite.md](docs/veille-securite.md) (veille).
+
 ![Écran principal de GanttPro avec un projet d'exemple](docs/img/02-principal.png)
 
 ## ✨ Fonctionnalités (version 3)
@@ -88,9 +90,13 @@ GanttPro.html             ← Application livrée (assemblée par tools/build.py
 src/                      ← Sources : js/core (moteur), js/ui (interface), styles, index.html
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, veille sécurité, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
-CLAUDE.md                 ← Règles de sécurité, d'éthique et de code du projet
+CLAUDE.md                 ← Règles de développement (texte générique, puis spécificités de GanttPro au §13)
+Specs_fonctionnelles.md   ← Spécifications : exigences, règles de gestion, recette R-xx, arbitrages (source unique)
+Architecture.md           ← Contexte, briques, flux, modules (schémas Mermaid)
+PCA.md                    ← Plan de continuité : hébergement, reprise, problèmes récurrents, codes d'erreur
+CHANGELOG.md              ← Journal des changements
 SECURITY.md               ← Politique de sécurité et signalement
 THIRD_PARTY_LICENSES.md   ← Licences des polices intégrées (SIL OFL 1.1)
 ```
@@ -101,16 +107,18 @@ THIRD_PARTY_LICENSES.md   ← Licences des polices intégrées (SIL OFL 1.1)
 python3 tools/build.py                       # assemble GanttPro.html depuis src/
 node --test tests/core/*.test.mjs            # moteur et scénarios chiffrés (sans dépendance)
 pip install playwright && python3 -m playwright install chromium
-npm install --no-save axe-core               # contrôle d'accessibilité
+npm install --no-save axe-core@4.14.0        # contrôle d'accessibilité
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
+python3 tests/test_v3_budget.py
+python3 tests/test_v3_recette_manuelle.py
 ```
 
 Règles de code (détail dans [CLAUDE.md](CLAUDE.md)) : DOM construit avec `h()` (jamais `innerHTML`), aucun gestionnaire
 inline (`data-click` + table `ACTIONS`), `safeColor()` pour les couleurs, `Model.sanitize` pour toute donnée importée.
 
-Référence fonctionnelle : le cahier des charges (exigences, règles de calcul, scénarios de recette).
+Référence fonctionnelle : [Specs_fonctionnelles.md](Specs_fonctionnelles.md) (exigences, règles de calcul, scénarios de recette, arbitrages). Toute modification de fonction est reportée dans ce fichier, dans la même pull request que le code.
 
 ## 📄 Licence
 
@@ -119,4 +127,4 @@ Ce projet est distribué sous licence MIT (voir [LICENSE](LICENSE)). Vous êtes 
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues : ouvrez une issue ou une pull request. Une pull request doit garder la CI au vert
-(fichier assemblé à jour, tests, accessibilité, gitleaks).
+(fichier assemblé à jour, tests, accessibilité, gitleaks) et mettre à jour les documents concernés (CLAUDE.md §7 et §8).

@@ -1,4 +1,4 @@
-// Scénarios chiffrés de la recette (cahier des charges, section 9) : calcul seul.
+// Scénarios chiffrés de la recette (Specs_fonctionnelles.md, section 9) : calcul seul.
 //   node --test tests/core/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
