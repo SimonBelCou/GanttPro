@@ -211,3 +211,4 @@ Specs_fonctionnelles.md, annexe C.2, n° 3).
 | axe-core | 4.14.0 (épinglée) | MPL-2.0 | Contrôle d'accessibilité dans les tests |
 | acorn | 8.19.0 (épinglée) | MIT | Analyse des sources par `tools/dependances.mjs` |
 | Playwright (Python) | non épinglée en CI | Apache-2.0 | Tests de bout en bout (Chromium) |
+| Règles et agents « numérique responsable » (INR, `skill-nr`) | 1.0.0 (copie dans `.claude/`) | CC BY-SA 4.0 | Consignes pour l'assistant de développement ; provenance dans `.claude/regles-nr/LISEZMOI.md` |

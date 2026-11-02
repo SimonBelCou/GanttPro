@@ -94,6 +94,7 @@ tests/                    ← core/ (node --test, scénarios de recette) et test
 docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, veille sécurité, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de développement (texte générique, puis spécificités de GanttPro au §13)
+.claude/                  ← Règles et agents « numérique responsable » de l'INR (eco-check, accessibilite-check), importés par CLAUDE.md §13.10
 Specs_fonctionnelles.md   ← Spécifications : exigences, règles de gestion, recette R-xx, arbitrages (source unique)
 Architecture.md           ← Contexte, briques, flux, modules (schémas Mermaid)
 PCA.md                    ← Plan de continuité : hébergement, reprise, problèmes récurrents, codes d'erreur
