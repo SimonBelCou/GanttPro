@@ -3,6 +3,10 @@
  * et le tableau ; jamais la couleur seule. Tableau des valeurs pour qui ne lit pas un graphique. */
 const Load = { unit: 'week', res: null, showValues: false };
 
+/**
+ * Appelle : Metrics.periods()
+ * Appelée par : paintLoad()
+ */
 function loadPeriods() {
   const s = App.sched;
   let lo = Infinity, hi = -Infinity;
@@ -15,16 +19,28 @@ function loadPeriods() {
   }
   return Metrics.periods(lo, hi, Load.unit);
 }
+/**
+ * Appelle : I18n.date(), I18n.monthLabel(), I18n.shortDate(), t()
+ * Appelée par : loadChart(), paintLoad()
+ */
 function periodLabel(p) {
   if (Load.unit === 'month') return I18n.monthLabel(p.start);
   if (Load.unit === 'week') return t('gantt.week', { date: I18n.shortDate(p.start) });
   return I18n.date(p.start);
 }
+/**
+ * Appelle : I18n.number(), t()
+ * Appelée par : loadChart(), paintLoad()
+ */
 function occText(o) {
   if (o.state === 'absent') return t('load.absent');
   return t('load.value', { pct: Math.round(o.ratio * 100), load: I18n.number(o.load, 1), avail: I18n.number(o.available, 1) }) + (o.state === 'overload' ? ' — ' + t('load.over') : '');
 }
 
+/**
+ * Appelle : I18n.monthLabel(), I18n.shortDate(), Metrics.occupation(), occText(), periodLabel(), svg(), t()
+ * Appelée par : paintLoad()
+ */
 function loadChart(res, periods) {
   const occ = periods.map(p => Metrics.occupation(App.sched, res.id, p.start, p.end));
   const n = periods.length, bw = Load.unit === 'day' ? 10 : Load.unit === 'week' ? 18 : 40;
@@ -54,6 +70,10 @@ function loadChart(res, periods) {
   return { chart, occ };
 }
 
+/**
+ * Appelle : h(), I18n.number(), loadChart(), loadPeriods(), occText(), periodLabel(), t()
+ * Appelée par : paintDashboard()
+ */
 function paintLoad(box) {
   const periods = loadPeriods();
   const all = App.project.resources;
@@ -88,6 +108,18 @@ function paintLoad(box) {
   }
 }
 
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « loadUnit » (table ACTIONS)
+ */
 action('loadUnit', (arg, el) => { Load.unit = ['day', 'week', 'month'].includes(el.value) ? el.value : 'week'; repaintDashboard('#ld-' + Load.unit); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « loadRes » (table ACTIONS)
+ */
 action('loadRes', (id, el) => { if (el.checked) Load.res.add(id); else Load.res.delete(id); repaintDashboard('#ld-r-' + CSS.escape(id)); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « loadValues » (table ACTIONS)
+ */
 action('loadValues', () => { Load.showValues = !Load.showValues; repaintDashboard('[data-click="loadValues"]'); });

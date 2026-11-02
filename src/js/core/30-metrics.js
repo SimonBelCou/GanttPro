@@ -1,12 +1,28 @@
-/* Suivi et indicateurs (RG-13 à RG-20, RG-26, RG-28).
- * Un seul calcul de statut pour toute l'application (défaut A-06 de la version 2.3). */
+/*
+ * Suivi et indicateurs (RG-13 à RG-20, RG-26, RG-28).
+ * Un seul calcul de statut pour toute l'application (défaut A-06 de la version 2.3).
+ *
+ * Appelle : Dates
+ * Appelée par : 50-render.js, 75-dashboard.js, 76-load.js, 77-report.js, 78-print.js, 80-files.js, Budget, Exchange,
+ *   Tooltip, View
+ */
 const Metrics = (() => {
   const STATUS = Object.freeze({ DONE: 'done', LATE: 'late', ONGOING: 'ongoing', NOT_STARTED: 'notStarted', UPCOMING: 'upcoming' });
 
-  /** Avancement effectif : une récapitulative prend celui calculé à partir de ses enfants (RG-23). */
+  /**
+   * Avancement effectif : une récapitulative prend celui calculé à partir de ses enfants (RG-23).
+   * Appelle : aucune
+   * Appelée par : buildPrintGantt(), Exchange.mspXml(), Exchange.taskRows(), ganttPng(), Metrics.status(),
+   *   renderGantt(), Tooltip.lines()
+   */
   function pctOf(t, sched) { return t.type === 'summary' ? sched.tasks.get(t.id).pct : t.pct; }
 
-  /** RG-14. today : dn. Renvoie null pour une récapitulative sans enfant. */
+  /**
+   * RG-14. today : dn. Renvoie null pour une récapitulative sans enfant.
+   * Appelle : Metrics.pctOf()
+   * Appelée par : Exchange.taskRows(), Metrics.counters(), Metrics.report(), Metrics.statusLight(), statusOf(),
+   *   Tooltip.lines(), trackingRows(), View.group(), View.passes()
+   */
   function status(t, sched, today) {
     const r = sched.tasks.get(t.id);
     if (!r || r.empty) return null;
@@ -22,7 +38,11 @@ const Metrics = (() => {
     return STATUS.UPCOMING;
   }
 
-  /** RG-15 : écart en jours ouvrés entre fin prévue et fin réelle ; {days, ongoing} ou null. */
+  /**
+   * RG-15 : écart en jours ouvrés entre fin prévue et fin réelle ; {days, ongoing} ou null.
+   * Appelle : Dates.parse()
+   * Appelée par : Metrics.report(), trackingRows()
+   */
   function deviation(t, sched, today) {
     const r = sched.tasks.get(t.id);
     if (!r || r.empty || t.type === 'summary') return null;
@@ -32,16 +52,28 @@ const Metrics = (() => {
     return null;
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Metrics.globalProgress(), Metrics.plannedToDate(), Metrics.sCurve()
+   */
   const countsInProgress = t => t.type === 'task';
 
-  /** RG-16 : avancement global = moyenne simple des avancements des tâches (poids 1 par tâche), en pourcentage (non arrondi). */
+  /**
+   * RG-16 : avancement global = moyenne simple des avancements des tâches (poids 1 par tâche), en pourcentage (non arrondi).
+   * Appelle : Metrics.countsInProgress()
+   * Appelée par : confirmOpen(), Metrics.report(), paintDashboard(), renderKpis()
+   */
   function globalProgress(project) {
     let n = 0, acc = 0;
     for (const t of project.tasks) if (countsInProgress(t)) { n++; acc += t.pct; }
     return n ? acc / n : 0;
   }
 
-  /** RG-16 : compteurs par statut (tâches et jalons, hors récapitulatives). */
+  /**
+   * RG-16 : compteurs par statut (tâches et jalons, hors récapitulatives).
+   * Appelle : Metrics.status()
+   * Appelée par : Metrics.report(), paintDashboard()
+   */
   function counters(project, sched, today) {
     const c = { done: 0, ongoing: 0, late: 0, notStarted: 0, upcoming: 0, total: 0 };
     for (const t of project.tasks) {
@@ -52,7 +84,11 @@ const Metrics = (() => {
     return c;
   }
 
-  /** RG-17 : périodes (semaines du lundi au dimanche, ou mois civils) couvrant [fromDn, toDn]. */
+  /**
+   * RG-17 : périodes (semaines du lundi au dimanche, ou mois civils) couvrant [fromDn, toDn].
+   * Appelle : Dates.mondayOf(), Dates.monthEnd(), Dates.monthStart()
+   * Appelée par : Budget.costCurve(), buildPrintGantt(), ganttPng(), loadPeriods(), Metrics.sCurve(), renderGantt()
+   */
   function periods(fromDn, toDn, unit) {
     const out = [];
     let a = unit === 'month' ? Dates.monthStart(fromDn) : Dates.mondayOf(fromDn);
@@ -67,6 +103,8 @@ const Metrics = (() => {
   /**
    * Courbe en S (RG-17 à RG-20). Renvoie {periods, planned[], real[], baselines: {id: []}} en pourcentages.
    * real s'arrête à la période qui contient aujourd'hui.
+   * Appelle : Dates.parse(), Metrics.countsInProgress(), Metrics.periods()
+   * Appelée par : paintDashboard(), reportArticle()
    */
   function sCurve(project, sched, today, unit = 'week') {
     const work = project.tasks.filter(countsInProgress);
@@ -108,7 +146,11 @@ const Metrics = (() => {
     return { periods: ps, planned, real, baselines };
   }
 
-  /** RG-26 : occupation d'une ressource sur [fromDn, toDn]. */
+  /**
+   * RG-26 : occupation d'une ressource sur [fromDn, toDn].
+   * Appelle : aucune
+   * Appelée par : loadChart()
+   */
   function occupation(sched, resId, fromDn, toDn) {
     const cal = sched.cal;
     let loadPd = 0, availPd = 0;
@@ -122,7 +164,11 @@ const Metrics = (() => {
     return { load: loadPd, available: availPd, ratio: availPd ? loadPd / availPd : null, state };
   }
 
-  /** RG-28 : voyant du rapport d'état ('red' | 'orange' | 'green') et écart avec la baseline. */
+  /**
+   * RG-28 : voyant du rapport d'état ('red' | 'orange' | 'green') et écart avec la baseline.
+   * Appelle : Dates.parse(), Metrics.status()
+   * Appelée par : Metrics.report()
+   */
   function statusLight(project, sched, today, baseline) {
     let lateCritical = false, lateOther = false;
     for (const t of project.tasks) {
@@ -140,7 +186,11 @@ const Metrics = (() => {
     return { light, drift };
   }
 
-  /** RG-28 : avancement prévu à ce jour = moyenne, sur les tâches, de la part de chacune écoulée (jours ouvrés prévus écoulés / durée). */
+  /**
+   * RG-28 : avancement prévu à ce jour = moyenne, sur les tâches, de la part de chacune écoulée (jours ouvrés prévus écoulés / durée).
+   * Appelle : Metrics.countsInProgress()
+   * Appelée par : Metrics.report()
+   */
   function plannedToDate(project, sched, today) {
     const work = project.tasks.filter(countsInProgress);
     if (!work.length) return 0;
@@ -151,7 +201,12 @@ const Metrics = (() => {
     }, 0) / work.length;
   }
 
-  /** RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant). */
+  /**
+   * RG-28 : contenu du rapport d'état (listes d'identifiants, chiffres, voyant).
+   * Appelle : Metrics.counters(), Metrics.deviation(), Metrics.globalProgress(), Metrics.plannedToDate(),
+   *   Metrics.status(), Metrics.statusLight()
+   * Appelée par : reportData()
+   */
   function report(project, sched, today, baseline) {
     const byId = new Map(project.tasks.map(t => [t.id, t]));
     const items = project.tasks.filter(t => t.type !== 'summary');

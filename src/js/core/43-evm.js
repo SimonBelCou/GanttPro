@@ -1,4 +1,5 @@
-/* Valeur acquise (étape B, EF-131 et suivantes, RG-44 et suivantes) : moteur sans DOM, en centimes entiers.
+/*
+ * Valeur acquise (étape B, EF-131 et suivantes, RG-44 et suivantes) : moteur sans DOM, en centimes entiers.
  *
  * Les indicateurs se calculent à une date (la date du jour, A.8 ligne 15), sur une référence : la baseline de
  * référence du projet, ou le planning actuel quand le projet n'a aucune baseline (A.8 ligne 14). Ils portent sur le
@@ -12,7 +13,11 @@
  *   EAC = BAC / CPI  |  AC + ETC  |  AC + BAC − EV ; VAC = BAC − EAC
  *
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
- * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48). */
+ * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48).
+ *
+ * Appelle : Budget, Dates, Model
+ * Appelée par : 72-baselines.js, 76-budget.js, 77-report.js, Rates
+ */
 const Evm = (() => {
   const amt = Budget.amt;
   const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
@@ -22,6 +27,10 @@ const Evm = (() => {
    * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
    */
   const FAST = 2 ** 52; // en dessous, numérateur et dénominateur sont des entiers exacts, quotient et reste aussi
+  /**
+   * Appelle : aucune
+   * Appelée par : Evm.compute(), Evm.ratio(), Rates.costOf()
+   */
   function divRound(a, b, k = 1) {
     const n = 2 * a * k + b, d = 2 * b;
     if (n <= FAST && d <= FAST) { // cas courant : sans BigInt, même résultat exact (quotient corrigé par le reste)
@@ -36,6 +45,8 @@ const Evm = (() => {
   /**
    * Baseline de référence (RG-44) : celle que désigne le projet ; à défaut la baseline « initiale », à défaut la
    * première. Sans aucune baseline : null, et le calcul porte sur le planning actuel.
+   * Appelle : aucune
+   * Appelée par : baselinesWindow(), Evm.compute()
    */
   function reference(project) {
     const list = project.baselines || [];
@@ -43,19 +54,39 @@ const Evm = (() => {
     return list.find(b => b.id === project.baselineRef) || list.find(b => b.initial) || list[0];
   }
 
-  /** Voyant d'un rapport, décidé sur la valeur AFFICHÉE (arrondie au centième) : vert, orange ou rouge (RG-49). */
+  /**
+   * Voyant d'un rapport, décidé sur la valeur AFFICHÉE (arrondie au centième) : vert, orange ou rouge (RG-49).
+   * Appelle : aucune
+   * Appelée par : Evm.ratio()
+   */
   function lightOf(hundredths, project) {
     const green = project.evmGreen || 100, red = project.evmRed || 90;
     return hundredths >= green ? 'green' : hundredths >= red ? 'orange' : 'red';
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Evm.compute()
+   */
   const none = reason => ({ value: null, hundredths: null, light: 'none', reason });
+  /**
+   * Appelle : Evm.divRound(), Evm.lightOf()
+   * Appelée par : Evm.compute()
+   */
   function ratio(num, den, project) {
     const h = divRound(num, den, 100);
     const hundredths = h == null ? Model.LIMITS.ratioMax : Math.min(h, Model.LIMITS.ratioMax);
     return { value: num / den, hundredths, light: lightOf(hundredths, project), reason: null };
   }
+  /**
+   * Appelle : aucune
+   * Appelée par : Evm.compute()
+   */
   const amount = (cents, bac) => ({ cents, vac: bac - cents, reason: null });
+  /**
+   * Appelle : aucune
+   * Appelée par : Evm.compute()
+   */
   const noAmount = reason => ({ cents: null, vac: null, reason });
 
   /**
@@ -64,6 +95,9 @@ const Evm = (() => {
    *            added:string[], removed:string[]}}
    *   cpi, spi : { value, hundredths, light, reason } ; reason vaut null, 'noBudget', 'noActual' ou 'noPlanned'.
    *   eac.* : { cents, vac, reason } ; reason vaut null, 'noBudget', 'noActual', 'noEarned', 'noEtc' ou 'overflow'.
+   * Appelle : Budget.totals(), Dates.parse(), Evm.amount(), Evm.divRound(), Evm.noAmount(), Evm.none(), Evm.ratio(),
+   *   Evm.reference()
+   * Appelée par : action « evmPointAdd », paintEvm(), reportSections()
    */
   function compute(project, sched, today) {
     const ref = reference(project);
@@ -115,7 +149,11 @@ const Evm = (() => {
     return { ref, basis: ref ? 'baseline' : 'plan', today, bac, pv, ev, ac, cv: ev - ac, sv: ev - pv, cpi, spi, eac, etc: hasEtc ? amt(project.etc) : null, added, removed };
   }
 
-  /** Point de situation (RG-51) : photo des indicateurs à la date du jour, enregistrée sur geste explicite. */
+  /**
+   * Point de situation (RG-51) : photo des indicateurs à la date du jour, enregistrée sur geste explicite.
+   * Appelle : Dates.toISO()
+   * Appelée par : action « evmPointAdd »
+   */
   function point(res, label = '') {
     return {
       date: Dates.toISO(res.today), label: String(label).trim().slice(0, 100), ref: res.ref ? res.ref.name : '',

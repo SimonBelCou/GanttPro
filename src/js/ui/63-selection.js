@@ -4,24 +4,50 @@
 App.multi = new Set();
 let selAnchor = null;
 
-/** Identifiants sélectionnés, dans l'ordre de la liste. */
+/**
+ * Identifiants sélectionnés, dans l'ordre de la liste.
+ * Appelle : taskById()
+ * Appelée par : bulkWindow(), initListKeys(), pasteInternal(), topSelected()
+ */
 function selectedIds() {
   if (App.multi.size) return App.project.tasks.filter(x => App.multi.has(x.id)).map(x => x.id);
   return App.selected && taskById(App.selected) ? [App.selected] : [];
 }
-/** Sélection sans les éléments dont un ancêtre est aussi sélectionné (ils suivent leur parent). */
+/**
+ * Sélection sans les éléments dont un ancêtre est aussi sélectionné (ils suivent leur parent).
+ * Appelle : ancestorsOf(), selectedIds()
+ * Appelée par : action « deleteTask », action « duplicateSelection », action « groupUnder », action « indent »,
+ *   action « outdent », initClipboard()
+ */
 function topSelected() {
   const ids = new Set(selectedIds());
   return [...ids].filter(id => !ancestorsOf(id).some(a => ids.has(a)));
 }
+/**
+ * Appelle : aucune
+ * Appelée par : action « selectTask », initListKeys()
+ */
 const visibleOrder = () => [...document.querySelectorAll('#task-rows tr[data-id]')].map(tr => tr.dataset.id).filter((v, i, a) => a.indexOf(v) === i);
+/**
+ * Appelle : aucune
+ * Appelée par : renderGantt(), renderList()
+ */
 const isSelected = id => App.multi.has(id) || App.selected === id;
 
+/**
+ * Appelle : aucune
+ * Appelée par : action « clearSelection », action « deleteTask », action « groupUnder », action « verRestore »,
+ *   confirmOpen(), initListKeys()
+ */
 function clearSelection(keepPrimary = false) {
   App.multi.clear();
   if (!keepPrimary) App.selected = null;
 }
 
+/**
+ * Appelle : announce(), Editor.close(), Editor.isOpen(), Editor.open(), render(), t(), taskById(), visibleOrder()
+ * Appelée par : l'événement « selectTask » (table ACTIONS)
+ */
 action('selectTask', (id, el, ev) => {
   if (!taskById(id)) return;
   const mod = ev && (ev.ctrlKey || ev.metaKey), range = ev && ev.shiftKey;
@@ -47,6 +73,10 @@ action('selectTask', (id, el, ev) => {
   Editor.open(id);
 });
 
+/**
+ * Appelle : $(), clear(), h(), t()
+ * Appelée par : renderAll()
+ */
 function renderSelbar() {
   const bar = $('selbar');
   const n = App.multi.size;
@@ -63,10 +93,18 @@ function renderSelbar() {
     h('button', { type: 'button', class: 'danger', data: { click: 'deleteTask' } }, t('edit.delete')),
     h('button', { type: 'button', class: 'link-btn', data: { click: 'clearSelection' } }, t('sel.clear')));
 }
+/**
+ * Appelle : $(), clearSelection(), render()
+ * Appelée par : l'événement « clearSelection » (table ACTIONS)
+ */
 action('clearSelection', () => { clearSelection(); render(); $('main').focus(); });
 
 /* ── Suppression (EF-06, EF-63) ─────────────────────────────────────────────────────────── */
 const DELETE_NAMES_SHOWN = 5;
+/**
+ * Appelle : 13 fonctions
+ * Appelée par : l'événement « deleteTask » (table ACTIONS)
+ */
 action('deleteTask', async () => {
   const ids = topSelected();
   if (!ids.length) return;
@@ -107,10 +145,23 @@ action('deleteTask', async () => {
 });
 
 /* ── Hiérarchie (EF-59, EF-60) ──────────────────────────────────────────────────────────── */
-/** Hauteur d'un sous-arbre (0 pour une feuille). */
+/**
+ * Hauteur d'un sous-arbre (0 pour une feuille).
+ * Appelle : aucune
+ * Appelée par : aucune dans le code (point d'entrée ou appel dynamique)
+ */
 function heightOf(id, tasks) { const kids = tasks.filter(x => x.parent === id); return kids.length ? 1 + Math.max(...kids.map(k => heightOf(k.id, tasks))) : 0; }
+/**
+ * Appelle : ancestorsOf()
+ * Appelée par : hierarchyChange()
+ */
 function depthOk(p) { return p.tasks.every(x => ancestorsOf(x.id, p.tasks).length <= Model.LIMITS.depth); }
 
+/**
+ * Appelle : ancestorsOf(), announce(), clone(), commit(), depthOk(), Dialog.message(), Editor.syncParent(),
+ *   Model.findCycle(), normalizeOrder(), t()
+ * Appelée par : action « groupUnder », action « indent », action « outdent », initRowDrag()
+ */
 function hierarchyChange(mutate, okMsg) {
   const trial = clone(App.project);
   const err = mutate(trial);
@@ -130,6 +181,10 @@ function hierarchyChange(mutate, okMsg) {
   return true;
 }
 
+/**
+ * Appelle : descendants(), hierarchyChange(), t(), topSelected()
+ * Appelée par : l'événement « indent » (table ACTIONS)
+ */
 action('indent', () => {
   const ids = topSelected();
   if (!ids.length || App.view.groupBy) return;
@@ -150,6 +205,10 @@ action('indent', () => {
   }, t('sel.indented', { count: ids.length }));
 });
 
+/**
+ * Appelle : descendants(), hierarchyChange(), t(), topSelected()
+ * Appelée par : l'événement « outdent » (table ACTIONS)
+ */
 action('outdent', () => {
   const ids = topSelected();
   if (!ids.length || App.view.groupBy) return;
@@ -168,6 +227,11 @@ action('outdent', () => {
   }, t('sel.outdented', { count: ids.length }));
 });
 
+/**
+ * Appelle : clearSelection(), Dialog.message(), Editor.open(), hierarchyChange(), Model.nextTaskId(), t(),
+ *   taskById(), topSelected()
+ * Appelée par : l'événement « groupUnder » (table ACTIONS)
+ */
 action('groupUnder', () => {
   const ids = topSelected();
   if (!ids.length || App.view.groupBy) return;
@@ -186,10 +250,18 @@ action('groupUnder', () => {
   if (ok) { clearSelection(); Editor.open(sid); }
 });
 
-/* ── Replier tout (EF-61), tri (EF-09), liste repliée (EF-43) ─────────────────────────────── */
+/*
+ * ── Replier tout (EF-61), tri (EF-09), liste repliée (EF-43) ───────────────────────────────
+ * Appelle : render()
+ * Appelée par : l'événement « collapseAll » (table ACTIONS)
+ */
 action('collapseAll', v => { for (const x of App.project.tasks) if (x.type === 'summary') x.collapsed = v === '1'; render(); });
 
-/** Tri topologique stable : chaque prédécesseur avant ses successeurs, ordre actuel sinon (EF-09). */
+/**
+ * Tri topologique stable : chaque prédécesseur avant ses successeurs, ordre actuel sinon (EF-09).
+ * Appelle : descendants()
+ * Appelée par : action « sortTasks »
+ */
 function sortedOrder(tasks) {
   const index = new Map(tasks.map((x, i) => [x.id, i]));
   const indeg = new Map(tasks.map(x => [x.id, 0]));
@@ -207,6 +279,10 @@ function sortedOrder(tasks) {
   const rankOf = x => (x.type === 'summary' ? Math.min(Infinity, ...descendants(x.id, tasks).map(rankOf)) : rank.get(x.id) ?? index.get(x.id));
   return [...tasks].sort((a, b) => rankOf(a) - rankOf(b) || index.get(a.id) - index.get(b.id));
 }
+/**
+ * Appelle : announce(), commit(), Dialog.confirm(), sortedOrder(), t()
+ * Appelée par : l'événement « sortTasks » (table ACTIONS)
+ */
 action('sortTasks', async () => {
   if (!(await Dialog.confirm(t('view.sort'), [t('sort.warn')], t('view.sort'), false))) return;
   commit(p => { p.tasks = sortedOrder(p.tasks); });
@@ -214,6 +290,10 @@ action('sortTasks', async () => {
 });
 
 App.listCollapsed = false;
+/**
+ * Appelle : $(), renderListToggle()
+ * Appelée par : l'événement « toggleList » (table ACTIONS)
+ */
 action('toggleList', () => {
   App.listCollapsed = !App.listCollapsed;
   $('planner').classList.toggle('list-collapsed', App.listCollapsed);
@@ -221,11 +301,19 @@ action('toggleList', () => {
   renderListToggle();
   $('btn-list').focus();
 });
+/**
+ * Appelle : $(), t()
+ * Appelée par : action « toggleList », renderAll()
+ */
 function renderListToggle() {
   const b = $('btn-list');
   b.textContent = t(App.listCollapsed ? 'view.listShow' : 'view.listHide');
   b.setAttribute('aria-expanded', String(!App.listCollapsed));
 }
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « showTags » (table ACTIONS)
+ */
 action('showTags', (arg, el) => { App.view.showTags = el.checked; render(); });
 
 /* ── Largeur des colonnes (EF-44) : poignées utilisables à la souris et au clavier ─────────── */
@@ -233,14 +321,22 @@ const COL_LIMITS = { id: [36, 300], name: [120, 1000], dur: [64, 300], start: [9
 /** Largeur par défaut d'une colonne, rétablie par le double-clic ou la touche Début sur sa poignée. */
 const COL_DEFAULT = { id: 48, name: 310, dur: 64, start: 96, end: 96, rstart: 104, rend: 96, deps: 124, res: 154, status: 80, budget: 100, actual: 100 };
 App.colWidths = {};
-/** Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
- *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit. */
+/**
+ * Fige toutes les colonnes à leur largeur actuelle avant un réglage : en mise en page fixe, les colonnes laissées
+ *  automatiques seraient sinon comprimées sous leur titre par la colonne que l'on élargit.
+ * Appelle : $()
+ * Appelée par : bindColumnHandles()
+ */
 function snapshotColWidths() {
   for (const th of $('tasks-table').querySelectorAll('thead th')) {
     const k = th.querySelector('.col-resize') && th.querySelector('.col-resize').dataset.col;
     if (k && !App.colWidths[k]) App.colWidths[k] = Math.max(COL_LIMITS[k][0], Math.min(COL_LIMITS[k][1], Math.round(th.getBoundingClientRect().width)));
   }
 }
+/**
+ * Appelle : $(), applyFreeze(), Columns.effective()
+ * Appelée par : action « resetColumns », bindColumnHandles(), renderListHead()
+ */
 function applyColWidths() {
   const table = $('tasks-table');
   const any = Object.keys(App.colWidths).length > 0;
@@ -273,7 +369,11 @@ function applyColWidths() {
   }
   if (typeof applyFreeze === 'function') applyFreeze();
 }
-/** Poignées de largeur des en-têtes, à refaire chaque fois que l'en-tête est reconstruit (colonnes ou langue). */
+/**
+ * Poignées de largeur des en-têtes, à refaire chaque fois que l'en-tête est reconstruit (colonnes ou langue).
+ * Appelle : $(), applyColWidths(), applyFreeze(), h(), snapshotColWidths(), t()
+ * Appelée par : renderListHead()
+ */
 function bindColumnHandles() {
   const ths = $('tasks-table').querySelectorAll('thead th');
   ths.forEach(th => {
@@ -303,7 +403,11 @@ function bindColumnHandles() {
   });
 }
 
-/* ── Glisser-déposer dans la liste (EF-10, EF-64) ────────────────────────────────────────── */
+/*
+ * ── Glisser-déposer dans la liste (EF-10, EF-64) ──────────────────────────────────────────
+ * Appelle : $(), descendants(), Dialog.message(), hierarchyChange(), t()
+ * Appelée par : init()
+ */
 function initRowDrag() {
   const body = $('task-rows');
   let dragId = null;
@@ -335,7 +439,11 @@ function initRowDrag() {
   body.addEventListener('dragend', () => { dragId = null; });
 }
 
-/* ── Raccourcis de liste (EF-58, EF-60, EF-81) ───────────────────────────────────────────── */
+/*
+ * ── Raccourcis de liste (EF-58, EF-60, EF-81) ─────────────────────────────────────────────
+ * Appelle : announce(), clearSelection(), render(), selectedIds(), t(), visibleOrder()
+ * Appelée par : init()
+ */
 function initListKeys() {
   document.addEventListener('keydown', ev => {
     if (document.querySelector('dialog[open]')) return;

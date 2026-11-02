@@ -1,19 +1,31 @@
-/* Budget, étape A (EF-112 à EF-127, RG-35 à RG-43).
+/*
+ * Budget, étape A (EF-112 à EF-127, RG-35 à RG-43).
  *
  * Tout montant est un ENTIER de centimes (RG-35) : aucune somme ni différence n'est faite en nombres à virgule.
  * Avec au plus 1 000 tâches de 50 000 000 000,00 chacune plus la provision, un total reste sous 5,01e15, donc
- * sous la limite des entiers exacts du moteur. Moteur sans DOM : l'affichage reçoit la langue en paramètre. */
+ * sous la limite des entiers exacts du moteur. Moteur sans DOM : l'affichage reçoit la langue en paramètre.
+ *
+ * Appelle : Dates, Metrics, Model
+ * Appelée par : 15 modules et fichiers (voir Architecture.md)
+ */
 const Budget = (() => {
   const NBSP = ' ', NNBSP = ' ', MINUS = '−';
   const MAX = Model.LIMITS.amount;
   const COMPACT_FROM = 100000000; // 1 000 000,00 en centimes (RG-43)
 
+  /**
+   * Appelle : aucune
+   * Appelée par : (initialisation de Evm), Budget.amounts(), Budget.baselineBac(), Budget.byCategory(),
+   *   Budget.costCurve(), Budget.hasAmounts(), Budget.toInput(), Budget.totals(), Evm
+   */
   const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0);
 
   /**
    * Saisie d'un montant en unités (EF-112) : virgule ou point décimal, espaces ignorés, au plus deux décimales.
    * Les espaces et le symbole de la devise éventuel sont ignorés (RG-42) ; une saisie vide vaut 0.
    * @returns {{ok:true, cents:number}|{ok:false, reason:'format'|'negative'|'decimals'|'max'}}
+   * Appelle : aucune
+   * Appelée par : action « rlField », bulkWindow(), Editor.validate(), editProjectWindow(), Exchange.amountCell()
    */
   function parse(text, symbol = '') {
     let s = String(text == null ? '' : text);
@@ -32,7 +44,11 @@ const Budget = (() => {
     return { ok: true, cents };
   }
 
-  /** Texte d'un champ de saisie (sans groupement, avec le séparateur de la langue) : 123450 → « 1234,5 » (fr). */
+  /**
+   * Texte d'un champ de saisie (sans groupement, avec le séparateur de la langue) : 123450 → « 1234,5 » (fr).
+   * Appelle : Budget.amt()
+   * Appelée par : Editor.budgetEditor(), editProjectWindow(), rateLinesEditor()
+   */
   function toInput(cents, lang) {
     const c = amt(cents);
     const frac = String(c % 100).padStart(2, '0').replace(/0+$/, '');
@@ -40,16 +56,29 @@ const Budget = (() => {
     return Math.floor(c / 100) + (frac ? sep + frac : '');
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Budget.format()
+   */
   const groupInt = (n, lang) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? NNBSP : ',');
 
-  /** Place le symbole de la devise : après le montant en français (« 1 234,56 € »), avant en anglais (« €1,234.56 »). */
+  /**
+   * Place le symbole de la devise : après le montant en français (« 1 234,56 € »), avant en anglais (« €1,234.56 »).
+   * Appelle : aucune
+   * Appelée par : Budget.format(), Budget.formatCompact()
+   */
   function withSymbol(body, symbol, lang, negative) {
     const sign = negative ? MINUS : '';
     if (!symbol) return sign + body;
     return lang === 'fr' ? `${sign}${body}${NBSP}${symbol}` : `${sign}${symbol}${body}`;
   }
 
-  /** Montant complet : « 1 234,56 € » (fr) / « €1,234.56 » (en). Accepte une valeur négative (reste, écart). */
+  /**
+   * Montant complet : « 1 234,56 € » (fr) / « €1,234.56 » (en). Accepte une valeur négative (reste, écart).
+   * Appelle : Budget.groupInt(), Budget.withSymbol()
+   * Appelée par : action « rlField », Budget.formatCompact(), bulkWindow(), Editor.validate(), editProjectWindow(),
+   *   Money.node(), Money.plain(), Money.text()
+   */
   function format(cents, { lang = 'fr', symbol = '' } = {}) {
     const neg = cents < 0, c = Math.abs(cents);
     const body = groupInt(Math.floor(c / 100), lang) + (lang === 'fr' ? ',' : '.') + String(c % 100).padStart(2, '0');
@@ -60,6 +89,8 @@ const Budget = (() => {
    * Montant compact (RG-43) : en entier sous 1 000 000,00 ; au-delà, en millions (M), ou en milliards (Md en français,
    * B en anglais) dès que l'arrondi atteint 1 000 M. Deux décimales au plus, moitié vers le haut, calculées sur des
    * entiers ; les zéros de fin sont retirés. Valeur négative acceptée.
+   * Appelle : Budget.format(), Budget.withSymbol()
+   * Appelée par : Money.node(), Money.plain(), Money.text()
    */
   function formatCompact(cents, { lang = 'fr', symbol = '' } = {}) {
     const neg = cents < 0, c = Math.abs(cents);
@@ -75,6 +106,8 @@ const Budget = (() => {
   /**
    * Montants propres et cumulés de chaque ligne (RG-36) : une tâche porte les siens, un jalon vaut 0, une
    * récapitulative est la somme de sa descendance. @returns {Map<id, {budget, actual}>}
+   * Appelle : Budget.amt()
+   * Appelée par : buildPrintGantt(), Editor.build(), Exchange.taskRows(), renderList(), Tooltip.show()
    */
   function amounts(project) {
     const out = new Map();
@@ -93,7 +126,11 @@ const Budget = (() => {
     return out;
   }
 
-  /** Totaux du projet (RG-37) : BAC, provision, budget total, coût réel total, reste (négatif = dépassement). */
+  /**
+   * Totaux du projet (RG-37) : BAC, provision, budget total, coût réel total, reste (négatif = dépassement).
+   * Appelle : Budget.amt()
+   * Appelée par : baselinesWindow(), Budget.bacVariation(), Evm.compute(), paintBudget(), reportSections()
+   */
   function totals(project) {
     let bac = 0, actual = 0;
     for (const t of project.tasks) if (t.type === 'task') { bac += amt(t.budget); actual += amt(t.actual); }
@@ -102,7 +139,11 @@ const Budget = (() => {
     return { bac, provision, total, actual, remaining: total - actual };
   }
 
-  /** Une présence d'au moins un montant (EF-117 : l'onglet Budget n'apparaît qu'à partir de là). */
+  /**
+   * Une présence d'au moins un montant (EF-117 : l'onglet Budget n'apparaît qu'à partir de là).
+   * Appelle : Budget.amt()
+   * Appelée par : Columns.effective(), dashTabs(), reportSections(), Tooltip.show()
+   */
   function hasAmounts(project) {
     return amt(project.provision) > 0 || project.tasks.some(t => t.type === 'task' && (amt(t.budget) > 0 || amt(t.actual) > 0));
   }
@@ -110,6 +151,8 @@ const Budget = (() => {
   /**
    * Tableau par catégorie (RG-40) : une ligne par catégorie qui a au moins une tâche (hors récapitulatives), classée par
    * ordre alphabétique, « sans catégorie » (id '') en dernier ; écart = budget moins coût réel ; total en pied.
+   * Appelle : Budget.amt()
+   * Appelée par : paintBudget()
    */
   function byCategory(project) {
     const rows = new Map();
@@ -126,12 +169,20 @@ const Budget = (() => {
     return { rows: list, total: { ...total, gap: total.budget - total.actual } };
   }
 
-  /** BAC d'une baseline (RG-39) : somme des budgets capturés. */
+  /**
+   * BAC d'une baseline (RG-39) : somme des budgets capturés.
+   * Appelle : Budget.amt()
+   * Appelée par : baselinesWindow(), Budget.bacVariation()
+   */
   function baselineBac(baseline) {
     return baseline.tasks.reduce((a, bt) => a + amt(bt.budget), 0);
   }
 
-  /** Variation du BAC (RG-39) : BAC du projet moins celui de la baseline. */
+  /**
+   * Variation du BAC (RG-39) : BAC du projet moins celui de la baseline.
+   * Appelle : Budget.baselineBac(), Budget.totals()
+   * Appelée par : reportSections()
+   */
   function bacVariation(project, baseline) {
     return totals(project).bac - baselineBac(baseline);
   }
@@ -142,6 +193,8 @@ const Budget = (() => {
    * real : coût réel des tâches terminées (100 %) dont la fin réelle est dans la période ou avant ; une tâche à 100 %
    * sans fin réelle compte dans la période en cours ; s'arrête à la période qui contient aujourd'hui.
    * La provision n'y figure pas ; le coût réel des tâches non terminées n'y figure que si opts.ongoing (période en cours).
+   * Appelle : Budget.amt(), Dates.parse(), Metrics.periods()
+   * Appelée par : paintBudget()
    */
   function costCurve(project, sched, today, unit = 'week', opts = {}) {
     const work = project.tasks.filter(t => t.type === 'task');

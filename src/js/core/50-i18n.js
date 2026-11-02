@@ -1,6 +1,11 @@
-/* Traductions (EF-103, EX-24, RG-32) : un catalogue par langue, repli sur le français,
+/*
+ * Traductions (EF-103, EX-24, RG-32) : un catalogue par langue, repli sur le français,
  * pluriels (« 1 conflit », « 2 conflits »). Les paramètres sont insérés comme TEXTE : l'interface
- * affiche toujours le résultat par textContent, jamais par innerHTML. */
+ * affiche toujours le résultat par textContent, jamais par innerHTML.
+ *
+ * Appelle : Dates
+ * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ */
 const I18n = (() => {
   const FR = {
     'app.title': 'GanttPro',
@@ -982,14 +987,30 @@ const I18n = (() => {
     en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   };
 
+  /**
+   * Appelle : aucune
+   * Appelée par : init(), setLanguage()
+   */
   function setLang(l) { lang = CATALOGS[l] ? l : 'fr'; }
+  /**
+   * Appelle : aucune
+   * Appelée par : 15 fonctions (usage général)
+   */
   function getLang() { return lang; }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : I18n.t()
+   */
   function fill(str, params) {
     return str.replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined ? String(params[k]) : m));
   }
 
-  /** Message traduit. Une entrée {one, other} choisit selon params.count. */
+  /**
+   * Message traduit. Une entrée {one, other} choisit selon params.count.
+   * Appelle : I18n.fill()
+   * Appelée par : Dialog.confirm(), Dialog.message(), Dialog.open(), Exchange.t(), I18n.error(), Money.node(), t()
+   */
   function t(key, params = {}) {
     let v = CATALOGS[lang][key];
     if (v === undefined) v = FR[key];
@@ -1002,7 +1023,12 @@ const I18n = (() => {
     return fill(v, params);
   }
 
-  /** Message d'une erreur de contrôle (Model.Invalid) : {key, params}. */
+  /**
+   * Message d'une erreur de contrôle (Model.Invalid) : {key, params}.
+   * Appelle : I18n.group(), I18n.t()
+   * Appelée par : action « verRestore », calendarWindow(), doExport(), importFile(), importText(), initHome(),
+   *   newFromTemplate(), openLibrary(), pasteInternal(), pasteText(), sheetWizard()
+   */
   function error(e) {
     const p = { ...e.params };
     if (p.obj) p.obj = t('obj.' + p.obj);
@@ -1013,13 +1039,21 @@ const I18n = (() => {
     return t(e.key, p);
   }
 
-  /** Date longue : « lun. 05 janv. 2026 » / « Mon 05 Jan 2026 » (RG-32). */
+  /**
+   * Date longue : « lun. 05 janv. 2026 » / « Mon 05 Jan 2026 » (RG-32).
+   * Appelle : Dates.weekday(), Dates.ymd()
+   * Appelée par : 21 fonctions (usage général)
+   */
   function date(dn) {
     if (dn == null) return '';
     const { y, m, d } = Dates.ymd(dn);
     return `${DAYS[lang][Dates.weekday(dn)]} ${String(d).padStart(2, '0')} ${MONTHS[lang][m - 1]} ${y}`;
   }
-  /** Date courte : « 05/01 » (fr) / « 01/05 » (en). */
+  /**
+   * Date courte : « 05/01 » (fr) / « 01/05 » (en).
+   * Appelle : Dates.ymd()
+   * Appelée par : 14 fonctions (usage général)
+   */
   function shortDate(dn) {
     const { m, d } = Dates.ymd(dn);
     const dd = String(d).padStart(2, '0'), mm = String(m).padStart(2, '0');
@@ -1027,6 +1061,10 @@ const I18n = (() => {
   }
   /** Date numérique complète : « 07/09/2026 » (fr) / « 09/07/2026 » (en), pour les tableaux imprimés. */
   const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
+  /**
+   * Appelle : Dates.ymd()
+   * Appelée par : buildPrintGantt(), renderList()
+   */
   function numDate(dn, short = false) {
     if (dn == null) return '';
     if (short) return numDate(dn).replace(/(\d{2})(\d{2})$/, '$2'); // « 07/09/26 » : année sur deux chiffres
@@ -1041,13 +1079,21 @@ const I18n = (() => {
     }
     return v;
   }
-  /** Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90). */
+  /**
+   * Date et heure locales d'un horodatage (millisecondes), pour les commentaires (EF-90).
+   * Appelle : Dates.fromYMD(), I18n.date()
+   * Appelée par : Editor.build(), openLibrary(), Recovery.offer(), Recovery.paint(), versionsWindow()
+   */
   function dateTime(ts) {
     const d = new Date(ts);
     const dn = Dates.fromYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return `${date(dn)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
-  /** Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ». */
+  /**
+   * Libellé de mois selon la place : complet « nov. 2026 », court « nov. 26 », numérique « 11/26 », ou le seul mois « 11 ».
+   * Appelle : Dates.ymd()
+   * Appelée par : ganttPng(), renderGantt()
+   */
   function monthLabelFit(dn, width) {
     const { y, m } = Dates.ymd(dn), yy = String(y % 100).padStart(2, '0'), mm = String(m).padStart(2, '0');
     if (width >= 80) return `${MONTHS[lang][m - 1]} ${y}`;
@@ -1056,18 +1102,39 @@ const I18n = (() => {
     if (width >= 20) return mm;
     return '';
   }
+  /**
+   * Appelle : Dates.ymd()
+   * Appelée par : buildPrintGantt(), curveTable(), loadChart(), periodLabel(), renderGantt(), sCurveChart()
+   */
   function monthLabel(dn) { const { y, m } = Dates.ymd(dn); return `${MONTHS[lang][m - 1]} ${y}`; }
-  /** Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en). */
+  /**
+   * Entier groupé par milliers : « 5 000 000 » (fr, espace fine insécable) / « 5,000,000 » (en).
+   * Appelle : aucune
+   * Appelée par : I18n.error()
+   */
   function group(n) {
     const s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fr' ? '\u202f' : ',');
     return n < 0 ? '\u2212' + s : s;
   }
+  /**
+   * Appelle : aucune
+   * Appelée par : cpiSpiDiagram(), fmtPct(), occText(), openLibrary(), openSettings(), paintEvm(), paintLoad(),
+   *   paintResourceSheet(), pdText(), ratioText(), renderKpis(), reportSections()
+   */
   function number(n, digits = 0) {
     const s = n.toFixed(digits);
     return lang === 'fr' ? s.replace('.', ',') : s;
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : calPreview(), Exchange.xlsx(), paintCalendar()
+   */
   const dayName = i => DAYS[lang][i];
+  /**
+   * Appelle : aucune
+   * Appelée par : calPreview()
+   */
   const monthName = m => MONTHS[lang][m - 1];
   return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();

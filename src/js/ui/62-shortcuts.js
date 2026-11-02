@@ -1,6 +1,10 @@
 /* Dupliquer (EF-80) et équivalents clavier des gestes (EF-78). Chaque action = un pas d'annulation. */
 
-/** Copie d'une tâche (et de sa descendance) juste sous l'original ; liens internes rattachés aux copies. */
+/**
+ * Copie d'une tâche (et de sa descendance) juste sous l'original ; liens internes rattachés aux copies.
+ * Appelle : clone(), descendants(), Model.nextTaskId(), t()
+ * Appelée par : action « duplicateSelection », action « duplicateTask »
+ */
 function duplicateBlock(p, id) {
   const src = p.tasks.find(x => x.id === id);
   if (!src) return [];
@@ -19,6 +23,11 @@ function duplicateBlock(p, id) {
   return copies.map(c => c.id);
 }
 
+/**
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Editor.close(), render(),
+ *   Schedule.compute(), t(), taskById()
+ * Appelée par : l'événement « duplicateTask » (table ACTIONS)
+ */
 action('duplicateTask', () => {
   if (App.multi.size > 1) { ACTIONS.duplicateSelection(); return; }
   const id = App.selected;
@@ -37,7 +46,12 @@ action('duplicateTask', () => {
   if (btn) btn.focus();
 });
 
-/** Alt + ←/→ : date imposée d'un jour ouvré ; Alt + Maj + ←/→ : durée d'un jour (EF-78). */
+/**
+ * Alt + ←/→ : date imposée d'un jour ouvré ; Alt + Maj + ←/→ : durée d'un jour (EF-78).
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Dates.toISO(), I18n.date(), Schedule.compute(), t(),
+ *   taskById()
+ * Appelée par : initShortcuts()
+ */
 function nudge(dir, duration) {
   const task = taskById(App.selected);
   if (!task || !App.sched) return;
@@ -58,6 +72,10 @@ function nudge(dir, duration) {
   }
 }
 
+/**
+ * Appelle : nudge()
+ * Appelée par : init()
+ */
 function initShortcuts() {
   document.addEventListener('keydown', ev => {
     if (document.querySelector('dialog[open]')) return;

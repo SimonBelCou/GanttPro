@@ -2,12 +2,20 @@
  * EF-97), fichiers protégés par mot de passe (EF-102). Tout fichier est contrôlé en entier AVANT
  * tout changement : en cas de refus, le projet ouvert reste intact (EX-14). */
 
-/** Nom de fichier : « <nom>_gantt.<ext> », a-z et 0-9 seulement (EF-50). */
+/**
+ * Nom de fichier : « <nom>_gantt.<ext> », a-z et 0-9 seulement (EF-50).
+ * Appelle : aucune
+ * Appelée par : doExport()
+ */
 function exportFileName(name, ext = 'json') {
   const base = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '_') || 'projet';
   return `${base}_gantt.${ext}`;
 }
 
+/**
+ * Appelle : h()
+ * Appelée par : doExport()
+ */
 function download(data, filename, type) {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
   const url = URL.createObjectURL(blob);
@@ -22,6 +30,10 @@ function download(data, filename, type) {
 const ExportOpt = { amounts: false, format: 'json', anonymize: false, protect: false, scale: 1, legend: true, white: true, period: 'all', from: '', to: '' };
 const FORMATS = ['json', 'xlsx', 'csv', 'msp', 'png'];
 
+/**
+ * Appelle : h(), t()
+ * Appelée par : action « expOpt », exportWindow()
+ */
 function exportBody() {
   const o = ExportOpt;
   const radio = f => h('span', { class: 'check' }, h('input', { type: 'radio', name: 'exp-format', id: 'exp-f-' + f, value: f, checked: o.format === f, data: { change: 'expOpt', arg: 'format' } }),
@@ -55,6 +67,10 @@ function exportBody() {
   return box;
 }
 
+/**
+ * Appelle : Dialog.open(), doExport(), exportBody(), h(), t()
+ * Appelée par : action « expOpt », action « exportFile »
+ */
 function exportWindow() {
   ExportOpt.amounts = false;
   const holder = h('div', {}, exportBody());
@@ -66,6 +82,10 @@ function exportWindow() {
   }).then(() => { exportWindow.holder = null; });
 }
 
+/**
+ * Appelle : $(), clear(), Dates.parse(), exportBody(), exportWindow()
+ * Appelée par : l'événement « expOpt » (table ACTIONS)
+ */
 action('expOpt', (key, el) => {
   const o = ExportOpt;
   if (key === 'format') o.format = FORMATS.includes(el.value) ? el.value : 'json';
@@ -79,6 +99,10 @@ action('expOpt', (key, el) => {
   }
 });
 
+/**
+ * Appelle : 18 fonctions
+ * Appelée par : exportWindow()
+ */
 async function doExport() {
   const o = ExportOpt, p = App.project, s = App.sched, today = Dates.todayDn();
   const err = msg => { const e = $('exp-err'); if (e) { e.textContent = msg; e.hidden = false; } announce(msg); };
@@ -109,7 +133,11 @@ async function doExport() {
   toast(t('exp.done', { format: t('exp.f.' + o.format) }));
 }
 
-/* ── Image PNG du Gantt (EF-97) ───────────────────────────────────────────────────────────── */
+/*
+ * ── Image PNG du Gantt (EF-97) ─────────────────────────────────────────────────────────────
+ * Appelle : 14 fonctions
+ * Appelée par : doExport()
+ */
 function ganttPng(o) {
   const s = App.sched;
   const tasks = viewItems().filter(it => it.task).map(it => it.task);
@@ -186,7 +214,11 @@ function ganttPng(o) {
   return new Promise((resolve, reject) => canvas.toBlob(b => (b ? resolve(b) : reject(new Error('png'))), 'image/png'));
 }
 
-/* ── Import (EF-52, EF-95, EF-96, EF-102) ─────────────────────────────────────────────────── */
+/*
+ * ── Import (EF-52, EF-95, EF-96, EF-102) ───────────────────────────────────────────────────
+ * Appelle : Dialog.message(), I18n.error(), importMsp(), importText(), sheetWizard(), t()
+ * Appelée par : action « fileChosen », init()
+ */
 async function importFile(file) {
   if (file.size > 20 * 1024 * 1024) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
   const ext = (file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
@@ -205,7 +237,11 @@ async function importFile(file) {
   }
 }
 
-/** Demande un mot de passe (jamais conservé). Renvoie la chaîne ou null. */
+/**
+ * Demande un mot de passe (jamais conservé). Renvoie la chaîne ou null.
+ * Appelle : Dialog.open(), h(), t()
+ * Appelée par : importText(), Library.load(), openSettings()
+ */
 async function askPassword(title, hint) {
   let pwd = null;
   const inp = h('input', { type: 'password', id: 'ask-pwd', autocomplete: 'current-password' });
@@ -215,6 +251,11 @@ async function askPassword(title, hint) {
   return v === 'ok' ? pwd : null;
 }
 
+/**
+ * Appelle : announce(), askPassword(), confirmOpen(), Dialog.message(), I18n.error(), Model.parseFile(),
+ *   Secure.decrypt(), t()
+ * Appelée par : importFile()
+ */
 async function importText(text, origin = 'file') {
   let result;
   try {
@@ -238,7 +279,11 @@ async function importText(text, origin = 'file') {
   await confirmOpen(p, extra, origin);
 }
 
-/** Aperçu commun d'un projet à ouvrir (EF-52) : nouvel onglet ou remplacement. */
+/**
+ * Aperçu commun d'un projet à ouvrir (EF-52) : nouvel onglet ou remplacement.
+ * Appelle : 13 fonctions
+ * Appelée par : importMsp(), importText()
+ */
 async function confirmOpen(p, extraLines, origin) {
   const avg = Math.round(Metrics.globalProgress(p));
   const lines = [
@@ -262,13 +307,21 @@ async function confirmOpen(p, extraLines, origin) {
   return true;
 }
 
+/**
+ * Appelle : confirmOpen(), Exchange.fromMspXml(), Model.sanitize(), t()
+ * Appelée par : importFile()
+ */
 async function importMsp(text) {
   const { raw, ignored } = Exchange.fromMspXml(text);
   const res = Model.sanitize(raw);
   await confirmOpen(res.project, [ignored.length ? t('msp.ignored', { list: ignored.join(', ') }) : '', t('msp.calNote')], 'msp');
 }
 
-/* ── Assistant d'import de tableur (EF-96) : fichier/feuille → colonnes → aperçu ──────────── */
+/*
+ * ── Assistant d'import de tableur (EF-96) : fichier/feuille → colonnes → aperçu ────────────
+ * Appelle : 15 fonctions
+ * Appelée par : importFile()
+ */
 async function sheetWizard(src) {
   let sheets;
   if (src.kind === 'xlsx') sheets = await Xlsx.read(src.bytes);
@@ -355,11 +408,19 @@ async function sheetWizard(src) {
   return done;
 }
 
-/** Noms du projet initial dans la langue choisie (3.8). */
+/**
+ * Noms du projet initial dans la langue choisie (3.8).
+ * Appelle : t()
+ * Appelée par : init(), newProjectAction(), Tabs.close()
+ */
 function initialNames() {
   return { project: t('init.project'), task: t('init.task'), resource: t('init.resource'), category: t('init.category') };
 }
 
+/**
+ * Appelle : Dates.todayDn(), Dates.toISO(), initialNames(), Model.newProject(), Tabs.open()
+ * Appelée par : action « newProject », action « tabPlus »
+ */
 async function newProjectAction() {
   // Nouveau projet dans un nouvel onglet (EF-49, EF-98) ; au-delà de dix, la limite est annoncée.
   Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));

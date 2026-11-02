@@ -3,22 +3,39 @@
  * (prestataire externe). Un taux peut changer en cours de projet : des lignes « à partir du ». Un taux est un montant :
  * il suit le masquage à l'écran (saisie désactivée) et la case « Inclure les montants » des fichiers. */
 
+/**
+ * Appelle : I18n.number(), t()
+ * Appelée par : Editor.assignEditor(), paintRatesCost(), paintResourceSheet()
+ */
 const pdText = hundredths => t('rt.pd', { n: I18n.number(hundredths / 100, hundredths % 100 ? (hundredths % 10 ? 2 : 1) : 0) });
 
-/** Phrase traduite qui contient un montant ({amount}) : le montant est un nœud, masquable (RG-41). */
+/**
+ * Phrase traduite qui contient un montant ({amount}) : le montant est un nœud, masquable (RG-41).
+ * Appelle : Money.node(), t()
+ * Appelée par : Editor.assignEditor()
+ */
 function amountSentence(key, params, cents) {
   const [before, after = ''] = t(key, { ...params, amount: '\u0001' }).split('\u0001');
   return [before, Money.node(cents), after];
 }
 
-/** Taux du jour d'une ressource, avec son origine (profil ou nominatif), ou « sans taux ». */
+/**
+ * Taux du jour d'une ressource, avec son origine (profil ou nominatif), ou « sans taux ».
+ * Appelle : Dates.todayDn(), h(), Money.node(), Rates.rateFor(), Rates.sourceOf(), t()
+ * Appelée par : paintRatesCost(), resourceCostSection(), resourcesWindow()
+ */
 function rateTodayNode(r) {
   const cents = Rates.rateFor(App.project, r, Dates.todayDn());
   if (cents == null) return h('span', { class: 'hint', text: t('rt.noRate') });
   return h('span', {}, Money.node(cents), ' ', h('span', { class: 'hint', text: `(${t(Rates.sourceOf(App.project, r) === 'own' ? 'rt.srcOwn' : 'rt.srcProfile')})` }));
 }
 
-/** Les vues ouvertes qui montrent des taux ou des coûts sont redessinées après une modification. */
+/**
+ * Les vues ouvertes qui montrent des taux ou des coûts sont redessinées après une modification.
+ * Appelle : paintResourceSheet(), profilesWindow(), repaintDashboard(), resourceSheet(), resourcesWindow()
+ * Appelée par : action « profAdd », action « profDelete », action « profName », action « resProfile », action « rlAdd
+ *   », action « rlField », action « rlRemove », action « rsOwnClear »
+ */
 function refreshRateViews() {
   if (profilesWindow.paint) profilesWindow.paint();
   if (resourcesWindow.paint) resourcesWindow.paint();
@@ -26,7 +43,11 @@ function refreshRateViews() {
   if (typeof repaintDashboard === 'function') repaintDashboard();
 }
 
-/** Propriétaire d'une liste de lignes de taux : un profil ('p') ou une ressource ('r', taux nominatif). */
+/**
+ * Propriétaire d'une liste de lignes de taux : un profil ('p') ou une ressource ('r', taux nominatif).
+ * Appelle : resById()
+ * Appelée par : action « rlAdd », action « rlField », action « rlRemove », rateLinesEditor()
+ */
 function rateOwner(kind, id) {
   return kind === 'p' ? (App.project.profiles || []).find(x => x.id === id) : resById(id);
 }
@@ -34,6 +55,9 @@ function rateOwner(kind, id) {
 /**
  * Éditeur des lignes de taux d'un propriétaire (EF-148). La ligne sans date vaut « depuis le début » ; les autres
  * s'appliquent à partir de leur date. Saisie désactivée quand les montants sont masqués.
+ * Appelle : Budget.toInput(), Dates.parse(), h(), I18n.date(), I18n.getLang(), Money.masked(), Money.symbol(),
+ *   rateOwner(), t()
+ * Appelée par : profilesWindow(), resourceCostSection()
  */
 function rateLinesEditor(kind, id, label) {
   const owner = rateOwner(kind, id), key = kind + id, masked = Money.masked(), lang = I18n.getLang();
@@ -60,6 +84,10 @@ function rateLinesEditor(kind, id, label) {
   return box;
 }
 
+/**
+ * Appelle : $(), announce()
+ * Appelée par : action « rlField », rlApply()
+ */
 function rlError(key, msg, el) {
   const e = $('rl-err-' + key);
   if (e) { e.textContent = msg; e.hidden = false; }
@@ -68,7 +96,11 @@ function rlError(key, msg, el) {
   if (el) el.focus();
 }
 
-/** Applique de nouvelles lignes à un propriétaire (contrôle commun avec l'import) ; renvoie les lignes triées ou null. */
+/**
+ * Applique de nouvelles lignes à un propriétaire (contrôle commun avec l'import) ; renvoie les lignes triées ou null.
+ * Appelle : commit(), Rates.normalize(), rlError(), t()
+ * Appelée par : action « rlAdd », action « rlField »
+ */
 function rlApply(kind, id, key, lines, focusEl) {
   const norm = Rates.normalize(lines);
   if (!norm.ok) {
@@ -79,6 +111,11 @@ function rlApply(kind, id, key, lines, focusEl) {
   return norm.lines;
 }
 
+/**
+ * Appelle : $(), Budget.format(), Budget.parse(), Dates.parse(), I18n.getLang(), Money.masked(), Money.symbol(),
+ *   rateOwner(), refreshRateViews(), rlApply(), rlError(), t()
+ * Appelée par : l'événement « rlField » (table ACTIONS)
+ */
 action('rlField', (arg, el) => {
   const [kind, id, idx, field] = arg.split(':'), i = Number(idx), key = kind + id, owner = rateOwner(kind, id);
   if (!owner || !owner.rates[i] || Money.masked()) return;
@@ -102,6 +139,10 @@ action('rlField', (arg, el) => {
   if (target) target.focus();
 });
 
+/**
+ * Appelle : $(), Dates.todayDn(), Dates.toISO(), Money.masked(), rateOwner(), refreshRateViews(), rlApply()
+ * Appelée par : l'événement « rlAdd » (table ACTIONS)
+ */
 action('rlAdd', arg => {
   const [kind, id] = arg.split(':'), key = kind + id, owner = rateOwner(kind, id);
   if (!owner || Money.masked()) return;
@@ -118,6 +159,10 @@ action('rlAdd', arg => {
   if (target) target.focus();
 });
 
+/**
+ * Appelle : commit(), Money.masked(), rateOwner(), refreshRateViews()
+ * Appelée par : l'événement « rlRemove » (table ACTIONS)
+ */
 action('rlRemove', arg => {
   const [kind, id, idx] = arg.split(':'), i = Number(idx), key = kind + id, owner = rateOwner(kind, id);
   if (!owner || !owner.rates[i] || Money.masked()) return;
@@ -129,6 +174,10 @@ action('rlRemove', arg => {
 
 /* ---------- Fenêtre « Profils de coût » (EF-147) ---------- */
 
+/**
+ * Appelle : $(), clear(), Dialog.open(), h(), rateLinesEditor(), resourcesWindow(), t()
+ * Appelée par : action « openProfiles », refreshRateViews()
+ */
 function profilesWindow() {
   const body = h('div', { id: 'prof-win' });
   const paint = () => {
@@ -157,8 +206,16 @@ function profilesWindow() {
     });
 }
 
+/**
+ * Appelle : profilesWindow()
+ * Appelée par : l'événement « openProfiles » (table ACTIONS)
+ */
 action('openProfiles', () => profilesWindow());
 
+/**
+ * Appelle : $(), commit(), Dialog.message(), nameError(), refreshRateViews(), t()
+ * Appelée par : l'événement « profAdd » (table ACTIONS)
+ */
 action('profAdd', () => {
   const list = App.project.profiles || [];
   if (list.length >= Model.LIMITS.profiles) { Dialog.message(t('rt.title'), t('err.limit', { max: Model.LIMITS.profiles, what: t('rt.title').toLowerCase() })); return; }
@@ -170,6 +227,10 @@ action('profAdd', () => {
   const inp = $('prof-name-P' + k); if (inp) { inp.focus(); inp.select(); }
 });
 
+/**
+ * Appelle : $(), announce(), commit(), nameError(), refreshRateViews(), t()
+ * Appelée par : l'événement « profName » (table ACTIONS)
+ */
 action('profName', (id, el) => {
   const err = $('perr-' + id), list = App.project.profiles;
   if (err) err.hidden = true; el.removeAttribute('aria-invalid');
@@ -179,6 +240,10 @@ action('profName', (id, el) => {
   refreshRateViews();
 });
 
+/**
+ * Appelle : $(), commit(), Dialog.confirm(), refreshRateViews(), t()
+ * Appelée par : l'événement « profDelete » (table ACTIONS)
+ */
 action('profDelete', async id => {
   const pf = (App.project.profiles || []).find(x => x.id === id);
   if (!pf) return;
@@ -192,7 +257,11 @@ action('profDelete', async id => {
 
 /* ---------- Dans la fenêtre Ressources et la fiche d'une ressource ---------- */
 
-/** Liste déroulante du profil d'une ressource. */
+/**
+ * Liste déroulante du profil d'une ressource.
+ * Appelle : h(), t()
+ * Appelée par : resourceCostSection(), resourcesWindow()
+ */
 function profileSelect(r, idAttr) {
   const sel = h('select', { id: idAttr, aria: { label: `${t('rt.profile')} (${r.name})` }, data: { change: 'resProfile', arg: r.id } },
     h('option', { value: '', selected: !r.profile }, t('rt.none')),
@@ -200,6 +269,10 @@ function profileSelect(r, idAttr) {
   return sel;
 }
 
+/**
+ * Appelle : commit(), refreshRateViews(), resById()
+ * Appelée par : l'événement « resProfile » (table ACTIONS)
+ */
 action('resProfile', (id, el) => {
   const r = resById(id);
   if (!r || (el.value && !(App.project.profiles || []).some(x => x.id === el.value))) return;
@@ -210,6 +283,10 @@ action('resProfile', (id, el) => {
   const again = top && top.querySelector(`[data-change="resProfile"][data-arg="${CSS.escape(id)}"]`); if (again) again.focus();
 });
 
+/**
+ * Appelle : $(), commit(), Money.masked(), refreshRateViews(), resById()
+ * Appelée par : l'événement « rsOwnClear » (table ACTIONS)
+ */
 action('rsOwnClear', id => {
   const r = resById(id);
   if (!r || !r.rates.length || Money.masked()) return;
@@ -218,7 +295,11 @@ action('rsOwnClear', id => {
   const add = $('rl-r' + id + '-add'); if (add) add.focus(); // le bouton supprimé a disparu : le focus va au plus proche
 });
 
-/** Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif et coût total (c : son total). */
+/**
+ * Rubrique « Coût des ressources » de la fiche d'une ressource : profil, taux nominatif et coût total (c : son total).
+ * Appelle : h(), Money.masked(), Money.node(), profileSelect(), rateLinesEditor(), rateTodayNode(), t()
+ * Appelée par : paintResourceSheet()
+ */
 function resourceCostSection(r, c) {
   const box = h('fieldset', { class: 'sub', id: 'rs-cost' }, h('legend', { text: t('rs.costTitle') }));
   box.append(h('div', { class: 'field' }, h('label', { for: 'rs-profile', text: t('rt.profile') }), profileSelect(r, 'rs-profile')));

@@ -1,9 +1,21 @@
-/* Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
- * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches). */
+/*
+ * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
+ * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
+ * Appelle : I18n.t()
+ * Appelée par : 176 fonctions (usage général)
+ */
 const t = (k, p) => I18n.t(k, p);
+/**
+ * Appelle : Dates.todayDn()
+ * Appelée par : renderGantt(), statusOf()
+ */
 const today = () => Dates.todayDn();
 
 let staticLang = '';
+/**
+ * Appelle : I18n.getLang(), t()
+ * Appelée par : renderAll()
+ */
 function applyStaticTexts() {
   // Les textes du gabarit ne changent qu'avec la langue : inutile de les réécrire à chaque affichage.
   if (staticLang === I18n.getLang()) return;
@@ -13,19 +25,35 @@ function applyStaticTexts() {
   for (const el of document.querySelectorAll('[data-i18n-label]')) el.setAttribute('aria-label', t(el.dataset.i18nLabel));
 }
 
+/**
+ * Appelle : t()
+ * Appelée par : buildPrintGantt(), renderGantt(), renderList(), Tooltip.lines()
+ */
 function durText(task, r) {
   if (task.type === 'milestone') return t('dur.milestone');
   const d = task.type === 'summary' ? (r && !r.empty ? r.d : 0) : task.dur;
   return t('dur.days', { count: d });
 }
+/**
+ * Appelle : t()
+ * Appelée par : buildPrintGantt(), clipboardTsv(), renderList(), Tooltip.lines()
+ */
 function depsText(task) {
   return task.deps.map(d => d.id + (d.type !== 'FS' || d.lag ? ' ' + t('link.short.' + d.type) + (d.lag ? (d.lag > 0 ? '+' : '') + d.lag : '') : '')).join(', ');
 }
+/**
+ * Appelle : resById()
+ * Appelée par : buildPrintGantt(), renderList(), Tooltip.lines()
+ */
 function resText(task) {
   return task.assign.map(a => { const r = resById(a.res); return r ? r.name + (a.units !== 100 ? ' ' + a.units + ' %' : '') : ''; }).filter(Boolean).join(', ');
 }
 
-/** Tâches en conflit et en avertissement, pour les marquer en texte (EF-18, EF-30). */
+/**
+ * Tâches en conflit et en avertissement, pour les marquer en texte (EF-18, EF-30).
+ * Appelle : aucune
+ * Appelée par : buildPrintGantt(), renderAll()
+ */
 function flags() {
   const conflict = new Set(), warn = new Set();
   if (App.sched) {
@@ -35,6 +63,10 @@ function flags() {
   return { conflict, warn };
 }
 
+/**
+ * Appelle : $(), I18n.getLang(), Settings.get(), t()
+ * Appelée par : renderAll()
+ */
 function renderTopbar() {
   const p = App.project;
   const label = $('project-label');
@@ -69,13 +101,21 @@ function renderTopbar() {
   if (document.activeElement !== lvl) lvl.value = App.project.leveling || 'level';
 }
 
-/** « 3 j de décalage (Alice : surcharge) » pour une tâche décalée par le nivellement (EF-106). */
+/**
+ * « 3 j de décalage (Alice : surcharge) » pour une tâche décalée par le nivellement (EF-106).
+ * Appelle : resById(), t()
+ * Appelée par : renderGantt(), renderList(), Tooltip.lines()
+ */
 function shiftText(r) {
   if (!r || !r.shift) return '';
   const res = resById(r.shift.res);
   return t('list.shift', { count: r.shift.days, res: res ? res.name : '', why: t('why.' + r.shift.kind) });
 }
 
+/**
+ * Appelle : $(), clear(), h(), I18n.date(), I18n.number(), Metrics.globalProgress(), t(), viewActive()
+ * Appelée par : renderAll()
+ */
 function renderKpis() {
   const box = clear($('kpis'));
   if (!App.sched) { box.append(h('p', { class: 'error', text: t(App.calcError || 'calc.error') })); return; }
@@ -101,6 +141,10 @@ function renderKpis() {
   if (typeof viewActive === 'function' && viewActive()) box.append(h('p', { class: 'hint whole', text: t('view.whole') }));
 }
 
+/**
+ * Appelle : Dates.parse(), I18n.shortDate(), resById(), t(), taskById()
+ * Appelée par : paintResolve(), renderAlerts(), reportSections()
+ */
 function alertMessages() {
   if (!App.sched) return [];
   const s = App.sched, out = [];
@@ -128,6 +172,10 @@ function alertMessages() {
   return out;
 }
 
+/**
+ * Appelle : $(), alertMessages(), clear(), h()
+ * Appelée par : renderAll()
+ */
 function renderAlerts() {
   const msgs = alertMessages();
   const box = $('alerts');
@@ -136,18 +184,30 @@ function renderAlerts() {
   for (const m of msgs) ul.append(h('li', { class: m.kind }, h('span', { aria: { hidden: 'true' }, text: '⚠ ' }), m.text));
 }
 
+/**
+ * Appelle : Metrics.status(), today()
+ * Appelée par : buildPrintGantt(), renderGantt(), renderList()
+ */
 function statusOf(task) {
   if (!App.sched) return null;
   return Metrics.status(task, App.sched, today());
 }
 
-/** Libellé et totaux d'un groupe (EF-86). */
+/**
+ * Libellé et totaux d'un groupe (EF-86).
+ * Appelle : t()
+ * Appelée par : renderList()
+ */
 function groupLabel(g) {
   const name = g.none ? t(App.view.groupBy === 'res' ? 'view.noRes' : 'view.noCat') : App.view.groupBy === 'status' ? t('status.' + g.key) : g.label;
   return { name, totals: t('view.groupTotals', { count: g.count, dur: g.dur, pct: g.pct }) };
 }
 
-/** Cellule de tableau en texte seul (textContent, jamais innerHTML). */
+/**
+ * Cellule de tableau en texte seul (textContent, jamais innerHTML).
+ * Appelle : aucune
+ * Appelée par : renderList()
+ */
 function textCell(text, cls) {
   const td = document.createElement('td');
   if (cls) td.className = cls;
@@ -155,7 +215,11 @@ function textCell(text, cls) {
   return td;
 }
 
-/** Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon. */
+/**
+ * Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon.
+ * Appelle : Money.node()
+ * Appelée par : renderList()
+ */
 function moneyCell(task, amts, key) {
   const td = document.createElement('td');
   td.className = 'money';
@@ -166,6 +230,10 @@ function moneyCell(task, amts, key) {
 /** En-tête et groupe de colonnes de la liste, reconstruits seulement quand les colonnes ou la langue changent (EF-143).
  *  @returns {string[]} les colonnes affichées, dans l'ordre. */
 let headSignature = '';
+/**
+ * Appelle : $(), applyColWidths(), bindColumnHandles(), clear(), Columns.effective(), h(), I18n.getLang(), t()
+ * Appelée par : renderList()
+ */
 function renderListHead() {
   const cols = Columns.effective(App.project);
   const sig = cols.join(',') + '|' + I18n.getLang();
@@ -179,6 +247,10 @@ function renderListHead() {
   return cols;
 }
 
+/**
+ * Appelle : 20 fonctions
+ * Appelée par : renderAll()
+ */
 function renderList(items, fl) {
   const noRes = t('list.noRes');
   const body = clear($('task-rows'));
@@ -248,7 +320,11 @@ function renderList(items, fl) {
   body.append(frag);
 }
 
-/** Fenêtre de temps de la grille (EF-17) : toutes les dates affichées. */
+/**
+ * Fenêtre de temps de la grille (EF-17) : toutes les dates affichées.
+ * Appelle : Dates.mondayOf(), Dates.parse(), shownBaselines()
+ * Appelée par : buildPrintGantt(), ganttPng(), renderGantt()
+ */
 function gridRange() {
   const s = App.sched;
   let lo = s.cal.dnOf(0), hi = s.projectEndDn;
@@ -259,9 +335,17 @@ function gridRange() {
   return { from: Dates.mondayOf(lo), to: Dates.mondayOf(hi) + 13 };
 }
 
+/**
+ * Appelle : aucune
+ * Appelée par : baselineTexts(), gridRange(), renderGantt()
+ */
 const shownBaselines = () => App.project.baselines.filter(b => b.shownOnGantt);
 
-/** Texte d'une barre de baseline pour le nom accessible et l'infobulle (EF-34). */
+/**
+ * Texte d'une barre de baseline pour le nom accessible et l'infobulle (EF-34).
+ * Appelle : Dates.parse(), I18n.date(), shownBaselines(), t()
+ * Appelée par : renderGantt(), Tooltip.lines()
+ */
 function baselineTexts(taskId) {
   return shownBaselines().map(b => {
     const bt = b.tasks.find(x => x.id === taskId);
@@ -269,6 +353,10 @@ function baselineTexts(taskId) {
   }).filter(Boolean);
 }
 
+/**
+ * Appelle : 26 fonctions
+ * Appelée par : renderAll()
+ */
 function renderGantt(items, fl) {
   const rows = items.filter(it => it.task).map(it => it.task);
   const inner = clear($('gantt-inner'));
@@ -431,7 +519,11 @@ function renderGantt(items, fl) {
 /** Au-delà de ce nombre de lignes, les poignées des gestes ne sont créées qu'à l'approche d'une barre. */
 const HANDLES_EAGER = 300;
 const SVG_NS = 'http://www.w3.org/2000/svg';
-/** Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style). */
+/**
+ * Élément SVG ; mêmes interdits que h() (pas d'attribut on… ni style).
+ * Appelle : aucune
+ * Appelée par : cpiSpiDiagram(), linkArrows(), loadChart(), sCurveChart(), startGesture()
+ */
 function svg(tag, attrs = {}, ...children) {
   const el = document.createElementNS(SVG_NS, tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -443,7 +535,11 @@ function svg(tag, attrs = {}, ...children) {
   return el;
 }
 
-/** Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type. */
+/**
+ * Flèches de dépendance (EF-45) : du bord du prédécesseur au bord du successeur selon le type.
+ * Appelle : svg(), t(), taskById()
+ * Appelée par : renderGantt()
+ */
 function linkArrows(rows, rowOf, x, dayW, count) {
   const s = App.sched;
   const rowH = 34, mid = i => i * rowH + rowH / 2;
@@ -474,6 +570,10 @@ function linkArrows(rows, rowOf, x, dayW, count) {
   return layer;
 }
 
+/**
+ * Appelle : $(), clear(), h(), safeColor(), t()
+ * Appelée par : renderAll()
+ */
 function renderLegend() {
   const box = clear($('legend'));
   const swatch = c => { const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(c)); return sw; };
@@ -493,12 +593,20 @@ function renderLegend() {
     ['done', 'ongoing', 'late', 'notStarted', 'upcoming'].map(k => h('li', { class: 'status-key ' + k, text: t('status.' + k) }))));
 }
 
+/**
+ * Appelle : applyShortcutTips(), renderAll(), RenderIndex.close(), RenderIndex.open()
+ * Appelée par : 42 fonctions (usage général)
+ */
 function render() {
   // Index des tâches pour la durée de l'affichage (taskById, ancestorsOf en temps constant, EX-15).
   RenderIndex.open(App.project.tasks);
   try { renderAll(); } finally { RenderIndex.close(); }
   applyShortcutTips();
 }
+/**
+ * Appelle : 16 fonctions
+ * Appelée par : render()
+ */
 function renderAll() {
   // Le DOM est reconstruit : on rend le focus à l'élément équivalent (même id) s'il existait.
   const focusId = document.activeElement && document.activeElement.id;

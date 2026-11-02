@@ -1,6 +1,10 @@
-/* Construction du DOM SANS innerHTML (A03 – injection) : tout texte passe par textContent,
+/*
+ * Construction du DOM SANS innerHTML (A03 – injection) : tout texte passe par textContent,
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
- * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13). */
+ * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
+ * Appelle : aucune
+ * Appelée par : 89 fonctions (usage général)
+ */
 const $ = id => document.getElementById(id);
 
 const FORBIDDEN_ATTR = /^(on|style$|srcdoc$|formaction$)/i;
@@ -9,6 +13,8 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
 /**
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
+ * Appelle : append()
+ * Appelée par : 84 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -31,6 +37,10 @@ function h(tag, attrs = {}, ...children) {
   return el;
 }
 
+/**
+ * Appelle : aucune
+ * Appelée par : h()
+ */
 function append(el, children) {
   for (const c of children.flat(Infinity)) {
     if (c === null || c === undefined || c === false) continue;
@@ -39,8 +49,12 @@ function append(el, children) {
   return el;
 }
 
-/* Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
- * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu. */
+/*
+ * Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
+ * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu.
+ * Appelle : aucune
+ * Appelée par : 31 fonctions (usage général)
+ */
 function clear(el) {
   const a = document.activeElement;
   if (a && a !== document.body && el.contains(a)) a.blur();
@@ -48,10 +62,19 @@ function clear(el) {
   return el;
 }
 
-/** Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre. */
+/**
+ * Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre.
+ * Appelle : aucune
+ * Appelée par : baselinesWindow(), buildPrintGantt(), categoriesWindow(), curveLegend(), ganttPng(), inkOn(),
+ *   paintResourceSheet(), renderGantt(), renderLegend(), resourcesWindow(), sCurveChart()
+ */
 function safeColor(c, fallback = '#8a94a6') { return typeof c === 'string' && Model.COLOR_RE.test(c) ? c : fallback; }
 
-/** Texte lisible (noir ou blanc) sur une couleur de fond (contraste EX-03). */
+/**
+ * Texte lisible (noir ou blanc) sur une couleur de fond (contraste EX-03).
+ * Appelle : safeColor()
+ * Appelée par : paintResourceSheet(), renderGantt()
+ */
 function inkOn(hex) {
   let c = safeColor(hex).slice(1);
   if (c.length === 3) c = c.split('').map(x => x + x).join('');
@@ -61,7 +84,11 @@ function inkOn(hex) {
 }
 
 let liveTimer = 0;
-/** Message annoncé aux lecteurs d'écran (EX-02) et affiché brièvement. */
+/**
+ * Message annoncé aux lecteurs d'écran (EX-02) et affiché brièvement.
+ * Appelle : $()
+ * Appelée par : 59 fonctions (usage général)
+ */
 function announce(msg) {
   const live = $('live');
   live.textContent = '';

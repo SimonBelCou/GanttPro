@@ -22,8 +22,8 @@ comportement existant.
    **Remplacer le projet ouvert** (avec une confirmation de plus si celui-ci est modifié).
 3. Chaque parcours indique l'état de départ, des actions numérotées et le résultat attendu. Cochez la case quand le
    résultat constaté est conforme. En cas d'écart, notez le numéro de l'étape, ce que vous voyez et le navigateur.
-4. Les références (EF, RG, R-xx) renvoient au cahier des charges
-   (<https://claude.ai/code/artifact/76a646d0-34e1-42f9-a540-a79b741f91d7>). Le détail des fonctions est dans le
+4. Les références (EF, RG, R-xx) renvoient à `Specs_fonctionnelles.md`, à la racine du dépôt (le cahier des charges en
+   ligne, figé le 2 novembre 2026, n'est plus la référence). Le détail des fonctions est dans le
    guide utilisateur (`docs/guide-utilisateur.md`), dont les sections sont citées « (§ n) ».
 5. **Les statuts dépendent de la date du jour** (Terminé, En retard, À venir…). Quand un attendu en dépend, le
    parcours l'indique ; sinon il ne repose que sur les dates prévues, le chemin critique et les conflits, qui ne

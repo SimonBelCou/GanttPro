@@ -1,10 +1,20 @@
-/* Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
+/*
+ * Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
  * Rien n'est appliqué avant « Enregistrer » : le formulaire travaille sur un brouillon.
- * Chaque champ refusé affiche un message précis sous lui, annoncé, et reçoit le focus (EX-06). */
+ * Chaque champ refusé affiche un message précis sous lui, annoncé, et reçoit le focus (EX-06).
+ *
+ * Appelle : App, Budget, Dates, I18n, Model, Money, Rates, Schedule
+ * Appelée par : 40-state.js, 62-shortcuts.js, 63-selection.js, 66-layout.js, 79-versions.js, 87-settings.js,
+ *   99-main.js, Tabs
+ */
 const Editor = (() => {
   let draft = null;     // copie de la tâche en cours d'édition
   let originalId = null;
 
+  /**
+   * Appelle : h()
+   * Appelée par : Editor.budgetEditor(), Editor.build()
+   */
   const field = (name, label, control, hint) => {
     const id = 'f-' + name;
     control.id = id;
@@ -13,14 +23,30 @@ const Editor = (() => {
     control.setAttribute('aria-describedby', id + '-err');
     return h('div', { class: 'field', data: { field: name } }, h('label', { for: id, text: label }), control, hint ? h('p', { class: 'hint', text: hint }) : null, err);
   };
+  /**
+   * Appelle : h()
+   * Appelée par : Editor.assignEditor(), Editor.budgetEditor(), Editor.build(), Editor.depsEditor()
+   */
   const input = (type, value, attrs = {}) => h('input', { type, value: value ?? '', ...attrs });
+  /**
+   * Appelle : h()
+   * Appelée par : Editor.assignEditor(), Editor.build(), Editor.depsEditor()
+   */
   const select = (options, value) => h('select', {}, options.map(([v, label]) => h('option', { value: v, selected: v === value }, label)));
 
+  /**
+   * Appelle : ancestorsOf(), descendants()
+   * Appelée par : Editor.depsEditor()
+   */
   function eligiblePreds() {
     const banned = new Set([originalId, ...descendants(originalId).map(t => t.id), ...ancestorsOf(originalId)]);
     return App.project.tasks.filter(t => t.type !== 'summary' && !banned.has(t.id) && !draft.deps.some(d => d.id === t.id));
   }
 
+  /**
+   * Appelle : Editor.eligiblePreds(), Editor.input(), Editor.select(), h(), t(), taskById()
+   * Appelée par : Editor.build()
+   */
   function depsEditor() {
     const box = h('fieldset', { class: 'sub', id: 'deps-box' }, h('legend', { text: t('f.deps') }));
     const list = h('ul', { class: 'rows' });
@@ -46,6 +72,11 @@ const Editor = (() => {
     return box;
   }
 
+  /**
+   * Appelle : amountSentence(), Editor.input(), Editor.select(), h(), pdText(), Rates.inUse(), Rates.ofTask(),
+   *   resById(), t()
+   * Appelée par : Editor.build()
+   */
   function assignEditor() {
     const box = h('fieldset', { class: 'sub', id: 'assign-box' }, h('legend', { text: t('f.assign') }));
     const list = h('ul', { class: 'rows' });
@@ -75,7 +106,12 @@ const Editor = (() => {
     return box;
   }
 
-  /** Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112). */
+  /**
+   * Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112).
+   * Appelle : Budget.toInput(), Editor.field(), Editor.input(), h(), I18n.getLang(), Money.masked(), Money.symbol(),
+   *   t()
+   * Appelée par : Editor.build()
+   */
   function budgetEditor() {
     const lang = I18n.getLang(), masked = Money.masked();
     const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
@@ -89,8 +125,16 @@ const Editor = (() => {
     return box;
   }
 
+  /**
+   * Appelle : Money.text(), t()
+   * Appelée par : Editor.build()
+   */
   function summaryText(a) { return t('f.summaryAmounts', { budget: Money.text(a.budget), actual: Money.text(a.actual) }); }
 
+  /**
+   * Appelle : 16 fonctions
+   * Appelée par : (initialisation de Editor), Editor, Editor.open(), Editor.syncParent()
+   */
   function build() {
     const box = clear($('edit-fields'));
     const d = draft;
@@ -170,7 +214,11 @@ const Editor = (() => {
     box.append(com);
   }
 
-  /** Relit les champs simples du formulaire dans le brouillon (sans valider). */
+  /**
+   * Relit les champs simples du formulaire dans le brouillon (sans valider).
+   * Appelle : $()
+   * Appelée par : (initialisation de Editor), Editor, Editor.syncParent(), Editor.validate()
+   */
   function readForm() {
     const f = $('edit-form').elements;
     const val = n => (f[n] ? f[n].value : undefined);
@@ -189,6 +237,11 @@ const Editor = (() => {
     d.notes = val('notes') || '';
   }
 
+  /**
+   * Appelle : $(), clone(), Editor.build(), render(), taskById()
+   * Appelée par : action « addTask », action « editLink », action « groupUnder », action « selectTask »,
+   *   setLanguage(), undoStep()
+   */
   function open(id) {
     const task = taskById(id);
     if (!task) return;
@@ -201,6 +254,10 @@ const Editor = (() => {
     $('f-name').focus();
   }
 
+  /**
+   * Appelle : $()
+   * Appelée par : 13 fonctions (usage général)
+   */
   function close() {
     $('editor').hidden = true;
     draft = null;
@@ -208,6 +265,10 @@ const Editor = (() => {
     if (sel) sel.focus();
   }
 
+  /**
+   * Appelle : $(), announce()
+   * Appelée par : Editor.save()
+   */
   function showErrors(errors) {
     for (const el of document.querySelectorAll('#editor .field-error')) { el.hidden = true; el.textContent = ''; }
     for (const el of document.querySelectorAll('#editor [aria-invalid]')) el.removeAttribute('aria-invalid');
@@ -222,8 +283,16 @@ const Editor = (() => {
     if (first) { (first.tagName === 'FIELDSET' ? first.querySelector('select, input, button') || first : first).focus(); announce(Object.values(errors)[0]); }
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Editor.validate()
+   */
   function intIn(raw, min, max) { const n = Number(raw); return raw !== '' && Number.isInteger(n) && n >= min && n <= max ? n : null; }
 
+  /**
+   * Appelle : 14 fonctions
+   * Appelée par : Editor.save()
+   */
   function validate() {
     readForm();
     const d = draft, e = {};
@@ -264,6 +333,11 @@ const Editor = (() => {
     return e;
   }
 
+  /**
+   * Appelle : $(), announce(), clone(), commit(), Editor.applyTask(), Editor.showErrors(), Editor.validate(),
+   *   Schedule.compute(), t(), taskById(), toast()
+   * Appelée par : (initialisation de Editor), Editor
+   */
   async function save() {
     const e = validate();
     if (Object.keys(e).length) { showErrors(e); return; }
@@ -303,7 +377,11 @@ const Editor = (() => {
     if (sel) sel.focus();
   }
 
-  /** Remplace la tâche oldId ; un changement d'identifiant est répercuté partout (EF-05). */
+  /**
+   * Remplace la tâche oldId ; un changement d'identifiant est répercuté partout (EF-05).
+   * Appelle : descendants()
+   * Appelée par : Editor.save()
+   */
   function applyTask(p, oldId, final) {
     const i = p.tasks.findIndex(x => x.id === oldId);
     const parentChanged = p.tasks[i].parent !== final.parent;
@@ -379,8 +457,12 @@ const Editor = (() => {
   action('saveTask', () => save());
   action('closeEditor', () => close());
 
-  /** Après un changement de niveau (Mettre en retrait, Remonter) : le brouillon garde la saisie en
-   *  cours et reprend le nouveau parent, pour qu'« Enregistrer » ne l'annule pas. */
+  /**
+   * Après un changement de niveau (Mettre en retrait, Remonter) : le brouillon garde la saisie en
+   *  cours et reprend le nouveau parent, pour qu'« Enregistrer » ne l'annule pas.
+   * Appelle : $(), Editor.build(), Editor.close(), Editor.readForm(), taskById()
+   * Appelée par : hierarchyChange()
+   */
   function syncParent() {
     if (!draft) return;
     const task = taskById(originalId);

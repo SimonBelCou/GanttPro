@@ -41,6 +41,12 @@ jobs:
       - name: Moteur et scénarios chiffrés de la recette (node --test, sans dépendance)
         run: node --test tests/core/*.test.mjs
 
+      - name: Dépendances entre fonctions à jour (commentaires « Appelle / Appelée par » et graphe d'Architecture.md)
+        run: |
+          npm install --no-save acorn@8.19.0 axe-core@4.14.0
+          node tools/dependances.mjs --check
+          node --test tests/test_dependances.mjs
+
       - name: Détection de secrets (gitleaks)
         uses: gitleaks/gitleaks-action@v3
         env:
@@ -50,7 +56,7 @@ jobs:
         run: |
           pip install playwright
           python3 -m playwright install --with-deps chromium
-          npm install --no-save axe-core@4.14.0
+          npm install --no-save axe-core@4.14.0 acorn@8.19.0
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
           PERF_FACTOR=2 python3 tests/test_v3_recette.py

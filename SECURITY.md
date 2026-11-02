@@ -25,7 +25,7 @@ Mesures en place :
 | A08 – Intégrité des données | Tout fichier, toute version restaurée, tout projet relu du stockage passe par le même contrôle par liste blanche : types, longueurs, identifiants `[A-Z0-9._-]`, dates 1970-2199, boucles de dépendances, limites (5 Mo, 1 000 tâches) ; un fichier invalide est refusé en entier |
 | A02 – Données au repos | Chiffrement facultatif par mot de passe (PBKDF2-SHA256 600 000 itérations, AES-256-GCM, Web Crypto) |
 | A06 – Composants vulnérables | Aucune dépendance d'exécution ; polices intégrées (pas de CDN) ; Dependabot pour les actions de la CI |
-| A09 – Journalisation | Aucune journalisation (le build refuse `console.*`) : aucune donnée personnelle ni secret ne peut fuiter par la console |
+| A09 – Journalisation | Aucune journalisation à ce jour (le build refuse `console.*`) : aucune donnée personnelle ni secret ne peut fuiter par la console. L'absence de journal local est un **écart documenté** au CLAUDE.md §4 (Specs_fonctionnelles.md, annexe C.2, n° 1) ; un journal local d'erreurs pseudonymisé est prévu |
 | Données personnelles (RGPD) | Aucun cookie, aucun traceur, aucun envoi ; stockage local seulement à la demande ; effacement complet depuis les réglages ; montants et taux exclus des exports par défaut, taux nominatifs retirés d'un export « sans noms de personnes » |
 
 Détail des mesures :
@@ -60,8 +60,19 @@ Détail des mesures :
 - Ne jamais réintroduire d'attribut `onclick=`/`onchange=`… : utiliser `data-click` / `data-change` / `data-input`
   et déclarer l'action dans la table `ACTIONS`.
 - Tout projet importé ou relu passe par `Model.sanitize` / `Model.parseFile`.
+- Lancer `node tools/dependances.mjs` après toute modification de code (commentaires de dépendances, contrôlés en CI).
 - Lancer les tests (`node --test tests/core/*.test.mjs`, `tests/test_v3.py`, `tests/test_v3_espace.py`,
   `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py`) : import malveillant, CSP réellement appliquée, parcours clavier, accessibilité.
-- Détection de secrets dans la CI (gitleaks) ; protection de la branche `main` (revue et CI verte obligatoires).
+- Détection de secrets dans la CI (gitleaks), détection de secrets et blocage à l'envoi activés sur GitHub.
+- Règle d'ensemble sur `main` : pull request et vérification CI `verifier` verte obligatoires ; suppression et envoi forcé
+  interdits. **Aucune approbation n'est exigée** (mainteneur unique) : la validation est la recette manuelle du
+  propriétaire du produit (voir `PCA.md`, §4).
+
+## Veille et continuité
+
+- Veille sécurité datée à chaque reprise de session : [docs/veille-securite.md](docs/veille-securite.md) (audits des outils,
+  avis récents, corrections proposées, ce qui n'a pas pu être vérifié).
+- Reprise après incident, codes d'erreur et contacts par rôle : [PCA.md](PCA.md).
+- Écarts connus aux règles de développement : Specs_fonctionnelles.md, annexe C.2.
 
 Seule la version courante de `GanttPro.html` est maintenue : les anciennes versions ne reçoivent plus de correctifs.

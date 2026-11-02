@@ -6,17 +6,29 @@ App.listW = null;   // largeur imposée de la liste en px ; null = automatique
 App.freeze = 0;     // 0, 1 (identifiant) ou 2 (identifiant et nom)
 App.full = false;   // plein écran du Gantt
 
+/**
+ * Appelle : $()
+ * Appelée par : setListWidth(), updateSplitterValue()
+ */
 function listBounds() {
   const total = $('planner').clientWidth - 10;
   return { min: LIST_MIN, max: Math.max(LIST_MIN, total - GANTT_MIN) };
 }
 
+/**
+ * Appelle : $()
+ * Appelée par : refreshLayout(), setListWidth()
+ */
 function applyListWidth() {
   const planner = $('planner');
   if (App.listW == null) planner.style.removeProperty('--list-w'); else planner.style.setProperty('--list-w', App.listW + 'px');
 }
 
-/** Valeur annoncée par le séparateur : lue à la demande (focus, geste) pour ne pas forcer la mise en page à chaque rendu. */
+/**
+ * Valeur annoncée par le séparateur : lue à la demande (focus, geste) pour ne pas forcer la mise en page à chaque rendu.
+ * Appelle : $(), listBounds()
+ * Appelée par : initLayout(), setFull(), setListWidth()
+ */
 function updateSplitterValue() {
   const sep = $('splitter');
   const b = listBounds();
@@ -26,6 +38,10 @@ function updateSplitterValue() {
   sep.setAttribute('aria-valuenow', String(Math.max(b.min, Math.min(b.max, w))));
 }
 
+/**
+ * Appelle : applyListWidth(), listBounds(), updateSplitterValue()
+ * Appelée par : initLayout()
+ */
 function setListWidth(w) {
   const b = listBounds();
   App.listW = w == null ? null : Math.max(b.min, Math.min(b.max, Math.round(w)));
@@ -33,6 +49,11 @@ function setListWidth(w) {
   updateSplitterValue();
 }
 
+/**
+ * Appelle : $()
+ * Appelée par : action « freezeCols », action « resetColumns », applyColWidths(), bindColumnHandles(),
+ *   refreshLayout()
+ */
 function applyFreeze() {
   const table = $('tasks-table');
   table.classList.toggle('frz-1', App.freeze === 1);
@@ -45,8 +66,12 @@ function applyFreeze() {
 }
 
 /** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
-/** Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
- *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page. */
+/**
+ * Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
+ *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page.
+ * Appelle : $()
+ * Appelée par : initLayout(), schedulePlannerHeight()
+ */
 function applyPlannerHeight() {
   const pl = $('planner');
   const top = pl.getBoundingClientRect().top + window.scrollY;
@@ -54,23 +79,43 @@ function applyPlannerHeight() {
 }
 
 let plannerHeightPending = false;
-/** Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25). */
+/**
+ * Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25).
+ * Appelle : applyPlannerHeight()
+ * Appelée par : refreshLayout()
+ */
 function schedulePlannerHeight() {
   if (plannerHeightPending) return;
   plannerHeightPending = true;
   requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
 }
 
+/**
+ * Appelle : applyFreeze(), applyListWidth(), schedulePlannerHeight()
+ * Appelée par : initLayout(), renderAll(), setFull()
+ */
 function refreshLayout() {
   schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
 
+/**
+ * Appelle : applyFreeze()
+ * Appelée par : l'événement « freezeCols » (table ACTIONS)
+ */
 action('freezeCols', (arg, el) => { App.freeze = Number(el.value) || 0; applyFreeze(); });
+/**
+ * Appelle : announce(), applyColWidths(), applyFreeze(), t()
+ * Appelée par : l'événement « resetColumns » (table ACTIONS)
+ */
 action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze(); announce(t('lay.colsResetDone')); });
 
 const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar', 'legend'];
+/**
+ * Appelle : $(), announce(), refreshLayout(), t(), updateSplitterValue()
+ * Appelée par : action « toggleFull », initLayout()
+ */
 function setFull(on) {
   if (App.full === on) return;
   App.full = on;
@@ -85,8 +130,17 @@ function setFull(on) {
   updateSplitterValue();
   (on ? $('btn-full-exit') : btn).focus();
 }
+/**
+ * Appelle : setFull()
+ * Appelée par : l'événement « toggleFull » (table ACTIONS)
+ */
 action('toggleFull', () => setFull(!App.full));
 
+/**
+ * Appelle : $(), applyPlannerHeight(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(),
+ *   updateSplitterValue()
+ * Appelée par : init()
+ */
 function initLayout() {
   const sep = $('splitter');
   sep.addEventListener('keydown', ev => {

@@ -1,7 +1,12 @@
-/* Fenêtres de l'application (4.3) : jamais alert/confirm/prompt du navigateur.
+/*
+ * Fenêtres de l'application (4.3) : jamais alert/confirm/prompt du navigateur.
  * Élément <dialog> natif ouvert en modal : l'arrière-plan est inerte, Tab reste dans la fenêtre,
  * Échap ferme ; le focus revient ensuite à l'élément qui l'avait ouverte. Chaque fenêtre est
- * annoncée comme un dialogue titré (EX-02). Plusieurs fenêtres peuvent s'empiler. */
+ * annoncée comme un dialogue titré (EX-02). Plusieurs fenêtres peuvent s'empiler.
+ *
+ * Appelle : App, I18n
+ * Appelée par : 22 modules et fichiers (voir Architecture.md)
+ */
 const Dialog = (() => {
   let seq = 0;
 
@@ -15,6 +20,8 @@ const Dialog = (() => {
    * @param {boolean} [o.maskTool] ajoute dans l'en-tête le bouton « Masquer les montants » (même réglage que la barre du haut, RG-41)
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
+   * Appelle : Dialog.confirm(), h(), I18n.t()
+   * Appelée par : 32 fonctions (usage général)
    */
   function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
@@ -72,12 +79,20 @@ const Dialog = (() => {
     });
   }
 
-  /** Message simple. */
+  /**
+   * Message simple.
+   * Appelle : Dialog.open(), h(), I18n.t()
+   * Appelée par : 27 fonctions (usage général)
+   */
   function message(title, text) {
     return open({ title, body: [h('p', { text })], actions: [{ label: I18n.t('dlg.ok'), value: 'ok', kind: 'primary', focus: true }] });
   }
 
-  /** Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé. */
+  /**
+   * Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé.
+   * Appelle : Dialog.open(), h(), I18n.t()
+   * Appelée par : 15 fonctions (usage général)
+   */
   async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({
       title, body: lines.filter(Boolean).map(text => h('p', { text })),

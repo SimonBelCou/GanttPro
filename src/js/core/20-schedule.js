@@ -1,4 +1,5 @@
-/* Ordonnancement (RG-04 à RG-12, RG-23 à RG-25, RG-33).
+/*
+ * Ordonnancement (RG-04 à RG-12, RG-23 à RG-25, RG-33).
  *
  * Gestion de la charge des ressources, au choix du projet (project.leveling) :
  *   'level'  nivellement automatique (défaut) : une tâche est décalée jusqu'à ce que ses ressources
@@ -11,16 +12,42 @@
  * Calcul déterministe : mêmes données, même ordre de liste → mêmes dates. Tout se fait en
  * index de jours ouvrés (voir Calendar) ; les dates ne sont reconstituées qu'à la fin.
  * Entrée : un projet déjà contrôlé par Model.sanitize (aucune boucle, références valides).
- * Liens : type FS (fin-début, FD), SS (DD), FF, SF (DF), délai entier en jours ouvrés. */
+ * Liens : type FS (fin-début, FD), SS (DD), FF, SF (DF), délai entier en jours ouvrés.
+ *
+ * Appelle : Calendar, Dates
+ * Appelée par : 40-state.js, 62-shortcuts.js, 64-bulk.js, 65-gestures.js, 71-resource-sheet.js, 73-calendar.js,
+ *   80-files.js, 99-main.js, Editor, Model, Resolve
+ */
 const Schedule = (() => {
+  /**
+   * Appelle : aucune
+   * Appelée par : Schedule.compute(), Schedule.durOf()
+   */
   const isMilestone = t => t.type === 'milestone';
+  /**
+   * Appelle : aucune
+   * Appelée par : Schedule.compute(), Schedule.lateStartsWithoutLeveling()
+   */
   const isSummary = t => t.type === 'summary';
+  /**
+   * Appelle : Schedule.isMilestone()
+   * Appelée par : Schedule.compute(), Schedule.spanOf()
+   */
   const durOf = t => (isMilestone(t) ? 0 : t.dur);
-  /** Décalage début → fin : une tâche de n jours finit n−1 jours ouvrés après son début (RG-05). */
+  /**
+   * Décalage début → fin : une tâche de n jours finit n−1 jours ouvrés après son début (RG-05).
+   * Appelle : Schedule.durOf()
+   * Appelée par : Schedule.compute()
+   */
   const spanOf = t => Math.max(durOf(t) - 1, 0);
 
   const MODES = Object.freeze(['level', 'smooth', 'off']);
 
+  /**
+   * Appelle : Calendar.create(), Dates.parse(), Schedule.durOf(), Schedule.isMilestone(), Schedule.isSummary(),
+   *   Schedule.lateStartsWithoutLeveling(), Schedule.spanOf()
+   * Appelée par : 14 fonctions (usage général)
+   */
   function compute(project, opts = {}) {
     const mode = opts.mode || (MODES.includes(project.leveling) ? project.leveling : 'level');
     // Lissage : dates de début au plus tard d'un calcul sans nivellement ni enchaînement de ressource.
@@ -240,7 +267,11 @@ const Schedule = (() => {
     };
   }
 
-  /** Début au plus tard de chaque tâche dans un planning sans nivellement (borne du lissage, RG-33). */
+  /**
+   * Début au plus tard de chaque tâche dans un planning sans nivellement (borne du lissage, RG-33).
+   * Appelle : Schedule.compute(), Schedule.isSummary()
+   * Appelée par : Schedule.compute()
+   */
   function lateStartsWithoutLeveling(project) {
     const free = compute(project, { mode: 'off', noResourceEdges: true });
     const caps = new Map();
