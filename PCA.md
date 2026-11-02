@@ -73,7 +73,7 @@ correctif, fusion après recette, mention dans `CHANGELOG.md`.
 
 ### Contrôle après restauration
 ```bash
-python3 tools/build.py --check
+python3 tools/build.py --check && python3 tests/test_build.py
 node --test tests/core/*.test.mjs
 pip install playwright && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0
@@ -95,6 +95,7 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | Symptôme | Cause | Correctif |
 |---|---|---|
 | La CI échoue : « GanttPro.html n'est pas à jour » | Une source de `src/` a changé sans réassembler le fichier livré | `python3 tools/build.py`, puis recommiter `GanttPro.html` |
+| Sous Windows, `python tools/build.py --check` dit « GanttPro.html n'est pas à jour » sur toute branche, main comprise (constaté le 2 novembre 2026) | `build.py` écrivait les en-têtes de fichiers avec « \ » et le fichier en CRLF : contenu et CSP différents de ceux de la CI | Corrigé dans la PR #14 (en-têtes en « / », écriture en LF) ; `python3 tests/test_build.py` le contrôle |
 | Le navigateur affiche une ancienne version | Fichier en cache | Rechargement forcé (Ctrl + F5) ou rouvrir le fichier |
 | Après un réglage manuel des largeurs de colonnes, seules les premières colonnes restent visibles (signalé sous Firefox, 30 octobre 2026) | Largeurs mémorisées incohérentes avec la mise en page à largeur fixe | Bouton « Largeurs par défaut ». Corrigé dans la PR #13 ; la recette Colonnes 1 (étape 12b) le contrôle sous Firefox |
 | L'onglet Budget disparaît après un export sans montants puis une réimportation | Onglet conditionné aux seuls montants | Corrigé (Specs_fonctionnelles.md, A.8 ligne 16) : l'onglet reste visible avec des points de situation |

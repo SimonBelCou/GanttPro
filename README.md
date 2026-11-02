@@ -108,6 +108,7 @@ THIRD_PARTY_LICENSES.md   ← Licences des polices intégrées (SIL OFL 1.1)
 
 ```bash
 python3 tools/build.py                       # assemble GanttPro.html depuis src/
+python3 tests/test_build.py                  # fichier assemblé identique sous Windows et Linux
 node --test tests/core/*.test.mjs            # moteur et scénarios chiffrés (sans dépendance)
 pip install playwright && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0   # accessibilité et dépendances (une seule commande)

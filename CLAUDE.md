@@ -290,7 +290,7 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 |---|---|
 | Utiliser | ouvrir `GanttPro.html` dans un navigateur (aucune installation) |
 | Outils de test (une fois) | `pip install playwright` · `python3 -m playwright install chromium` · `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (**une seule commande** : npm retire sinon l'outil installé avant) |
-| Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) |
+| Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) · test de l'outil : `python3 tests/test_build.py` |
 | Tester le moteur | `node --test tests/core/*.test.mjs` |
 | Dépendances entre fonctions | `node tools/dependances.mjs` (écrit les commentaires et le graphe) · `--check` (CI) · test : `node --test tests/test_dependances.mjs` |
 | Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
