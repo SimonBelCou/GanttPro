@@ -199,3 +199,15 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
+
+## Outils de développement (non livrés)
+
+Ces outils servent aux tests et au contrôle des sources ; ils ne sont **pas** dans `GanttPro.html`. Ils sont installés à
+la demande (`npm install --no-save`, `pip install`), sans fichier de verrouillage versionné (écart documenté :
+Specs_fonctionnelles.md, annexe C.2, n° 3).
+
+| Outil | Version | Licence | Usage |
+|---|---|---|---|
+| axe-core | 4.14.0 (épinglée) | MPL-2.0 | Contrôle d'accessibilité dans les tests |
+| acorn | 8.19.0 (épinglée) | MIT | Analyse des sources par `tools/dependances.mjs` |
+| Playwright (Python) | non épinglée en CI | Apache-2.0 | Tests de bout en bout (Chromium) |
