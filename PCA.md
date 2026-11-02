@@ -76,7 +76,8 @@ correctif, fusion après recette, mention dans `CHANGELOG.md`.
 python3 tools/build.py --check
 node --test tests/core/*.test.mjs
 pip install playwright && python3 -m playwright install chromium
-npm install --no-save axe-core@4.14.0
+npm install --no-save axe-core@4.14.0 acorn@8.19.0
+node tools/dependances.mjs --check && node --test tests/test_dependances.mjs
 python3 tests/test_v3.py && python3 tests/test_v3_espace.py && python3 tests/test_v3_recette.py
 python3 tests/test_v3_budget.py && python3 tests/test_v3_recette_manuelle.py
 ```
@@ -98,7 +99,8 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | Après un réglage manuel des largeurs de colonnes, seules les premières colonnes restent visibles (signalé sous Firefox, 30 octobre 2026) | Largeurs mémorisées incohérentes avec la mise en page à largeur fixe | Bouton « Largeurs par défaut ». Corrigé dans la PR #13 ; la recette Colonnes 1 (étape 12b) le contrôle sous Firefox |
 | L'onglet Budget disparaît après un export sans montants puis une réimportation | Onglet conditionné aux seuls montants | Corrigé (Specs_fonctionnelles.md, A.8 ligne 16) : l'onglet reste visible avec des points de situation |
 | Les tests de bout en bout échouent par dépassement de délai sur une machine lente | Seuils de performance trop stricts | `PERF_FACTOR=2` (ou `3`) devant la commande |
-| Le contrôle d'accessibilité ne s'exécute pas | `axe-core` absent | `npm install --no-save axe-core@4.14.0` |
+| Le contrôle d'accessibilité ne s'exécute pas | `axe-core` absent. Installer `acorn` seul avec `--no-save` **retire** `axe-core` (npm supprime ce qui n'est pas déclaré) | Toujours une seule commande : `npm install --no-save axe-core@4.14.0 acorn@8.19.0` |
+| La CI échoue : « Dépendances périmées dans … » | Une fonction ou un appel a changé sans régénérer les commentaires « Appelle / Appelée par » ni le graphe | `node tools/dependances.mjs`, puis recommiter |
 | Les tests automatiques ne couvrent pas Firefox ni Safari | La CI n'exécute que Chromium | Recette manuelle (`docs/recette-manuelle.md`) |
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |

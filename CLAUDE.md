@@ -289,16 +289,17 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 | Action | Commande |
 |---|---|
 | Utiliser | ouvrir `GanttPro.html` dans un navigateur (aucune installation) |
-| Outils de test (une fois) | `pip install playwright` · `python3 -m playwright install chromium` · `npm install --no-save axe-core@4.14.0` |
+| Outils de test (une fois) | `pip install playwright` · `python3 -m playwright install chromium` · `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (**une seule commande** : npm retire sinon l'outil installé avant) |
 | Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) |
 | Tester le moteur | `node --test tests/core/*.test.mjs` |
+| Dépendances entre fonctions | `node tools/dependances.mjs` (écrit les commentaires et le graphe) · `--check` (CI) · test : `node --test tests/test_dependances.mjs` |
 | Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
 | Veille sécurité | voir §0 ; résultat dans `docs/veille-securite.md` |
 
 ### 13.3 Structure du code
 - Sources : `src/js/core/` (moteur sans DOM : dates, calendrier, planning, indicateurs, résolution des conflits,
   validation des fichiers, traductions, échanges CSV/Excel/MS Project, chiffrement), `src/js/ui/` (interface),
-  `src/styles/`, gabarit `src/index.html`. Les fichiers sont concaténés dans l'ordre alphabétique : le préfixe
+  `src/styles/`, gabarit `src/index.html`, outils dans `tools/` (`build.py`, `dependances.mjs`). Les fichiers sont concaténés dans l'ordre alphabétique : le préfixe
   numérique fait l'ordre de chargement. Architecture détaillée : `Architecture.md`.
 - **Ne jamais modifier `GanttPro.html` à la main** : `python3 tools/build.py` l'assemble à partir de `src/` et
   calcule la CSP (script ET style autorisés par empreinte SHA-256, **aucun `'unsafe-inline'`**).
@@ -308,8 +309,10 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 
 ### 13.4 Conventions du projet
 - **Langue des commentaires : le français.** Libellés par `I18n.t()` avec leurs deux entrées, français ET anglais.
-- **Dépendances entre fonctions** : convention `Appelle : f(), g()` et `Appelée par : h()` du §6, appliquée à tout code
-  ajouté ou modifié ; le graphe de référence est dans `Architecture.md`.
+- **Dépendances entre fonctions** : convention `Appelle : f(), g()` et `Appelée par : h()` du §6. Ces lignes sont
+  **produites par `node tools/dependances.mjs`** (jamais écrites à la main) à la fin du commentaire de chaque fonction de
+  niveau module et de chaque module, et contrôlées en CI ; le graphe est dans `Architecture.md`. Écrire un commentaire de
+  rôle au-dessus de la fonction, lancer l'outil, recommiter.
 - Montants en **entiers de centimes** (jamais de nombre à virgule) ; identifiants de tâche en chaînes.
 - Les champs ajoutés au format de fichier 3 sont **facultatifs** (le numéro de format ne change pas).
 
@@ -326,8 +329,9 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 ### 13.6 Obligatoire à chaque modification
 1. `python3 tools/build.py`
 2. `node --test tests/core/*.test.mjs` (moteur, scénarios chiffrés de la recette)
+   puis `node tools/dependances.mjs` (commentaires « Appelle / Appelée par » et graphe) et `node --test tests/test_dependances.mjs`.
 3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`, `python3 tests/test_v3_recette_manuelle.py`
-   (`npm install --no-save axe-core@4.14.0` pour le contrôle d'accessibilité ; `PERF_FACTOR=2` sur une machine lente).
+   (`npm install --no-save axe-core@4.14.0 acorn@8.19.0` pour le contrôle d'accessibilité et l'outil de dépendances ; `PERF_FACTOR=2` sur une machine lente).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
 5. **Documents à jour dans la même modification** (§7) : toute fonction ajoutée ou tout arbitrage est reporté dans
    `Specs_fonctionnelles.md` (exigence + annexe A ou journal C) et, s'il change l'usage, dans
