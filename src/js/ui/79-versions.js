@@ -1,5 +1,9 @@
-/* Versions (EF-54) : copies nommées et datées de l'état complet, dix au plus, enregistrées dans le
- * fichier exporté. Restaurer est confirmé et s'annule avec « Annuler » (un pas d'historique). */
+/*
+ * Versions (EF-54) : copies nommées et datées de l'état complet, dix au plus, enregistrées dans le
+ * fichier exporté. Restaurer est confirmé et s'annule avec « Annuler » (un pas d'historique).
+ * Appelle : clear(), Dialog.open(), h(), I18n.dateTime(), t()
+ * Appelée par : action « openVersions », action « verDelete », action « verRestore », action « verSave »
+ */
 function versionsWindow() {
   const body = h('div', { id: 'ver-win' });
   const paint = focusSel => {
@@ -22,7 +26,15 @@ function versionsWindow() {
   paint('#ver-name');
   return Dialog.open({ title: t('top.versions'), body: [body], size: 'wide', actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { versionsWindow.paint = null; });
 }
+/**
+ * Appelle : versionsWindow()
+ * Appelée par : l'événement « openVersions » (table ACTIONS)
+ */
 action('openVersions', () => versionsWindow());
+/**
+ * Appelle : $(), announce(), commit(), Model.serialize(), t(), versionsWindow()
+ * Appelée par : l'événement « verSave » (table ACTIONS)
+ */
 action('verSave', () => {
   const inp = $('ver-name'), err = $('ver-err');
   const label = inp.value.trim();
@@ -34,6 +46,11 @@ action('verSave', () => {
   announce(t('ver.saved', { name: label }));
   versionsWindow.paint && versionsWindow.paint('#ver-name');
 });
+/**
+ * Appelle : announce(), clearSelection(), commit(), Dialog.confirm(), Dialog.message(), Editor.close(), I18n.error(),
+ *   Model.sanitize(), render(), t(), versionsWindow()
+ * Appelée par : l'événement « verRestore » (table ACTIONS)
+ */
 action('verRestore', async id => {
   const v = App.project.versions.find(x => x.id === id);
   if (!v) return;
@@ -50,6 +67,10 @@ action('verRestore', async id => {
   announce(t('ver.restored', { name: v.label }));
   versionsWindow.paint && versionsWindow.paint();
 });
+/**
+ * Appelle : commit(), Dialog.confirm(), t(), versionsWindow()
+ * Appelée par : l'événement « verDelete » (table ACTIONS)
+ */
 action('verDelete', async id => {
   const v = App.project.versions.find(x => x.id === id);
   if (!v || !(await Dialog.confirm(t('ver.deleteQ', { name: v.label }), [], t('edit.delete')))) return;

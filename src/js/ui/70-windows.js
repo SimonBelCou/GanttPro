@@ -1,5 +1,10 @@
 /* Fenêtres de gestion : projet (EF-48), ressources (EF-24, EF-25), catégories (EF-27, EF-28). */
 
+/**
+ * Appelle : $(), Budget.format(), Budget.parse(), Budget.toInput(), commit(), Dialog.open(), h(), I18n.getLang(),
+ *   Money.masked(), t()
+ * Appelée par : action « editProject »
+ */
 async function editProjectWindow() {
   const p = App.project;
   const name = h('input', { type: 'text', id: 'p-name', value: p.name, maxlength: 60, required: true, aria: { describedby: 'p-name-err' } });
@@ -88,7 +93,11 @@ async function editProjectWindow() {
   });
 }
 
-/** Contrôle d'un nom de ressource ou de catégorie : obligatoire, 100 caractères, unique (casse ignorée). */
+/**
+ * Contrôle d'un nom de ressource ou de catégorie : obligatoire, 100 caractères, unique (casse ignorée).
+ * Appelle : t()
+ * Appelée par : action « catAdd », action « catField », action « resAdd », action « resField »
+ */
 function nameError(list, id, value, label) {
   const v = value.trim();
   if (!v || v.length > 100) return t('err.text', { field: label, min: 1, max: 100 });
@@ -96,6 +105,11 @@ function nameError(list, id, value, label) {
   return null;
 }
 
+/**
+ * Appelle : clear(), Dialog.open(), h(), safeColor(), t()
+ * Appelée par : action « openResources », action « resAdd », action « resDelete », action « resField »,
+ *   resourceSheet()
+ */
 function resourcesWindow() {
   const body = h('div', { id: 'res-win' });
   const paint = () => {
@@ -128,6 +142,10 @@ function resourcesWindow() {
     .then(() => { resourcesWindow.paint = null; });
 }
 
+/**
+ * Appelle : $(), announce(), commit(), nameError(), resById(), resourcesWindow(), t()
+ * Appelée par : l'événement « resField » (table ACTIONS)
+ */
 action('resField', (arg, el) => {
   const [id, k] = arg.split(':');
   const r = resById(id);
@@ -152,6 +170,10 @@ action('resField', (arg, el) => {
   if (k === 'color' && resourcesWindow.paint) { resourcesWindow.paint(); document.querySelector(`[data-arg="${CSS.escape(arg)}"]`).focus(); }
 });
 
+/**
+ * Appelle : commit(), Dialog.message(), nameError(), resById(), resourcesWindow(), t()
+ * Appelée par : l'événement « resAdd » (table ACTIONS)
+ */
 action('resAdd', () => {
   if (App.project.resources.length >= Model.LIMITS.resources) { Dialog.message(t('dlg.resources'), t('err.limit', { max: Model.LIMITS.resources, what: t('dlg.resources').toLowerCase() })); return; }
   let n = App.project.resources.length + 1, name;
@@ -165,6 +187,10 @@ action('resAdd', () => {
   if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }
 });
 
+/**
+ * Appelle : commit(), Dialog.confirm(), resById(), resourcesWindow(), t()
+ * Appelée par : l'événement « resDelete » (table ACTIONS)
+ */
 action('resDelete', async id => {
   const r = resById(id);
   const used = App.project.tasks.filter(x => x.assign.some(a => a.res === id)).length;
@@ -178,6 +204,10 @@ action('resDelete', async id => {
   resourcesWindow.paint && resourcesWindow.paint();
 });
 
+/**
+ * Appelle : clear(), Dialog.open(), h(), safeColor(), t()
+ * Appelée par : action « catAdd », action « catDelete », action « catField », action « openCategories »
+ */
 function categoriesWindow() {
   const body = h('div', { id: 'cat-win' });
   const paint = () => {
@@ -206,6 +236,10 @@ function categoriesWindow() {
     .then(() => { categoriesWindow.paint = null; });
 }
 
+/**
+ * Appelle : $(), announce(), catById(), categoriesWindow(), commit(), nameError(), t()
+ * Appelée par : l'événement « catField » (table ACTIONS)
+ */
 action('catField', (arg, el) => {
   const [id, k] = arg.split(':');
   const c = catById(id);
@@ -220,6 +254,10 @@ action('catField', (arg, el) => {
   if (k === 'color' && categoriesWindow.paint) { categoriesWindow.paint(); document.querySelector(`[data-arg="${CSS.escape(arg)}"]`).focus(); }
 });
 
+/**
+ * Appelle : catById(), categoriesWindow(), commit(), Dialog.message(), nameError(), t()
+ * Appelée par : l'événement « catAdd » (table ACTIONS)
+ */
 action('catAdd', () => {
   if (App.project.categories.length >= Model.LIMITS.categories) { Dialog.message(t('dlg.categories'), t('err.limit', { max: Model.LIMITS.categories, what: t('dlg.categories').toLowerCase() })); return; }
   let n = App.project.categories.length + 1, name;
@@ -231,6 +269,10 @@ action('catAdd', () => {
   if (inp) { inp.focus(); inp.select(); }
 });
 
+/**
+ * Appelle : catById(), categoriesWindow(), commit(), Dialog.confirm(), Dialog.message(), t()
+ * Appelée par : l'événement « catDelete » (table ACTIONS)
+ */
 action('catDelete', async id => {
   const c = catById(id);
   const others = App.project.categories.filter(x => x.id !== id);
@@ -248,6 +290,10 @@ action('catDelete', async id => {
 /* Résolution des conflits (EF-31) : propositions simulées par Resolve.suggest, appliquées d'un clic. */
 let resolveState = null;
 
+/**
+ * Appelle : Dates.parse(), I18n.date(), resById(), t()
+ * Appelée par : paintResolve()
+ */
 function optionLabel(o) {
   const res = id => (resById(id) || { name: '' }).name;
   switch (o.kind) {
@@ -258,12 +304,20 @@ function optionLabel(o) {
     default: return t('rsv.opt.level');
   }
 }
+/**
+ * Appelle : t()
+ * Appelée par : paintResolve()
+ */
 function impactLabel(a) {
   const left = a.conflicts ? t('rsv.left', { count: a.conflicts }) : t('rsv.left0');
   const end = a.endShift > 0 ? t('rsv.endLater', { count: a.endShift }) : a.endShift < 0 ? t('rsv.endEarlier', { count: -a.endShift }) : t('rsv.endSame');
   return `${left} ; ${end}`;
 }
 
+/**
+ * Appelle : alertMessages(), clear(), h(), impactLabel(), optionLabel(), Resolve.suggest(), t()
+ * Appelée par : action « applyResolve », resolveWindow()
+ */
 function paintResolve(body) {
   clear(body);
   if (!App.sched || !App.sched.conflicts.length) { body.append(h('p', { text: t('rsv.none') })); resolveState = null; return; }
@@ -284,6 +338,10 @@ function paintResolve(body) {
   if (sug.more) body.append(h('p', { class: 'hint', text: t('rsv.more', { count: sug.more }) }));
 }
 
+/**
+ * Appelle : Dialog.open(), h(), paintResolve(), t()
+ * Appelée par : action « applyResolve », action « openResolve »
+ */
 function resolveWindow() {
   const body = h('div', { id: 'rsv-win' });
   resolveWindow.body = body;
@@ -292,6 +350,10 @@ function resolveWindow() {
     .then(() => { resolveWindow.body = null; resolveState = null; });
 }
 
+/**
+ * Appelle : announce(), commit(), paintResolve(), resolveWindow(), t()
+ * Appelée par : l'événement « applyResolve » (table ACTIONS)
+ */
 action('applyResolve', arg => {
   if (!resolveState) return;
   const [k, j] = arg.split(':');
@@ -307,7 +369,11 @@ action('applyResolve', arg => {
   }
 });
 
-/* Étiquettes du projet (EF-91) : nombre d'usages, renommer ou supprimer partout. */
+/*
+ * Étiquettes du projet (EF-91) : nombre d'usages, renommer ou supprimer partout.
+ * Appelle : clear(), Dialog.open(), h(), t()
+ * Appelée par : action « openTags », action « tagDelete », action « tagRename »
+ */
 function tagsWindow() {
   const body = h('div', { id: 'tags-win' });
   const paint = focusSel => {
@@ -330,7 +396,15 @@ function tagsWindow() {
   paint();
   return Dialog.open({ title: t('tags.title'), body: [body], actions: [{ label: t('dlg.close'), value: 'close', kind: 'primary' }] }).then(() => { tagsWindow.paint = null; });
 }
+/**
+ * Appelle : tagsWindow()
+ * Appelée par : l'événement « openTags » (table ACTIONS)
+ */
 action('openTags', () => tagsWindow());
+/**
+ * Appelle : $(), announce(), commit(), t(), tagsWindow()
+ * Appelée par : l'événement « tagRename » (table ACTIONS)
+ */
 action('tagRename', (old, el) => {
   const v = el.value.trim();
   const err = $('tags-err');
@@ -345,6 +419,10 @@ action('tagRename', (old, el) => {
   announce(t('tags.renamed', { old, name: v }));
   tagsWindow.paint && tagsWindow.paint();
 });
+/**
+ * Appelle : commit(), Dialog.confirm(), t(), tagsWindow()
+ * Appelée par : l'événement « tagDelete » (table ACTIONS)
+ */
 action('tagDelete', async name => {
   if (!(await Dialog.confirm(t('tags.delete', { name }), [], t('edit.delete')))) return;
   commit(p => { for (const x of p.tasks) x.tags = x.tags.filter(g => g.toLowerCase() !== name.toLowerCase()); });

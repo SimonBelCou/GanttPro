@@ -1,14 +1,23 @@
-/* Calendrier du projet (RG-01 à RG-03, 3.9).
+/*
+ * Calendrier du projet (RG-01 à RG-03, 3.9).
  *
  * Les jours ouvrés sont numérotés : l'index 0 est le premier jour ouvré à partir du début du
  * projet, les suivants 1, 2…, les précédents −1, −2… Une durée, un délai ou un écart en jours
  * ouvrés devient alors une simple soustraction d'index. Les tables s'étendent à la demande,
- * dans la limite de Dates.MIN_DN … Dates.MAX_DN (au-delà : RangeError, signalée à l'utilisateur). */
+ * dans la limite de Dates.MIN_DN … Dates.MAX_DN (au-delà : RangeError, signalée à l'utilisateur).
+ *
+ * Appelle : Dates
+ * Appelée par : 73-calendar.js, Exchange, Model, Schedule
+ */
 const Calendar = (() => {
   const HOLIDAY_SETS = ['FR', 'FR-AM', 'BE', 'DE', 'GB', 'US', 'CH', 'NONE'];
   const DEFAULT = Object.freeze({ workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] });
 
-  /** Dimanche de Pâques (calendrier grégorien, algorithme de Meeus/Jones/Butcher). */
+  /**
+   * Dimanche de Pâques (calendrier grégorien, algorithme de Meeus/Jones/Butcher).
+   * Appelle : Dates.fromYMD()
+   * Appelée par : Calendar.holidaysOf()
+   */
   function easter(y) {
     const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
     const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
@@ -18,14 +27,22 @@ const Calendar = (() => {
     return Dates.fromYMD(y, month, day);
   }
 
-  /** n-ième jour de semaine wd (0 = lundi … 6 = dimanche) du mois m de l'année y ; n = −1 pour le dernier. */
+  /**
+   * n-ième jour de semaine wd (0 = lundi … 6 = dimanche) du mois m de l'année y ; n = −1 pour le dernier.
+   * Appelle : Dates.fromYMD(), Dates.weekday()
+   * Appelée par : Calendar.holidaysGB(), Calendar.holidaysUS()
+   */
   function nthWeekday(y, m, wd, n) {
     if (n > 0) { const first = Dates.fromYMD(y, m, 1); return first + ((wd - Dates.weekday(first) + 7) % 7) + 7 * (n - 1); }
     const last = Dates.fromYMD(y, m + 1, 1) - 1;
     return last - ((Dates.weekday(last) - wd + 7) % 7);
   }
 
-  /** Royaume-Uni, Angleterre et pays de Galles (gov.uk) : un férié un week-end est remplacé par le premier jour de semaine libre qui suit. */
+  /**
+   * Royaume-Uni, Angleterre et pays de Galles (gov.uk) : un férié un week-end est remplacé par le premier jour de semaine libre qui suit.
+   * Appelle : Calendar.nthWeekday(), Dates.fromYMD(), Dates.weekday()
+   * Appelée par : Calendar.holidaysOf()
+   */
   function holidaysGB(y, E, out) {
     out.set(E - 2, 'hol.goodFriday');
     out.set(E + 1, 'hol.easterMonday');
@@ -41,7 +58,11 @@ const Calendar = (() => {
     return out;
   }
 
-  /** États-Unis, jours fédéraux (OPM) en dates observées : un samedi devient le vendredi, un dimanche le lundi. */
+  /**
+   * États-Unis, jours fédéraux (OPM) en dates observées : un samedi devient le vendredi, un dimanche le lundi.
+   * Appelle : Calendar.nthWeekday(), Dates.fromYMD(), Dates.weekday(), Dates.ymd()
+   * Appelée par : Calendar.holidaysOf()
+   */
   function holidaysUS(y, out) {
     const observed = dn => { const w = Dates.weekday(dn); return w === 5 ? dn - 1 : w === 6 ? dn + 1 : dn; };
     const fixed = (m, d, key) => { const dn = observed(Dates.fromYMD(y, m, d)); if (Dates.ymd(dn).y === y) out.set(dn, key); };
@@ -62,7 +83,11 @@ const Calendar = (() => {
     return out;
   }
 
-  /** Jours fériés d'une année pour un jeu donné : Map dn → clé de libellé (traduite par l'interface). */
+  /**
+   * Jours fériés d'une année pour un jeu donné : Map dn → clé de libellé (traduite par l'interface).
+   * Appelle : Calendar.easter(), Calendar.holidaysGB(), Calendar.holidaysUS(), Dates.fromYMD()
+   * Appelée par : Calendar.create()
+   */
   function holidaysOf(set, y) {
     const out = new Map();
     if (set === 'NONE') return out;
@@ -94,7 +119,11 @@ const Calendar = (() => {
     return out;
   }
 
-  /** Développe une liste de plages {start, end, label} en Map dn → libellé. */
+  /**
+   * Développe une liste de plages {start, end, label} en Map dn → libellé.
+   * Appelle : Dates.parse()
+   * Appelée par : Calendar.create()
+   */
   function expandRanges(list) {
     const out = new Map();
     for (const r of list || []) {
@@ -109,6 +138,8 @@ const Calendar = (() => {
    * Crée le calendrier de calcul.
    * @param {object} def   calendrier du projet (3.9)
    * @param {string} startIso  début du projet : l'index 0 est le premier jour ouvré à partir de cette date
+   * Appelle : Calendar.expandRanges(), Calendar.holidaysOf(), Dates.parse(), Dates.weekday(), Dates.ymd()
+   * Appelée par : calPreview(), Exchange.mspXml(), Schedule.compute()
    */
   function create(def, startIso) {
     const cfg = def || DEFAULT;

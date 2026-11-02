@@ -1,12 +1,33 @@
-/* Classeurs Excel (.xlsx) : écriture (EF-94) et lecture des valeurs (EF-96, EX-27).
+/*
+ * Classeurs Excel (.xlsx) : écriture (EF-94) et lecture des valeurs (EF-96, EX-27).
  * Écriture : chaînes en ligne, jamais de formule ; en-tête en gras, figée, avec filtre automatique.
- * Lecture : valeurs seulement ; une formule est lue comme sa dernière valeur calculée. */
+ * Lecture : valeurs seulement ; une formule est lue comme sa dernière valeur calculée.
+ *
+ * Appelle : Csv, Xml, Zip
+ * Appelée par : 80-files.js, Exchange
+ */
 const Xlsx = (() => {
   const esc = Xml.escape;
+  /**
+   * Appelle : aucune
+   * Appelée par : sheetWizard(), Xlsx.build(), Xlsx.sheetXml()
+   */
   const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  /**
+   * Appelle : aucune
+   * Appelée par : Xlsx.read()
+   */
   const colIndex = ref => { let n = 0; for (const ch of ref.replace(/[0-9]/g, '')) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
+  /**
+   * Appelle : aucune
+   * Appelée par : Xlsx.build()
+   */
   const sheetName = (n, i) => (String(n).replace(/[[\]:*?/\\]/g, ' ').slice(0, 31).trim() || `Feuille${i + 1}`);
 
+  /**
+   * Appelle : Csv.neutralize(), Xlsx.colName()
+   * Appelée par : Xlsx.build()
+   */
   function sheetXml(rows, widths) {
     const n = Math.max(1, ...rows.map(r => r.length));
     const cols = widths && widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
@@ -24,7 +45,11 @@ const Xlsx = (() => {
       cols + `<sheetData>${data}</sheetData>` + (rows.length > 1 ? `<autoFilter ref="A1:${last}"/>` : '') + '</worksheet>';
   }
 
-  /** @param {{name:string, rows:(string|number|null)[][]}[]} sheets → octets .xlsx */
+  /**
+   * @param {{name:string, rows:(string|number|null)[][]}[]} sheets → octets .xlsx
+   * Appelle : Xlsx.colName(), Xlsx.sheetName(), Xlsx.sheetXml(), Zip.write()
+   * Appelée par : Exchange.xlsx()
+   */
   function build(sheets) {
     const names = sheets.map((s, i) => sheetName(s.name, i));
     const widthsOf = rows => {
@@ -58,7 +83,11 @@ const Xlsx = (() => {
     return Zip.write(files);
   }
 
-  /** Classeur → [{name, rows}] (valeurs texte ou nombre). */
+  /**
+   * Classeur → [{name, rows}] (valeurs texte ou nombre).
+   * Appelle : Xlsx.colIndex(), Xml.child(), Xml.children(), Xml.deepText(), Xml.parse(), Xml.textOf(), Zip.read()
+   * Appelée par : sheetWizard()
+   */
   async function read(bytes) {
     const files = await Zip.read(bytes);
     const text = name => { const b = files.get(name); return b ? new TextDecoder().decode(b) : null; };

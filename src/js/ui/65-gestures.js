@@ -4,6 +4,11 @@
  * pas d'annulation. Aucun geste n'est indispensable : édition et Alt + flèches font de même (EX-01). */
 const Gesture = { g: null, suppressClick: false };
 
+/**
+ * Appelle : $(), announce(), clear(), h(), t()
+ * Appelée par : action « blCapture », action « blField », action « repCopy », doExport(), Editor.save(),
+ *   enableAutosave(), finishGesture(), homeSave(), initGestures(), saveAsTemplate(), saveToLibrary()
+ */
 function toast(text, undoable) {
   const box = $('toast');
   clear(box);
@@ -14,8 +19,16 @@ function toast(text, undoable) {
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => { box.hidden = true; }, 8000);
 }
+/**
+ * Appelle : $()
+ * Appelée par : l'événement « toastUndo » (table ACTIONS)
+ */
 action('toastUndo', () => { $('toast').hidden = true; ACTIONS.undo(); });
 
+/**
+ * Appelle : $(), clear(), h()
+ * Appelée par : moveGesture()
+ */
 function gestureTip(text, x, y) {
   const tip = $('tooltip');
   clear(tip); tip.append(h('div', { text })); tip.hidden = false;
@@ -23,6 +36,10 @@ function gestureTip(text, x, y) {
   tip.style.setProperty('top', (y + 16) + 'px');
 }
 
+/**
+ * Appelle : $(), announce(), t()
+ * Appelée par : finishGesture(), initGestures()
+ */
 function endGesture(cancelled) {
   const g = Gesture.g;
   if (!g) return;
@@ -37,7 +54,11 @@ function endGesture(cancelled) {
   if (cancelled && g.active) announce(t('gst.cancelled'));
 }
 
-/** Poignées d'une barre ou d'un jalon (EF-74 à EF-77), ajoutées à la première approche. */
+/**
+ * Poignées d'une barre ou d'un jalon (EF-74 à EF-77), ajoutées à la première approche.
+ * Appelle : h()
+ * Appelée par : initGestures(), renderGantt(), startGesture()
+ */
 function ensureHandles(el) {
   if (!el || el.querySelector('.lk')) return;
   const span = cls => h('span', { class: cls, aria: { hidden: 'true' } });
@@ -49,9 +70,17 @@ function ensureHandles(el) {
   el.append(span('lk lk-s'), span('lk lk-e'));
 }
 
+/**
+ * Appelle : aucune
+ * Appelée par : finishGesture(), moveGesture()
+ */
 function linkType(fromEnd, toEnd) { return fromEnd ? (toEnd ? 'FF' : 'FS') : (toEnd ? 'SF' : 'SS'); }
 
-/** Contrôle d'un nouveau lien pred → succ (EF-76) ; renvoie un message d'erreur ou null. */
+/**
+ * Contrôle d'un nouveau lien pred → succ (EF-76) ; renvoie un message d'erreur ou null.
+ * Appelle : ancestorsOf(), Model.findCycle(), t(), taskById()
+ * Appelée par : finishGesture()
+ */
 function linkError(predId, succId) {
   const pred = taskById(predId), succ = taskById(succId);
   if (!pred || !succ || predId === succId) return t('gst.linkSelf');
@@ -63,6 +92,10 @@ function linkError(predId, succId) {
   return cycle ? t('err.cycle', { path: cycle.join(' → ') }) : null;
 }
 
+/**
+ * Appelle : ensureHandles(), moveGesture(), svg()
+ * Appelée par : initGestures()
+ */
 function startGesture(g, ev) {
   g.active = true;
   document.body.classList.add('dragging');
@@ -83,6 +116,10 @@ function startGesture(g, ev) {
   moveGesture(ev);
 }
 
+/**
+ * Appelle : Dates.toISO(), gestureTip(), I18n.date(), linkType(), t()
+ * Appelée par : initGestures(), startGesture()
+ */
 function moveGesture(ev) {
   const g = Gesture.g;
   if (!g || !g.active) return;
@@ -122,6 +159,11 @@ function moveGesture(ev) {
   }
 }
 
+/**
+ * Appelle : clone(), commit(), Dates.parse(), endGesture(), I18n.shortDate(), linkError(), linkType(),
+ *   Schedule.compute(), t(), toast()
+ * Appelée par : initGestures()
+ */
 function finishGesture() {
   const g = Gesture.g;
   if (!g || !g.active || g.value === undefined && g.kind !== 'link') { endGesture(false); return; }
@@ -149,6 +191,11 @@ function finishGesture() {
   }
 }
 
+/**
+ * Appelle : $(), endGesture(), ensureHandles(), finishGesture(), moveGesture(), startGesture(), t(), taskById(),
+ *   toast()
+ * Appelée par : init()
+ */
 function initGestures() {
   const grid = $('gantt');
   const handlesFor = ev => { const el = ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg]'); if (el) ensureHandles(el); };

@@ -1,11 +1,25 @@
-/* Échanges de fichiers (EF-93 à EF-96, 8.6) : tableur (CSV, Excel), MS Project (XML), import de
- * tâches depuis un tableau. Tout ce qui entre repasse par Model.sanitize (section 8.3). */
+/*
+ * Échanges de fichiers (EF-93 à EF-96, 8.6) : tableur (CSV, Excel), MS Project (XML), import de
+ * tâches depuis un tableau. Tout ce qui entre repasse par Model.sanitize (section 8.3).
+ *
+ * Appelle : Budget, Calendar, Csv, Dates, I18n, Metrics, Model, View, Xlsx, Xml
+ * Appelée par : 80-files.js, 82-clipboard.js
+ */
 const Exchange = (() => {
+  /**
+   * Appelle : I18n.t()
+   * Appelée par : Exchange.fromMspXml(), Exchange.mspXml(), Exchange.rowsToTasks(), Exchange.taskRows(),
+   *   Exchange.xlsx()
+   */
   const t = (k, p) => I18n.t(k, p);
   const LINK_FR = { FS: 'FD', SS: 'DD', FF: 'FF', SF: 'DF' };
   const LINK_IN = { FD: 'FS', DD: 'SS', FF: 'FF', DF: 'SF', FS: 'FS', SS: 'SS', SF: 'SF' };
 
-  /** Numérotation hiérarchique 1, 1.1, 1.2, 2… selon l'ordre de la liste. */
+  /**
+   * Numérotation hiérarchique 1, 1.1, 1.2, 2… selon l'ordre de la liste.
+   * Appelle : aucune
+   * Appelée par : Exchange.taskRows()
+   */
   function outline(project) {
     const num = new Map(), counters = new Map();
     for (const x of project.tasks) {
@@ -17,12 +31,21 @@ const Exchange = (() => {
     return num;
   }
 
+  /**
+   * Appelle : I18n.getLang()
+   * Appelée par : Exchange.taskRows()
+   */
   function depsCell(task) {
     const codes = I18n.getLang() === 'fr' ? LINK_FR : { FS: 'FS', SS: 'SS', FF: 'FF', SF: 'SF' };
     return task.deps.map(d => d.id + (d.type !== 'FS' || d.lag ? ` ${codes[d.type]}${d.lag ? (d.lag > 0 ? '+' : '') + d.lag : ''}` : '')).join('; ');
   }
 
-  /** Lignes du tableau des tâches (EF-93) : en-tête puis une ligne par tâche. */
+  /**
+   * Lignes du tableau des tâches (EF-93) : en-tête puis une ligne par tâche.
+   * Appelle : Budget.amounts(), Dates.toISO(), Exchange.depsCell(), Exchange.outline(), Exchange.t(),
+   *   Metrics.pctOf(), Metrics.status()
+   * Appelée par : Exchange.csv(), Exchange.xlsx()
+   */
   function taskRows(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
@@ -50,10 +73,18 @@ const Exchange = (() => {
     return rows;
   }
 
+  /**
+   * Appelle : Csv.write(), Exchange.taskRows()
+   * Appelée par : doExport()
+   */
   const csv = (project, sched, today, opts) => Csv.write(taskRows(project, sched, today, opts));
 
 
-  /** Classeur de cinq feuilles (EF-94). */
+  /**
+   * Classeur de cinq feuilles (EF-94).
+   * Appelle : Exchange.t(), Exchange.taskRows(), I18n.dayName(), Xlsx.build()
+   * Appelée par : doExport()
+   */
   function xlsx(project, sched, today, { anonymize = false, amounts = false } = {}) {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
@@ -77,6 +108,10 @@ const Exchange = (() => {
   const MSP_TYPE = { FF: 0, FS: 1, SF: 2, SS: 3 }, MSP_BACK = ['FF', 'FS', 'SF', 'SS'];
   const X = Xml.escape;
 
+  /**
+   * Appelle : Calendar.create(), Dates.toISO(), Exchange.t(), Metrics.pctOf()
+   * Appelée par : doExport()
+   */
   function mspXml(project, sched) {
     const cal = Calendar.create(project.calendar, project.projectStart);
     const uid = new Map(project.tasks.map((x, i) => [x.id, i + 1]));
@@ -130,7 +165,12 @@ const Exchange = (() => {
       `<Tasks>${tasks}</Tasks><Resources>${resources}</Resources><Assignments>${assigns}</Assignments></Project>\n`;
   }
 
-  /** XML MS Project → {raw (objet au format 8.2, à contrôler par Model.sanitize), ignored:[libellés]}. */
+  /**
+   * XML MS Project → {raw (objet au format 8.2, à contrôler par Model.sanitize), ignored:[libellés]}.
+   * Appelle : Dates.parse(), Dates.todayDn(), Dates.toISO(), Exchange.t(), Model.nextTaskId(), Xml.child(),
+   *   Xml.children(), Xml.parse(), Xml.textOf()
+   * Appelée par : importMsp()
+   */
   function fromMspXml(text) {
     let doc;
     try { doc = Xml.parse(text); } catch { throw new Model.Invalid('imp.unreadable'); }
@@ -242,9 +282,17 @@ const Exchange = (() => {
     notBefore: ['ne pas commencer avant', 'start no earlier than', 'pas avant'], deadline: ['echeance', 'deadline'],
     budget: ['budget'], actual: ['cout reel', 'cout reel cumule', 'actual cost', 'actual', 'reel'],
   };
+  /**
+   * Appelle : View.fold()
+   * Appelée par : Exchange.guessMapping(), Exchange.rowsToTasks()
+   */
   const norm = s => View.fold(String(s)).replace(/[^a-z0-9%° ]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  /** Association automatique des colonnes à partir de la première ligne (RG-30). */
+  /**
+   * Association automatique des colonnes à partir de la première ligne (RG-30).
+   * Appelle : Exchange.norm()
+   * Appelée par : pasteText(), sheetWizard()
+   */
   function guessMapping(header) {
     const map = {};
     header.forEach((h, i) => {
@@ -254,7 +302,11 @@ const Exchange = (() => {
     return map;
   }
 
-  /** Cellule de montant d'un tableur (RG-42) : nombre Excel ou texte ; renvoie {ok, cents}. */
+  /**
+   * Cellule de montant d'un tableur (RG-42) : nombre Excel ou texte ; renvoie {ok, cents}.
+   * Appelle : Budget.parse()
+   * Appelée par : Exchange.rowsToTasks()
+   */
   function amountCell(v, symbol) {
     if (typeof v === 'number') {
       const c = Math.round(v * 100);
@@ -265,6 +317,10 @@ const Exchange = (() => {
     return r.ok ? r : { ok: false };
   }
 
+  /**
+   * Appelle : Dates.parse(), Dates.toISO()
+   * Appelée par : Exchange.rowsToTasks()
+   */
   function parseDate(v) {
     if (typeof v === 'number' && v > 20000 && v < 120000) return Dates.toISO(Math.round(v) - 25569); // date série Excel
     const s = String(v ?? '').trim();
@@ -281,6 +337,8 @@ const Exchange = (() => {
    * identifiants du fichier, sinon des tâches existantes du projet (RG-30). Sans colonne
    * d'identifiant, une colonne « N° » sert de référence pour les liens et les parents : les tâches
    * reçoivent alors de nouveaux identifiants et les liens suivent.
+   * Appelle : Exchange.amountCell(), Exchange.norm(), Exchange.parseDate(), Exchange.t()
+   * Appelée par : pasteText(), sheetWizard()
    */
   function rowsToTasks(rows, map, existing, { skipHeader = true, symbol = '' } = {}) {
     const data = rows.slice(skipHeader ? 1 : 0);
@@ -352,6 +410,8 @@ const Exchange = (() => {
   /**
    * Fusionne les lignes valides dans le projet (ajout ou remplacement), au format 8.2, puis contrôle
    * le tout par Model.sanitize. Renvoie {project, added:[ids]} ou lève Model.Invalid.
+   * Appelle : Model.nextTaskId(), Model.sanitize(), Model.serialize()
+   * Appelée par : pasteText(), sheetWizard()
    */
   function mergeRows(project, rows, mode) {
     const file = Model.serialize(project, { withVersions: true });

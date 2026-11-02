@@ -1,8 +1,16 @@
 /* Fenêtre « Colonnes » (EF-143 à EF-146, RG-52, RG-53) : affiche, masque et ordonne les colonnes de la liste.
  * Le choix est enregistré dans le projet, annulable comme une modification ; l'identifiant et le nom sont obligatoires. */
 
+/**
+ * Appelle : t()
+ * Appelée par : action « colMove », action « colShow », columnsWindow()
+ */
 const columnName = k => t('col.' + k);
 
+/**
+ * Appelle : clear(), columnName(), Columns.layout(), Dialog.open(), h(), t()
+ * Appelée par : action « colMove », action « colReset », action « colShow », action « openColumns »
+ */
 function columnsWindow() {
   const body = h('div', { id: 'cols-win' });
   const paint = (focusSel) => {
@@ -35,8 +43,16 @@ function columnsWindow() {
     .then(() => { columnsWindow.paint = null; });
 }
 
+/**
+ * Appelle : columnsWindow()
+ * Appelée par : l'événement « openColumns » (table ACTIONS)
+ */
 action('openColumns', () => { columnsWindow(); });
 
+/**
+ * Appelle : announce(), columnName(), Columns.effective(), Columns.toggle(), columnsWindow(), commit(), t()
+ * Appelée par : l'événement « colShow » (table ACTIONS)
+ */
 action('colShow', (key, el) => {
   const next = Columns.toggle(Columns.effective(App.project), key, el.checked);
   if (!next) { if (columnsWindow.paint) columnsWindow.paint('#col-show-' + key); return; }
@@ -45,6 +61,10 @@ action('colShow', (key, el) => {
   if (columnsWindow.paint) columnsWindow.paint('#col-show-' + key);
 });
 
+/**
+ * Appelle : announce(), columnName(), Columns.effective(), Columns.move(), columnsWindow(), commit(), t()
+ * Appelée par : l'événement « colMove » (table ACTIONS)
+ */
 action('colMove', arg => {
   const [key, d] = arg.split(':');
   const list = Columns.effective(App.project);
@@ -57,6 +77,10 @@ action('colMove', arg => {
   if (columnsWindow.paint) columnsWindow.paint('#col-' + stay + '-' + key);
 });
 
+/**
+ * Appelle : announce(), columnsWindow(), commit(), t()
+ * Appelée par : l'événement « colReset » (table ACTIONS)
+ */
 action('colReset', () => {
   commit(p => { p.columns = null; });
   announce(t('cols.resetDone'));

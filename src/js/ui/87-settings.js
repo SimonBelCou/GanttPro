@@ -1,6 +1,11 @@
 /* Réglages (EF-104), aide et à propos (EF-57, EF-58) et page d'accueil facultative (EF-56). */
 const APP_VERSION = '3.0.0';
 
+/**
+ * Appelle : Editor.isOpen(), Editor.open(), I18n.getLang(), I18n.setLang(), Recovery.paint(), render(),
+ *   Settings.set()
+ * Appelée par : action « toggleLang », openSettings()
+ */
 function setLanguage(next) {
   if (!['fr', 'en'].includes(next) || next === I18n.getLang()) return;
   Settings.set('lang', next);
@@ -10,7 +15,12 @@ function setLanguage(next) {
   if (Editor.isOpen()) Editor.open(App.selected);
 }
 
-/** Activation de la sauvegarde automatique : message sur ce qui est conservé, où, et le risque. */
+/**
+ * Activation de la sauvegarde automatique : message sur ce qui est conservé, où, et le risque.
+ * Appelle : Dialog.confirm(), Dialog.message(), Recovery.saveAll(), Recovery.touch(), Settings.set(),
+ *   Store.available(), t(), toast()
+ * Appelée par : openSettings()
+ */
 async function enableAutosave() {
   if (!Store.available()) { await Dialog.message(t('auto.title'), t('store.off')); return false; }
   const ok = await Dialog.confirm(t('auto.enableTitle'), [t('auto.enable1'), t('auto.enable2'), t('auto.enable3')], t('auto.enableBtn'), false);
@@ -23,6 +33,10 @@ async function enableAutosave() {
   return true;
 }
 
+/**
+ * Appelle : 31 fonctions
+ * Appelée par : action « openSettings »
+ */
 async function openSettings() {
   const body = h('div', { id: 'set-win' });
   const paint = focusId => {
@@ -106,7 +120,11 @@ async function openSettings() {
   await p;
 }
 
-/* ── Aide, à propos et déclaration d'accessibilité (EF-57, EF-58, EX-05, EX-09) ─────────── */
+/*
+ * ── Aide, à propos et déclaration d'accessibilité (EF-57, EF-58, EX-05, EX-09) ───────────
+ * Appelle : Dialog.open(), h(), t()
+ * Appelée par : action « openHelp »
+ */
 function openHelp() {
   const sec = (key, ...nodes) => h('section', { class: 'help-sec', aria: { labelledby: 'help-' + key } }, h('h3', { id: 'help-' + key, text: t('help.' + key) }), ...nodes);
   const para = keys => keys.map(k => h('p', { text: t(k) }));
@@ -129,7 +147,12 @@ function openHelp() {
 /* ── Page d'accueil facultative (EF-56, 8.4) ──────────────────────────────────────────────── */
 const Home = { url: null };
 
-/** Au lancement : projet transmis (contrôlé comme un import) et adresse de retour validée. */
+/**
+ * Au lancement : projet transmis (contrôlé comme un import) et adresse de retour validée.
+ * Appelle : $(), announce(), Dialog.message(), HomeLink.homeUrl(), HomeLink.takeProject(), I18n.error(),
+ *   Model.parseFile(), t(), Tabs.replace()
+ * Appelée par : init()
+ */
 async function initHome() {
   Home.url = HomeLink.homeUrl();
   $('btn-home').hidden = !Home.url;
@@ -146,6 +169,11 @@ async function initHome() {
   }
 }
 
+/**
+ * Appelle : Dialog.message(), HomeLink.saveProject(), Model.serialize(), Recovery.clearCurrent(), render(), t(),
+ *   toast()
+ * Appelée par : action « goHome », action « homeSave »
+ */
 function homeSave() {
   const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
   if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
@@ -156,10 +184,26 @@ function homeSave() {
   return true;
 }
 
+/**
+ * Appelle : homeSave()
+ * Appelée par : l'événement « homeSave » (table ACTIONS)
+ */
 action('homeSave', () => homeSave());
+/**
+ * Appelle : homeSave()
+ * Appelée par : l'événement « goHome » (table ACTIONS)
+ */
 action('goHome', () => {
   if (!Home.url || !homeSave()) return;
   window.location.assign(Home.url); // adresse déjà validée : même origine, http(s) ou file
 });
+/**
+ * Appelle : openSettings()
+ * Appelée par : l'événement « openSettings » (table ACTIONS)
+ */
 action('openSettings', () => openSettings());
+/**
+ * Appelle : openHelp()
+ * Appelée par : l'événement « openHelp » (table ACTIONS)
+ */
 action('openHelp', () => openHelp());

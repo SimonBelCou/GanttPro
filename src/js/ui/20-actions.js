@@ -4,8 +4,16 @@
  * data-arg est toujours passé comme chaîne brute (les identifiants de tâche sont des chaînes). */
 const ACTIONS = Object.create(null);
 
+/**
+ * Appelle : aucune
+ * Appelée par : (initialisation de Editor), Editor
+ */
 function action(name, fn) { ACTIONS[name] = fn; }
 
+/**
+ * Appelle : aucune
+ * Appelée par : initActions()
+ */
 function dispatch(kind, ev) {
   const el = ev.target.closest(`[data-${kind}]`);
   if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return;
@@ -15,6 +23,10 @@ function dispatch(kind, ev) {
   fn(el.dataset.arg, el, ev);
 }
 
+/**
+ * Appelle : dispatch()
+ * Appelée par : init()
+ */
 function initActions() {
   document.addEventListener('click', ev => dispatch('click', ev));
   document.addEventListener('change', ev => dispatch('change', ev));

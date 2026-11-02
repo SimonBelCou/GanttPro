@@ -1,7 +1,11 @@
 /* Onglet « Budget » du tableau de bord (EF-117 à EF-119, RG-37 à RG-40) : indicateurs, tableau par catégorie,
  * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
 
-/** Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries. */
+/**
+ * Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries.
+ * Appelle : aucune
+ * Appelée par : paintBudget()
+ */
 function costScale(curve) {
   const all = [...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()];
   const max = Math.max(0, ...all);
@@ -14,6 +18,10 @@ function costScale(curve) {
   return { max: top, ticks };
 }
 
+/**
+ * Appelle : 13 fonctions
+ * Appelée par : paintDashboard()
+ */
 function paintBudget(panel) {
   const P = App.project, tot = Budget.totals(P);
   const tile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
@@ -58,10 +66,18 @@ function paintBudget(panel) {
  * points de situation. Un indice qui ne se calcule pas s'affiche « non calculable » avec sa raison, jamais 0. */
 const LIGHT_MARK = { green: '●', orange: '▲', red: '■', none: '○' }; // forme + texte : la couleur ne porte jamais seule le sens
 
+/**
+ * Appelle : I18n.number(), t()
+ * Appelée par : cpiSpiDiagram(), paintEvm()
+ */
 function ratioText(r) {
   return r.hundredths == null ? t('evm.na') : I18n.number(r.hundredths / 100, 2);
 }
 
+/**
+ * Appelle : h(), t()
+ * Appelée par : paintEvm()
+ */
 function evmTile(label, node, r) {
   const dd = h('dd', {}, node);
   const tileEl = h('div', { class: 'tile' }, h('dt', { text: label }), dd);
@@ -73,6 +89,10 @@ function evmTile(label, node, r) {
   return tileEl;
 }
 
+/**
+ * Appelle : I18n.number(), ratioText(), svg(), t()
+ * Appelée par : paintEvm()
+ */
 function cpiSpiDiagram(res) {
   const W = 360, H = 300, m = { l: 44, r: 16, t: 14, b: 38 }, MAX = 2;
   const px = v => m.l + (Math.min(Math.max(v, 0), MAX) / MAX) * (W - m.l - m.r);
@@ -94,6 +114,11 @@ function cpiSpiDiagram(res) {
   return c;
 }
 
+/**
+ * Appelle : cpiSpiDiagram(), Dates.parse(), Dates.todayDn(), Evm.compute(), evmTile(), h(), I18n.date(),
+ *   I18n.number(), Money.node(), ratioText(), t()
+ * Appelée par : paintBudget()
+ */
 function paintEvm(panel) {
   const P = App.project, today = Dates.todayDn();
   const res = Evm.compute(P, App.sched, today);
@@ -135,6 +160,11 @@ function paintEvm(panel) {
   panel.append(sec);
 }
 
+/**
+ * Appelle : $(), announce(), commit(), Dates.parse(), Dates.todayDn(), Dialog.message(), Evm.compute(), Evm.point(),
+ *   I18n.date(), repaintDashboard(), t()
+ * Appelée par : l'événement « evmPointAdd » (table ACTIONS)
+ */
 action('evmPointAdd', () => {
   const P = App.project;
   if (P.statusPoints.length >= Model.LIMITS.statusPoints) { Dialog.message(t('evm.points'), t('evm.pointLimit', { max: Model.LIMITS.statusPoints })); return; }
@@ -147,6 +177,10 @@ action('evmPointAdd', () => {
   repaintDashboard('#evm-add');
 });
 
+/**
+ * Appelle : commit(), repaintDashboard()
+ * Appelée par : l'événement « evmPointDelete » (table ACTIONS)
+ */
 action('evmPointDelete', id => {
   if (!App.project.statusPoints.some(x => x.id === id)) return;
   commit(pr => { pr.statusPoints = pr.statusPoints.filter(x => x.id !== id); });

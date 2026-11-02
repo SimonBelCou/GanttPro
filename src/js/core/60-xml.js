@@ -1,11 +1,20 @@
-/* Lecteur XML minimal, sans DOM, pour les classeurs Excel et les fichiers MS Project (EX-27).
+/*
+ * Lecteur XML minimal, sans DOM, pour les classeurs Excel et les fichiers MS Project (EX-27).
  * Sûreté : toute déclaration DOCTYPE ou ENTITY est refusée (pas d'entité externe, pas d'expansion
  * exponentielle) ; seules les cinq entités prédéfinies et les références numériques sont décodées ;
- * profondeur et nombre de nœuds bornés. */
+ * profondeur et nombre de nœuds bornés.
+ *
+ * Appelle : aucune
+ * Appelée par : Exchange, Xlsx
+ */
 const Xml = (() => {
   const MAX_NODES = 2e6, MAX_DEPTH = 64;
   const ENT = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Xml.parse()
+   */
   function decode(s) {
     return s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-z]+);/g, (m, e) => {
       if (e[0] === '#') {
@@ -16,13 +25,21 @@ const Xml = (() => {
     });
   }
 
-  /** Échappe un texte pour le XML et retire les caractères interdits par XML 1.0. */
+  /**
+   * Échappe un texte pour le XML et retire les caractères interdits par XML 1.0.
+   * Appelle : aucune
+   * Appelée par : (initialisation de Exchange), (initialisation de Xlsx), Exchange, Xlsx
+   */
   function escape(s) {
     return String(s ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f￾￿]/g, '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  /** Arbre {name (sans préfixe), attrs, children, text}. Lève Error('xml') si le texte est refusé. */
+  /**
+   * Arbre {name (sans préfixe), attrs, children, text}. Lève Error('xml') si le texte est refusé.
+   * Appelle : Xml.decode()
+   * Appelée par : Exchange.fromMspXml(), Xlsx.read()
+   */
   function parse(text) {
     if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error('xml.doctype');
     const root = { name: '#root', attrs: {}, children: [], text: '' };
@@ -65,10 +82,26 @@ const Xml = (() => {
     return root;
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Exchange.fromMspXml(), Xlsx.read(), Xml.textOf()
+   */
   const child = (n, name) => (n && n.children.find(c => c.name === name)) || null;
+  /**
+   * Appelle : aucune
+   * Appelée par : Exchange.fromMspXml(), Xlsx.read()
+   */
   const children = (n, name) => (n ? n.children.filter(c => c.name === name) : []);
+  /**
+   * Appelle : Xml.child()
+   * Appelée par : Exchange.fromMspXml(), Xlsx.read()
+   */
   const textOf = (n, name) => { const c = child(n, name); return c ? c.text.trim() : ''; };
-  /** Texte de tout le sous-arbre (pour les chaînes riches d'Excel). */
+  /**
+   * Texte de tout le sous-arbre (pour les chaînes riches d'Excel).
+   * Appelle : aucune
+   * Appelée par : Xlsx.read()
+   */
   const deepText = n => n.text + n.children.map(deepText).join('');
 
   return { parse, escape, child, children, textOf, deepText };

@@ -4,6 +4,10 @@
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
 const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
+/**
+ * Appelle : I18n.number()
+ * Appelée par : (initialisation de 75-dashboard.js), curveTable(), paintDashboard(), PCT_CHART.desc()
+ */
 function fmtPct(v) { return `${I18n.number(v)} %`; }
 
 /** Réglages de la courbe d'avancement : une échelle de 0 à 100 %. */
@@ -12,6 +16,10 @@ const PCT_CHART = {
   desc: (curve, last) => t('dash.curveDesc', { planned: fmtPct(last(curve.planned)), real: fmtPct(last(curve.real)) }),
 };
 
+/**
+ * Appelle : Dates.todayDn(), h(), I18n.monthLabel(), I18n.shortDate(), safeColor(), svg(), t()
+ * Appelée par : paintBudget(), paintDashboard(), reportArticle()
+ */
 function sCurveChart(curve, o = PCT_CHART) {
   const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
   const n = curve.periods.length;
@@ -96,6 +104,10 @@ function sCurveChart(curve, o = PCT_CHART) {
   return box;
 }
 
+/**
+ * Appelle : h(), safeColor(), t()
+ * Appelée par : paintBudget(), paintDashboard()
+ */
 function curveLegend() {
   const item = (cls, label, color) => {
     const sw = h('span', { class: 'key ' + cls, aria: { hidden: 'true' } });
@@ -106,6 +118,10 @@ function curveLegend() {
     App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
 }
 
+/**
+ * Appelle : fmtPct(), h(), I18n.monthLabel(), I18n.shortDate(), t()
+ * Appelée par : paintBudget(), paintDashboard()
+ */
 function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
   const bls = App.project.baselines.filter(b => b.shownOnScurve);
   return h('table', { class: 'manage values', id },
@@ -117,6 +133,10 @@ function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-va
       bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
 }
 
+/**
+ * Appelle : Dates.parse(), Dates.todayDn(), Metrics.deviation(), Metrics.status()
+ * Appelée par : trackingTable()
+ */
 function trackingRows() {
   const s = App.sched, today = Dates.todayDn();
   const bl = App.project.baselines.find(b => b.id === Dash.baseline);
@@ -128,8 +148,16 @@ function trackingRows() {
     return { task, order, r, dev, vsBl, status: Metrics.status(task, s, today) };
   });
 }
+/**
+ * Appelle : aucune
+ * Appelée par : reportSections(), trackingTable()
+ */
 const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + ' j';
 
+/**
+ * Appelle : Dates.parse(), h(), I18n.shortDate(), signed(), t(), trackingRows()
+ * Appelée par : paintDashboard()
+ */
 function trackingTable() {
   const cols = [
     ['order', t('col.id')], ['name', t('col.name')], ['pct', t('f.pct')], ['start', t('dash.pStart')], ['end', t('dash.pEnd')],
@@ -156,7 +184,11 @@ function trackingTable() {
       Dash.baseline ? h('td', { text: x.vsBl == null ? '—' : signed(x.vsBl) }) : null))));
 }
 
-/** Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141). */
+/**
+ * Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141).
+ * Appelle : Budget.hasAmounts()
+ * Appelée par : (initialisation de 75-dashboard.js), paintDashboard()
+ */
 function dashTabs() {
   const tabs = ['summary', 'load'];
   if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
@@ -164,6 +196,10 @@ function dashTabs() {
   return tabs;
 }
 
+/**
+ * Appelle : 15 fonctions
+ * Appelée par : dashboardWindow(), repaintDashboard()
+ */
 function paintDashboard(body) {
   clear(body);
   if (!App.sched) { body.append(h('p', { class: 'error', text: t('calc.error') })); return; }
@@ -203,6 +239,10 @@ function paintDashboard(body) {
     h('div', { class: 'table-scroll' }, trackingTable())));
 }
 
+/**
+ * Appelle : Dialog.open(), h(), paintDashboard(), t()
+ * Appelée par : action « openDashboard », repaintDashboard()
+ */
 function dashboardWindow() {
   if (Dash.baseline && !App.project.baselines.some(b => b.id === Dash.baseline)) Dash.baseline = '';
   const body = h('div', { id: 'dash-win' });
@@ -212,12 +252,20 @@ function dashboardWindow() {
     .then(() => { dashboardWindow.body = null; });
 }
 
+/**
+ * Appelle : dashboardWindow(), paintDashboard()
+ * Appelée par : 13 fonctions (usage général)
+ */
 function repaintDashboard(focusSel) {
   if (!dashboardWindow.body) return;
   paintDashboard(dashboardWindow.body);
   const el = focusSel && dashboardWindow.body.querySelector(focusSel);
   if (el) el.focus();
 }
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashTab » (table ACTIONS)
+ */
 action('dashTab', k => { Dash.tab = ['load', 'budget'].includes(k) ? k : 'summary'; repaintDashboard('#dtab-' + Dash.tab); });
 document.addEventListener('keydown', ev => {
   const tab = ev.target.closest && ev.target.closest('#dash-win [role="tab"]');
@@ -226,11 +274,35 @@ document.addEventListener('keydown', ev => {
   const tabs = dashTabs(), at = tabs.indexOf(Dash.tab);
   ACTIONS.dashTab(tabs[(at + (ev.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]);
 });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashUnit » (table ACTIONS)
+ */
 action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashOngoing » (table ACTIONS)
+ */
 action('dashOngoing', (arg, el) => { Dash.ongoing = el.checked; repaintDashboard('#bud-ongoing'); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashCostValues » (table ACTIONS)
+ */
 action('dashCostValues', () => { Dash.showCostValues = !Dash.showCostValues; repaintDashboard('[data-click="dashCostValues"]'); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashValues » (table ACTIONS)
+ */
 action('dashValues', () => { Dash.showValues = !Dash.showValues; repaintDashboard('[data-click="dashValues"]'); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashBaseline » (table ACTIONS)
+ */
 action('dashBaseline', (arg, el) => { Dash.baseline = el.value; repaintDashboard('#dash-bl'); });
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashSort » (table ACTIONS)
+ */
 action('dashSort', k => {
   Dash.sort = Dash.sort.key === k ? { key: k, dir: -Dash.sort.dir } : { key: k, dir: 1 };
   repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
