@@ -373,3 +373,15 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 - Aucune donnée réelle (noms, projets, chemins, entreprise) dans les fichiers du dépôt, y compris dans les exemples,
   les captures d'écran et les extraits de spécifications. Une copie d'un document externe est nettoyée avant d'entrer
   dans le dépôt (pseudonymes, adresses, noms de personnes).
+
+### 13.10 Numérique responsable : règles et agents de l'INR
+@.claude/regles-nr/regles-nr.md
+
+- La ligne ci-dessus charge les règles d'écoconception et d'accessibilité de l'Institut du Numérique Responsable
+  (RGESN, GR491, Opquast, RGAA). Seules les sections HTML, CSS, JavaScript et les principes transverses concernent
+  GanttPro. **En cas de conflit, le présent §13 prévaut** (par exemple : aucun appel réseau, donc aucun service worker
+  ni cache HTTP ; aucune bibliothèque d'exécution).
+- Avant chaque pull request qui touche `src/`, lancer les sous-agents `eco-check` et `accessibilite-check`
+  (`.claude/agents/`) sur le diff et relire leurs corrections avant de les accepter.
+- Ces fichiers sont copiés sans modification depuis l'amont (CC BY-SA 4.0) : ne pas les éditer ; provenance, version et
+  mise à jour dans `.claude/regles-nr/LISEZMOI.md`.
