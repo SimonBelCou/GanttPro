@@ -1,4 +1,4 @@
-// Contrôles à l'import et format de fichier (cahier des charges, sections 8 et 9.3).
+// Contrôles à l'import et format de fichier (Specs_fonctionnelles.md, sections 8 et 9.3).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './load.mjs';

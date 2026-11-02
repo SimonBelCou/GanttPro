@@ -1,4 +1,4 @@
-// Étape B, lot baselines : scénarios R-85 et R-86 (cahier des charges, 9.7), calcul seul.
+// Étape B, lot baselines : scénarios R-85 et R-86 (Specs_fonctionnelles.md, 9.7), calcul seul.
 //   node --test tests/core/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
