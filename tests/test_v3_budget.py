@@ -779,6 +779,7 @@ def main():
         check('EF-147 : renommer un profil', pg.input_value('#prof-name-P3') == 'Chef de projet' and 'Chef de projet' in sp(pg.inner_text('#prof-win')))
         pg.fill('#prof-name-P3', 'analyste'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
         check('EF-147 : un nom de profil déjà pris (casse ignorée) est refusé, message près du champ', not pg.locator('#perr-P3').is_hidden() and pg.get_attribute('#prof-name-P3', 'aria-invalid') == 'true')
+        check('RGAA 11.10 : le message d\'erreur du nom de profil est restitué (role="alert")', pg.get_attribute('#perr-P3', 'role') == 'alert')
         pg.fill('#prof-name-P3', 'Chef de projet'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
         pg.click('#rl-pP3-add'); pg.wait_for_timeout(100)
         check('EF-148 : première ligne « Depuis le début », focus sur son taux', 'Depuis le début' in sp(pg.inner_text('#rl-pP3')) and pg.evaluate("document.activeElement.id") == 'rl-pP3-rate-0')

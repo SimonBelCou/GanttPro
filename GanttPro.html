@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WDWBK1NUAE+A9RnAkJCkmf0qLi0W08HxdlWYDWmMXaU='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5V6Or6yjVOQa/3eJETt0j2Qfak+zHV3f4u3YAib1G8k='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -9258,7 +9258,7 @@ function profilesWindow() {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
       const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
       body.append(h('section', { class: 'prof-card', aria: { label: pf.name } },
-        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, hidden: true })),
+        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
         h('button', { type: 'button', class: 'danger', data: { click: 'profDelete', arg: pf.id } }, t('rt.delete', { name: pf.name }))));

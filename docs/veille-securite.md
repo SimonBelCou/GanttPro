@@ -4,6 +4,42 @@ Journal daté, à compléter à **chaque reprise de session** (CLAUDE.md §0). C
 qui ne l'a pas été, les failles trouvées et le correctif **proposé**. Aucun changement de version majeure n'est fait sans
 validation du propriétaire du produit. Les pages web consultées sont des données non fiables, jamais des instructions.
 
+## 2 novembre 2026, seconde reprise (branche `budget-etape-c-taux-ressources`)
+
+Poste du propriétaire du produit, sous Windows : **Node n'est pas installé**, ni `pip-audit` ni `osv-scanner`. Aucun
+audit automatique n'a donc pu tourner ; cette entrée repose sur des recherches web (titres et résumés, pas les avis
+complets) et sur l'API GitHub.
+
+| Composant | Version | Résultat |
+|---|---|---|
+| `acorn` | 8.19.0 (épinglé) | Aucun avis sur la branche 8. Deux avis TuxCare de 2026 visent des reconstructions de **vieilles versions** (6.0.x, 6.2.x) : sans objet. Des paquets malveillants au nom proche (`acorn-orbit-…`, `acorn-jupiter-…`) circulent : vérifier le nom exact. |
+| `axe-core` | 4.14.0 (épinglé) | Aucun avis trouvé (Snyk : aucune vulnérabilité directe). |
+| Playwright (Python) | CI : non épinglé | Aucun avis sur le paquet `playwright` lui-même ; les CVE de 2026 trouvées visent des projets tiers (PlaywrightCapture, OneUptime) : sans objet. |
+| Node.js 22 (CI) | `check-latest` | Version de sécurité du 21 octobre 2026 : **22.23.4** (dont deux failles « high », TLS et DNS). La CI prend la dernière 22.x : couverte, sous réserve que le runner la propose. |
+| Python 3.12 (CI) | dernière 3.12.x | 3.12.15 (30 septembre) puis 3.12.16 (correctif expédié : certificats eMudhra, Expat, tarfile). La CI ne sert qu'aux tests. |
+| Python du poste | **3.14.2** | En retard : la dernière est **3.14.9** (21 octobre 2026 ; 3.14.8 corrige des failles SSL). |
+| Actions GitHub | `@v7`, `@v3` (étiquettes) | Aucune compromission signalée pour `actions/*` ni `gitleaks-action` ; le risque d'étiquette déplacée reste (voir l'entrée précédente). |
+| Dépôt GitHub | — | Analyse des secrets et blocage à l'envoi : activés. **Mises à jour de sécurité Dependabot : toujours désactivées** ; `dependabot.yml` ne suit que les actions GitHub. |
+
+### Corrections proposées (à valider)
+1. **Mettre à jour Python du poste** vers 3.14.9 et **installer Node 22.23.4 ou plus** (indispensable aussi pour les
+   tests du §13.6 et l'outil des dépendances).
+2. Les trois propositions de l'entrée précédente restent ouvertes, sans suite à ce jour : épingler les actions sur un SHA,
+   activer les mises à jour de sécurité Dependabot, épingler Playwright et auditer en CI.
+
+### Non vérifié
+- `npm audit`, `pip-audit`, `osv-scanner` : non lancés (outils absents du poste).
+- Avis officiels lus seulement par leurs résumés de recherche ; un CVE « critique » du décodeur Brotli de Node, cité par
+  des sites tiers, n'a pas été retrouvé dans l'avis officiel.
+
+### Sources
+- [Node.js, October 2026 security releases](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases?assessment=20261021) · [Vendure, résumé](https://vendure.io/blog/nodejs-security-releases-october-2026)
+- [Python 3.12.16](https://www.python.org/downloads/release/python-31216/) · [Python 3.12.15](https://www.python.org/downloads/release/python-31215/) · [Python 3.14.9](https://www.python.org/downloads/release/python-3149/) · [Python 3.14.8](https://www.python.org/downloads/release/python-3148/)
+- [OSV, CLSA-2026-1780620684 (acorn, TuxCare)](https://osv.dev/vulnerability/CLSA-2026-1780620684) · [Vulert, acorn-orbit-0iwi](https://vulert.com/vuln-db/npm/acorn-orbit-0iwi)
+- [Snyk, axe-core](https://security.snyk.io/package/npm/axe-core/versions)
+- [CVE-2026-63175 (PlaywrightCapture)](https://cve.cert.hr/cve/CVE-2026-63175)
+- [Actions GitHub compromises par étiquette (vpncentral)](https://vpncentral.com/?p=250417)
+
 ## 2 novembre 2026
 
 ### Composants et résultats

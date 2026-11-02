@@ -189,7 +189,7 @@ function profilesWindow() {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
       const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
       body.append(h('section', { class: 'prof-card', aria: { label: pf.name } },
-        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, hidden: true })),
+        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
         h('button', { type: 'button', class: 'danger', data: { click: 'profDelete', arg: pf.id } }, t('rt.delete', { name: pf.name }))));
