@@ -6,6 +6,10 @@ App.clipboard = null;
 // catégorie, avancement, étiquettes (ordre documenté dans le guide).
 const CLIP_COLS = ['name', 'dur', 'deps', 'res', 'cat', 'pct', 'tags'];
 
+/**
+ * Appelle : Csv.write(), depsText(), resById(), t(), taskById()
+ * Appelée par : initClipboard()
+ */
 function clipboardTsv(ids) {
   const p = App.project;
   const head = [t('xp.id'), t('xp.name'), t('xp.dur'), t('xp.deps'), t('xp.res'), t('xp.cat'), t('xp.pct'), t('xp.tags')];
@@ -18,6 +22,10 @@ function clipboardTsv(ids) {
   return Csv.write([head, ...rows], '\t', false).replace(/\r\n$/, '');
 }
 
+/**
+ * Appelle : 16 fonctions
+ * Appelée par : initClipboard()
+ */
 function pasteInternal(clip) {
   const p = App.project;
   if (p.tasks.length + clip.tasks.length > Model.LIMITS.tasks) { Dialog.message(t('clip.paste'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
@@ -42,6 +50,11 @@ function pasteInternal(clip) {
   announce(t('clip.pasted', { count: copies.length }));
 }
 
+/**
+ * Appelle : announce(), commit(), Csv.parse(), Dialog.message(), Dialog.open(), Exchange.guessMapping(),
+ *   Exchange.mergeRows(), Exchange.rowsToTasks(), h(), I18n.error(), render(), t()
+ * Appelée par : initClipboard()
+ */
 async function pasteText(text) {
   const { rows } = Csv.parse(text, '\t');
   if (!rows.length) return;
@@ -65,6 +78,11 @@ async function pasteText(text) {
   announce(t('clip.pasted', { count: merged.added.length }));
 }
 
+/**
+ * Appelle : announce(), clipboardTsv(), clone(), descendants(), pasteInternal(), pasteText(), t(), taskById(),
+ *   topSelected()
+ * Appelée par : init()
+ */
 function initClipboard() {
   const blocked = ev => document.querySelector('dialog[open]') || (ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]'));
   document.addEventListener('copy', ev => {

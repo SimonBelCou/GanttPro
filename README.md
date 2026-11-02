@@ -89,6 +89,7 @@ Un défaut d'accessibilité ? Ouvrez une issue.
 GanttPro.html             ← Application livrée (assemblée par tools/build.py, ne pas modifier à la main)
 src/                      ← Sources : js/core (moteur), js/ui (interface), styles, index.html
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
+tools/dependances.mjs     ← Dépendances entre fonctions : commentaires « Appelle / Appelée par » et graphe (contrôlé en CI)
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
 docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, veille sécurité, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
@@ -107,12 +108,14 @@ THIRD_PARTY_LICENSES.md   ← Licences des polices intégrées (SIL OFL 1.1)
 python3 tools/build.py                       # assemble GanttPro.html depuis src/
 node --test tests/core/*.test.mjs            # moteur et scénarios chiffrés (sans dépendance)
 pip install playwright && python3 -m playwright install chromium
-npm install --no-save axe-core@4.14.0        # contrôle d'accessibilité
+npm install --no-save axe-core@4.14.0 acorn@8.19.0   # accessibilité et dépendances (une seule commande)
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
 python3 tests/test_v3_budget.py
 python3 tests/test_v3_recette_manuelle.py
+node tools/dependances.mjs                   # commentaires « Appelle / Appelée par » et graphe d'Architecture.md
+node --test tests/test_dependances.mjs
 ```
 
 Règles de code (détail dans [CLAUDE.md](CLAUDE.md)) : DOM construit avec `h()` (jamais `innerHTML`), aucun gestionnaire

@@ -1,12 +1,22 @@
-/* Bibliothèque locale (EF-99) et modèles (EF-100), éventuellement protégés par mot de passe (EF-102).
+/*
+ * Bibliothèque locale (EF-99) et modèles (EF-100), éventuellement protégés par mot de passe (EF-102).
  * Un enregistrement est toujours un geste explicite de l'utilisateur. Le sommaire (« index ») et
  * chaque contenu relu du stockage sont des données non fiables : le sommaire est validé champ par
- * champ, chaque projet repasse par Model.parseFile (même contrôle qu'un import). */
+ * champ, chaque projet repasse par Model.parseFile (même contrôle qu'un import).
+ *
+ * Appelle : Model, Secure, Store
+ * Appelée par : 85-library.js
+ */
 const Library = (() => {
   // MAX_ENTRIES : 50 entrées au plus, projets et modèles ensemble (3.7) ; la lecture tolère davantage
   // (sommaire écrit par une version antérieure) sans jamais dépasser READ_MAX.
   const INDEX = 'index', MAX_ENTRIES = 50, READ_MAX = 200;
 
+  /**
+   * Appelle : Store.keys(), Store.read()
+   * Appelée par : Library.full(), Library.put(), Library.remove(), Library.rename(), newFromTemplate(),
+   *   openLibrary(), saveToLibrary()
+   */
   function index() {
     let raw;
     try { raw = JSON.parse(Store.read('lib', INDEX) || '[]'); } catch { return []; }
@@ -17,9 +27,18 @@ const Library = (() => {
       .map(e => ({ key: e.key, kind: e.kind, name: e.name, emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
         date: Number.isFinite(e.date) ? e.date : 0, tasks: Number.isInteger(e.tasks) && e.tasks >= 0 ? e.tasks : 0, enc: e.enc === true, withRes: e.withRes === true }));
   }
+  /**
+   * Appelle : Store.write()
+   * Appelée par : Library.put(), Library.remove(), Library.rename()
+   */
   const writeIndex = list => Store.write('lib', INDEX, JSON.stringify(list));
 
-  /** Enregistre un texte (projet sérialisé) ; renvoie 'ok' | 'full' | 'off'. */
+  /**
+   * Enregistre un texte (projet sérialisé) ; renvoie 'ok' | 'full' | 'off'.
+   * Appelle : Library.index(), Library.writeIndex(), Model.serialize(), Secure.encrypt(), Store.remove(),
+   *   Store.write()
+   * Appelée par : openLibrary(), saveAsTemplate(), saveToLibrary()
+   */
   async function put(entry, project, password) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: entry.kind === 'project' }));
     const data = password ? JSON.stringify(await Secure.encrypt(text, password)) : text;
@@ -34,7 +53,11 @@ const Library = (() => {
     return w;
   }
 
-  /** Relit une entrée → projet contrôlé (demande le mot de passe si besoin) ; null si abandon. */
+  /**
+   * Relit une entrée → projet contrôlé (demande le mot de passe si besoin) ; null si abandon.
+   * Appelle : announce(), askPassword(), Model.parseFile(), Secure.decrypt(), Store.read(), t()
+   * Appelée par : newFromTemplate(), openLibrary()
+   */
   async function load(entry) {
     const text = Store.read('lib', entry.key);
     if (text === null) throw new Model.Invalid('lib.missing');
@@ -48,13 +71,29 @@ const Library = (() => {
     return r.project;
   }
 
+  /**
+   * Appelle : Library.index(), Library.writeIndex(), Store.remove()
+   * Appelée par : openLibrary()
+   */
   function remove(key) { writeIndex(index().filter(e => e.key !== key)); Store.remove('lib', key); }
+  /**
+   * Appelle : Library.index(), Library.writeIndex()
+   * Appelée par : openLibrary()
+   */
   function rename(key, name) { const list = index(); const e = list.find(x => x.key === key); if (e) { e.name = name; writeIndex(list); } }
+  /**
+   * Appelle : Library.index()
+   * Appelée par : openLibrary()
+   */
   const full = () => index().length >= MAX_ENTRIES;
   return { index, put, load, remove, rename, full, MAX_ENTRIES };
 })();
 
-/** Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce. */
+/**
+ * Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce.
+ * Appelle : Dialog.message(), Dialog.open(), h(), Settings.get(), Settings.set(), Store.available(), t()
+ * Appelée par : saveAsTemplate(), saveToLibrary()
+ */
 async function storageNotice() {
   if (!Store.available()) { await Dialog.message(t('lib.title'), t('store.off')); return false; }
   if (Settings.get('noticed') === 'yes') return true;
@@ -65,11 +104,19 @@ async function storageNotice() {
   return true;
 }
 
+/**
+ * Appelle : Dialog.message(), t()
+ * Appelée par : openLibrary(), saveAsTemplate(), saveToLibrary()
+ */
 function storeFailed(r) {
   return Dialog.message(t('lib.title'), r === 'limit' ? t('lib.limit', { max: Library.MAX_ENTRIES }) : r === 'full' ? t('store.full') : t('store.off'));
 }
 
-/** Mot de passe facultatif pour un enregistrement : '' = sans, null = abandon. */
+/**
+ * Mot de passe facultatif pour un enregistrement : '' = sans, null = abandon.
+ * Appelle : $(), h(), Secure.passwordOk(), t()
+ * Appelée par : openSettings(), saveToLibrary()
+ */
 function protectFields(prefix) {
   const box = h('div', { class: 'pwd-box', hidden: true },
     h('div', { class: 'field' }, h('label', { for: prefix + '-pwd', text: t('pwd.label') }), h('input', { type: 'password', id: prefix + '-pwd', autocomplete: 'new-password', aria: { describedby: prefix + '-pwd-hint' } })),
@@ -88,7 +135,11 @@ function protectFields(prefix) {
   return { nodes, read };
 }
 
-/** Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S). */
+/**
+ * Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S).
+ * Appelle : 14 fonctions
+ * Appelée par : action « saveLibrary », initKeyboard(), openLibrary()
+ */
 async function saveToLibrary() {
   if (!(await storageNotice())) return;
   const existing = App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
@@ -115,7 +166,11 @@ async function saveToLibrary() {
 }
 
 /* ── Modèles (EF-100) ─────────────────────────────────────────────────────────────────────── */
-/** Projet → modèle : sans avancement, dates réelles, commentaires, baselines ni versions. */
+/**
+ * Projet → modèle : sans avancement, dates réelles, commentaires, baselines ni versions.
+ * Appelle : clone()
+ * Appelée par : newFromTemplate(), saveAsTemplate()
+ */
 function toTemplate(project, keepResources) {
   const p = clone(project);
   p.baselines = []; p.versions = [];
@@ -127,7 +182,11 @@ function toTemplate(project, keepResources) {
   return p;
 }
 
-/** Modèles fournis (aucune donnée réelle), traduits dans la langue courante. */
+/**
+ * Modèles fournis (aucune donnée réelle), traduits dans la langue courante.
+ * Appelle : Model.sanitize(), t()
+ * Appelée par : newFromTemplate()
+ */
 function builtinTemplates() {
   const mk = (code, emoji, tasks) => ({ key: 'builtin-' + code, kind: 'template', builtin: true, name: t(`tpl.${code}.name`), emoji, tasks: tasks.length,
     build: start => Model.sanitize({ format: Model.FORMAT, name: t(`tpl.${code}.name`), emoji, projectStart: start, leveling: 'smooth',
@@ -138,7 +197,11 @@ function builtinTemplates() {
   ];
 }
 
-/** Décale les dates d'un modèle sur un nouveau début (dates imposées, « pas avant », échéances). */
+/**
+ * Décale les dates d'un modèle sur un nouveau début (dates imposées, « pas avant », échéances).
+ * Appelle : Dates.parse(), Dates.toISO()
+ * Appelée par : newFromTemplate()
+ */
 function shiftTemplate(p, start) {
   const from = Dates.parse(p.projectStart), to = Dates.parse(start), d = to - from;
   const mv = s => (s ? Dates.toISO(Math.min(Dates.parse('2199-12-31'), Math.max(0, Dates.parse(s) + d))) : s);
@@ -148,6 +211,11 @@ function shiftTemplate(p, start) {
   return p;
 }
 
+/**
+ * Appelle : $(), Dialog.open(), h(), Library.put(), storageNotice(), storeFailed(), t(), Tabs.newKey(), toast(),
+ *   toTemplate()
+ * Appelée par : openLibrary()
+ */
 async function saveAsTemplate() {
   if (!(await storageNotice())) return;
   const name = h('input', { type: 'text', id: 'tpl-name', maxlength: 60, value: App.project.name, required: true });
@@ -171,7 +239,11 @@ async function saveAsTemplate() {
   toast(t('tpl.saved', { name: opts.name }));
 }
 
-/** Nouveau projet à partir d'un modèle : modèle, nom et date de début (EF-100). */
+/**
+ * Nouveau projet à partir d'un modèle : modèle, nom et date de début (EF-100).
+ * Appelle : 18 fonctions
+ * Appelée par : action « newFromTemplate », openLibrary()
+ */
 async function newFromTemplate() {
   const all = [...builtinTemplates(), ...Library.index().filter(e => e.kind === 'template')];
   const sel = h('select', { id: 'tpl-pick' }, all.map((e, i) => h('option', { value: i }, `${e.emoji} ${e.name} — ${t('lib.tasks', { count: e.tasks })}${e.builtin ? ` (${t('tpl.builtin')})` : ''}`)));
@@ -201,7 +273,11 @@ async function newFromTemplate() {
   announce(t('imp.opened', { name: p.name }));
 }
 
-/* ── Fenêtre Bibliothèque ─────────────────────────────────────────────────────────────────── */
+/*
+ * ── Fenêtre Bibliothèque ───────────────────────────────────────────────────────────────────
+ * Appelle : 30 fonctions
+ * Appelée par : action « openLibrary »
+ */
 async function openLibrary(focusSel) {
   const body = h('div', { id: 'lib-win' });
   const fmt = ms => (ms ? I18n.dateTime(ms) : '—');
@@ -290,6 +366,18 @@ async function openLibrary(focusSel) {
   await p;
 }
 
+/**
+ * Appelle : openLibrary()
+ * Appelée par : l'événement « openLibrary » (table ACTIONS)
+ */
 action('openLibrary', () => openLibrary());
+/**
+ * Appelle : saveToLibrary()
+ * Appelée par : l'événement « saveLibrary » (table ACTIONS)
+ */
 action('saveLibrary', () => saveToLibrary());
+/**
+ * Appelle : newFromTemplate()
+ * Appelée par : l'événement « newFromTemplate » (table ACTIONS)
+ */
 action('newFromTemplate', () => newFromTemplate());

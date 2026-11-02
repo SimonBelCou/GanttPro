@@ -1,6 +1,11 @@
 /* Actions groupées : dupliquer la sélection et modifier en masse (EF-82). Tout ou rien :
  * si une tâche refuse une valeur, rien n'est appliqué et le message liste les tâches en cause. */
 
+/**
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), render(), Schedule.compute(), t(),
+ *   taskById(), topSelected()
+ * Appelée par : l'événement « duplicateSelection » (table ACTIONS)
+ */
 action('duplicateSelection', () => {
   const ids = topSelected();
   if (!ids.length) return;
@@ -14,6 +19,10 @@ action('duplicateSelection', () => {
   announce(t('dup.done', { count: created.length, ids: created.join(', ') }));
 });
 
+/**
+ * Appelle : 18 fonctions
+ * Appelée par : action « bulkEdit »
+ */
 function bulkWindow() {
   const ids = selectedIds().filter(id => taskById(id).type !== 'summary');
   if (!ids.length) return;
@@ -104,4 +113,8 @@ function bulkWindow() {
     },
   });
 }
+/**
+ * Appelle : bulkWindow()
+ * Appelée par : l'événement « bulkEdit » (table ACTIONS)
+ */
 action('bulkEdit', () => bulkWindow());

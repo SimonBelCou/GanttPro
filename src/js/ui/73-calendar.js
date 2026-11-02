@@ -3,6 +3,10 @@
  * qu'un import (Model.checkCalendar) puis l'applique en un seul pas d'annulation. */
 const CalWin = { draft: null, month: null };
 
+/**
+ * Appelle : Dates.parse(), h(), I18n.date(), t()
+ * Appelée par : paintCalendar()
+ */
 function calRangeList(kind) {
   const list = CalWin.draft[kind];
   const box = h('fieldset', { class: 'sub' }, h('legend', { text: t('cal.' + kind) }));
@@ -21,6 +25,11 @@ function calRangeList(kind) {
   return box;
 }
 
+/**
+ * Appelle : Calendar.create(), Dates.mondayOf(), Dates.monthEnd(), Dates.ymd(), h(), I18n.dayName(),
+ *   I18n.monthName(), t()
+ * Appelée par : paintCalendar()
+ */
 function calPreview() {
   let cal;
   try { cal = Calendar.create(CalWin.draft, App.project.projectStart); } catch { return h('p', { class: 'field-error', text: t('imp.noWorkday') }); }
@@ -52,6 +61,10 @@ function calPreview() {
     h('p', { class: 'hint', text: t('cal.legend') }));
 }
 
+/**
+ * Appelle : calPreview(), calRangeList(), clear(), h(), I18n.dayName(), t()
+ * Appelée par : calendarWindow(), repaintCal()
+ */
 function paintCalendar(body, focusSel) {
   clear(body);
   const d = CalWin.draft;
@@ -68,8 +81,16 @@ function paintCalendar(body, focusSel) {
   if (el) el.focus();
 }
 
+/**
+ * Appelle : $(), announce()
+ * Appelée par : action « calAdd », calendarWindow()
+ */
 function calError(msg) { const e = $('cal-err'); e.textContent = msg; e.hidden = false; announce(msg); }
 
+/**
+ * Appelle : 13 fonctions
+ * Appelée par : action « openCalendar », repaintCal()
+ */
 function calendarWindow() {
   CalWin.draft = clone(App.project.calendar);
   CalWin.month = Dates.monthStart(App.sched ? App.sched.startDn : Dates.parse(App.project.projectStart));
@@ -93,16 +114,45 @@ function calendarWindow() {
   }).then(() => { calendarWindow.body = null; CalWin.draft = null; });
 }
 
+/**
+ * Appelle : calendarWindow(), paintCalendar()
+ * Appelée par : action « calAdd », action « calMonth », action « calRemove », action « calSet », action « calWeekday
+ *   »
+ */
 const repaintCal = sel => calendarWindow.body && paintCalendar(calendarWindow.body, sel);
+/**
+ * Appelle : calendarWindow()
+ * Appelée par : l'événement « openCalendar » (table ACTIONS)
+ */
 action('openCalendar', () => calendarWindow());
+/**
+ * Appelle : repaintCal()
+ * Appelée par : l'événement « calWeekday » (table ACTIONS)
+ */
 action('calWeekday', (arg, el) => { CalWin.draft.workDays[Number(arg)] = el.checked ? 1 : 0; repaintCal('#cal-wd-' + arg); });
+/**
+ * Appelle : repaintCal()
+ * Appelée par : l'événement « calSet » (table ACTIONS)
+ */
 action('calSet', (arg, el) => { if (Calendar.HOLIDAY_SETS.includes(el.value)) CalWin.draft.holidays = el.value; repaintCal('#cal-set'); });
+/**
+ * Appelle : Dates.fromYMD(), Dates.ymd(), repaintCal()
+ * Appelée par : l'événement « calMonth » (table ACTIONS)
+ */
 action('calMonth', dir => {
   const { y, m } = Dates.ymd(CalWin.month);
   CalWin.month = Dates.fromYMD(y, m + Number(dir), 1);
   repaintCal(`[data-click="calMonth"][data-arg="${dir}"]`);
 });
+/**
+ * Appelle : repaintCal()
+ * Appelée par : l'événement « calRemove » (table ACTIONS)
+ */
 action('calRemove', arg => { const [kind, i] = arg.split(':'); CalWin.draft[kind].splice(Number(i), 1); repaintCal(`[data-click="calAdd"][data-arg="${kind}"]`); });
+/**
+ * Appelle : $(), calError(), Dates.monthStart(), Dates.parse(), repaintCal(), t()
+ * Appelée par : l'événement « calAdd » (table ACTIONS)
+ */
 action('calAdd', kind => {
   const p = kind === 'daysOff' ? 'off' : 'wk';
   const from = $(`cal-${p}-from`).value, to = $(`cal-${p}-to`).value || from, label = $(`cal-${p}-label`).value.trim().slice(0, 100);

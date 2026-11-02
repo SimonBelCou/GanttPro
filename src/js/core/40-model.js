@@ -1,11 +1,16 @@
-/* Données du projet : limites (3.7), projet initial (3.8), contrôle complet d'un fichier (8.3)
+/*
+ * Données du projet : limites (3.7), projet initial (3.8), contrôle complet d'un fichier (8.3)
  * et écriture au format 3 (8.2).
  *
  * Sécurité (A03, A08 – SECURITY.md) : un fichier importé est une donnée NON FIABLE. Il n'est
  * jamais copié tel quel : chaque objet est reconstruit champ par champ à partir d'une liste
  * blanche, chaque valeur est contrôlée (type, longueur, bornes, format), et toute erreur refuse
  * le fichier entier sans toucher au projet ouvert (EX-14). Les messages sont des clés de
- * traduction avec paramètres : ils ne contiennent jamais de HTML. */
+ * traduction avec paramètres : ils ne contiennent jamais de HTML.
+ *
+ * Appelle : Calendar, Columns, Dates, Schedule
+ * Appelée par : 26 modules et fichiers (voir Architecture.md)
+ */
 const Model = (() => {
   const FORMAT = 3;
   const MAX_BYTES = 5 * 1024 * 1024;
@@ -30,13 +35,34 @@ const Model = (() => {
   class Invalid extends Error {
     constructor(key, params = {}) { super(key); this.key = key; this.params = params; }
   }
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.parseFile(), Model.ranges(), Model.reader(), Model.sanitize(), Model.sanitizeCalendar()
+   */
   const fail = (key, params) => { throw new Invalid(key, params); };
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.parseFile(), Model.ranges(), Model.reader(), Model.sanitize(), Model.sanitizeCalendar(),
+   *   Model.stripAmounts()
+   */
   const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.reader(), Model.sanitize()
+   */
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.sanitize()
+   */
   const lower = s => s.toLocaleLowerCase('fr');
 
-  /** Lecteur de champs d'un objet du fichier : compte les champs inconnus, contrôle chaque valeur. */
+  /**
+   * Lecteur de champs d'un objet du fichier : compte les champs inconnus, contrôle chaque valeur.
+   * Appelle : Dates.parse(), Model.fail(), Model.has(), Model.isObj()
+   * Appelée par : Model.ranges(), Model.sanitize(), Model.sanitizeCalendar()
+   */
   function reader(src, where, allowed, stats) {
     for (const k of Object.keys(src)) if (!allowed.includes(k)) stats.unknown++;
     const err = (field, rule, extra = {}) => fail('imp.field', { ...where, field, rule, ...extra });
@@ -103,6 +129,10 @@ const Model = (() => {
     };
   }
 
+  /**
+   * Appelle : Dates.parse(), Model.fail(), Model.isObj(), Model.reader()
+   * Appelée par : Model.sanitize(), Model.sanitizeCalendar()
+   */
   function ranges(list, where, field, stats, maxDays) {
     let days = 0;
     return list.map((r, i) => {
@@ -117,6 +147,10 @@ const Model = (() => {
     });
   }
 
+  /**
+   * Appelle : Dates.parse(), Dates.toISO(), Model.fail(), Model.isObj(), Model.ranges(), Model.reader()
+   * Appelée par : Model.checkCalendar(), Model.sanitize()
+   */
   function sanitizeCalendar(src, stats) {
     if (src == null) return { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] };
     if (!isObj(src)) fail('imp.field', { obj: 'project', field: 'calendar', rule: 'rule.object' });
@@ -138,7 +172,12 @@ const Model = (() => {
     return { workDays, holidays, daysOff, daysWorked };
   }
 
-  /** Recherche d'une boucle de dépendances (RG-09) ; renvoie le chemin ['A','B','A'] ou null. */
+  /**
+   * Recherche d'une boucle de dépendances (RG-09) ; renvoie le chemin ['A','B','A'] ou null.
+   * Appelle : aucune
+   * Appelée par : (initialisation de Editor), Editor, hierarchyChange(), linkError(), Model.sanitize(),
+   *   Resolve.suggest()
+   */
   function findCycle(tasks) {
     const deps = new Map(tasks.map(t => [t.id, t.deps.map(d => d.id)]));
     const state = new Map(), stack = [];
@@ -155,7 +194,11 @@ const Model = (() => {
     return null;
   }
 
-  /** Ancêtres d'une tâche (du parent à la racine). */
+  /**
+   * Ancêtres d'une tâche (du parent à la racine).
+   * Appelle : aucune
+   * Appelée par : Model.sanitize()
+   */
   function ancestors(byId, id) {
     const out = [];
     let cur = byId.get(id);
@@ -167,6 +210,9 @@ const Model = (() => {
    * Contrôle complet d'un objet projet (section 8.3).
    * @returns {{project, notices:{unknown:number, createdResources:string[], createdCategories:string[]}}}
    * @throws {Invalid}
+   * Appelle : 14 fonctions
+   * Appelée par : action « verRestore », builtinTemplates(), doExport(), Exchange.mergeRows(), importMsp(),
+   *   Model.parseFile(), pasteInternal()
    */
   function sanitize(raw, { nested = false } = {}) {
     const stats = { unknown: 0 };
@@ -456,6 +502,8 @@ const Model = (() => {
   /**
    * Lecture d'un texte de fichier : taille, JSON, enveloppe chiffrée, puis sanitize.
    * @returns {{encrypted:true, envelope}|{project, notices}}
+   * Appelle : Model.fail(), Model.isObj(), Model.sanitize()
+   * Appelée par : importText(), initHome(), Library.load(), openLibrary(), Recovery.unwrap()
    */
   function parseFile(text) {
     if (typeof text !== 'string') fail('imp.unreadable');
@@ -466,9 +514,18 @@ const Model = (() => {
     return sanitize(raw);
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.serialize()
+   */
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
 
-  /** Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51). */
+  /**
+   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51).
+   * Appelle : Model.resName(), Model.stripAmounts()
+   * Appelée par : action « verSave », doExport(), Exchange.mergeRows(), homeSave(), Library.put(), Model.sanitize(),
+   *   pasteInternal(), Recovery.flushSync(), Recovery.wrap()
+   */
   function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
@@ -511,7 +568,11 @@ const Model = (() => {
     return file;
   }
 
-  /** Retire tout montant d'un projet déjà écrit (fichier ou état de version). */
+  /**
+   * Retire tout montant d'un projet déjà écrit (fichier ou état de version).
+   * Appelle : Model.isObj()
+   * Appelée par : Model.serialize()
+   */
   function stripAmounts(file) {
     delete file.provision;
     delete file.etc;
@@ -524,7 +585,12 @@ const Model = (() => {
     return file;
   }
 
-  /** Prochain identifiant libre dans la suite A, B, … Z, AA, AB… (3.2). */
+  /**
+   * Prochain identifiant libre dans la suite A, B, … Z, AA, AB… (3.2).
+   * Appelle : aucune
+   * Appelée par : action « addTask », action « groupUnder », duplicateBlock(), Exchange.fromMspXml(),
+   *   Exchange.mergeRows(), pasteInternal()
+   */
   function nextTaskId(existing) {
     const used = new Set(existing);
     for (let n = 1; ; n++) {
@@ -534,7 +600,11 @@ const Model = (() => {
     }
   }
 
-  /** Projet initial (3.8). */
+  /**
+   * Projet initial (3.8).
+   * Appelle : aucune
+   * Appelée par : init(), newProjectAction(), Tabs.close()
+   */
   function newProject(todayIso, now = 0, names = {}) {
     const n = { project: 'Nouveau projet', task: 'Renommer cette tâche…', resource: 'Ressource', category: 'Général', ...names };
     return {
@@ -549,7 +619,11 @@ const Model = (() => {
     };
   }
 
-  /** Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9). */
+  /**
+   * Contrôle d'un calendrier saisi dans l'interface (mêmes règles qu'à l'import, 3.9).
+   * Appelle : Model.sanitizeCalendar()
+   * Appelée par : calendarWindow()
+   */
   const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
 
   return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };

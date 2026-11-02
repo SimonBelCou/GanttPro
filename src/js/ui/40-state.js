@@ -17,9 +17,17 @@ const App = {
 };
 const UNDO_MAX = 50;
 
+/**
+ * Appelle : aucune
+ * Appelée par : 19 fonctions (usage général)
+ */
 const clone = o => JSON.parse(JSON.stringify(o));
 
-/** Remet les descendants de chaque récapitulative juste sous elle, en gardant l'ordre relatif. */
+/**
+ * Remet les descendants de chaque récapitulative juste sous elle, en gardant l'ordre relatif.
+ * Appelle : aucune
+ * Appelée par : commit(), hierarchyChange(), loadProject(), pasteInternal()
+ */
 function normalizeOrder(project) {
   const kids = new Map();
   const ids = new Set(project.tasks.map(t => t.id));
@@ -34,6 +42,10 @@ function normalizeOrder(project) {
   project.tasks = out;
 }
 
+/**
+ * Appelle : Schedule.compute()
+ * Appelée par : commit(), loadProject(), Tabs.restore(), undoStep()
+ */
 function recompute() {
   try {
     App.sched = Schedule.compute(App.project);
@@ -47,6 +59,8 @@ function recompute() {
 /**
  * Applique une modification de données en un seul pas d'annulation.
  * @param {(p:object) => void} mutate
+ * Appelle : clone(), normalizeOrder(), recompute(), Recovery.touch(), render()
+ * Appelée par : 43 fonctions (usage général)
  */
 function commit(mutate) {
   const before = clone(App.project);
@@ -61,6 +75,10 @@ function commit(mutate) {
   Recovery.touch();
 }
 
+/**
+ * Appelle : normalizeOrder(), recompute()
+ * Appelée par : init(), Tabs.open(), Tabs.replace()
+ */
 function loadProject(project) {
   App.project = project;
   normalizeOrder(App.project);
@@ -70,6 +88,10 @@ function loadProject(project) {
   recompute();
 }
 
+/**
+ * Appelle : clone(), Editor.close(), Editor.isOpen(), Editor.open(), recompute(), Recovery.touch(), render()
+ * Appelée par : action « redo », action « undo »
+ */
 function undoStep(from, to) {
   if (!from.length) return false;
   to.push(clone(App.project));
@@ -85,7 +107,12 @@ function undoStep(from, to) {
   return true;
 }
 
-/** Index id → tâche valable le temps d'un affichage (les données ne changent pas pendant render). */
+/**
+ * Index id → tâche valable le temps d'un affichage (les données ne changent pas pendant render).
+ *
+ * Appelle : aucune
+ * Appelée par : 40-state.js, 50-render.js
+ */
 const RenderIndex = (() => {
   let tasks = null, map = null;
   return {
@@ -95,17 +122,41 @@ const RenderIndex = (() => {
     active(list) { return list === tasks && !!map; },
   };
 })();
+/**
+ * Appelle : RenderIndex.active(), RenderIndex.get()
+ * Appelée par : 29 fonctions (usage général)
+ */
 const taskById = id => (RenderIndex.active(App.project.tasks) ? RenderIndex.get(App.project.tasks, id) : App.project.tasks.find(t => t.id === id));
+/**
+ * Appelle : aucune
+ * Appelée par : 18 fonctions (usage général)
+ */
 const resById = id => App.project.resources.find(r => r.id === id);
+/**
+ * Appelle : aucune
+ * Appelée par : action « catAdd », action « catDelete », action « catField », buildPrintGantt(), ganttPng(),
+ *   pasteInternal(), renderGantt()
+ */
 const catById = id => App.project.categories.find(c => c.id === id);
 
-/** Descendants d'une récapitulative. */
+/**
+ * Descendants d'une récapitulative.
+ * Appelle : aucune
+ * Appelée par : action « deleteTask », action « indent », action « outdent », duplicateBlock(), Editor.applyTask(),
+ *   Editor.build(), Editor.eligiblePreds(), Editor.validate(), initClipboard(), initRowDrag(), pasteInternal(),
+ *   sortedOrder()
+ */
 function descendants(id, tasks = App.project.tasks) {
   const out = [];
   const walk = pid => { for (const t of tasks) if (t.parent === pid) { out.push(t); walk(t.id); } };
   walk(id);
   return out;
 }
+/**
+ * Appelle : RenderIndex.active(), RenderIndex.get()
+ * Appelée par : action « addTask », depthOk(), Editor.eligiblePreds(), Editor.validate(), ganttPng(),
+ *   hierarchyChange(), linkError(), renderList(), topSelected(), visibleTasks()
+ */
 function ancestorsOf(id, tasks = App.project.tasks) {
   const out = [];
   const find = RenderIndex.active(tasks) ? k => RenderIndex.get(tasks, k) : k => tasks.find(x => x.id === k);
@@ -114,11 +165,19 @@ function ancestorsOf(id, tasks = App.project.tasks) {
   return out;
 }
 
-/** Lignes visibles : une tâche dont un ancêtre est replié est masquée (RG-27 : sans effet sur le calcul). */
+/**
+ * Lignes visibles : une tâche dont un ancêtre est replié est masquée (RG-27 : sans effet sur le calcul).
+ * Appelle : ancestorsOf()
+ * Appelée par : viewItems()
+ */
 function visibleTasks() {
   const collapsed = new Set(App.project.tasks.filter(t => t.type === 'summary' && t.collapsed).map(t => t.id));
   return App.project.tasks.filter(t => !ancestorsOf(t.id).some(a => collapsed.has(a)));
 }
 
-/** Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7). */
+/**
+ * Nombre d'étiquettes distinctes (casse ignorée) d'une liste de tâches : 200 au plus (3.7).
+ * Appelle : aucune
+ * Appelée par : bulkWindow(), Editor.validate()
+ */
 function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }

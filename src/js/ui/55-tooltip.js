@@ -1,9 +1,19 @@
-/* Infobulle des barres (EF-23) : au survol ET au focus clavier ; Échap la ferme.
+/*
+ * Infobulle des barres (EF-23) : au survol ET au focus clavier ; Échap la ferme.
  * Contenu en texte seul (textContent) ; position par le CSSOM. Les mêmes informations sont dans
- * le nom accessible de la barre et dans le panneau d'édition. */
+ * le nom accessible de la barre et dans le panneau d'édition.
+ *
+ * Appelle : App, Budget, Dates, I18n, Metrics, Money
+ * Appelée par : 50-render.js, 99-main.js
+ */
 const Tooltip = (() => {
   let current = null;
 
+  /**
+   * Appelle : baselineTexts(), Dates.parse(), Dates.todayDn(), depsText(), durText(), I18n.date(), Metrics.pctOf(),
+   *   Metrics.status(), resText(), shiftText(), t()
+   * Appelée par : Tooltip.show()
+   */
   function lines(task) {
     const s = App.sched, r = s && s.tasks.get(task.id);
     if (!r || r.empty) return [];
@@ -22,6 +32,11 @@ const Tooltip = (() => {
     return out;
   }
 
+  /**
+   * Appelle : $(), Budget.amounts(), Budget.hasAmounts(), clear(), h(), Money.node(), t(), taskById(),
+   *   Tooltip.lines()
+   * Appelée par : Tooltip.init()
+   */
   function show(el) {
     const task = taskById(el.dataset.arg);
     if (!task) return;
@@ -43,6 +58,10 @@ const Tooltip = (() => {
     el.setAttribute('aria-describedby', 'tooltip');
     current = el;
   }
+  /**
+   * Appelle : $(), clear(), h()
+   * Appelée par : Tooltip.init()
+   */
   function showText(el, list) {
     const tip = $('tooltip');
     clear(tip);
@@ -53,13 +72,25 @@ const Tooltip = (() => {
     tip.style.setProperty('top', (r.bottom + 6) + 'px');
     current = el;
   }
+  /**
+   * Appelle : $()
+   * Appelée par : renderAll(), Tooltip.init()
+   */
   function hide() {
     $('tooltip').hidden = true;
     if (current) current.removeAttribute('aria-describedby');
     current = null;
   }
+  /**
+   * Appelle : aucune
+   * Appelée par : Tooltip.init()
+   */
   const target = ev => ev.target.closest && ev.target.closest('#gantt .bar, #gantt .ms[data-arg], #gantt .sbar');
 
+  /**
+   * Appelle : Tooltip.hide(), Tooltip.show(), Tooltip.showText(), Tooltip.target()
+   * Appelée par : init()
+   */
   function init() {
     document.addEventListener('mouseover', ev => { const el = target(ev); if (el && el !== current) show(el); else if (!el && current && !current.contains(document.activeElement)) hide(); });
     document.addEventListener('focusin', ev => {
@@ -78,6 +109,10 @@ const Tooltip = (() => {
 /** Raccourcis clavier au survol des boutons (réglage « Afficher les raccourcis au survol », activé par défaut) :
  *  l'infobulle native du navigateur reprend le nom du bouton et son raccourci, d'après aria-keyshortcuts. */
 const KEY_NAMES = { Control: 'Ctrl', ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' };
+/**
+ * Appelle : I18n.getLang(), Settings.get()
+ * Appelée par : openSettings(), render()
+ */
 function applyShortcutTips() {
   const on = Settings.get('tips') !== 'off';
   for (const el of document.querySelectorAll('[aria-keyshortcuts]')) {

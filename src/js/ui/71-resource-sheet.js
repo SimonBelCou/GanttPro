@@ -1,7 +1,16 @@
 /* Fiche de ressource (EF-26, EF-71) : avatar, rôle, capacité, absences, tâches et charge. */
 
+/**
+ * Appelle : aucune
+ * Appelée par : paintResourceSheet()
+ */
 const initials = name => name.split(/[\s'-]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 
+/**
+ * Appelle : clear(), Dates.parse(), h(), I18n.date(), I18n.number(), I18n.shortDate(), initials(), inkOn(),
+ *   resById(), safeColor(), t()
+ * Appelée par : action « rsAbsAdd », action « rsAbsRemove », action « rsCapacity », resourceSheet()
+ */
 function paintResourceSheet(body, id, focusSel) {
   clear(body);
   const r = resById(id);
@@ -44,6 +53,10 @@ function paintResourceSheet(body, id, focusSel) {
   if (el) el.focus();
 }
 
+/**
+ * Appelle : Dialog.open(), h(), paintResourceSheet(), resById(), resourcesWindow(), t()
+ * Appelée par : action « openResourceSheet », action « rsAbsAdd », action « rsAbsRemove », action « rsCapacity »
+ */
 function resourceSheet(id) {
   const r = resById(id);
   if (!r) return Promise.resolve();
@@ -54,9 +67,21 @@ function resourceSheet(id) {
     .then(() => { resourceSheet.body = null; if (resourcesWindow.paint) resourcesWindow.paint(); });
 }
 
+/**
+ * Appelle : $(), announce()
+ * Appelée par : action « rsAbsAdd », action « rsCapacity »
+ */
 function rsError(msg, focusId) { const e = $('rs-err'); e.textContent = msg; e.hidden = false; announce(msg); if (focusId) $(focusId).focus(); }
 
+/**
+ * Appelle : resourceSheet()
+ * Appelée par : l'événement « openResourceSheet » (table ACTIONS)
+ */
 action('openResourceSheet', id => resourceSheet(id));
+/**
+ * Appelle : commit(), paintResourceSheet(), resourceSheet(), rsError(), t()
+ * Appelée par : l'événement « rsCapacity » (table ACTIONS)
+ */
 action('rsCapacity', (id, el) => {
   const n = Number(el.value);
   if (!Number.isInteger(n) || n < 1 || n > 100) return rsError(t('err.int', { field: t('res.capacity'), min: 1, max: 100 }), 'rs-cap');
@@ -65,6 +90,11 @@ action('rsCapacity', (id, el) => {
   commit(p => { p.resources.find(x => x.id === id).capacity = n; });
   paintResourceSheet(resourceSheet.body, id, '#rs-cap');
 });
+/**
+ * Appelle : $(), announce(), clone(), commit(), Dates.parse(), paintResourceSheet(), resById(), resourceSheet(),
+ *   rsError(), Schedule.compute(), t()
+ * Appelée par : l'événement « rsAbsAdd » (table ACTIONS)
+ */
 action('rsAbsAdd', id => {
   const from = $('rs-from').value, to = $('rs-to').value || from, label = $('rs-label').value.trim().slice(0, 100);
   if (Dates.parse(from) == null || Dates.parse(to) == null) return rsError(t('err.date', { field: t('cal.from') }), 'rs-from');
@@ -78,6 +108,10 @@ action('rsAbsAdd', id => {
   announce(t('rs.absAdded', { name: r.name }));
   paintResourceSheet(resourceSheet.body, id, '#rs-from');
 });
+/**
+ * Appelle : commit(), paintResourceSheet(), resourceSheet()
+ * Appelée par : l'événement « rsAbsRemove » (table ACTIONS)
+ */
 action('rsAbsRemove', arg => {
   const [id, i] = arg.split(':');
   commit(p => { p.resources.find(x => x.id === id).absences.splice(Number(i), 1); });

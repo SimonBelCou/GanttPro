@@ -1,20 +1,42 @@
-/* Sauvegarde automatique (EF-101, RG-31) — DÉSACTIVÉE par défaut (EX-10).
+/*
+ * Sauvegarde automatique (EF-101, RG-31) — DÉSACTIVÉE par défaut (EX-10).
  * Quand elle est activée, l'état de chaque onglet modifié est écrit 5 secondes après la dernière
  * modification dans un emplacement de récupération propre à l'onglet. L'emplacement est vidé par
  * un export, un enregistrement dans la bibliothèque ou la fermeture de l'onglet ; s'il existe au
  * lancement suivant, l'application propose de le restaurer.
  * Protection (EF-102) : si l'utilisateur l'a demandé, le contenu est chiffré avec un mot de passe
  * gardé UNIQUEMENT en mémoire pendant la session ; après un rechargement, la sauvegarde reste en
- * pause tant que le mot de passe n'a pas été ressaisi (Réglages ou fenêtre de récupération). */
+ * pause tant que le mot de passe n'a pas été ressaisi (Réglages ou fenêtre de récupération).
+ *
+ * Appelle : App, Dialog, I18n, Model, Secure, Settings, Store, Tabs
+ * Appelée par : 40-state.js, 80-files.js, 85-library.js, 87-settings.js, 99-main.js, Tabs
+ */
 const Recovery = (() => {
   const DELAY = 5000;
   let timer = 0, password = null, lastSaved = 0, failed = '';
 
+  /**
+   * Appelle : Settings.get()
+   * Appelée par : openSettings(), Recovery.flushSync(), Recovery.paint(), Recovery.paused(), Recovery.saveAll(),
+   *   Recovery.touch()
+   */
   const enabled = () => Settings.get('autosave') === 'on';
+  /**
+   * Appelle : Settings.get()
+   * Appelée par : openSettings(), Recovery.flushSync(), Recovery.offer(), Recovery.paused(), Recovery.wrap()
+   */
   const protectedMode = () => Settings.get('recprotect') === 'on';
+  /**
+   * Appelle : Recovery.enabled(), Recovery.protectedMode()
+   * Appelée par : openSettings(), Recovery.paint(), Recovery.saveAll()
+   */
   const paused = () => enabled() && protectedMode() && !password;
 
-  /** Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, data}. */
+  /**
+   * Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, data}.
+   * Appelle : Model.serialize(), Recovery.protectedMode(), Secure.encrypt()
+   * Appelée par : Recovery.saveAll()
+   */
   async function wrap(project) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: true }));
     const enc = protectedMode();
@@ -22,6 +44,11 @@ const Recovery = (() => {
     return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, data });
   }
 
+  /**
+   * Appelle : Dialog.message(), Recovery.enabled(), Recovery.paint(), Recovery.paused(), Recovery.wrap(),
+   *   Store.write(), t(), Tabs.all()
+   * Appelée par : enableAutosave(), openSettings(), Recovery.touch()
+   */
   async function saveAll() {
     timer = 0;
     if (!enabled() || paused()) { paint(); return; }
@@ -36,17 +63,37 @@ const Recovery = (() => {
     paint();
   }
 
-  /** À appeler après chaque modification : sauvegarde différée de 5 secondes. */
+  /**
+   * À appeler après chaque modification : sauvegarde différée de 5 secondes.
+   * Appelle : Recovery.enabled(), Recovery.saveAll()
+   * Appelée par : commit(), enableAutosave(), Recovery.setPassword(), Tabs.open(), undoStep()
+   */
   function touch() {
     if (!enabled()) return;
     clearTimeout(timer);
     timer = setTimeout(saveAll, DELAY);
   }
+  /**
+   * Appelle : Store.remove()
+   * Appelée par : Recovery.clearCurrent(), Recovery.offer(), Tabs.close(), Tabs.replace()
+   */
   function drop(key) { if (key) Store.remove('rec', key); }
+  /**
+   * Appelle : Recovery.drop()
+   * Appelée par : doExport(), homeSave(), saveToLibrary()
+   */
   function clearCurrent() { drop(App.recKey); }
+  /**
+   * Appelle : Store.keys(), Store.remove()
+   * Appelée par : openSettings()
+   */
   function clearAllCopies() { for (const k of Store.keys('rec')) Store.remove('rec', k); }
 
-  /** Copies trouvées (enveloppes validées champ par champ ; le contenu sera relu par Model.parseFile). */
+  /**
+   * Copies trouvées (enveloppes validées champ par champ ; le contenu sera relu par Model.parseFile).
+   * Appelle : Store.keys(), Store.read()
+   * Appelée par : Recovery.offer()
+   */
   function found() {
     const out = [];
     for (const key of Store.keys('rec')) {
@@ -59,13 +106,21 @@ const Recovery = (() => {
     return out.sort((a, b) => b.savedAt - a.savedAt);
   }
 
+  /**
+   * Appelle : Model.parseFile(), Secure.decrypt()
+   * Appelée par : Recovery.offer()
+   */
   async function unwrap(entry, pwd) {
     let r = Model.parseFile(entry.data);
     if (r.encrypted) r = Model.parseFile(await Secure.decrypt(r.envelope, pwd));
     return r.project;
   }
 
-  /** Au lancement : pour chaque copie, restaurer dans un onglet, ignorer ou supprimer (EF-101). */
+  /**
+   * Au lancement : pour chaque copie, restaurer dans un onglet, ignorer ou supprimer (EF-101).
+   * Appelle : 14 fonctions
+   * Appelée par : init()
+   */
   async function offer() {
     const list = found();
     if (!list.length) return;
@@ -102,7 +157,12 @@ const Recovery = (() => {
     paint();
   }
 
-  /** Indicateur discret de la barre du haut. */
+  /**
+   * Indicateur discret de la barre du haut.
+   * Appelle : $(), I18n.dateTime(), Recovery.enabled(), Recovery.paused(), t()
+   * Appelée par : init(), openSettings(), Recovery.offer(), Recovery.saveAll(), Recovery.setPassword(),
+   *   Recovery.stop(), setLanguage()
+   */
   function paint() {
     const el = $('autosave-status');
     if (!el) return;
@@ -111,7 +171,11 @@ const Recovery = (() => {
     el.textContent = paused() ? t('auto.paused') : failed ? t('auto.failed') : lastSaved ? t('auto.saved', { time: I18n.dateTime(lastSaved).split(' ').pop() }) : t('auto.on');
   }
 
-  /** Écriture immédiate à la fermeture de la page (sans chiffrement possible, donc seulement en clair). */
+  /**
+   * Écriture immédiate à la fermeture de la page (sans chiffrement possible, donc seulement en clair).
+   * Appelle : Model.serialize(), Recovery.enabled(), Recovery.protectedMode(), Store.write(), Tabs.all()
+   * Appelée par : init()
+   */
   function flushSync() {
     if (!enabled() || protectedMode() || !timer) return;
     clearTimeout(timer); timer = 0;
@@ -122,7 +186,15 @@ const Recovery = (() => {
     }
   }
 
+  /**
+   * Appelle : Recovery.paint(), Recovery.touch()
+   * Appelée par : openSettings()
+   */
   function setPassword(p) { password = p; touch(); paint(); }
+  /**
+   * Appelle : Recovery.paint()
+   * Appelée par : openSettings()
+   */
   function stop() { clearTimeout(timer); timer = 0; password = null; lastSaved = 0; failed = ''; paint(); }
   return { touch, drop, clearCurrent, clearAllCopies, offer, paint, flushSync, setPassword, stop, enabled, paused, protectedMode, saveNow: saveAll };
 })();

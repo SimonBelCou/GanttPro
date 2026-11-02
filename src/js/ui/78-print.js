@@ -3,6 +3,10 @@
  * page ; en couleur, mais lisible sans couleur (contours, motifs, ● et colonne Catégorie). */
 const PrintOpt = { amounts: false, period: 'all', from: '', to: '', scale: 'fit', orient: 'landscape', legend: true, cols: { id: true, name: true, cat: true, start: true, end: true, dur: true, deps: true, res: true, status: true } };
 
+/**
+ * Appelle : 21 fonctions
+ * Appelée par : printWindow()
+ */
 function buildPrintGantt() {
   const s = App.sched;
   const tasks = viewItems().filter(it => it.task).map(it => it.task);
@@ -91,6 +95,10 @@ function buildPrintGantt() {
   return wrap;
 }
 
+/**
+ * Appelle : buildPrintGantt(), Dialog.open(), h(), printNode(), t()
+ * Appelée par : action « openPrint »
+ */
 function printWindow() {
   if (!App.sched) return;
   PrintOpt.amounts = false; // décochée à chaque ouverture (EF-124)
@@ -109,7 +117,15 @@ function printWindow() {
   return Dialog.open({ title: t('top.print'), size: 'wide', body: [body], actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('print.go'), value: 'ok', kind: 'primary' }],
     onAction: v => { if (v === 'ok') setTimeout(() => printNode(buildPrintGantt(), 'print-gantt', `A4 ${PrintOpt.orient}`), 50); return true; } });
 }
+/**
+ * Appelle : printWindow()
+ * Appelée par : l'événement « openPrint » (table ACTIONS)
+ */
 action('openPrint', () => printWindow());
+/**
+ * Appelle : Dates.parse()
+ * Appelée par : l'événement « printOpt » (table ACTIONS)
+ */
 action('printOpt', (arg, el) => {
   if (arg === 'period' || arg === 'scale' || arg === 'orient') PrintOpt[arg] = el.value;
   else if (arg === 'from' || arg === 'to') { PrintOpt[arg] = Dates.parse(el.value) != null ? el.value : ''; PrintOpt.period = 'range'; }

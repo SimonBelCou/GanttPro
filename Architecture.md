@@ -5,10 +5,9 @@ reprendre le projet sans l'historique des conversations. Les exigences fonctionn
 [Specs_fonctionnelles.md](Specs_fonctionnelles.md) (source unique), la continuité dans [PCA.md](PCA.md), les règles de
 développement dans [CLAUDE.md](CLAUDE.md).
 
-Les schémas sont en Mermaid (rendus par GitHub). Les dépendances entre modules ci-dessous ont été calculées par analyse
-des sources le 2 novembre 2026, pas écrites de mémoire. Les dépendances au niveau des fonctions sont l'objet du
-rétrofit des commentaires décidé le 2 novembre 2026 (Specs_fonctionnelles.md, annexe C.1) ; tant qu'il n'est pas
-fusionné, elles ne sont pas décrites ici.
+Les schémas sont en Mermaid (rendus par GitHub). Les dépendances entre modules et entre fichiers sont **générées par
+analyse des sources** (`tools/dependances.mjs`), jamais écrites de mémoire ; celles des fonctions sont écrites dans le
+commentaire de chaque fonction (section 6, « Dépendances au niveau des fonctions »).
 
 ## 1. Contexte
 
@@ -77,7 +76,7 @@ préfixe inférieur ; un appel vers un module de préfixe supérieur n'a lieu qu
 | Interface (`ui`) | `src/js/ui/` | Rendu, fenêtres, gestes, fichiers, stockage, démarrage | Oui |
 | Styles | `src/styles/` | Polices intégrées (base64) et feuille de style, thèmes clair et sombre | — |
 | Gabarit | `src/index.html` | Squelette de la page, zones, marqueurs de construction | — |
-| Outils | `tools/build.py` | Assemblage, contrôles, CSP | — |
+| Outils | `tools/build.py`, `tools/dependances.mjs` | Assemblage, contrôles, CSP ; dépendances entre fonctions, commentaires et graphe | — |
 | Tests | `tests/` | Moteur (`core/`), bout en bout (`test_v3*.py`), fichiers d'essai fictifs (`fixtures/`) | — |
 
 Règle de séparation : le moteur ne lit ni n'écrit rien d'extérieur ; il reçoit un projet et rend un résultat. L'interface
@@ -190,40 +189,66 @@ pour 1 000 tâches). L'interface n'écrit jamais dans `App.project` autrement.
 | `64-exchange.js` | `Exchange` | Export et import tableur et MS Project ; tout passe par `Model.sanitize` |
 | `65-crypto.js` | `Secure` | PBKDF2-SHA256 (600 000 itérations) et AES-256-GCM par Web Crypto |
 
-Dépendances entre modules (appels à l'exécution). `Dates`, utilisé par presque tous, n'est pas dessiné. `Model`,
-`Budget` et `Columns` se référencent en cercle : c'est sans danger, car chacun n'appelle l'autre qu'à l'exécution,
-jamais pendant sa définition.
+Dépendances entre modules (appels à l'exécution), **générées par `tools/dependances.mjs`** : `A --> B` signifie « A appelle B ».
+`Dates`, utilisé par presque tous, n'est pas dessiné. `Model`, `Budget` et `Columns` se référencent en cercle : c'est sans
+danger, car chacun n'appelle l'autre qu'à l'exécution, jamais pendant sa définition.
 
+<!-- dependances:modules:debut -->
 ```mermaid
-flowchart TB
-  Calendar --> Schedule
-  Calendar --> Model
-  Schedule --> Model
-  Schedule --> Resolve
-  Model --> Resolve
-  Columns --> Model
-  Budget --> Columns
-  Model --> Budget
-  Metrics --> Budget
-  Budget --> Evm
-  Model --> Evm
-  Metrics --> View
-  Metrics --> Exchange
-  Budget --> Exchange
-  Model --> Exchange
-  Calendar --> Exchange
-  View --> Exchange
-  I18n --> Exchange
-  Csv --> Xlsx
-  Xml --> Xlsx
-  Zip --> Xlsx
-  Xlsx --> Exchange
-  Csv --> Exchange
-  Xml --> Exchange
-  Model --> Secure
+flowchart LR
+  Budget --> Metrics
+  Budget --> Model
+  Columns --> Budget
+  Evm --> Budget
+  Evm --> Model
+  Exchange --> Budget
+  Exchange --> Calendar
+  Exchange --> Csv
+  Exchange --> I18n
+  Exchange --> Metrics
+  Exchange --> Model
+  Exchange --> View
+  Exchange --> Xlsx
+  Exchange --> Xml
+  Model --> Calendar
+  Model --> Columns
+  Model --> Schedule
+  Resolve --> Model
+  Resolve --> Schedule
+  Schedule --> Calendar
+  Secure --> Model
+  View --> Metrics
+  Xlsx --> Csv
+  Xlsx --> Xml
+  Xlsx --> Zip
+```
+<!-- dependances:modules:fin -->
+
+### Dépendances au niveau des fonctions
+
+Chaque fonction de niveau module, et chaque module, porte à la fin de son commentaire deux lignes **produites par
+`node tools/dependances.mjs`** (convention de CLAUDE.md §6) :
+
+```js
+/**
+ * Arrondit a × k / b à l'entier, la moitié vers le haut.
+ * Appelle : aucune
+ * Appelée par : Evm.compute(), Evm.ratio()
+ */
 ```
 
-Lecture : `A --> B` signifie « B utilise A ».
+- « Appelle » compte les appels directs **et** les fonctions transmises en rappel (`liste.map(f)`,
+  `addEventListener('click', f)`) ; « Appelée par » liste les fonctions qui l'appellent. Au-delà de 12 noms, la liste est
+  remplacée par « N fonctions (usage général) ».
+- Une action déclarée par `action('nom', …)` est dite appelée par « l'événement nom (table ACTIONS) » ; les instructions
+  de niveau fichier sont regroupées sous « (initialisation de <fichier>) ».
+- Pour un module : les autres modules qu'il appelle, et les modules et fichiers d'interface qui l'appellent.
+- **Limites** : un appel dynamique (`ACTIONS[nom]()`, nom construit dans une chaîne) n'est pas vu ; les fonctions définies
+  dans le corps d'une autre fonction ne sont pas annotées (leurs appels comptent pour la fonction qui les contient) ; un
+  nom local (paramètre, `const`, `let`) masque un nom de module ou global.
+- **Contrôle** : `node tools/dependances.mjs --check` (CI) échoue si une ligne ou le graphe ci-dessus est périmé. L'outil
+  ne modifie que des commentaires : lors du rétrofit du 2 novembre 2026, la suite des lexèmes de chacun des 51 fichiers
+  sources était identique avant et après.
 
 ## 7. Modules de l'interface (`src/js/ui/`)
 
@@ -245,17 +270,38 @@ Lecture : `A --> B` signifie « B utilise A ».
 | `88-ofl.js` | Texte de licence des polices (généré depuis `THIRD_PARTY_LICENSES.md`) |
 | `99-main.js` | Actions de l'écran principal et démarrage |
 
-Dépendance de l'interface vers le moteur : l'interface appelle le moteur, jamais l'inverse. Le tableau ci-dessous donne,
-pour les fichiers qui parlent le plus au moteur, les modules qu'ils utilisent (calculé le 2 novembre 2026).
+Dépendance de l'interface vers le moteur : l'interface appelle le moteur, jamais l'inverse. Tableau **généré par
+`tools/dependances.mjs`** (modules du moteur utilisés par chaque fichier d'interface) :
 
+<!-- dependances:ui:debut -->
 | Fichier d'interface | Modules du moteur utilisés |
 |---|---|
+| `00-dom.js` | `Model` |
+| `40-state.js` | `Model`, `Schedule` |
 | `50-render.js` | `Budget`, `Columns`, `Dates`, `I18n`, `Metrics` |
-| `60-editor.js` | `Budget`, `Dates`, `I18n`, `Model`, `Schedule` |
+| `52-viewbar.js` | `Dates`, `I18n`, `View` |
+| `55-tooltip.js` | `I18n` |
+| `62-shortcuts.js` | `Dates`, `I18n`, `Model`, `Schedule` |
+| `63-selection.js` | `Columns`, `Model` |
+| `64-bulk.js` | `Budget`, `Dates`, `I18n`, `Model`, `Schedule` |
+| `65-gestures.js` | `Dates`, `I18n`, `Model`, `Schedule` |
 | `70-windows.js` | `Budget`, `Dates`, `I18n`, `Model`, `Resolve` |
-| `72-baselines.js`, `76-budget.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model` |
+| `71-resource-sheet.js` | `Dates`, `I18n`, `Model`, `Schedule` |
+| `72-baselines.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model` |
+| `73-calendar.js` | `Calendar`, `Dates`, `I18n`, `Model`, `Schedule` |
+| `74-columns.js` | `Columns` |
+| `75-dashboard.js` | `Budget`, `Dates`, `I18n`, `Metrics` |
+| `76-budget.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model` |
+| `76-load.js` | `I18n`, `Metrics` |
+| `77-report.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Metrics` |
+| `78-print.js` | `Budget`, `Dates`, `I18n`, `Metrics` |
+| `79-versions.js` | `I18n`, `Model` |
 | `80-files.js` | `Csv`, `Dates`, `Exchange`, `I18n`, `Metrics`, `Model`, `Schedule`, `Secure`, `Xlsx` |
-| `85-library.js`, `86-recovery.js`, `87-settings.js` | `Model`, `Secure`, `I18n` |
+| `82-clipboard.js` | `Csv`, `Exchange`, `I18n`, `Model` |
+| `85-library.js` | `Dates`, `I18n`, `Model`, `Secure` |
+| `87-settings.js` | `I18n`, `Model`, `Secure` |
+| `99-main.js` | `Dates`, `I18n`, `Model`, `Schedule` |
+<!-- dependances:ui:fin -->
 
 ## 8. Sécurité intégrée à l'architecture
 
@@ -275,5 +321,5 @@ Défense en profondeur : aucune mesure n'est le seul rempart.
 ## 9. Tenir ce document à jour
 
 Ce fichier est modifié dans la **même modification** que le code quand une brique, un fichier, une dépendance ou un flux
-change (CLAUDE.md §7 et §8). Pour recalculer les dépendances entre modules, relancer l'analyse des sources ; ne pas se
-fier à la mémoire.
+change (CLAUDE.md §7 et §8). Après toute modification de code, lancer `node tools/dependances.mjs` : il réécrit les lignes « Appelle / Appelée par » et
+les blocs générés de ce document ; la CI (`--check`) refuse un état périmé. Ne pas se fier à la mémoire.

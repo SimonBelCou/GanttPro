@@ -60,6 +60,7 @@ Détail des mesures :
 - Ne jamais réintroduire d'attribut `onclick=`/`onchange=`… : utiliser `data-click` / `data-change` / `data-input`
   et déclarer l'action dans la table `ACTIONS`.
 - Tout projet importé ou relu passe par `Model.sanitize` / `Model.parseFile`.
+- Lancer `node tools/dependances.mjs` après toute modification de code (commentaires de dépendances, contrôlés en CI).
 - Lancer les tests (`node --test tests/core/*.test.mjs`, `tests/test_v3.py`, `tests/test_v3_espace.py`,
   `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py`) : import malveillant, CSP réellement appliquée, parcours clavier, accessibilité.
 - Détection de secrets dans la CI (gitleaks), détection de secrets et blocage à l'envoi activés sur GitHub.

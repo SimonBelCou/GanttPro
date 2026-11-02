@@ -1,13 +1,26 @@
-/* CSV et texte tabulé (EF-93, RG-30, EX-21). */
+/*
+ * CSV et texte tabulé (EF-93, RG-30, EX-21).
+ *
+ * Appelle : aucune
+ * Appelée par : 80-files.js, 82-clipboard.js, Exchange, Xlsx
+ */
 const Csv = (() => {
-  /** EX-21 : une cellule de texte qui commence par =, +, -, −, @, tabulation ou retour chariot est
-   * précédée d'une apostrophe, pour qu'un tableur ne l'exécute jamais comme une formule. */
+  /**
+   * EX-21 : une cellule de texte qui commence par =, +, -, −, @, tabulation ou retour chariot est
+   * précédée d'une apostrophe, pour qu'un tableur ne l'exécute jamais comme une formule.
+   * Appelle : aucune
+   * Appelée par : Csv.write(), Xlsx.sheetXml()
+   */
   function neutralize(v) {
     const s = String(v ?? '');
     return /^[=+\-−@\t\r]/.test(s) ? "'" + s : s;
   }
 
-  /** Lignes → texte CSV (UTF-8 avec BOM, séparateur « ; », fins de ligne CRLF). Les nombres restent nus. */
+  /**
+   * Lignes → texte CSV (UTF-8 avec BOM, séparateur « ; », fins de ligne CRLF). Les nombres restent nus.
+   * Appelle : Csv.neutralize()
+   * Appelée par : clipboardTsv(), Exchange.csv()
+   */
   function write(rows, sep = ';', bom = true) {
     const cell = v => {
       if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
@@ -18,7 +31,11 @@ const Csv = (() => {
     return (bom ? '﻿' : '') + rows.map(r => r.map(cell).join(sep)).join('\r\n') + '\r\n';
   }
 
-  /** Séparateur reconnu sur la première ligne non vide, hors guillemets : « ; », « , » ou tabulation. */
+  /**
+   * Séparateur reconnu sur la première ligne non vide, hors guillemets : « ; », « , » ou tabulation.
+   * Appelle : aucune
+   * Appelée par : Csv.parse()
+   */
   function detect(text) {
     const line = text.split(/\r?\n/).find(l => l.trim()) || '';
     let best = ';', n = -1;
@@ -30,7 +47,11 @@ const Csv = (() => {
     return best;
   }
 
-  /** Texte → lignes (RFC 4180 : guillemets doublés, champs multilignes). BOM retiré. */
+  /**
+   * Texte → lignes (RFC 4180 : guillemets doublés, champs multilignes). BOM retiré.
+   * Appelle : Csv.detect()
+   * Appelée par : pasteText(), sheetWizard()
+   */
   function parse(text, sep = null, maxRows = 5000) {
     let s = String(text);
     if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);

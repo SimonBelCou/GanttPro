@@ -1,6 +1,10 @@
 /* Actions de l'écran principal et démarrage. */
 
 
+/**
+ * Appelle : render(), taskById()
+ * Appelée par : l'événement « toggleCollapse » (table ACTIONS)
+ */
 action('toggleCollapse', id => {
   // Replier ne modifie pas les données au sens d'EF-53 : pas d'historique, pas d'indicateur.
   const task = taskById(id);
@@ -11,6 +15,11 @@ action('toggleCollapse', id => {
   if (btn) btn.focus();
 });
 
+/**
+ * Appelle : $(), ancestorsOf(), announce(), commit(), Dialog.message(), Editor.open(), Model.nextTaskId(), t(),
+ *   taskById()
+ * Appelée par : l'événement « addTask » (table ACTIONS)
+ */
 action('addTask', type => {
   if (App.project.tasks.length >= Model.LIMITS.tasks) { Dialog.message(t('top.addTask'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
   const id = Model.nextTaskId(App.project.tasks.map(x => x.id));
@@ -28,6 +37,10 @@ action('addTask', type => {
   if (nameIn) nameIn.select();
 });
 
+/**
+ * Appelle : announce(), commit(), t(), taskById()
+ * Appelée par : l'événement « moveTask » (table ACTIONS)
+ */
 action('moveTask', dir => {
   if (App.view.groupBy) { announce(t('view.flat')); return; }
   const id = App.selected;
@@ -46,6 +59,10 @@ action('moveTask', dir => {
   if (btn) btn.focus();
 });
 
+/**
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Schedule.compute(), t()
+ * Appelée par : l'événement « setProjectStart » (table ACTIONS)
+ */
 action('setProjectStart', (arg, el) => {
   if (Dates.parse(el.value) == null) { announce(t('err.date', { field: t('top.start') })); el.value = App.project.projectStart; return; }
   const trial = clone(App.project);
@@ -54,9 +71,21 @@ action('setProjectStart', (arg, el) => {
   commit(p => { p.projectStart = el.value; });
 });
 
+/**
+ * Appelle : announce(), t(), undoStep()
+ * Appelée par : l'événement « undo » (table ACTIONS)
+ */
 action('undo', () => { if (undoStep(App.undo, App.redo)) announce(t('undo.done')); });
+/**
+ * Appelle : announce(), t(), undoStep()
+ * Appelée par : l'événement « redo » (table ACTIONS)
+ */
 action('redo', () => { if (undoStep(App.redo, App.undo)) announce(t('redo.done')); });
 
+/**
+ * Appelle : announce(), render(), t()
+ * Appelée par : l'événement « zoom » (table ACTIONS)
+ */
 action('zoom', step => {
   const s = Number(step);
   App.zoom = s === 0 ? 100 : Math.min(400, Math.max(20, App.zoom + 20 * s));
@@ -64,8 +93,16 @@ action('zoom', step => {
   announce(t('top.zoom', { pct: App.zoom }));
 });
 
+/**
+ * Appelle : $(), render()
+ * Appelée par : l'événement « toggleAlerts » (table ACTIONS)
+ */
 action('toggleAlerts', () => { App.showAlerts = !App.showAlerts; render(); if (!App.showAlerts) $('btn-alerts').focus(); });
 
+/**
+ * Appelle : applyTheme(), render(), Settings.get(), Settings.set()
+ * Appelée par : l'événement « toggleTheme » (table ACTIONS)
+ */
 action('toggleTheme', () => {
   const order = ['system', 'light', 'dark'];
   const next = order[(order.indexOf(Settings.get('theme') || DEFAULT_THEME) + 1) % 3];
@@ -74,41 +111,105 @@ action('toggleTheme', () => {
   render();
 });
 
+/**
+ * Appelle : $(), I18n.getLang(), setLanguage()
+ * Appelée par : l'événement « toggleLang » (table ACTIONS)
+ */
 action('toggleLang', () => {
   setLanguage(I18n.getLang() === 'fr' ? 'en' : 'fr');
   $('btn-lang').focus();
 });
 
+/**
+ * Appelle : editProjectWindow()
+ * Appelée par : l'événement « editProject » (table ACTIONS)
+ */
 action('editProject', () => editProjectWindow());
 // EF-65 : un lien cliqué s'édite dans le panneau de son successeur.
+/**
+ * Appelle : $(), Editor.open(), taskById()
+ * Appelée par : l'événement « editLink » (table ACTIONS)
+ */
 action('editLink', id => { if (!taskById(id)) return; Editor.open(id); const box = $('deps-box'); if (box) { box.scrollIntoView({ block: 'nearest' }); const sel = box.querySelector('select'); if (sel) sel.focus(); } });
+/**
+ * Appelle : resolveWindow()
+ * Appelée par : l'événement « openResolve » (table ACTIONS)
+ */
 action('openResolve', () => resolveWindow());
+/**
+ * Appelle : baselinesWindow()
+ * Appelée par : l'événement « openBaselines » (table ACTIONS)
+ */
 action('openBaselines', () => baselinesWindow());
+/**
+ * Appelle : dashboardWindow()
+ * Appelée par : l'événement « openDashboard » (table ACTIONS)
+ */
 action('openDashboard', () => dashboardWindow());
+/**
+ * Appelle : $(), render()
+ * Appelée par : l'événement « toggleLinks » (table ACTIONS)
+ */
 action('toggleLinks', () => { App.showLinks = !App.showLinks; render(); $('btn-links').focus(); });
+/**
+ * Appelle : announce(), commit(), t()
+ * Appelée par : l'événement « setLeveling » (table ACTIONS)
+ */
 action('setLeveling', (arg, el) => {
   if (!Schedule.MODES.includes(el.value)) return;
   commit(p => { p.leveling = el.value; });
   const n = App.sched ? App.sched.conflicts.length : 0;
   announce(`${t('top.leveling')} : ${t('lvl.' + el.value)}. ${n ? t('top.conflicts', { count: n }) : t('rsv.left0')}`);
 });
+/**
+ * Appelle : resourcesWindow()
+ * Appelée par : l'événement « openResources » (table ACTIONS)
+ */
 action('openResources', () => resourcesWindow());
+/**
+ * Appelle : categoriesWindow()
+ * Appelée par : l'événement « openCategories » (table ACTIONS)
+ */
 action('openCategories', () => categoriesWindow());
+/**
+ * Appelle : newProjectAction()
+ * Appelée par : l'événement « newProject » (table ACTIONS)
+ */
 action('newProject', () => newProjectAction());
+/**
+ * Appelle : exportWindow()
+ * Appelée par : l'événement « exportFile » (table ACTIONS)
+ */
 action('exportFile', () => exportWindow());
+/**
+ * Appelle : $()
+ * Appelée par : l'événement « importFile » (table ACTIONS)
+ */
 action('importFile', () => $('file-input').click());
+/**
+ * Appelle : importFile()
+ * Appelée par : l'événement « fileChosen » (table ACTIONS)
+ */
 action('fileChosen', async (arg, el) => {
   const file = el.files && el.files[0];
   el.value = '';
   if (file) importFile(file);
 });
 
+/**
+ * Appelle : Settings.get()
+ * Appelée par : action « toggleTheme », init(), openSettings()
+ */
 function applyTheme() {
   const theme = Settings.get('theme') || DEFAULT_THEME;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
 }
 
+/**
+ * Appelle : $(), Editor.close(), Editor.isOpen(), saveToLibrary()
+ * Appelée par : init()
+ */
 function initKeyboard() {
   document.addEventListener('keydown', ev => {
     const inField = ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable]');
@@ -130,6 +231,10 @@ function initKeyboard() {
   $('gantt').addEventListener('wheel', ev => { if (ev.ctrlKey) { ev.preventDefault(); ACTIONS.zoom(ev.deltaY < 0 ? '1' : '-1'); } }, { passive: false });
 }
 
+/**
+ * Appelle : 26 fonctions
+ * Appelée par : (initialisation de 99-main.js)
+ */
 function init() {
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);

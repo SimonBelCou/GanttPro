@@ -1,4 +1,5 @@
-/* Résolution des conflits de ressource (EF-31, RG-34).
+/*
+ * Résolution des conflits de ressource (EF-31, RG-34).
  *
  * Pour chaque conflit, propose des corrections et SIMULE chacune sur une copie du projet avant de
  * l'afficher : nombre de conflits restants et décalage de la fin du projet. Rien n'est appliqué
@@ -8,15 +9,27 @@
  *   unforce     lever la date imposée (la tâche est alors placée par le nivellement) ;
  *   sequence    arbitrer : faire passer X avant Y, par un lien fin-début X → Y visible et retirable ;
  *   level       passer le projet en nivellement automatique (si lissage ou désactivé).
- * Les propositions sont classées par conflits restants, puis par décalage de la fin. */
+ * Les propositions sont classées par conflits restants, puis par décalage de la fin.
+ *
+ * Appelle : Dates, Model, Schedule
+ * Appelée par : 70-windows.js
+ */
 const Resolve = (() => {
   const MAX_REASSIGN = 3;
   const MAX_PAIRS = 6;
   const SEARCH_DAYS = 520; // environ deux ans ouvrés de recherche pour une date libre
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Resolve.simulate()
+   */
   const copy = p => JSON.parse(JSON.stringify(p));
 
-  /** Premier début ≥ from où toutes les ressources de la tâche sont libres, sa propre charge retirée. */
+  /**
+   * Premier début ≥ from où toutes les ressources de la tâche sont libres, sa propre charge retirée.
+   * Appelle : aucune
+   * Appelée par : Resolve.suggest()
+   */
   function firstFreeStart(sched, task, from) {
     const r = sched.tasks.get(task.id);
     const d = task.dur;
@@ -34,7 +47,11 @@ const Resolve = (() => {
     return null;
   }
 
-  /** La ressource res est-elle libre pour units sur les jours [s, e] ? */
+  /**
+   * La ressource res est-elle libre pour units sur les jours [s, e] ?
+   * Appelle : aucune
+   * Appelée par : Resolve.suggest()
+   */
   function isFree(sched, res, units, s, e) {
     for (let k = s; k <= e; k++) {
       const cap = sched.capacityOf(res, k);
@@ -43,6 +60,10 @@ const Resolve = (() => {
     return true;
   }
 
+  /**
+   * Appelle : Resolve.copy(), Schedule.compute()
+   * Appelée par : Resolve.suggest()
+   */
   function simulate(project, sched, mutate) {
     const p = copy(project);
     mutate(p);
@@ -57,6 +78,8 @@ const Resolve = (() => {
   /**
    * @returns {{conflicts: {conflict, options: object[]}[], global: object[]}}
    * Chaque option : {kind, task?, from?, to?, date?, mutate(p), after:{conflicts, endDn, endShift}}.
+   * Appelle : Dates.toISO(), Model.findCycle(), Resolve.firstFreeStart(), Resolve.isFree(), Resolve.simulate()
+   * Appelée par : paintResolve()
    */
   function suggest(project, sched, { max = 20 } = {}) {
     const byId = new Map(project.tasks.map(t => [t.id, t]));

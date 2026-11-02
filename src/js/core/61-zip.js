@@ -1,9 +1,18 @@
-/* Archives ZIP : écriture sans compression (classeurs Excel) et lecture prudente (EX-27).
+/*
+ * Archives ZIP : écriture sans compression (classeurs Excel) et lecture prudente (EX-27).
  * Lecture : au plus 200 fichiers et 50 Mo décompressés au total, vérifiés sur les tailles déclarées
- * ET sur les octets réellement produits (une archive qui ment sur ses tailles est arrêtée). */
+ * ET sur les octets réellement produits (une archive qui ment sur ses tailles est arrêtée).
+ *
+ * Appelle : aucune
+ * Appelée par : Xlsx
+ */
 const Zip = (() => {
   const MAX_ENTRIES = 200, MAX_TOTAL = 50 * 1024 * 1024;
   let table = null;
+  /**
+   * Appelle : aucune
+   * Appelée par : Zip.write()
+   */
   function crc32(bytes) {
     if (!table) {
       table = new Uint32Array(256);
@@ -15,7 +24,11 @@ const Zip = (() => {
   }
   const enc = new TextEncoder();
 
-  /** @param {{name:string, data:Uint8Array|string}[]} files */
+  /**
+   * @param {{name:string, data:Uint8Array|string}[]} files
+   * Appelle : Zip.crc32()
+   * Appelée par : Xlsx.build()
+   */
   function write(files) {
     const parts = [], central = [];
     let offset = 0;
@@ -46,6 +59,10 @@ const Zip = (() => {
     return out;
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : Zip.read()
+   */
   async function inflate(bytes, budget) {
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
     const reader = stream.getReader();
@@ -65,7 +82,11 @@ const Zip = (() => {
     return out;
   }
 
-  /** Lit une archive : Map nom → octets. Lève Error('zip…') si elle est refusée. */
+  /**
+   * Lit une archive : Map nom → octets. Lève Error('zip…') si elle est refusée.
+   * Appelle : Zip.inflate()
+   * Appelée par : Xlsx.read()
+   */
   async function read(bytes) {
     const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let eocd = -1;

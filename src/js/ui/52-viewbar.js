@@ -1,9 +1,22 @@
-/* Barre de recherche, filtres et regroupement (EF-84 à EF-86, RG-27). Affichage seulement :
- * rien n'est enregistré dans le projet, rien ne compte comme une modification (EF-53). */
+/*
+ * Barre de recherche, filtres et regroupement (EF-84 à EF-86, RG-27). Affichage seulement :
+ * rien n'est enregistré dans le projet, rien ne compte comme une modification (EF-53).
+ * Appelle : clone()
+ * Appelée par : action « filterDate », action « filterFlag », action « filterRemove », action « filterToggle »,
+ *   renderViewbar(), viewActive(), viewItems()
+ */
 const viewFilters = () => App.view.filters || (App.view.filters = clone(View.EMPTY));
+/**
+ * Appelle : View.isActive(), viewFilters()
+ * Appelée par : renderKpis(), viewItems()
+ */
 const viewActive = () => !!(App.view.query.trim() || View.isActive(viewFilters()));
 
-/** Lignes à afficher : {task, flat?, dim?, hit?} ou {group}. */
+/**
+ * Lignes à afficher : {task, flat?, dim?, hit?} ou {group}.
+ * Appelle : taskById(), View.group(), View.select(), viewActive(), viewFilters(), visibleTasks()
+ * Appelée par : buildPrintGantt(), ganttPng(), renderAll()
+ */
 function viewItems() {
   const v = App.view;
   App.viewMatched = null;
@@ -29,7 +42,11 @@ function viewItems() {
   }));
 }
 
-/** Valeurs proposées par critère : [valeur, libellé]. */
+/**
+ * Valeurs proposées par critère : [valeur, libellé].
+ * Appelle : t(), View.fold()
+ * Appelée par : renderViewbar()
+ */
 function filterOptions() {
   const p = App.project;
   const tags = [...new Map(p.tasks.flatMap(x => x.tags).map(tg => [View.fold(tg), tg])).values()].sort((a, b) => a.localeCompare(b, 'fr'));
@@ -42,6 +59,11 @@ function filterOptions() {
   };
 }
 
+/**
+ * Appelle : $(), clear(), Dates.parse(), filterOptions(), h(), I18n.shortDate(), t(), taskById(), View.isActive(),
+ *   viewFilters()
+ * Appelée par : renderAll()
+ */
 function renderViewbar(items) {
   const v = App.view, f = viewFilters();
   const search = $('search');
@@ -96,13 +118,33 @@ function renderViewbar(items) {
 }
 
 let searchTimer = 0;
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « search » (table ACTIONS)
+ */
 action('search', (arg, el) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { App.view.query = el.value.slice(0, 200); render(); }, 120);
 });
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « searchHighlight » (table ACTIONS)
+ */
 action('searchHighlight', (arg, el) => { App.view.highlight = el.checked; render(); });
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « toggleFilters » (table ACTIONS)
+ */
 action('toggleFilters', () => { App.view.panel = !App.view.panel; render(); });
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « groupBy » (table ACTIONS)
+ */
 action('groupBy', (arg, el) => { App.view.groupBy = ['res', 'cat', 'status'].includes(el.value) ? el.value : ''; App.view.collapsedGroups = new Set(); render(); });
+/**
+ * Appelle : render()
+ * Appelée par : l'événement « toggleGroup » (table ACTIONS)
+ */
 action('toggleGroup', key => {
   const c = App.view.collapsedGroups;
   if (c.has(key)) c.delete(key); else c.add(key);
@@ -110,14 +152,30 @@ action('toggleGroup', key => {
   const b = document.querySelector(`[data-click="toggleGroup"][data-arg="${CSS.escape(key)}"]`);
   if (b) b.focus();
 });
+/**
+ * Appelle : render(), viewFilters()
+ * Appelée par : l'événement « filterToggle » (table ACTIONS)
+ */
 action('filterToggle', (arg, el) => {
   const i = arg.indexOf(':'), k = arg.slice(0, i), val = arg.slice(i + 1);
   const f = viewFilters();
   f[k] = el.checked ? [...f[k], val] : f[k].filter(x => x !== val);
   render();
 });
+/**
+ * Appelle : render(), viewFilters()
+ * Appelée par : l'événement « filterFlag » (table ACTIONS)
+ */
 action('filterFlag', (k, el) => { viewFilters()[k] = el.checked; render(); });
+/**
+ * Appelle : Dates.parse(), render(), viewFilters()
+ * Appelée par : l'événement « filterDate » (table ACTIONS)
+ */
 action('filterDate', (k, el) => { viewFilters()[k] = Dates.parse(el.value) != null ? el.value : ''; render(); });
+/**
+ * Appelle : $(), render(), viewFilters()
+ * Appelée par : l'événement « filterRemove » (table ACTIONS)
+ */
 action('filterRemove', arg => {
   const i = arg.indexOf(':'), k = arg.slice(0, i), val = arg.slice(i + 1);
   const f = viewFilters();
@@ -128,9 +186,17 @@ action('filterRemove', arg => {
   const next = document.querySelector('#view-chips button') || $('btn-filters');
   next.focus();
 });
+/**
+ * Appelle : $(), clone(), render()
+ * Appelée par : l'événement « filtersClear » (table ACTIONS)
+ */
 action('filtersClear', () => { App.view.filters = clone(View.EMPTY); render(); $('btn-filters').focus(); });
 
-/** Entrée / Maj + Entrée : résultat suivant ou précédent, sélectionné et rendu visible (EF-84). */
+/**
+ * Entrée / Maj + Entrée : résultat suivant ou précédent, sélectionné et rendu visible (EF-84).
+ * Appelle : announce(), render(), taskById()
+ * Appelée par : initViewbar()
+ */
 function searchStep(dir) {
   const hits = [...document.querySelectorAll('#task-rows tr.hit')].map(tr => tr.dataset.id);
   if (!hits.length) return;
@@ -142,6 +208,10 @@ function searchStep(dir) {
   const task = taskById(App.selected);
   announce(`${App.selected} ${task ? task.name : ''}`);
 }
+/**
+ * Appelle : $(), render(), searchStep()
+ * Appelée par : init()
+ */
 function initViewbar() {
   $('search').addEventListener('keydown', ev => {
     if (ev.key === 'Enter') { ev.preventDefault(); clearTimeout(searchTimer); App.view.query = ev.target.value; searchStep(ev.shiftKey ? -1 : 1); }

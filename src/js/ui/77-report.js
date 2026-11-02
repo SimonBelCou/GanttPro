@@ -3,24 +3,45 @@
 const Report = { amounts: false, blocks: { kpis: true, curve: true, budget: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
 const REPORT_BLOCKS = ['kpis', 'curve', 'budget', 'late', 'soon', 'milestones', 'critical', 'alerts', 'baseline', 'note'];
 
+/**
+ * Appelle : Dates.todayDn(), Metrics.report()
+ * Appelée par : reportArticle(), reportSections()
+ */
 function reportData() {
   const today = Dates.todayDn();
   const bl = App.project.baselines.find(b => b.id === Report.baseline) || null;
   return { today, bl, r: Metrics.report(App.project, App.sched, today, bl) };
 }
+/**
+ * Appelle : taskById()
+ * Appelée par : reportSections()
+ */
 const taskLabel = id => { const x = taskById(id); return x ? `${id} ${x.name}` : id; };
 
 /** Contenu du rapport sous forme de sections {title, lines[]} : sert à l'aperçu ET au texte brut. */
-/** Une ligne du rapport est un texte, ou {label, cents, signed} pour un montant (masquable à l'écran, jamais dans une sortie). */
+/**
+ * Une ligne du rapport est un texte, ou {label, cents, signed} pour un montant (masquable à l'écran, jamais dans une sortie).
+ * Appelle : Money.plain()
+ * Appelée par : lineNode(), reportText()
+ */
 function lineText(l) {
   if (typeof l === 'string') return l;
   return l.label + (l.signed && l.cents > 0 ? '+' : '') + Money.plain(l.cents);
 }
+/**
+ * Appelle : lineText(), Money.node()
+ * Appelée par : reportArticle()
+ */
 function lineNode(l, out) {
   if (typeof l === 'string' || out) return lineText(l);
   return [l.label + (l.signed && l.cents > 0 ? '+' : ''), Money.node(l.cents)];
 }
 
+/**
+ * Appelle : alertMessages(), Budget.bacVariation(), Budget.hasAmounts(), Budget.totals(), Evm.compute(), I18n.date(),
+ *   I18n.number(), I18n.shortDate(), reportData(), signed(), t(), taskLabel()
+ * Appelée par : reportArticle(), reportText()
+ */
 function reportSections() {
   const { today, bl, r } = reportData();
   const s = App.sched;
@@ -70,6 +91,10 @@ function reportSections() {
   return out;
 }
 
+/**
+ * Appelle : Dates.todayDn(), h(), lineNode(), Metrics.sCurve(), reportData(), reportSections(), sCurveChart(), t()
+ * Appelée par : action « repPrint », paintReport()
+ */
 function reportArticle(out = false) {
   const art = h('article', { class: 'report-page', id: 'report-preview', aria: { label: t('rep.preview') } });
   const { r } = reportData();
@@ -89,10 +114,19 @@ function reportArticle(out = false) {
   return art;
 }
 
+/**
+ * Appelle : lineText(), reportSections()
+ * Appelée par : action « repCopy »
+ */
 function reportText() {
   return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
 }
 
+/**
+ * Appelle : clear(), h(), reportArticle(), t()
+ * Appelée par : action « repAmounts », action « repBaseline », action « repBlock », action « repNote », action «
+ *   toggleMask », reportWindow()
+ */
 function paintReport(body, focusSel) {
   clear(body);
   const opts = h('div', { class: 'rep-options' },
@@ -114,6 +148,11 @@ function paintReport(body, focusSel) {
   if (el) el.focus();
 }
 
+/**
+ * Appelle : Dialog.open(), h(), paintReport(), t()
+ * Appelée par : action « openReport », action « repAmounts », action « repBaseline », action « repBlock », action «
+ *   repNote », action « toggleMask »
+ */
 function reportWindow() {
   if (!App.sched) return;
   if (Report.baseline && !App.project.baselines.some(b => b.id === Report.baseline)) Report.baseline = '';
@@ -124,7 +163,11 @@ function reportWindow() {
   return Dialog.open({ title: t('rep.title'), body: [body], size: 'wide', maskTool: true, actions: [{ label: t('dlg.close'), value: 'close' }] }).then(() => { reportWindow.body = null; });
 }
 
-/** Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26). */
+/**
+ * Impression : le contenu est copié dans #print-area, seul visible à l'impression (EX-26).
+ * Appelle : $(), clear(), Dates.todayDn(), I18n.date()
+ * Appelée par : action « repPrint », printWindow()
+ */
 function printNode(node, cls, pageRule) {
   const area = clear($('print-area'));
   area.append(node);
@@ -151,6 +194,10 @@ function printNode(node, cls, pageRule) {
   setTimeout(() => { if (document.body.classList.contains('printing')) done(); }, 1500);
 }
 
+/**
+ * Appelle : h()
+ * Appelée par : action « repCopy »
+ */
 function copyText(text) {
   const fallback = () => {
     const ta = h('textarea', { class: 'sr-only', aria: { hidden: 'true' } });
@@ -163,10 +210,38 @@ function copyText(text) {
   return Promise.resolve(fallback());
 }
 
+/**
+ * Appelle : reportWindow()
+ * Appelée par : l'événement « openReport » (table ACTIONS)
+ */
 action('openReport', () => reportWindow());
+/**
+ * Appelle : paintReport(), reportWindow()
+ * Appelée par : l'événement « repBlock » (table ACTIONS)
+ */
 action('repBlock', (k, el) => { Report.blocks[k] = el.checked; paintReport(reportWindow.body, '#rb-' + k); });
+/**
+ * Appelle : paintReport(), reportWindow()
+ * Appelée par : l'événement « repAmounts » (table ACTIONS)
+ */
 action('repAmounts', (a, el) => { Report.amounts = el.checked; paintReport(reportWindow.body, '#rep-amounts'); });
+/**
+ * Appelle : paintReport(), reportWindow()
+ * Appelée par : l'événement « repBaseline » (table ACTIONS)
+ */
 action('repBaseline', (a, el) => { Report.baseline = el.value; paintReport(reportWindow.body, '#rep-bl'); });
+/**
+ * Appelle : commit(), paintReport(), reportWindow()
+ * Appelée par : l'événement « repNote » (table ACTIONS)
+ */
 action('repNote', (a, el) => { const v = el.value.slice(0, 2000); if (v !== App.project.reportNote) commit(p => { p.reportNote = v; }); paintReport(reportWindow.body, '#rep-note'); });
+/**
+ * Appelle : printNode(), reportArticle()
+ * Appelée par : l'événement « repPrint » (table ACTIONS)
+ */
 action('repPrint', () => printNode(reportArticle(true), 'print-report', 'A4 portrait'));
+/**
+ * Appelle : announce(), copyText(), reportText(), t(), toast()
+ * Appelée par : l'événement « repCopy » (table ACTIONS)
+ */
 action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });

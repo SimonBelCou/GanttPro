@@ -2,8 +2,16 @@
  * plus affichées sur chaque vue (Gantt, courbe en S) ; la première capturée est la baseline « initiale », protégée à
  * la suppression ; une baseline est la référence de la valeur acquise (RG-44). */
 
+/**
+ * Appelle : aucune
+ * Appelée par : captureBaseline(), shownText()
+ */
 const shownCount = (p, key) => p.baselines.filter(b => b[key]).length;
 
+/**
+ * Appelle : Dates.toISO(), shownCount()
+ * Appelée par : action « blCapture »
+ */
 function captureBaseline(p, sched, name, color) {
   const catName = id => (p.categories.find(c => c.id === id) || { name: '' }).name;
   let n = 1; while (p.baselines.some(b => b.id === 'B' + n)) n++;
@@ -19,8 +27,18 @@ function captureBaseline(p, sched, name, color) {
   };
 }
 
+/**
+ * Appelle : shownCount(), t()
+ * Appelée par : action « blField », baselinesWindow()
+ */
 const shownText = () => t('bl.shownHint', { gantt: shownCount(App.project, 'shownOnGantt'), scurve: shownCount(App.project, 'shownOnScurve') });
 
+/**
+ * Appelle : Budget.baselineBac(), Budget.totals(), clear(), Dates.todayDn(), Dialog.open(), Evm.reference(), h(),
+ *   I18n.date(), Money.node(), safeColor(), shownText(), t()
+ * Appelée par : action « blCapture », action « blDelete », action « blRef », action « openBaselines », action «
+ *   toggleMask »
+ */
 function baselinesWindow() {
   const body = h('div', { id: 'bl-win' });
   const paint = () => {
@@ -61,6 +79,10 @@ function baselinesWindow() {
     .then(() => { baselinesWindow.paint = null; });
 }
 
+/**
+ * Appelle : announce(), baselinesWindow(), captureBaseline(), commit(), Dialog.message(), t(), toast()
+ * Appelée par : l'événement « blCapture » (table ACTIONS)
+ */
 action('blCapture', () => {
   const p = App.project;
   if (p.baselines.length >= Model.LIMITS.baselines) { Dialog.message(t('top.baselines'), t('bl.limit', { max: Model.LIMITS.baselines })); return; }
@@ -81,6 +103,10 @@ action('blCapture', () => {
   if (baselinesWindow.paint) { baselinesWindow.paint(); const inp = document.querySelector('#bl-win tbody tr:last-child input'); if (inp) inp.focus(); }
 });
 
+/**
+ * Appelle : $(), announce(), commit(), render(), shownText(), t(), toast()
+ * Appelée par : l'événement « blField » (table ACTIONS)
+ */
 action('blField', (arg, el) => {
   const [id, k] = arg.split(':');
   const b = App.project.baselines.find(x => x.id === id);
@@ -111,12 +137,20 @@ action('blField', (arg, el) => {
 });
 
 // Référence de la valeur acquise (RG-44) : enregistrée dans le projet, annulable comme une modification.
+/**
+ * Appelle : $(), baselinesWindow(), commit()
+ * Appelée par : l'événement « blRef » (table ACTIONS)
+ */
 action('blRef', id => {
   if (!App.project.baselines.some(x => x.id === id)) return;
   commit(p => { p.baselineRef = id; });
   if (baselinesWindow.paint) { baselinesWindow.paint(); const r = $('blr-' + id); if (r) r.focus(); }
 });
 
+/**
+ * Appelle : baselinesWindow(), commit(), Dialog.confirm(), t()
+ * Appelée par : l'événement « blDelete » (table ACTIONS)
+ */
 action('blDelete', async id => {
   const b = App.project.baselines.find(x => x.id === id);
   if (!b) return;

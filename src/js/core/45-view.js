@@ -1,19 +1,40 @@
-/* Recherche, filtres et regroupements (RG-27, EF-84 à EF-86).
- * Affichage seulement : ces fonctions ne modifient jamais le projet ni le planning. */
+/*
+ * Recherche, filtres et regroupements (RG-27, EF-84 à EF-86).
+ * Affichage seulement : ces fonctions ne modifient jamais le projet ni le planning.
+ *
+ * Appelle : Dates, Metrics
+ * Appelée par : 52-viewbar.js, Exchange
+ */
 const View = (() => {
   const EMPTY = Object.freeze({ status: [], res: [], cat: [], tag: [], type: [], critical: false, alerts: false, from: '', to: '' });
 
-  /** Minuscules sans accents, pour une recherche qui ignore casse et accents. */
+  /**
+   * Minuscules sans accents, pour une recherche qui ignore casse et accents.
+   * Appelle : aucune
+   * Appelée par : Exchange.norm(), filterOptions(), View.haystack(), View.passes(), View.words()
+   */
   const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  /**
+   * Appelle : View.fold()
+   * Appelée par : View.matches(), View.select()
+   */
   const words = q => fold(q).split(/\s+/).filter(Boolean);
 
+  /**
+   * Appelle : View.fold()
+   * Appelée par : View.matches()
+   */
   function haystack(project, task) {
     const res = task.assign.map(a => (project.resources.find(r => r.id === a.res) || {}).name || '');
     const cat = (project.categories.find(c => c.id === task.cat) || {}).name || '';
     return fold([task.id, task.name, ...res, cat, ...task.tags, task.notes].join(' \u0001 '));
   }
 
-  /** La tâche contient-elle tous les mots de la recherche ? */
+  /**
+   * La tâche contient-elle tous les mots de la recherche ?
+   * Appelle : View.haystack(), View.words()
+   * Appelée par : View.select()
+   */
   function matches(project, task, query) {
     const w = words(query);
     if (!w.length) return true;
@@ -21,11 +42,19 @@ const View = (() => {
     return w.every(x => hay.includes(x));
   }
 
+  /**
+   * Appelle : aucune
+   * Appelée par : renderViewbar(), View.passes(), View.select(), viewActive()
+   */
   function isActive(f) {
     return !!(f && (f.status.length || f.res.length || f.cat.length || f.tag.length || f.type.length || f.critical || f.alerts || f.from || f.to));
   }
 
-  /** Filtres : ET entre critères, OU à l'intérieur d'un critère (RG-27). */
+  /**
+   * Filtres : ET entre critères, OU à l'intérieur d'un critère (RG-27).
+   * Appelle : Dates.parse(), Metrics.status(), View.fold(), View.isActive()
+   * Appelée par : View.select()
+   */
   function passes(project, sched, task, f, today, flagged) {
     if (f.type.length && !f.type.includes(task.type)) return false;
     if (task.type === 'summary') return !isActive({ ...f, type: [] }); // jugée par ses enfants
@@ -52,6 +81,8 @@ const View = (() => {
    * Identifiants retenus par la recherche ET les filtres. Une récapitulative dont un descendant est
    * retenu reste visible, de même que les ancêtres d'une tâche retenue (RG-27).
    * @returns {{ids:Set<string>, matched:Set<string>}} matched : retenus par eux-mêmes.
+   * Appelle : Dates.todayDn(), View.isActive(), View.matches(), View.passes(), View.words()
+   * Appelée par : viewItems()
    */
   function select(project, sched, { query = '', filters = EMPTY } = {}, today = Dates.todayDn()) {
     const flagged = new Set();
@@ -72,6 +103,8 @@ const View = (() => {
    * Une tâche à plusieurs ressources figure dans chaque groupe. Groupes triés par ordre
    * alphabétique, « Sans ressource » / « Sans catégorie » en dernier.
    * @returns {{key, label, none:boolean, ids:string[], count, dur, pct}[]} label vide si none.
+   * Appelle : Dates.todayDn(), Metrics.status()
+   * Appelée par : viewItems()
    */
   function group(project, sched, ids, by, today = Dates.todayDn()) {
     const groups = new Map();
