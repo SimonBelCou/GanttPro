@@ -310,8 +310,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
 .tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; min-width: 0; container-type: inline-size; }
 .tile dt { color: var(--muted); font-size: .85rem; }
+/* 8,5 cqi (et non 9,5) : garde au moins 8 % de marge sous le plus grand montant (EX-04), car la police de repli du signe « € » et de l'espace fine varie selon la machine (défaut vu en CI) */
 /* Un montant ne déborde jamais de sa tuile : sa taille suit la largeur de la tuile (EX-04). */
-.tile dd { margin: .2rem 0 0; font-size: clamp(1rem, 9.5cqi, 1.6rem); font-weight: 700; white-space: nowrap; overflow-wrap: normal; }
+.tile dd { margin: .2rem 0 0; font-size: clamp(1rem, 8.5cqi, 1.6rem); font-weight: 700; white-space: nowrap; overflow-wrap: normal; }
 .tiles.amounts { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
 .dash-section { margin: 1rem 0; }
 .dash-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
