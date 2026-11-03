@@ -10,6 +10,10 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 ## Non publié
 
 ### Documentation et organisation
+- **Plan d'audit RGAA 4.1** (`docs/plan-audit-rgaa.md`, EX-05, écart C.2 n° 4) : périmètre et échantillon de 24 écrans avec
+  fichiers d'essai, méthode par thématique (axe-core / manuel / non applicable), protocole manuel (NVDA, clavier, zoom,
+  contraste…), points de vigilance, grille de résultats, format de la déclaration, rôles et durée. Aucun audit réalisé ;
+  aucun changement de code.
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec
   une annexe C : journal des arbitrages et écarts connus), `Architecture.md`, `PCA.md`, `docs/veille-securite.md` et ce

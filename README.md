@@ -5,7 +5,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 **Mode d'emploi complet : [docs/guide-utilisateur.md](docs/guide-utilisateur.md).** Faire créer ou modifier un projet par une IA : [docs/guide-ia-json.md](docs/guide-ia-json.md).
 
-**Pour reprendre le projet :** [Specs_fonctionnelles.md](Specs_fonctionnelles.md) (spécifications, source unique) · [Architecture.md](Architecture.md) (structure et schémas) · [PCA.md](PCA.md) (continuité, reprise, codes d'erreur) · [CHANGELOG.md](CHANGELOG.md) (historique) · [docs/veille-securite.md](docs/veille-securite.md) (veille).
+**Pour reprendre le projet :** [Specs_fonctionnelles.md](Specs_fonctionnelles.md) (spécifications, source unique) · [Architecture.md](Architecture.md) (structure et schémas) · [PCA.md](PCA.md) (continuité, reprise, codes d'erreur) · [CHANGELOG.md](CHANGELOG.md) (historique) · [docs/veille-securite.md](docs/veille-securite.md) (veille) · [docs/plan-audit-rgaa.md](docs/plan-audit-rgaa.md) (plan d'audit d'accessibilité).
 
 ![Écran principal de GanttPro avec un projet d'exemple](docs/img/02-principal.png)
 
@@ -91,7 +91,7 @@ src/                      ← Sources : js/core (moteur), js/ui (interface), sty
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tools/dependances.mjs     ← Dépendances entre fonctions : commentaires « Appelle / Appelée par » et graphe (contrôlé en CI)
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, veille sécurité, captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, plan d'audit RGAA, veille sécurité, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de développement (texte générique, puis spécificités de GanttPro au §13)
 .claude/                  ← Règles et agents « numérique responsable » de l'INR (eco-check, accessibilite-check), importés par CLAUDE.md §13.10
