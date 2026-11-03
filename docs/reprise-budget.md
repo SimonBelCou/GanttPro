@@ -126,4 +126,4 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 - Plan d'audit RGAA EX-05 dans `docs/`.
 - Mémorisation facultative de la mise en page, **choix et ordre des colonnes** (à proposer après l'étape A : il
   rendra la colonne « Budget » facultative), hauteur réglable de la zone.
-- Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.
+- ~~Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.~~ Fait le 3 novembre 2026 : 223 ms en médiane pour 500 ms de seuil (`PCA.md` §5, « Mesures de performance »). Reste le regroupement d'EX-25 (110 ms pour 100 ms).
