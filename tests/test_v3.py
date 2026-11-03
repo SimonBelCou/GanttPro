@@ -2,7 +2,7 @@
 """Tests de bout en bout de GanttPro v3 (GanttPro.html) : Chromium headless, CSP réellement appliquée.
 
     python3 tools/build.py
-    pip install playwright && python3 -m playwright install chromium
+    pip install playwright==1.64.1 && python3 -m playwright install chromium
     npm install --no-save axe-core          # audit d'accessibilité (WCAG 2.1 AA)
     python3 tests/test_v3.py
 

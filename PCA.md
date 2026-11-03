@@ -75,7 +75,7 @@ correctif, fusion après recette, mention dans `CHANGELOG.md`.
 ```bash
 python3 tools/build.py --check
 node --test tests/core/*.test.mjs
-pip install playwright && python3 -m playwright install chromium
+pip install playwright==1.64.1 && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0
 node tools/dependances.mjs --check && node --test tests/test_dependances.mjs
 python3 tests/test_v3.py && python3 tests/test_v3_espace.py && python3 tests/test_v3_recette.py
@@ -102,6 +102,7 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | Le contrôle d'accessibilité ne s'exécute pas | `axe-core` absent. Installer `acorn` seul avec `--no-save` **retire** `axe-core` (npm supprime ce qui n'est pas déclaré) | Toujours une seule commande : `npm install --no-save axe-core@4.14.0 acorn@8.19.0` |
 | La CI échoue : « Dépendances périmées dans … » | Une fonction ou un appel a changé sans régénérer les commentaires « Appelle / Appelée par » ni le graphe | `node tools/dependances.mjs`, puis recommiter |
 | Les tests automatiques ne couvrent pas Firefox ni Safari | La CI n'exécute que Chromium | Recette manuelle (`docs/recette-manuelle.md`) |
+| Sous Windows, `node tools/dependances.mjs --check` annonce des « Dépendances périmées » dans tous les fichiers et deux tests de `tests/core/fichiers.test.mjs` échouent (constaté les 2 et 3 novembre 2026) | Avec `core.autocrlf=true`, Git extrayait les fichiers en fins de ligne CRLF ; l'outil et les tests comparent au contenu LF | Résolu par `.gitattributes` (`* text=auto eol=lf`) : fichiers extraits en LF quel que soit le réglage du poste. Copie de travail plus ancienne : `git rm --cached -r . && git reset --hard` (après avoir committé son travail) |
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |
 | Un fichier protégé ne s'ouvre pas | Mot de passe faux, ou fichier altéré (le message est volontairement le même) | Aucun moyen de récupération : GanttPro ne conserve jamais le mot de passe |
