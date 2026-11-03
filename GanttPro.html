@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6XAU9oQ1+oh/8cTS6iG0j8b80YDQYeNMbdx6bk+K/8Y='; style-src 'sha256-/8+RvKSnljWbvSvuJ8pikPaGaveMXx8hJH2AZb7evUU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e4o1q2ljjk9E3Ut4KQpdvEpkvMZlYWvmg+dwwhmSXQY='; style-src 'sha256-/8+RvKSnljWbvSvuJ8pikPaGaveMXx8hJH2AZb7evUU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -2253,7 +2253,7 @@ const Model = (() => {
   const profName = (project, id) => ((project.profiles || []).find(p => p.id === id) || { name: '' }).name;
 
   /**
-   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51).
+   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51) ; profils « Profil 1 »… dans leur ordre (RG-58).
    * Appelle : Model.profName(), Model.resName(), Model.stripAmounts()
    * Appelée par : action « verSave », doExport(), Exchange.mergeRows(), homeSave(), Library.put(), Model.sanitize(),
    *   pasteInternal(), Recovery.flushSync(), Recovery.wrap()
@@ -2261,6 +2261,10 @@ const Model = (() => {
   function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
+    // Un intitulé de profil peut désigner une personne (décision du 3 novembre 2026, A.8 ligne 18) : anonymisé, il devient
+    // « Profil n » ; le lien ressource -> profil et les lignes du profil restent.
+    const pIndex = new Map((project.profiles || []).map((pf, i) => [pf.id, i]));
+    const pfName = id => (anonymize ? (pIndex.has(id) ? `Profil ${pIndex.get(id) + 1}` : '') : profName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const file = {
       format: FORMAT, id: project.id, createdAt: project.createdAt,
@@ -2274,7 +2278,7 @@ const Model = (() => {
       baselineRef: project.baselineRef || '',
       statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       ...(Array.isArray(project.columns) ? { columns: project.columns.slice() } : {}),
-      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pf.name, rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
+      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pfName(pf.id), rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -2289,9 +2293,9 @@ const Model = (() => {
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
-        // Étape C : le profil (un intitulé de coût, pas une personne) reste ; le taux nominatif, lié à une personne, est vidé
-        // dans un fichier anonymisé (A.8 ligne 18).
-        ...(r.profile ? { profile: profName(project, r.profile) } : {}),
+        // Étape C : le lien vers le profil reste (renommé « Profil n » si anonymisé) ; le taux nominatif, lié à une personne,
+        // est vidé dans un fichier anonymisé (A.8 ligne 18).
+        ...(r.profile ? { profile: pfName(r.profile) } : {}),
         ...(!anonymize && (r.rates || []).length ? { rates: r.rates.map(l => ({ from: l.from, rate: l.rate })) } : {}),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
@@ -3386,6 +3390,7 @@ const I18n = (() => {
     'rt.addLine': 'Ajouter une ligne de taux', 'rt.removeLine': 'Supprimer la ligne de taux {name}',
     'rt.errDup': 'Deux lignes de taux ne peuvent pas commencer le même jour.', 'rt.errMax': 'Au plus {max} lignes de taux.',
     'rt.errDate': 'Date de début : saisir une date valide.',
+    'rt.nameHint': "Intitulé de fonction (ex. Chef de projet), jamais le nom d'une personne",
     'rt.maskedLines': 'Les montants sont masqués : désactivez « Masquer les montants » pour modifier les taux.',
     'rt.own.hint': 'Facultatif, réservé à un prestataire externe : ces lignes remplacent le taux du profil.',
     'rt.own.clear': 'Supprimer le taux nominatif',
@@ -3516,7 +3521,7 @@ const I18n = (() => {
     'hol.mlk': 'Jour de Martin Luther King', 'hol.presidents': 'Jour de Washington (Presidents’ Day)', 'hol.memorial': 'Memorial Day',
     'hol.juneteenth': 'Juneteenth', 'hol.independence': "Fête de l'Indépendance", 'hol.laborDay': 'Fête du Travail (Labor Day)',
     'hol.columbus': 'Columbus Day', 'hol.veterans': 'Veterans Day', 'hol.thanksgiving': 'Thanksgiving', 'hol.swissNational': 'Fête nationale suisse',
-    'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.category': 'Général',
+    'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.profile': 'Profil', 'init.category': 'Général',
     'top.leveling': 'Charge des ressources', 'lvl.level': 'Nivellement automatique', 'lvl.smooth': 'Lissage dans la marge', 'lvl.off': 'Sans nivellement',
     'top.resolve': 'Résoudre…',
     'rsv.title': 'Résoudre les conflits', 'rsv.none': 'Aucun conflit : rien à résoudre.',
@@ -3850,6 +3855,7 @@ const I18n = (() => {
     'rt.addLine': 'Add a rate line', 'rt.removeLine': 'Remove rate line {name}',
     'rt.errDup': 'Two rate lines cannot start on the same day.', 'rt.errMax': 'At most {max} rate lines.',
     'rt.errDate': 'Start date: enter a valid date.',
+    'rt.nameHint': "Job title (e.g. Project manager), never a person's name",
     'rt.maskedLines': 'Amounts are hidden: turn off “Hide amounts” to edit the rates.',
     'rt.own.hint': 'Optional, for an external contractor: these lines replace the profile rate.',
     'rt.own.clear': 'Remove the personal rate',
@@ -4180,7 +4186,7 @@ const I18n = (() => {
     'list.shift': '{count} d shift ({res}: {why})', 'why.overload': 'overload', 'why.absence': 'absence',
     'edit.shift': { one: 'Shifted by {count} working day by levelling ({res}: {why}). Without it, it would start on {date}.', other: 'Shifted by {count} working days by levelling ({res}: {why}). Without it, it would start on {date}.' },
     'alert.smooth': '{task} does not fit in its slack: the overload of {res} is not smoothed',
-    'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.category': 'General',
+    'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.profile': 'Profile', 'init.category': 'General',
     'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.baseline': 'Baseline (thin bar)', 'legend.today': 'Today', 'legend.conflict': 'In conflict (⚠)', 'legend.resources': 'Resources', 'legend.statuses': 'Statuses',
   };
 
@@ -4905,13 +4911,16 @@ const Exchange = (() => {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
-    // Étape C (EF-150) : le profil est un intitulé, il reste ; taux et coûts exigent les montants et les noms (RG-58).
+    // Étape C (EF-150) : le profil reste, renommé « Profil n » sans noms de personnes (un intitulé peut désigner une
+    // personne, décision du 3 novembre 2026) ; taux nominatifs et coûts exigent les montants et les noms (RG-58).
     const profOn = Rates.inUse(project), ratesOn = amounts && !anonymize && Rates.hasRates(project);
     const rc = ratesOn ? Rates.compute(project, sched) : null;
-    const profName = r => (Rates.profileOf(project, r) || { name: '' }).name;
+    const profiles = project.profiles || [];
+    const pfLabel = (pf, i) => (anonymize ? `${t('init.profile')} ${i + 1}` : pf.name);
+    const profName = r => { const pf = Rates.profileOf(project, r); return pf ? pfLabel(pf, profiles.indexOf(pf)) : ''; };
     const rateOf = r => { const c = Rates.rateFor(project, r, today); return c == null ? '' : money(c); };
     const rateSheet = amounts && Rates.hasRates(project) ? [{ name: t('xp.sheet.rates'), rows: [[t('xp.rateOwner'), t('xp.kind'), t('rt.from'), t('rt.rate')],
-      ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
+      ...profiles.flatMap((p, i) => p.rates.map(l => [pfLabel(p, i), t('rt.kindProfile'), l.from, money(l.rate)])),
       ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
       { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts, costs: rc }) },
@@ -9278,11 +9287,12 @@ function profilesWindow() {
     const profiles = App.project.profiles || [];
     profiles.forEach(pf => {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
-      const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
+      const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: `prof-hint-${pf.id} perr-${pf.id}` }, data: { change: 'profName', arg: pf.id } });
       // Chaque carte a son titre (RGAA 9.1) : h3, sous le titre h2 de la fenêtre (Dialog.open).
       body.append(h('section', { class: 'prof-card', aria: { labelledby: 'prof-h-' + pf.id } },
         h('h3', { id: 'prof-h-' + pf.id, text: pf.name }),
-        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
+        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn,
+          h('p', { class: 'hint', id: 'prof-hint-' + pf.id, text: t('rt.nameHint') }), h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
         h('button', { type: 'button', class: 'danger', data: { click: 'profDelete', arg: pf.id } }, t('rt.delete', { name: pf.name }))));

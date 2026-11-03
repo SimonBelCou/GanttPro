@@ -45,6 +45,10 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   (RG-57, CLAUDE.md §11) ; un coût partiel garde son montant suivi de « (sans taux) ».
 - Écoconception (GR491_Backend_4) : le classeur Excel ne calcule plus deux fois le coût des ressources ; la fiche d'une
   ressource indexe ses lignes de taux une seule fois (nouvelle fonction `Rates.ofResource`). Résultats inchangés.
+- Export « sans noms de personnes » (décision du 3 novembre 2026, RG-58) : les profils de coût sont renommés « Profil 1 »,
+  « Profil 2 »… dans leur ordre, en JSON comme en Excel, avec le lien ressource → profil et leurs lignes de taux (si les
+  montants sont inclus). Aide sous le nom d'un profil : « Intitulé de fonction (ex. Chef de projet), jamais le nom d'une
+  personne ». Recette « Taux 7 » mise à jour.
 - Recette manuelle : parcours « Taux 11 ».
 
 ## 3.0.0

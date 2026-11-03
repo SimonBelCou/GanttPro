@@ -190,11 +190,12 @@ function profilesWindow() {
     const profiles = App.project.profiles || [];
     profiles.forEach(pf => {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
-      const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
+      const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: `prof-hint-${pf.id} perr-${pf.id}` }, data: { change: 'profName', arg: pf.id } });
       // Chaque carte a son titre (RGAA 9.1) : h3, sous le titre h2 de la fenêtre (Dialog.open).
       body.append(h('section', { class: 'prof-card', aria: { labelledby: 'prof-h-' + pf.id } },
         h('h3', { id: 'prof-h-' + pf.id, text: pf.name }),
-        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
+        h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn,
+          h('p', { class: 'hint', id: 'prof-hint-' + pf.id, text: t('rt.nameHint') }), h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
         h('button', { type: 'button', class: 'danger', data: { click: 'profDelete', arg: pf.id } }, t('rt.delete', { name: pf.name }))));

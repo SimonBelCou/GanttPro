@@ -180,6 +180,7 @@ const I18n = (() => {
     'rt.addLine': 'Ajouter une ligne de taux', 'rt.removeLine': 'Supprimer la ligne de taux {name}',
     'rt.errDup': 'Deux lignes de taux ne peuvent pas commencer le même jour.', 'rt.errMax': 'Au plus {max} lignes de taux.',
     'rt.errDate': 'Date de début : saisir une date valide.',
+    'rt.nameHint': "Intitulé de fonction (ex. Chef de projet), jamais le nom d'une personne",
     'rt.maskedLines': 'Les montants sont masqués : désactivez « Masquer les montants » pour modifier les taux.',
     'rt.own.hint': 'Facultatif, réservé à un prestataire externe : ces lignes remplacent le taux du profil.',
     'rt.own.clear': 'Supprimer le taux nominatif',
@@ -310,7 +311,7 @@ const I18n = (() => {
     'hol.mlk': 'Jour de Martin Luther King', 'hol.presidents': 'Jour de Washington (Presidents’ Day)', 'hol.memorial': 'Memorial Day',
     'hol.juneteenth': 'Juneteenth', 'hol.independence': "Fête de l'Indépendance", 'hol.laborDay': 'Fête du Travail (Labor Day)',
     'hol.columbus': 'Columbus Day', 'hol.veterans': 'Veterans Day', 'hol.thanksgiving': 'Thanksgiving', 'hol.swissNational': 'Fête nationale suisse',
-    'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.category': 'Général',
+    'init.project': 'Nouveau projet', 'init.task': 'Renommer cette tâche…', 'init.resource': 'Ressource', 'init.profile': 'Profil', 'init.category': 'Général',
     'top.leveling': 'Charge des ressources', 'lvl.level': 'Nivellement automatique', 'lvl.smooth': 'Lissage dans la marge', 'lvl.off': 'Sans nivellement',
     'top.resolve': 'Résoudre…',
     'rsv.title': 'Résoudre les conflits', 'rsv.none': 'Aucun conflit : rien à résoudre.',
@@ -644,6 +645,7 @@ const I18n = (() => {
     'rt.addLine': 'Add a rate line', 'rt.removeLine': 'Remove rate line {name}',
     'rt.errDup': 'Two rate lines cannot start on the same day.', 'rt.errMax': 'At most {max} rate lines.',
     'rt.errDate': 'Start date: enter a valid date.',
+    'rt.nameHint': "Job title (e.g. Project manager), never a person's name",
     'rt.maskedLines': 'Amounts are hidden: turn off “Hide amounts” to edit the rates.',
     'rt.own.hint': 'Optional, for an external contractor: these lines replace the profile rate.',
     'rt.own.clear': 'Remove the personal rate',
@@ -974,7 +976,7 @@ const I18n = (() => {
     'list.shift': '{count} d shift ({res}: {why})', 'why.overload': 'overload', 'why.absence': 'absence',
     'edit.shift': { one: 'Shifted by {count} working day by levelling ({res}: {why}). Without it, it would start on {date}.', other: 'Shifted by {count} working days by levelling ({res}: {why}). Without it, it would start on {date}.' },
     'alert.smooth': '{task} does not fit in its slack: the overload of {res} is not smoothed',
-    'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.category': 'General',
+    'init.project': 'New project', 'init.task': 'Rename this task…', 'init.resource': 'Resource', 'init.profile': 'Profile', 'init.category': 'General',
     'legend.label': 'Legend', 'legend.critical': 'Critical task (●)', 'legend.forced': 'Fixed date (📌)', 'legend.milestone': 'Milestone (◆)', 'legend.baseline': 'Baseline (thin bar)', 'legend.today': 'Today', 'legend.conflict': 'In conflict (⚠)', 'legend.resources': 'Resources', 'legend.statuses': 'Statuses',
   };
 

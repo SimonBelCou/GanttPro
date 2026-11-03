@@ -793,10 +793,12 @@ Départ : `taux-historique.json`.
 - [ ] 3. Exportez **avec** « Inclure les montants ». *Attendu :* `profiles` avec leurs lignes (`"rate": 40000`, en centimes) et le taux
   nominatif de Dave dans sa ressource. Réimportez ce fichier : le coût `3 440,00 €` est identique.
 - [ ] 4. Exportez avec les montants **et** « Exporter sans noms de personnes ». *Attendu :* aucun nom, **aucun taux nominatif**
-  (le `70000` de Dave n'apparaît pas), le taux du profil reste.
+  (le `70000` de Dave n'apparaît pas) ; le profil « Analyste » devient `"name": "Profil 1"`, la ressource 1 garde
+  `"profile": "Profil 1"` et le taux du profil (`40000`) reste ; le mot « Analyste » n'apparaît nulle part (RG-58, décision du
+  3 novembre 2026). Réimportez ce fichier : le coût d'Alice est identique.
 - [ ] 5. **Excel** avec les montants. *Attendu :* feuille **Tâches** avec une dernière colonne « Coût des ressources » ; feuille
   **Ressources** avec Profil de coût, Taux par jour, Coût prévu, Coût réel estimé ; une feuille **Taux** (profil ou ressource, nature, à partir du, taux).
-  Sans les montants : ni la feuille Taux ni ces colonnes (seul le profil reste). Anonymisé : pas de taux nominatif ni de coût par ressource.
+  Sans les montants : ni la feuille Taux ni ces colonnes (seul le profil reste). Anonymisé : pas de taux nominatif ni de coût par ressource ; le profil s'appelle « Profil 1 » dans la colonne Profil de coût et la feuille Taux.
 - [ ] 6. **CSV** avec les montants : dernière colonne « Coût des ressources ». Sans : absente.
 - [ ] 7. **MS Project** : ouvrez le fichier `.xml` dans un éditeur de texte. *Attendu :* aucun taux ni coût (les montants ne partent jamais vers MS Project).
 
@@ -828,6 +830,7 @@ Départ : ouvrez `taux-sans-taux.json`.
 
 - [ ] 1. **Ressources**, **Profils de coût…**. *Attendu :* chaque profil a un titre à son nom (« Analyste », « Sans taux encore »)
   au-dessus de son champ Nom ; un lecteur d'écran annonce chaque carte par ce titre et le propose dans la liste des titres.
+  Sous chaque champ Nom, l'aide « Intitulé de fonction (ex. Chef de projet), jamais le nom d'une personne », lue avec le champ.
 - [ ] 2. Profil « Sans taux encore » : **Ajouter une ligne**. *Attendu :* devant le champ de taux, l'étiquette visible
   « Taux par jour (€) » ; un clic sur l'étiquette place le curseur dans le champ.
 - [ ] 3. Fermez la fenêtre des profils. Dans **Ressources**, effacez le nom de Bob et quittez le champ. *Attendu :* le message

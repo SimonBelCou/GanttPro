@@ -570,7 +570,7 @@ const Model = (() => {
   const profName = (project, id) => ((project.profiles || []).find(p => p.id === id) || { name: '' }).name;
 
   /**
-   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51).
+   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51) ; profils « Profil 1 »… dans leur ordre (RG-58).
    * Appelle : Model.profName(), Model.resName(), Model.stripAmounts()
    * Appelée par : action « verSave », doExport(), Exchange.mergeRows(), homeSave(), Library.put(), Model.sanitize(),
    *   pasteInternal(), Recovery.flushSync(), Recovery.wrap()
@@ -578,6 +578,10 @@ const Model = (() => {
   function serialize(project, { anonymize = false, withVersions = true, amounts = true } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
+    // Un intitulé de profil peut désigner une personne (décision du 3 novembre 2026, A.8 ligne 18) : anonymisé, il devient
+    // « Profil n » ; le lien ressource -> profil et les lignes du profil restent.
+    const pIndex = new Map((project.profiles || []).map((pf, i) => [pf.id, i]));
+    const pfName = id => (anonymize ? (pIndex.has(id) ? `Profil ${pIndex.get(id) + 1}` : '') : profName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const file = {
       format: FORMAT, id: project.id, createdAt: project.createdAt,
@@ -591,7 +595,7 @@ const Model = (() => {
       baselineRef: project.baselineRef || '',
       statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       ...(Array.isArray(project.columns) ? { columns: project.columns.slice() } : {}),
-      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pf.name, rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
+      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pfName(pf.id), rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -606,9 +610,9 @@ const Model = (() => {
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
-        // Étape C : le profil (un intitulé de coût, pas une personne) reste ; le taux nominatif, lié à une personne, est vidé
-        // dans un fichier anonymisé (A.8 ligne 18).
-        ...(r.profile ? { profile: profName(project, r.profile) } : {}),
+        // Étape C : le lien vers le profil reste (renommé « Profil n » si anonymisé) ; le taux nominatif, lié à une personne,
+        // est vidé dans un fichier anonymisé (A.8 ligne 18).
+        ...(r.profile ? { profile: pfName(r.profile) } : {}),
         ...(!anonymize && (r.rates || []).length ? { rates: r.rates.map(l => ({ from: l.from, rate: l.rate })) } : {}),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),

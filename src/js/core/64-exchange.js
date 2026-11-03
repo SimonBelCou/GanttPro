@@ -101,13 +101,16 @@ const Exchange = (() => {
     const rName = (r, i) => (anonymize ? `${t('init.resource')} ${i + 1}` : r.name);
     const loadOf = r => project.tasks.reduce((a, x) => a + x.assign.filter(z => z.res === r.id).reduce((b, z) => b + x.dur * z.units / 100, 0), 0);
     const cal = project.calendar;
-    // Étape C (EF-150) : le profil est un intitulé, il reste ; taux et coûts exigent les montants et les noms (RG-58).
+    // Étape C (EF-150) : le profil reste, renommé « Profil n » sans noms de personnes (un intitulé peut désigner une
+    // personne, décision du 3 novembre 2026) ; taux nominatifs et coûts exigent les montants et les noms (RG-58).
     const profOn = Rates.inUse(project), ratesOn = amounts && !anonymize && Rates.hasRates(project);
     const rc = ratesOn ? Rates.compute(project, sched) : null;
-    const profName = r => (Rates.profileOf(project, r) || { name: '' }).name;
+    const profiles = project.profiles || [];
+    const pfLabel = (pf, i) => (anonymize ? `${t('init.profile')} ${i + 1}` : pf.name);
+    const profName = r => { const pf = Rates.profileOf(project, r); return pf ? pfLabel(pf, profiles.indexOf(pf)) : ''; };
     const rateOf = r => { const c = Rates.rateFor(project, r, today); return c == null ? '' : money(c); };
     const rateSheet = amounts && Rates.hasRates(project) ? [{ name: t('xp.sheet.rates'), rows: [[t('xp.rateOwner'), t('xp.kind'), t('rt.from'), t('rt.rate')],
-      ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
+      ...profiles.flatMap((p, i) => p.rates.map(l => [pfLabel(p, i), t('rt.kindProfile'), l.from, money(l.rate)])),
       ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
       { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts, costs: rc }) },

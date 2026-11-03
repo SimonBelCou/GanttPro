@@ -150,6 +150,33 @@ test('R-99 écriture : aller-retour exact, sans montants plus aucun taux, anonym
   assert.equal(JSON.stringify(anon).includes('Alice'), false);
 });
 
+test('R-99 anonymisé (décision du 3 novembre 2026) : profils renommés « Profil 1…n » dans l\'ordre, lien et lignes conservés', async () => {
+  const p = load({
+    profiles: [{ name: 'Chef Martin', rates: [{ from: '', rate: eur(500) }] }, { name: 'Dév', rates: [{ from: '', rate: eur(400) }] }],
+    resources: [{ name: 'Alice', profile: 'Dév' }, { name: 'Bob', profile: 'Chef Martin' }, { name: 'Camille' }],
+    tasks: [{ id: 'A', name: 'a', type: 'task', dur: 4, assign: [{ res: 'Alice', units: 100 }, { res: 'Bob', units: 50 }] }],
+  });
+  const anon = JSON.parse(JSON.stringify(Model.serialize(p, { anonymize: true })));
+  assert.deepEqual(plain(anon.profiles.map(x => x.name)), ['Profil 1', 'Profil 2'], 'dans l\'ordre des profils');
+  assert.deepEqual(plain(anon.resources.map(r => r.profile ?? null)), ['Profil 2', 'Profil 1', null], 'lien ressource -> profil conservé');
+  assert.deepEqual(plain(anon.profiles.map(x => x.rates.map(l => l.rate))), [[eur(500)], [eur(400)]], 'lignes de taux gardées avec les montants');
+  for (const name of ['Chef Martin', 'Dév']) assert.equal(JSON.stringify(anon).includes(name), false, name);
+  const back = Model.sanitize(anon).project;
+  assert.equal(costs(back).total.cents, costs(p).total.cents, 'le fichier anonymisé se relit avec le même coût');
+  const bare = JSON.parse(JSON.stringify(Model.serialize(p, { anonymize: true, amounts: false })));
+  assert.deepEqual(plain(bare.profiles), [{ id: 'P1', name: 'Profil 1', rates: [] }, { id: 'P2', name: 'Profil 2', rates: [] }], 'sans montants : aucune ligne');
+  const named = JSON.parse(JSON.stringify(Model.serialize(p)));
+  assert.deepEqual(plain(named.profiles.map(x => x.name)), ['Chef Martin', 'Dév'], 'sans anonymisation, rien ne change');
+
+  const s = Schedule.compute(p), today = Dates.parse('2026-01-14');
+  const sheets = await Xlsx.read(Exchange.xlsx(p, s, today, { amounts: true, anonymize: true }));
+  assert.deepEqual(plain(sheets.find(x => x.name === 'Ressources').rows.slice(1).map(r => r[4] || '')), ['Profil 2', 'Profil 1', ''], 'Excel : colonne Profil de coût renommée');
+  assert.deepEqual(plain(sheets.find(x => x.name === 'Taux').rows.slice(1).map(r => r[0])), ['Profil 1', 'Profil 2'], 'Excel : feuille Taux renommée');
+  assert.equal(JSON.stringify(sheets).includes('Chef Martin'), false);
+  const csv = Exchange.csv(p, s, today, { amounts: true, anonymize: true });
+  assert.equal(csv.includes('Chef Martin') || csv.includes('Dév'), false, 'CSV : aucun nom de profil');
+});
+
 test('R-100 exports : coût par tâche et feuille « Taux » avec les montants, rien sans montants ni sous anonymisation, jamais vers MS Project', async () => {
   const p = load({ resources: [{ name: 'Alice', profile: 'Dév' }, { name: 'Bob', rates: [{ from: '', rate: eur(650) }] }], tasks: [
     { id: 'A', name: 'a', type: 'task', dur: 4, assign: [{ res: 'Alice', units: 100 }, { res: 'Bob', units: 50 }] }] });
@@ -174,7 +201,7 @@ test('R-100 exports : coût par tâche et feuille « Taux » avec les montants, 
   assert.deepEqual(plain(noAmounts.find(x => x.name === 'Ressources').rows[0].slice(4)), ['Profil de coût'], 'le profil est un intitulé : il reste, pas les montants');
   const anon = await Xlsx.read(Exchange.xlsx(p, s, today, { amounts: true, anonymize: true }));
   const anonRates = anon.find(x => x.name === 'Taux').rows;
-  assert.deepEqual(plain(anonRates.slice(1).map(r => r[0])), ['Dév'], 'aucun taux nominatif dans un classeur anonymisé');
+  assert.deepEqual(plain(anonRates.slice(1).map(r => r[0])), ['Profil 1'], 'aucun taux nominatif dans un classeur anonymisé, profil renommé');
   assert.deepEqual(plain(anon.find(x => x.name === 'Ressources').rows[0].slice(4)), ['Profil de coût'], 'ni taux du jour ni coût par ressource');
   const xml = Exchange.mspXml(p, s);
   assert.equal(/65000|650[.,]00|40000|Rate/i.test(xml.replace(/StandardRate|OvertimeRate|CostRatePerHour/gi, '')), false, 'MS Project ne reçoit aucun taux');

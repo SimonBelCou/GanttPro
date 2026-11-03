@@ -777,11 +777,14 @@ def main():
                 const hd = document.getElementById(s.getAttribute('aria-labelledby'));
                 return hd && hd.tagName === 'H3' && s.firstElementChild === hd ? hd.textContent : null; })""") == ['Analyste', 'Développeur']
               and pg.evaluate("document.querySelector('dialog[open] .dialog-head h2') !== null"))
+        check('RG-58 : aide sous le nom du profil, « Intitulé de fonction (ex. Chef de projet), jamais le nom d\'une personne », liée au champ',
+              sp(pg.inner_text('#prof-hint-P1')) == "Intitulé de fonction (ex. Chef de projet), jamais le nom d'une personne"
+              and 'prof-hint-P1' in pg.get_attribute('#prof-name-P1', 'aria-describedby').split())
         axe_check(pg, 'fenêtre des profils de coût')
         pg.click('#prof-add'); pg.wait_for_timeout(100)
         check('EF-147 : un profil ajouté a le focus sur son nom', pg.evaluate("document.activeElement.id") == 'prof-name-P3')
         pg.fill('#prof-name-P3', 'Chef de projet'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
-        check('EF-147 : renommer un profil', pg.input_value('#prof-name-P3') == 'Chef de projet' and 'Chef de projet' in sp(pg.inner_text('#prof-win')))
+        check('EF-147 : renommer un profil', pg.input_value('#prof-name-P3') == 'Chef de projet' and sp(pg.inner_text('#prof-h-P3')) == 'Chef de projet')
         pg.fill('#prof-name-P3', 'analyste'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
         check('EF-147 : un nom de profil déjà pris (casse ignorée) est refusé, message près du champ', not pg.locator('#perr-P3').is_hidden() and pg.get_attribute('#prof-name-P3', 'aria-invalid') == 'true')
         check('RGAA 11.10 : le message d\'erreur du nom de profil est restitué (role="alert")', pg.get_attribute('#perr-P3', 'role') == 'alert')
@@ -814,7 +817,7 @@ def main():
         pg.click('#prof-win button:has-text("Supprimer le profil Chef de projet")'); pg.wait_for_timeout(100)
         check('EF-147 : la confirmation nomme le profil et « Annuler » a le focus', 'Chef de projet' in sp(pg.locator('dialog[open]').last.inner_text()) and pg.evaluate("document.activeElement.textContent.trim()") == 'Annuler')
         pg.locator('dialog[open]').last.locator('button:has-text("Supprimer")').click(); pg.wait_for_timeout(120)
-        check('EF-147 : profil supprimé après confirmation, le focus passe sur « Ajouter un profil »', pg.locator('#prof-win .prof-card').count() == 2 and 'Chef de projet' not in sp(pg.inner_text('#prof-win')) and pg.evaluate("document.activeElement.id") == 'prof-add')
+        check('EF-147 : profil supprimé après confirmation, le focus passe sur « Ajouter un profil »', pg.locator('#prof-win .prof-card').count() == 2 and 'Chef de projet' not in pg.eval_on_selector_all('#prof-win .prof-card h3', 'els => els.map(e => e.textContent)') and pg.evaluate("document.activeElement.id") == 'prof-add')
         # Un profil utilisé : la confirmation dit combien de ressources le perdent, et Annuler rend tout d'un coup.
         pg.click('#prof-win button:has-text("Supprimer le profil Analyste")'); pg.wait_for_timeout(100)
         check('EF-147 : la confirmation dit qu\'une ressource perdra son profil', '1 ressource perdra son profil' in sp(pg.locator('dialog[open]').last.inner_text()), sp(pg.locator('dialog[open]').last.inner_text()))
@@ -909,6 +912,9 @@ def main():
               and j_full['resources'][1]['rates'] == [{'from': '', 'rate': 70000}] and j_full['resources'][0]['profile'] == 'Analyste', json.dumps(j_full['profiles']))
         j_anon = export_c(True, anon=True)
         check('RG-58 : fichier anonymisé avec montants : plus de taux nominatif, le taux du profil reste, aucun nom', '70000' not in j_anon and '40000' in j_anon and 'Dave' not in j_anon and 'Alice' not in j_anon, j_anon[:500])
+        ja = json.loads(j_anon)
+        check('RG-58 (3 novembre 2026) : anonymisé, le profil devient « Profil 1 », lien de la ressource conservé, intitulé d\'origine absent',
+              ja['profiles'][0]['name'] == 'Profil 1' and ja['resources'][0]['profile'] == 'Profil 1' and 'Analyste' not in j_anon, json.dumps(ja['profiles']))
 
         # Révision de taux, taux nominatif d'un prestataire, ressource sans taux.
         load_fx('taux-historique.json')
