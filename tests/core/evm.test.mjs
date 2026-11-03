@@ -114,3 +114,51 @@ test('divRound : le calcul rapide sans BigInt donne exactement le même arrondi 
   }
   for (const [a, b, k] of cases) assert.equal(Evm.divRound(a, b, k), ref(a, b, k), `${a} x ${k} / ${b}`);
 });
+
+// Courbes PV / EV / AC dans le temps (EF-151, RG-59). Baseline initiale : A (100 €, fin 09/01) puis B (100 €, fin 16/01).
+// Aujourd'hui = mercredi 14/01/2026 ; A terminée (coût réel 90 €), B à 40 % (coût réel 60 €) : EV 140 €, AC 150 €.
+const withRef = (points = [], extra = {}) => {
+  const p = base({ statusPoints: points, ...extra }, { pct: 100, actual: eur(90) });
+  p.tasks[1].pct = 40; p.tasks[1].actual = eur(60);
+  const s = Schedule.compute(p);
+  p.baselines = [{ id: 'B1', name: 'Initiale', initial: true, tasks: p.tasks.map(t => ({ id: t.id, budget: t.budget, end: Dates.toISO(s.tasks.get(t.id).endDn) })) }];
+  return p;
+};
+const pts = [
+  { id: 'S1', date: '2026-01-07', label: 'Lundi', cpi: 83, spi: 50, ev: eur(50), ac: eur(60) },
+  { id: 'S2', date: '2026-01-09', label: 'Revue', cpi: 57, spi: 80, ev: eur(80), ac: eur(140) },
+  { id: 'S3', date: '2026-01-09', label: 'Relu sans montants', cpi: 57, spi: 80, ev: null, ac: null },
+  { id: 'S4', date: '2026-02-20', label: 'Futur', cpi: 100, spi: 100, ev: eur(1), ac: eur(1) },
+];
+const curvesOf = (p, unit = 'week', day = '2026-01-14') => Evm.curves(p, Schedule.compute(p), Dates.parse(day), unit);
+
+test('R-101 courbes PV / EV / AC par semaine : PV continue, EV et AC aux seules mesures', () => {
+  const c = curvesOf(withRef(pts));
+  assert.equal(c.reason, null);
+  assert.equal(c.periods.length, 2);
+  assert.deepEqual(plain(c.pv), [eur(100), eur(200)]);
+  assert.deepEqual(plain(c.ev), [eur(80), eur(140)], 'semaine 1 : le point le plus récent (09/01) ; semaine 2 : aujourd\'hui');
+  assert.deepEqual(plain(c.ac), [eur(140), eur(150)], 'AC = coût réel total (RG-47), pas la courbe réelle des coûts (RG-38)');
+  assert.deepEqual(plain(c.marks.map(m => [Dates.toISO(m.dn), m.label, m.today])), [['2026-01-09', 'Revue', false], ['2026-01-14', '', true]]);
+  assert.equal(c.skipped, 2, 'un point sans montants et un point daté après aujourd\'hui ne sont pas tracés');
+  assert.equal(c.bac, eur(200));
+});
+
+test('R-101 par mois, sans point, et période sans mesure', () => {
+  const m = curvesOf(withRef(pts), 'month');
+  assert.deepEqual(plain([m.pv, m.ev, m.ac]), [[eur(200)], [eur(140)], [eur(150)]], 'la mesure du jour l\'emporte dans sa période');
+  const late = curvesOf(withRef([pts[0]]), 'week', '2026-01-28');
+  assert.deepEqual(plain(late.pv), [eur(100), eur(200), eur(200), eur(200)]);
+  assert.deepEqual(plain(late.ev), [eur(50), null, null, eur(140)], 'aucune valeur inventée hors mesure');
+  assert.equal(late.marks[1], null);
+});
+
+test('R-101 sans baseline de référence ou sans budget : la raison, jamais une courbe à 0', () => {
+  assert.deepEqual(plain(curvesOf(base({ statusPoints: pts }))), { reason: 'noBaseline' });
+  const p = withRef();
+  for (const bt of p.baselines[0].tasks) bt.budget = 0;
+  assert.equal(curvesOf(p).reason, 'noBudget');
+  // La PV suit la baseline de référence, pas le planning actuel (B2) : budget de B porté à 500 € après la capture.
+  const q = withRef(); q.tasks[1].budget = eur(500);
+  assert.deepEqual(plain(curvesOf(q).pv), [eur(100), eur(200)]);
+});
