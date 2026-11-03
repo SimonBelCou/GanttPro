@@ -541,6 +541,8 @@ def main():
         last = pg.locator('#res-win tbody tr:last-child input[type=text]').first
         last.fill('alice'); last.press('Tab')
         check('nom en double refusé (casse ignorée)', 'déjà pris' in pg.inner_text('#res-win'), pg.inner_text('#res-win'))
+        check('RGAA 11.10 : les erreurs de la fenêtre Ressources sont annoncées (role="alert"), comme les autres fenêtres',
+              pg.eval_on_selector_all('#res-win p.field-error[id^="rerr-"]', 'els => els.length === 2 && els.every(e => e.getAttribute("role") === "alert")'))
         pg.keyboard.press('Escape')
         check('Échap ferme la fenêtre', pg.query_selector('dialog[open]') is None)
         pg.click('button:has-text("Ressources")')

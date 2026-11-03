@@ -50,8 +50,8 @@ const Money = (() => {
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
    * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
    * Appelle : Budget.format(), Budget.formatCompact(), h(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), lineNode(), moneyCell(), paintBudget(),
-   *   paintEvm(), paintRatesCost(), paintResourceSheet(), rateTodayNode(), resourceCostSection(), Tooltip.show()
+   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), costCell(), lineNode(), moneyCell(),
+   *   paintBudget(), paintEvm(), paintRatesCost(), rateTodayNode(), resourceCostSection(), Tooltip.show()
    */
   function node(cents, { compact = false, cls = '' } = {}) {
     if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));

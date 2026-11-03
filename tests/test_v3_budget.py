@@ -772,6 +772,11 @@ def main():
         # Fenêtre des profils : ajouter, renommer, lignes de taux, doublon refusé, supprimer.
         pg.click('#btn-profiles'); pg.wait_for_timeout(120)
         check('EF-147 : la fenêtre des profils liste les deux profils', pg.locator('#prof-win .prof-card').count() == 2)
+        check('RGAA 9.1 : chaque carte de profil a son titre h3 (sous le h2 de la fenêtre), qui nomme la section',
+              pg.evaluate("""[...document.querySelectorAll('#prof-win .prof-card')].map(s => {
+                const hd = document.getElementById(s.getAttribute('aria-labelledby'));
+                return hd && hd.tagName === 'H3' && s.firstElementChild === hd ? hd.textContent : null; })""") == ['Analyste', 'Développeur']
+              and pg.evaluate("document.querySelector('dialog[open] .dialog-head h2') !== null"))
         axe_check(pg, 'fenêtre des profils de coût')
         pg.click('#prof-add'); pg.wait_for_timeout(100)
         check('EF-147 : un profil ajouté a le focus sur son nom', pg.evaluate("document.activeElement.id") == 'prof-name-P3')
@@ -783,6 +788,9 @@ def main():
         pg.fill('#prof-name-P3', 'Chef de projet'); pg.press('#prof-name-P3', 'Tab'); pg.wait_for_timeout(100)
         pg.click('#rl-pP3-add'); pg.wait_for_timeout(100)
         check('EF-148 : première ligne « Depuis le début », focus sur son taux', 'Depuis le début' in sp(pg.inner_text('#rl-pP3')) and pg.evaluate("document.activeElement.id") == 'rl-pP3-rate-0')
+        check('RGAA 11.2 : le taux a une étiquette visible « Taux par jour (€) », reliée par for, contenue dans son nom accessible',
+              sp(pg.inner_text('label[for="rl-pP3-rate-0"]')) == 'Taux par jour (€)'
+              and pg.get_attribute('#rl-pP3-rate-0', 'aria-label').startswith('Taux par jour (€) ('), pg.get_attribute('#rl-pP3-rate-0', 'aria-label'))
         pg.fill('#rl-pP3-rate-0', '600'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
         check('EF-148 : « 600 » est gardé et relu tel quel (60 000 centimes)', pg.input_value('#rl-pP3-rate-0') == '600' and pg.locator('#rl-err-pP3').is_hidden())
         pg.fill('#rl-pP3-rate-0', '12abc'); pg.press('#rl-pP3-rate-0', 'Tab'); pg.wait_for_timeout(100)
@@ -916,6 +924,24 @@ def main():
         check('R-95 : une ressource sans taux est dite « sans taux », jamais valorisée à 0 en silence', t3.count('sans taux') >= 2, t3)
         axe_check(pg, 'onglet Budget avec un total partiel')
         esc()
+        # RG-57 dans la fiche d'une ressource : aucun jour avec taux, « sans taux » seul ; coût partiel, montant + « (sans taux) ».
+        pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
+        pg.click('#res-win button[data-click="openResourceSheet"] >> nth=1'); pg.wait_for_timeout(120)
+        cell = sp(pg.inner_text('#rs-win table.manage tbody td:last-child'))
+        check('RG-57 : Bob n\'a aucun jour avec taux, sa colonne Coût dit « sans taux » sans 0,00 €', cell == 'sans taux', cell)
+        esc()
+        # Profil « Sans taux encore » : une seule ligne, à partir du mercredi 7 janvier (2 jours sur les 4 de la tâche B).
+        pg.click('#btn-profiles'); pg.wait_for_timeout(120)
+        pg.click('#rl-pP2-add'); pg.wait_for_timeout(100)
+        pg.fill('#rl-pP2-rate-0', '500'); pg.press('#rl-pP2-rate-0', 'Tab'); pg.wait_for_timeout(100)
+        pg.click('#rl-pP2-add'); pg.wait_for_timeout(100)
+        pg.fill('#rl-pP2-from-1', '2026-01-07'); pg.press('#rl-pP2-from-1', 'Tab'); pg.wait_for_timeout(100)
+        pg.click('#rl-pP2 button.icon >> nth=0'); pg.wait_for_timeout(100)
+        esc()
+        pg.click('#res-win button[data-click="openResourceSheet"] >> nth=1'); pg.wait_for_timeout(120)
+        cell = sp(pg.inner_text('#rs-win table.manage tbody td:last-child'))
+        check('RG-57 : coût partiel de Bob, 2 j x 500,00 € = 1 000,00 € suivi de « (sans taux) »', cell == '1 000,00 € (sans taux)', cell)
+        esc(); esc()
 
         # Fichiers refusés.
         for name, needle in [('refus-taux-negatif.json', 'Profil n° 1'), ('refus-taux-profil-inconnu.json', 'Directeur')]:

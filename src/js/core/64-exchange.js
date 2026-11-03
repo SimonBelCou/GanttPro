@@ -52,15 +52,16 @@ const Exchange = (() => {
    *   Exchange.t(), Metrics.pctOf(), Metrics.status(), Rates.compute(), Rates.hasRates()
    * Appelée par : Exchange.csv(), Exchange.xlsx()
    */
-  function taskRows(project, sched, today, { anonymize = false, amounts = false } = {}) {
+  function taskRows(project, sched, today, { anonymize = false, amounts = false, costs = null } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
     // Étape C (EF-150) : coût des ressources par tâche, avec les montants et sans anonymisation (un coût par tâche trahirait
-    // un taux nominatif). Une récapitulative donne la somme de ses enfants.
+    // un taux nominatif). Une récapitulative donne la somme de ses enfants. costs : résultat de Rates.compute() déjà calculé
+    // par l'appelant (classeur), pour ne pas refaire le calcul (GR491_Backend_4).
     const ratesOn = amounts && !anonymize && Rates.hasRates(project);
-    const rc = ratesOn ? Rates.compute(project, sched) : null;
+    const rc = ratesOn ? costs || Rates.compute(project, sched) : null;
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
       'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
       ...(amounts ? ['xp.budget', 'xp.actual'] : []), ...(ratesOn ? ['xp.resCost'] : [])].map(k => t(k));
@@ -109,7 +110,7 @@ const Exchange = (() => {
       ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
       ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
-      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
+      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts, costs: rc }) },
       { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd'), ...(profOn ? [t('rt.profile')] : []), ...(ratesOn ? [t('rt.rateCol'), t('rt.colCost'), t('rt.colEst')] : [])],
         ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10,
           ...(profOn ? [profName(r)] : []),

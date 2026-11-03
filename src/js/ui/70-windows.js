@@ -129,7 +129,7 @@ function resourcesWindow() {
         Model.PALETTE.map((c, i) => h('option', { value: c, selected: c === r.color }, t('color.pick', { n: i + 1 }))));
       const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(r.color));
       tb.append(h('tr', {},
-        h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
+        h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, role: 'alert', hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
         showRates ? h('td', {}, profileSelect(r)) : null, showRates ? h('td', {}, rateTodayNode(r)) : null,
         h('td', { text: t('res.tasks', { count: used }) }),

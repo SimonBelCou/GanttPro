@@ -190,3 +190,31 @@ test('R-98 (défaut corrigé) : un taux refusé est expliqué comme un montant, 
     assert.doesNotMatch(m, /100000000/, 'plafond écrit avec ses groupes de chiffres');
   }
 });
+
+test('GR491_Backend_4 : Rates.ofResource() donne, lignes indexées une fois, le coût de Rates.assignment() pour chaque tâche', () => {
+  // Taux daté, jours avant la première ligne, plusieurs tâches, ressource sans taux et ressource inconnue.
+  const p = load({
+    profiles: [{ name: 'Dév', rates: [{ from: '2026-01-08', rate: eur(420) }, { from: '2026-01-14', rate: eur(450) }] }],
+    tasks: [
+      { id: 'A', name: 'a', type: 'task', dur: 5, pct: 40, assign: [{ res: 'Alice', units: 100 }, { res: 'Bob', units: 50 }] },
+      { id: 'B', name: 'b', type: 'task', dur: 8, deps: [{ id: 'A' }], assign: [{ res: 'Alice', units: 25 }] },
+      { id: 'C', name: 'c', type: 'task', dur: 3, assign: [{ res: 'Bob', units: 100 }] },
+    ],
+  });
+  const s = Schedule.compute(p);
+  for (const r of p.resources) {
+    const got = Rates.ofResource(p, s, r.id);
+    const tasks = p.tasks.filter(x => x.assign.some(a => a.res === r.id));
+    assert.deepEqual([...got.keys()], tasks.map(x => x.id), r.name + ' : ses tâches, dans l\'ordre du projet');
+    for (const x of tasks) assert.deepEqual(plain(got.get(x.id)), plain(Rates.assignment(p, s, x, x.assign.find(a => a.res === r.id))), `${r.name} / ${x.id}`);
+  }
+  assert.equal(Rates.ofResource(p, s, 'R9').size, 0, 'ressource inconnue : aucune tâche');
+});
+
+test('GR491_Backend_4 : le classeur ne calcule le coût des ressources qu\'une fois (feuilles Tâches et Ressources)', () => {
+  const p = load(), s = Schedule.compute(p), orig = Rates.compute;
+  let calls = 0;
+  Rates.compute = (...a) => { calls++; return orig(...a); };
+  try { Exchange.xlsx(p, s, Dates.parse('2026-01-14'), { amounts: true }); } finally { Rates.compute = orig; }
+  assert.equal(calls, 1);
+});

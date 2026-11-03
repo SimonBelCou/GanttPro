@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5V6Or6yjVOQa/3eJETt0j2Qfak+zHV3f4u3YAib1G8k='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6XAU9oQ1+oh/8cTS6iG0j8b80YDQYeNMbdx6bk+K/8Y='; style-src 'sha256-/8+RvKSnljWbvSvuJ8pikPaGaveMXx8hJH2AZb7evUU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -204,6 +204,7 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .warning { color: var(--warning); font-weight: 600; }
 fieldset.sub { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 .7rem; padding: .4rem .6rem .6rem; }
 fieldset.sub legend { font-weight: 600; padding: 0 .3rem; }
+.prof-card h3 { margin: .8rem 0 .4rem; font-size: 1rem; }
 ul.rows { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
 ul.rows li { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
 ul.rows .who { flex: 1 1 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3021,7 +3022,7 @@ const Rates = (() => {
   /**
    * Lignes de taux en vigueur pour une ressource : les siennes (nominatives) sinon celles de son profil.
    * Appelle : Rates.profileOf()
-   * Appelée par : Rates.assignment(), Rates.compute(), Rates.rateFor()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource(), Rates.rateFor()
    */
   function linesOf(project, res) {
     if (res && (res.rates || []).length) return res.rates;
@@ -3063,7 +3064,7 @@ const Rates = (() => {
   /**
    * Lignes ramenées une fois pour toutes en index de jours ouvrés (« depuis le début » = -Infinity).
    * Appelle : Dates.parse()
-   * Appelée par : Rates.assignment(), Rates.compute()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource()
    */
   const indexed = (lines, cal) => lines.map(l => ({ i: l.from === '' ? -Infinity : cal.ceil(Dates.parse(l.from)), rate: l.rate }));
 
@@ -3072,7 +3073,7 @@ const Rates = (() => {
    * estimé), unrated (jours sans taux) }. Le taux est sommé par tranche entre deux lignes (pas de boucle jour par jour),
    * puis multiplié par le taux d'occupation et arrondi une seule fois, moitié vers le haut (BigInt au-delà de 2^53).
    * Appelle : Evm.divRound()
-   * Appelée par : Rates.assignment(), Rates.compute()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource()
    */
   function costOf(lines, st, units, pct) {
     const days = Math.max(0, st.e - st.s + 1);
@@ -3103,11 +3104,28 @@ const Rates = (() => {
   /**
    * Coût d'une affectation d'une tâche (fiche de ressource).
    * Appelle : Rates.costOf(), Rates.indexed(), Rates.linesOf()
-   * Appelée par : paintResourceSheet(), Rates.ofTask()
+   * Appelée par : Rates.ofTask()
    */
   function assignment(project, sched, task, a) {
     const res = project.resources.find(r => r.id === a.res);
     return costOf(indexed(linesOf(project, res), sched.cal), sched.tasks.get(task.id), a.units, task.pct);
+  }
+
+  /**
+   * Coûts d'une ressource sur chacune de ses tâches (fiche de ressource) : le même résultat que Rates.assignment() tâche
+   * par tâche, mais ses lignes de taux ne sont indexées qu'une fois (GR491_Backend_4).
+   * @returns {Map<string,object>} identifiant de tâche -> coût de l'affectation, dans l'ordre des tâches du projet
+   * Appelle : Rates.costOf(), Rates.indexed(), Rates.linesOf()
+   * Appelée par : paintResourceSheet()
+   */
+  function ofResource(project, sched, resId) {
+    const lines = indexed(linesOf(project, project.resources.find(r => r.id === resId)), sched.cal);
+    const out = new Map();
+    for (const t of project.tasks) {
+      const a = (t.assign || []).find(z => z.res === resId);
+      if (a) out.set(t.id, costOf(lines, sched.tasks.get(t.id), a.units, t.pct));
+    }
+    return out;
   }
 
   /**
@@ -3182,7 +3200,7 @@ const Rates = (() => {
     return { ok: true, lines: lines.map(l => ({ from: l.from, rate: l.rate })).sort(byFrom) };
   }
 
-  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofTask, compute, hasRates, inUse, normalize };
+  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofResource, ofTask, compute, hasRates, inUse, normalize };
 })();
 
 // ── js/core/50-i18n.js ──
@@ -4838,15 +4856,16 @@ const Exchange = (() => {
    *   Exchange.t(), Metrics.pctOf(), Metrics.status(), Rates.compute(), Rates.hasRates()
    * Appelée par : Exchange.csv(), Exchange.xlsx()
    */
-  function taskRows(project, sched, today, { anonymize = false, amounts = false } = {}) {
+  function taskRows(project, sched, today, { anonymize = false, amounts = false, costs = null } = {}) {
     const rIndex = new Map(project.resources.map((r, i) => [r.id, i]));
     const resName = id => (anonymize ? `${t('init.resource')} ${rIndex.get(id) + 1}` : (project.resources.find(r => r.id === id) || { name: '' }).name);
     const cat = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const num = outline(project);
     // Étape C (EF-150) : coût des ressources par tâche, avec les montants et sans anonymisation (un coût par tâche trahirait
-    // un taux nominatif). Une récapitulative donne la somme de ses enfants.
+    // un taux nominatif). Une récapitulative donne la somme de ses enfants. costs : résultat de Rates.compute() déjà calculé
+    // par l'appelant (classeur), pour ne pas refaire le calcul (GR491_Backend_4).
     const ratesOn = amounts && !anonymize && Rates.hasRates(project);
-    const rc = ratesOn ? Rates.compute(project, sched) : null;
+    const rc = ratesOn ? costs || Rates.compute(project, sched) : null;
     const head = ['xp.outline', 'xp.id', 'xp.name', 'xp.type', 'xp.parent', 'xp.dur', 'xp.start', 'xp.end', 'xp.deps', 'xp.res', 'xp.cat', 'xp.pct',
       'xp.status', 'xp.critical', 'xp.slack', 'xp.realStart', 'xp.realEnd', 'xp.forced', 'xp.notBefore', 'xp.deadline', 'xp.tags', 'xp.notes',
       ...(amounts ? ['xp.budget', 'xp.actual'] : []), ...(ratesOn ? ['xp.resCost'] : [])].map(k => t(k));
@@ -4895,7 +4914,7 @@ const Exchange = (() => {
       ...(project.profiles || []).flatMap(p => p.rates.map(l => [p.name, t('rt.kindProfile'), l.from, money(l.rate)])),
       ...(anonymize ? [] : project.resources.flatMap(r => (r.rates || []).map(l => [r.name, t('rt.kindOwn'), l.from, money(l.rate)])))] }] : [];
     return Xlsx.build([
-      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts }) },
+      { name: t('xp.sheet.tasks'), rows: taskRows(project, sched, today, { anonymize, amounts, costs: rc }) },
       { name: t('xp.sheet.resources'), rows: [[t('res.name'), t('res.role'), t('res.capacity'), t('xp.loadPd'), ...(profOn ? [t('rt.profile')] : []), ...(ratesOn ? [t('rt.rateCol'), t('rt.colCost'), t('rt.colEst')] : [])],
         ...project.resources.map((r, i) => [rName(r, i), anonymize ? '' : r.role, r.capacity, Math.round(loadOf(r) * 10) / 10,
           ...(profOn ? [profName(r)] : []),
@@ -5340,7 +5359,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 84 fonctions (usage général)
+ * Appelée par : 85 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -6002,8 +6021,8 @@ const Money = (() => {
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
    * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
    * Appelle : Budget.format(), Budget.formatCompact(), h(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), lineNode(), moneyCell(), paintBudget(),
-   *   paintEvm(), paintRatesCost(), paintResourceSheet(), rateTodayNode(), resourceCostSection(), Tooltip.show()
+   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), costCell(), lineNode(), moneyCell(),
+   *   paintBudget(), paintEvm(), paintRatesCost(), rateTodayNode(), resourceCostSection(), Tooltip.show()
    */
   function node(cents, { compact = false, cls = '' } = {}) {
     if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
@@ -6038,7 +6057,7 @@ action('toggleMask', (arg, el) => {
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 177 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**
@@ -8762,7 +8781,7 @@ function resourcesWindow() {
         Model.PALETTE.map((c, i) => h('option', { value: c, selected: c === r.color }, t('color.pick', { n: i + 1 }))));
       const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(r.color));
       tb.append(h('tr', {},
-        h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, hidden: true })),
+        h('td', {}, nameIn, h('p', { class: 'field-error', id: 'rerr-' + r.id, role: 'alert', hidden: true })),
         h('td', {}, roleIn), h('td', {}, capIn), h('td', {}, sw, color),
         showRates ? h('td', {}, profileSelect(r)) : null, showRates ? h('td', {}, rateTodayNode(r)) : null,
         h('td', { text: t('res.tasks', { count: used }) }),
@@ -9141,9 +9160,12 @@ function rateLinesEditor(kind, id, label) {
       : h('span', { class: 'who' }, h('label', { for: `rl-${key}-from-${i}`, text: t('rt.from') + ' ' }),
         h('input', { type: 'date', id: `rl-${key}-from-${i}`, value: l.from, min: '1970-01-01', max: '2199-12-31', disabled: masked,
           aria: { label: `${t('rt.from')} (${label})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('from') } }));
+    // Étiquette visible reliée par for (RGAA 11.2) ; le nom accessible commence par ce texte visible (WCAG 2.5.3) et le
+    // complète du propriétaire et de la date, qui distinguent les lignes pour un lecteur d'écran.
+    const rateText = `${t('rt.rate')} (${Money.symbol()})`;
     const rate = h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20, disabled: masked,
-      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${t('rt.rate')} (${label}, ${when}) (${Money.symbol()})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
-    list.append(h('li', {}, from, rate,
+      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${rateText} (${label}, ${when})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
+    list.append(h('li', {}, from, h('label', { for: `rl-${key}-rate-${i}`, text: rateText }), rate,
       h('button', { type: 'button', class: 'icon', disabled: masked, data: { click: 'rlRemove', arg: `${kind}:${id}:${i}` }, aria: { label: t('rt.removeLine', { name: `${label}, ${when}` }) } }, '✕')));
   });
   box.append(list, h('p', { class: 'field-error', id: 'rl-err-' + key, role: 'alert', hidden: true }));
@@ -9257,7 +9279,9 @@ function profilesWindow() {
     profiles.forEach(pf => {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
       const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
-      body.append(h('section', { class: 'prof-card', aria: { label: pf.name } },
+      // Chaque carte a son titre (RGAA 9.1) : h3, sous le titre h2 de la fenêtre (Dialog.open).
+      body.append(h('section', { class: 'prof-card', aria: { labelledby: 'prof-h-' + pf.id } },
+        h('h3', { id: 'prof-h-' + pf.id, text: pf.name }),
         h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),
@@ -9390,6 +9414,17 @@ function resourceCostSection(r, c) {
 const initials = name => name.split(/[\s'-]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 
 /**
+ * Cellule « Coût prévu » d'une affectation (RG-57) : aucun jour avec taux, « sans taux » seul (jamais un 0 sans
+ * explication, CLAUDE.md §11, même condition que la fiche de tâche) ; coût partiel, le montant suivi de « (sans taux) ».
+ * Appelle : h(), Money.node(), t()
+ * Appelée par : paintResourceSheet()
+ */
+function costCell(ac) {
+  if (ac.unrated && !ac.cents) return h('td', { class: 'num hint', text: t('rt.noRate') });
+  return h('td', { class: 'num' }, Money.node(ac.cents || 0), ac.unrated ? h('span', { class: 'hint', text: ` (${t('rt.noRate')})` }) : null);
+}
+
+/**
  * Appelle : 16 fonctions
  * Appelée par : action « rsAbsAdd », action « rsAbsRemove », action « rsCapacity », refreshRateViews(),
  *   resourceSheet()
@@ -9408,8 +9443,11 @@ function paintResourceSheet(body, id, focusSel) {
 
   // Étape C : coût de chacune de ses tâches, seulement si le projet utilise des profils ou des taux (EF-147).
   const tasks = App.project.tasks.filter(x => x.assign.some(a => a.res === id));
-  const costs = Rates.inUse(App.project) && App.sched ? tasks.map(x => Rates.assignment(App.project, App.sched, x, x.assign.find(a => a.res === id))) : null;
-  if (costs) body.append(resourceCostSection(r, { cents: costs.reduce((s, c) => s + (c.cents || 0), 0), unrated: costs.filter(c => c.unrated).length }));
+  const costs = Rates.inUse(App.project) && App.sched ? Rates.ofResource(App.project, App.sched, id) : null;
+  if (costs) {
+    const all = [...costs.values()];
+    body.append(resourceCostSection(r, { cents: all.reduce((s, c) => s + (c.cents || 0), 0), unrated: all.filter(c => c.unrated).length }));
+  }
 
   const abs = [...r.absences].map((a, i) => ({ ...a, i })).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   const absBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('rs.absences') }));
@@ -9427,14 +9465,14 @@ function paintResourceSheet(body, id, focusSel) {
   body.append(absBox);
 
   let load = 0;
-  const rows = tasks.map((x, k) => {
+  const rows = tasks.map(x => {
     const a = x.assign.find(z => z.res === id), sr = App.sched && App.sched.tasks.get(x.id);
     load += x.dur * a.units / 100;
-    const ac = costs && costs[k];
+    const ac = costs && costs.get(x.id);
     return h('tr', {}, h('td', { class: 'id', text: x.id }), h('td', { text: x.name }), h('td', { text: `${a.units} %` }),
       h('td', { text: sr ? I18n.shortDate(sr.startDn) : '' }), h('td', { text: sr ? I18n.shortDate(sr.endDn) : '' }),
       ac ? h('td', { class: 'num', text: pdText(ac.pd) }) : null,
-      ac ? h('td', { class: 'num' }, Money.node(ac.cents || 0), ac.unrated ? h('span', { class: 'hint', text: ` (${t('rt.noRate')})` }) : null) : null);
+      ac ? costCell(ac) : null);
   });
   body.append(h('h3', { text: t('rs.tasks', { count: tasks.length }) }),
     h('p', { text: t('rs.load', { load: I18n.number(load, load % 1 ? 1 : 0) }) }),

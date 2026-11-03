@@ -72,9 +72,12 @@ function rateLinesEditor(kind, id, label) {
       : h('span', { class: 'who' }, h('label', { for: `rl-${key}-from-${i}`, text: t('rt.from') + ' ' }),
         h('input', { type: 'date', id: `rl-${key}-from-${i}`, value: l.from, min: '1970-01-01', max: '2199-12-31', disabled: masked,
           aria: { label: `${t('rt.from')} (${label})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('from') } }));
+    // Étiquette visible reliée par for (RGAA 11.2) ; le nom accessible commence par ce texte visible (WCAG 2.5.3) et le
+    // complète du propriétaire et de la date, qui distinguent les lignes pour un lecteur d'écran.
+    const rateText = `${t('rt.rate')} (${Money.symbol()})`;
     const rate = h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20, disabled: masked,
-      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${t('rt.rate')} (${label}, ${when}) (${Money.symbol()})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
-    list.append(h('li', {}, from, rate,
+      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${rateText} (${label}, ${when})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
+    list.append(h('li', {}, from, h('label', { for: `rl-${key}-rate-${i}`, text: rateText }), rate,
       h('button', { type: 'button', class: 'icon', disabled: masked, data: { click: 'rlRemove', arg: `${kind}:${id}:${i}` }, aria: { label: t('rt.removeLine', { name: `${label}, ${when}` }) } }, '✕')));
   });
   box.append(list, h('p', { class: 'field-error', id: 'rl-err-' + key, role: 'alert', hidden: true }));
@@ -188,7 +191,9 @@ function profilesWindow() {
     profiles.forEach(pf => {
       const used = App.project.resources.filter(r => r.profile === pf.id).length;
       const nameIn = h('input', { type: 'text', id: 'prof-name-' + pf.id, value: pf.name, maxlength: 100, aria: { label: `${t('rt.name')} (${pf.name})`, describedby: 'perr-' + pf.id }, data: { change: 'profName', arg: pf.id } });
-      body.append(h('section', { class: 'prof-card', aria: { label: pf.name } },
+      // Chaque carte a son titre (RGAA 9.1) : h3, sous le titre h2 de la fenêtre (Dialog.open).
+      body.append(h('section', { class: 'prof-card', aria: { labelledby: 'prof-h-' + pf.id } },
+        h('h3', { id: 'prof-h-' + pf.id, text: pf.name }),
         h('div', { class: 'field' }, h('label', { for: 'prof-name-' + pf.id, text: t('rt.name') }), nameIn, h('p', { class: 'field-error', id: 'perr-' + pf.id, role: 'alert', hidden: true })),
         rateLinesEditor('p', pf.id, pf.name),
         h('p', { class: 'hint', text: t('rt.usedBy', { count: used }) }),

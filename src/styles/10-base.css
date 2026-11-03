@@ -189,6 +189,7 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .warning { color: var(--warning); font-weight: 600; }
 fieldset.sub { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 .7rem; padding: .4rem .6rem .6rem; }
 fieldset.sub legend { font-weight: 600; padding: 0 .3rem; }
+.prof-card h3 { margin: .8rem 0 .4rem; font-size: 1rem; }
 ul.rows { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
 ul.rows li { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
 ul.rows .who { flex: 1 1 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

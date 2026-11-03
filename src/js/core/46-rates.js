@@ -36,7 +36,7 @@ const Rates = (() => {
   /**
    * Lignes de taux en vigueur pour une ressource : les siennes (nominatives) sinon celles de son profil.
    * Appelle : Rates.profileOf()
-   * Appelée par : Rates.assignment(), Rates.compute(), Rates.rateFor()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource(), Rates.rateFor()
    */
   function linesOf(project, res) {
     if (res && (res.rates || []).length) return res.rates;
@@ -78,7 +78,7 @@ const Rates = (() => {
   /**
    * Lignes ramenées une fois pour toutes en index de jours ouvrés (« depuis le début » = -Infinity).
    * Appelle : Dates.parse()
-   * Appelée par : Rates.assignment(), Rates.compute()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource()
    */
   const indexed = (lines, cal) => lines.map(l => ({ i: l.from === '' ? -Infinity : cal.ceil(Dates.parse(l.from)), rate: l.rate }));
 
@@ -87,7 +87,7 @@ const Rates = (() => {
    * estimé), unrated (jours sans taux) }. Le taux est sommé par tranche entre deux lignes (pas de boucle jour par jour),
    * puis multiplié par le taux d'occupation et arrondi une seule fois, moitié vers le haut (BigInt au-delà de 2^53).
    * Appelle : Evm.divRound()
-   * Appelée par : Rates.assignment(), Rates.compute()
+   * Appelée par : Rates.assignment(), Rates.compute(), Rates.ofResource()
    */
   function costOf(lines, st, units, pct) {
     const days = Math.max(0, st.e - st.s + 1);
@@ -118,11 +118,28 @@ const Rates = (() => {
   /**
    * Coût d'une affectation d'une tâche (fiche de ressource).
    * Appelle : Rates.costOf(), Rates.indexed(), Rates.linesOf()
-   * Appelée par : paintResourceSheet(), Rates.ofTask()
+   * Appelée par : Rates.ofTask()
    */
   function assignment(project, sched, task, a) {
     const res = project.resources.find(r => r.id === a.res);
     return costOf(indexed(linesOf(project, res), sched.cal), sched.tasks.get(task.id), a.units, task.pct);
+  }
+
+  /**
+   * Coûts d'une ressource sur chacune de ses tâches (fiche de ressource) : le même résultat que Rates.assignment() tâche
+   * par tâche, mais ses lignes de taux ne sont indexées qu'une fois (GR491_Backend_4).
+   * @returns {Map<string,object>} identifiant de tâche -> coût de l'affectation, dans l'ordre des tâches du projet
+   * Appelle : Rates.costOf(), Rates.indexed(), Rates.linesOf()
+   * Appelée par : paintResourceSheet()
+   */
+  function ofResource(project, sched, resId) {
+    const lines = indexed(linesOf(project, project.resources.find(r => r.id === resId)), sched.cal);
+    const out = new Map();
+    for (const t of project.tasks) {
+      const a = (t.assign || []).find(z => z.res === resId);
+      if (a) out.set(t.id, costOf(lines, sched.tasks.get(t.id), a.units, t.pct));
+    }
+    return out;
   }
 
   /**
@@ -197,5 +214,5 @@ const Rates = (() => {
     return { ok: true, lines: lines.map(l => ({ from: l.from, rate: l.rate })).sort(byFrom) };
   }
 
-  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofTask, compute, hasRates, inUse, normalize };
+  return { profileOf, linesOf, sourceOf, rateOn, rateFor, assignment, ofResource, ofTask, compute, hasRates, inUse, normalize };
 })();
