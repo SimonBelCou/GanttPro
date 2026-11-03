@@ -678,7 +678,7 @@ Ces exigences s'appliquent à toutes les fonctionnalités de la section 5.
 | ID | Exigence | Prio |
 | --- | --- | --- |
 | EX-15 | **Rapidité.** Après une modification, l'affichage est à jour en moins de 100 ms pour 50 tâches, 150 ms pour 200 tâches et 500 ms pour 1 000 tâches, sur un ordinateur de bureau courant. La version 2.3 mesurait 28, 124 et 1 050 ms. La version 3 mesure environ 25 ms pour 50 tâches et 350 ms pour 1 000 tâches, sur une machine de test deux fois plus lente qu'un poste courant. | Should |
-| EX-16 | **Compatibilité.** Fonctionne hors ligne, ouvert depuis un fichier local, dans les versions récentes de Chrome, Edge, Firefox et Safari, sur ordinateur comme sur tablette. Seul Chrome est vérifié automatiquement ; les autres le sont lors de la recette manuelle. | Must |
+| EX-16 | **Compatibilité.** Fonctionne hors ligne, ouvert depuis un fichier local, dans les versions récentes de Chrome, Edge, Firefox et Safari, sur ordinateur comme sur tablette. Chromium et Firefox sont vérifiés automatiquement (Firefox sans les mesures de temps, voir annexe C) ; Safari l'est lors de la recette manuelle. | Must |
 | EX-17 | **Langue et dates.** Interface en français et en anglais (EF-103) ; dates affichées selon la langue (RG-32), semaine commençant le lundi, fuseau horaire de l'ordinateur de l'utilisateur. | Must |
 
 ### 7.6 Livraison et qualité

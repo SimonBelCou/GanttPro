@@ -62,3 +62,31 @@ jobs:
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
           PERF_FACTOR=2 python3 tests/test_v3_recette.py
+
+  # Firefox (décisions O4 et O5 du 3 novembre 2026, Specs_fonctionnelles.md annexe C) : parcours et accessibilité
+  # de test_v3.py et test_v3_espace.py, sans les mesures de temps (test_v3_recette.py reste propre à Chromium).
+  # Étape bloquante, en parallèle du job « verifier » ; GanttPro.html est testé tel qu'il est committé (sa fraîcheur
+  # est contrôlée par « verifier »).
+  firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+
+      - name: Tests de bout en bout sous Firefox (sécurité, parcours, accessibilité)
+        env:
+          BROWSER: firefox
+        run: |
+          pip install playwright==1.64.1   # même version que le job « verifier »
+          python3 -m playwright install --with-deps firefox
+          npm install --no-save axe-core@4.14.0
+          python3 tests/test_v3.py
+          python3 tests/test_v3_espace.py

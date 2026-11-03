@@ -2,6 +2,7 @@
 """Tests de bout en bout du lot D de GanttPro v3 : espace de travail.
 
     python3 tools/build.py && python3 tests/test_v3_espace.py
+    BROWSER=firefox python3 tests/test_v3_espace.py   # Firefox (voir tests/test_v3.py)
 
 Couvre : onglets (R-62, limite de dix), bibliothèque et message de première utilisation (EF-99,
 EX-22), modèles fournis (EF-100), sauvegarde automatique désactivée par défaut puis récupération
@@ -15,19 +16,20 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_v3 import HTML, axe_check, check, project, results  # noqa: E402
+from test_v3 import BROWSER, HTML, axe_check, check, is_csp_message, launch, project, results  # noqa: E402
 
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(args=['--no-sandbox'])
+        browser = launch(p)   # BROWSER=firefox pour Firefox (voir tests/test_v3.py)
+        print(f'Navigateur : {BROWSER} {browser.version}')
         ctx = browser.new_context(viewport={'width': 1500, 'height': 950}, locale='fr-FR')
         errors = []
 
         def page():
             pg = ctx.new_page()
             pg.on('pageerror', lambda e: errors.append(str(e)))
-            pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' or 'Content Security Policy' in m.text else None)
+            pg.on('console', lambda m: errors.append(m.text) if m.type == 'error' or is_csp_message(m.text) else None)
             pg.clock.set_fixed_time('2026-01-14T10:00:00')
             pg.goto(HTML.as_uri())
             pg.wait_for_selector('#task-rows tr')
