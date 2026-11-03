@@ -22,6 +22,8 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 - **Numérique responsable** : règles d'écoconception et d'accessibilité de l'INR (`skill-nr` 1.0.0, CC BY-SA 4.0) copiées
   dans `.claude/regles-nr/` et importées par `CLAUDE.md` §13.10 ; sous-agents de revue `eco-check` et
   `accessibilite-check` dans `.claude/agents/`. Aucun changement de code.
+- `Specs_fonctionnelles.md` : exigences détaillées EF-131 à EF-146 (valeur acquise de l'étape B en 5.23, colonnes de la
+  liste en 5.24), écrites d'après le code, jusque-là décrites seulement par EX-39 et EX-40. Aucun changement de code.
 
 ### Budget, étape C (PR #14, en attente de la recette « Taux 1 à 10 »)
 - Profils de coût et taux datés des ressources (par jour ouvré), coût des ressources par tâche, par ressource et face au
