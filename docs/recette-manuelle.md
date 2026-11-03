@@ -818,9 +818,27 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 ### Taux 10 — Clavier et lecteur d'écran (EF-147, EF-148)
 
 - [ ] 1. Au clavier seul, ouvrez **Ressources**, **Profils de coût…**, ajoutez un profil et une ligne de taux, saisissez un taux, supprimez la ligne. *Attendu :* tout s'atteint par Tab, les boutons s'activent par Entrée ou Espace, Échap ferme chaque fenêtre et rend le focus au bouton qui l'a ouverte.
-- [ ] 2. Chaque champ a un nom qui contient son texte visible (par exemple « Taux par jour (Analyste, Depuis le début) (€) ») ; une erreur est annoncée et le champ est signalé invalide.
+- [ ] 2. Chaque champ a un nom qui contient son texte visible (par exemple « Taux par jour (€) (Analyste, Depuis le début) », dont l'étiquette visible est « Taux par jour (€) ») ; une erreur est annoncée et le champ est signalé invalide.
 - [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
 - [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
+
+### Taux 11 — Corrections des revues d'accessibilité et d'écoconception (RGAA 9.1, 11.2, 11.10 ; RG-57)
+
+Départ : ouvrez `taux-sans-taux.json`.
+
+- [ ] 1. **Ressources**, **Profils de coût…**. *Attendu :* chaque profil a un titre à son nom (« Analyste », « Sans taux encore »)
+  au-dessus de son champ Nom ; un lecteur d'écran annonce chaque carte par ce titre et le propose dans la liste des titres.
+- [ ] 2. Profil « Sans taux encore » : **Ajouter une ligne**. *Attendu :* devant le champ de taux, l'étiquette visible
+  « Taux par jour (€) » ; un clic sur l'étiquette place le curseur dans le champ.
+- [ ] 3. Fermez la fenêtre des profils. Dans **Ressources**, effacez le nom de Bob et quittez le champ. *Attendu :* le message
+  d'erreur s'affiche sous le nom et le lecteur d'écran le lit. Remettez « Bob ».
+- [ ] 4. **Profils de coût…** : supprimez la ligne ajoutée à l'étape 2, fermez, puis ouvrez la fiche de Bob. *Attendu :* colonne
+  « Coût prévu » de la tâche B : « sans taux » seul, sans `0,00 €`.
+- [ ] 5. **Profils de coût…**, profil « Sans taux encore » : ajoutez une ligne, saisissez `500`, ajoutez une deuxième ligne, mettez
+  sa date au `07/01/2026`, puis supprimez la ligne « Depuis le début ». Fiche de Bob. *Attendu :* « 1 000,00 € (sans taux) »
+  (2 jours sur 4 ont un taux) et, sous la rubrique de coût, la mention du total partiel.
+- [ ] 6. **Excel** avec les montants. *Attendu :* le même classeur qu'avant la correction (colonne « Coût des ressources » de la
+  feuille Tâches et coûts de la feuille Ressources inchangés).
 
 ### Contrôle final de la mise à jour
 

@@ -37,6 +37,16 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   profil désormais restitué aux lecteurs d'écran (`role="alert"`, RGAA 11.10). Exigences détaillées EF-147 à EF-150
   écrites (Specs_fonctionnelles.md, 5.22). Veille sécurité du jour dans `docs/veille-securite.md`.
 
+### Budget, étape C : corrections des revues numérique responsable (après la PR #14)
+- Accessibilité : erreur de la fenêtre Ressources restituée aux lecteurs d'écran (`role="alert"`, RGAA 11.10) ; chaque
+  carte de la fenêtre « Profils de coût » a un titre `h3` qui la nomme (RGAA 9.1) ; le champ de taux a une étiquette
+  visible « Taux par jour (€) » contenue dans son nom accessible (RGAA 11.2, WCAG 2.5.3).
+- Fiche d'une ressource : une affectation sans aucun jour avec taux affiche « sans taux » seul, plus `0,00 € (sans taux)`
+  (RG-57, CLAUDE.md §11) ; un coût partiel garde son montant suivi de « (sans taux) ».
+- Écoconception (GR491_Backend_4) : le classeur Excel ne calcule plus deux fois le coût des ressources ; la fiche d'une
+  ressource indexe ses lignes de taux une seule fois (nouvelle fonction `Rates.ofResource`). Résultats inchangés.
+- Recette manuelle : parcours « Taux 11 ».
+
 ## 3.0.0
 
 ### 2026-10-30
