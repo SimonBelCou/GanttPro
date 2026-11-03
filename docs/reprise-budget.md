@@ -151,3 +151,17 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 - Plan d'audit RGAA EX-05 dans `docs/`.
 - Mémorisation facultative de la mise en page et hauteur réglable de la zone (le choix et l'ordre des colonnes sont faits, PR #13).
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.
+- **Légende fixée en bas de la fenêtre** (demande du propriétaire du produit, 3 novembre 2026) : la zone du Gantt prend
+  toute la hauteur disponible et la légende (types de tâches, ressources, statuts) reste visible en bas, sans défiler
+  avec le diagramme. À vérifier : petits écrans, zoom 200 %, impression, mode « Plein écran du Gantt ».
+- **Revoir la position et l'ordre des boutons** (même demande) : certains sont bien placés, d'autres non. L'interface
+  doit être claire et logique, chaque élément à l'endroit où on le cherche. Constats de départ, à confirmer avec le
+  propriétaire du produit avant toute maquette :
+  - la barre du haut mêle sur deux lignes la création (tâche, jalon, récapitulative), les fenêtres de gestion
+    (Ressources, Catégories, Étiquettes, Calendrier, Baselines…), l'affichage (Liens, zoom, charge, thème, langue),
+    l'historique (Annuler, Rétablir) et les fichiers (Nouveau, Importer, Exporter, Bibliothèque) ;
+  - « Annuler » et « Rétablir » sont au milieu, entre « Masquer les montants » et le zoom ;
+  - la barre de la liste (Rechercher, Filtres, Grouper, Trier, Figer, Colonnes, Plein écran…) passe sur deux lignes ;
+  - la barre de sélection (Modifier en masse, Dupliquer, Supprimer…) apparaît entre la barre de la liste et la liste.
+  Livrables attendus : proposition de regroupement (maquette), exigences et arbitrage dans `Specs_fonctionnelles.md`,
+  parcours de recette (CLAUDE.md §13.6) ; ordre de tabulation et accessibilité inchangés ou améliorés (§13.8).
