@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5V6Or6yjVOQa/3eJETt0j2Qfak+zHV3f4u3YAib1G8k='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-g6MLau9L07sWo6MfPI7bFke2eWstvIVc8DZIBedsZ0Q='; style-src 'sha256-lpJAIuqDAVcU+tFp88JlTKU1LBZblUxYHvjj/xvGk/Y='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -442,7 +442,14 @@ body.dragging { user-select: none; cursor: grabbing; }
 .g-body.with-bl .real-band { top: 24px; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 30; display: flex; gap: .8rem; align-items: center; padding: .5rem .8rem; border-radius: 8px; background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 .toast button { background: var(--bg); color: var(--text); }
-@media print { .toast, .tooltip { display: none !important; } }
+@media print { .toast, .tooltip, .errlog-banner { display: none !important; } }
+
+/* Journal d'erreurs (EF-151) : bandeau non bloquant en haut de la fenêtre, tableau défilant des lignes */
+.errlog-banner { position: fixed; left: 50%; top: .6rem; transform: translateX(-50%); z-index: 31; display: flex; gap: .8rem; align-items: center; max-width: calc(100vw - 2rem); padding: .5rem .8rem; border: 2px solid var(--critical); border-radius: 8px; background: var(--bg); color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.errlog-banner[hidden] { display: none; }
+.row-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+.log-scroll { max-height: 60vh; overflow: auto; }
+.log-scroll td { white-space: nowrap; }
 
 /* Onglets du tableau de bord et charge (EF-87) */
 .tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); margin-bottom: .8rem; }
@@ -1691,7 +1698,7 @@ const Resolve = (() => {
  * traduction avec paramètres : ils ne contiennent jamais de HTML.
  *
  * Appelle : Calendar, Columns, Dates, Rates, Schedule
- * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ * Appelée par : 30 modules et fichiers (voir Architecture.md)
  */
 const Model = (() => {
   const FORMAT = 3;
@@ -3192,7 +3199,7 @@ const Rates = (() => {
  * affiche toujours le résultat par textContent, jamais par innerHTML.
  *
  * Appelle : Dates
- * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ * Appelée par : 29 modules et fichiers (voir Architecture.md)
  */
 const I18n = (() => {
   const FR = {
@@ -3676,9 +3683,19 @@ const I18n = (() => {
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
     'set.tips': 'Afficher les raccourcis clavier au survol des boutons', 'set.tipsOn': 'Raccourcis affichés au survol.', 'set.tipsOff': 'Raccourcis masqués au survol.', 'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
     'set.recProtect': 'Protéger la sauvegarde automatique par mot de passe', 'set.recPwdEnter': 'Saisir le mot de passe', 'set.recPwdHint': 'Le mot de passe de la sauvegarde automatique est demandé à chaque ouverture de GanttPro ; il reste en mémoire seulement.',
-    'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques et réglages. Les fichiers exportés ne sont jamais touchés.",
-    'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': 'La bibliothèque, les modèles, les sauvegardes automatiques et les réglages seront supprimés définitivement de cet appareil.',
+    'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques, journal d'erreurs et réglages. Les fichiers exportés ne sont jamais touchés.",
+    'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': "La bibliothèque, les modèles, les sauvegardes automatiques, le journal d'erreurs et les réglages seront supprimés définitivement de cet appareil.",
     'set.clearConfirm2': 'Les projets ouverts et les fichiers exportés ne sont pas touchés.', 'set.clearBtn': 'Tout effacer', 'set.cleared': 'Toutes les données de GanttPro sur cet appareil ont été effacées.',
+    // Journal local d'erreurs (EF-151)
+    'app.unexpected': 'Erreur inattendue.',
+    'log.title': "Journal d'erreurs", 'log.banner': 'Erreur inattendue (réf. {ref}). Exportez votre projet.', 'log.export': 'Exporter le journal', 'log.dismiss': 'Fermer le message',
+    'log.keep': 'Conserver le journal sur cet appareil',
+    'log.keepHint': "Le journal ne contient que des codes d'erreur, jamais le contenu des projets ni les noms des ressources. Sans cette option, il est oublié à la fermeture de la page. 30 jours et 200 lignes au plus.",
+    'log.count': { one: '{count} ligne dans le journal.', other: '{count} lignes dans le journal.' },
+    'log.view': 'Voir le journal', 'log.clear': 'Effacer le journal', 'log.clearConfirm': 'Toutes les lignes du journal seront supprimées, en mémoire et sur cet appareil.', 'log.clearBtn': 'Effacer',
+    'log.cleared': 'Journal effacé.', 'log.empty': 'Le journal est vide.', 'log.on': 'Le journal est conservé sur cet appareil.', 'log.off': "Le journal n'est plus conservé sur cet appareil.",
+    'log.exported': 'Journal exporté.', 'log.caption': 'Lignes du journal, de la plus récente à la plus ancienne',
+    'log.c.ts': 'Date (UTC)', 'log.c.lvl': 'Niveau', 'log.c.act': 'Action', 'log.c.code': 'Code', 'log.c.msg': 'Message', 'log.c.cmp': 'Composant', 'log.c.ref': 'Référence', 'log.c.at': 'Origine',
     'home.back': '← Accueil', 'home.save': 'Sauvegarder', 'home.saved': "Copie du projet remise à la page d'accueil.",
     'help.title': 'Aide', 'help.about': 'À propos', 'help.version': 'GanttPro, version {version}',
     'help.license': "Logiciel libre sous licence MIT. Il fonctionne entièrement dans votre navigateur, sans serveur et sans connexion.",
@@ -4120,9 +4137,19 @@ const I18n = (() => {
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
     'set.tips': 'Show keyboard shortcuts when hovering buttons', 'set.tipsOn': 'Shortcuts shown on hover.', 'set.tipsOff': 'Shortcuts hidden on hover.', 'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
     'set.recProtect': 'Protect the automatic backup with a password', 'set.recPwdEnter': 'Enter the password', 'set.recPwdHint': 'The automatic backup password is asked each time GanttPro opens; it is only kept in memory.',
-    'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups and settings. Exported files are never affected.',
-    'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups and settings will be permanently deleted from this device.',
+    'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups, error log and settings. Exported files are never affected.',
+    'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups, error log and settings will be permanently deleted from this device.',
     'set.clearConfirm2': 'Open projects and exported files are not affected.', 'set.clearBtn': 'Erase everything', 'set.cleared': 'All GanttPro data on this device was erased.',
+    // Local error log (EF-151)
+    'app.unexpected': 'Unexpected error.',
+    'log.title': 'Error log', 'log.banner': 'Unexpected error (ref. {ref}). Export your project.', 'log.export': 'Export the log', 'log.dismiss': 'Close the message',
+    'log.keep': 'Keep the log on this device',
+    'log.keepHint': 'The log only holds error codes, never project content or resource names. Without this option, it is forgotten when the page closes. 30 days and 200 lines at most.',
+    'log.count': { one: '{count} line in the log.', other: '{count} lines in the log.' },
+    'log.view': 'View the log', 'log.clear': 'Erase the log', 'log.clearConfirm': 'All log lines will be deleted, in memory and on this device.', 'log.clearBtn': 'Erase',
+    'log.cleared': 'Log erased.', 'log.empty': 'The log is empty.', 'log.on': 'The log is kept on this device.', 'log.off': 'The log is no longer kept on this device.',
+    'log.exported': 'Log exported.', 'log.caption': 'Log lines, most recent first',
+    'log.c.ts': 'Date (UTC)', 'log.c.lvl': 'Level', 'log.c.act': 'Action', 'log.c.code': 'Code', 'log.c.msg': 'Message', 'log.c.cmp': 'Component', 'log.c.ref': 'Reference', 'log.c.at': 'Origin',
     'home.back': '← Home', 'home.save': 'Save', 'home.saved': 'Project copy handed to the home page.',
     'help.title': 'Help', 'help.about': 'About', 'help.version': 'GanttPro, version {version}',
     'help.license': 'Free software under the MIT licence. It runs entirely in your browser, with no server and no connection.',
@@ -4182,7 +4209,7 @@ const I18n = (() => {
   function setLang(l) { lang = CATALOGS[l] ? l : 'fr'; }
   /**
    * Appelle : aucune
-   * Appelée par : 15 fonctions (usage général)
+   * Appelée par : 16 fonctions (usage général)
    */
   function getLang() { return lang; }
 
@@ -4214,8 +4241,7 @@ const I18n = (() => {
   /**
    * Message d'une erreur de contrôle (Model.Invalid) : {key, params}.
    * Appelle : I18n.group(), I18n.t()
-   * Appelée par : action « verRestore », calendarWindow(), doExport(), importFile(), importText(), initHome(),
-   *   newFromTemplate(), openLibrary(), pasteInternal(), pasteText(), sheetWizard()
+   * Appelée par : calendarWindow(), Journal.failure()
    */
   function error(e) {
     const p = { ...e.params };
@@ -4325,6 +4351,196 @@ const I18n = (() => {
    */
   const monthName = m => MONTHS[lang][m - 1];
   return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
+})();
+
+// ── js/core/55-errlog.js ──
+/*
+ * Journal local d'erreurs (EF-151, RG-60 à RG-64) : moteur sans DOM ni stockage.
+ *
+ * Construit, valide, fait tourner et relit les lignes du journal. L'interface (src/js/ui/15-errlog.js) tient les lignes
+ * en mémoire pendant la session et ne les écrit sur l'appareil que si l'utilisateur l'a demandé (décision J1).
+ *
+ * Vie privée (CLAUDE.md §4 et §13.9, décisions J4 à J6) : une ligne ne contient QUE des valeurs de listes fermées ou
+ * de motifs stricts. Jamais le message d'une exception (il peut citer un nom de ressource ou un extrait du fichier),
+ * jamais un paramètre de message, jamais un chemin de fichier, aucun acteur (application sans compte).
+ *   ts   horodatage UTC ISO 8601          lvl  INFO | WARN | ERROR
+ *   act  action métier (liste ACTS)       code clé du catalogue des traductions (préfixes CODE_PREFIXES)
+ *   cmp  composant d'origine (liste CMPS) res  'refused' (refus attendu) | 'failed' (échec imprévu)
+ *   sid  identifiant de corrélation, tiré au hasard à chaque chargement (8 chiffres hexadécimaux)
+ *   ver  version de GanttPro              err  type de l'exception (liste ERRS), facultatif
+ *   at   « fonction:ligne » du premier cadre de la pile, facultatif
+ * Une ligne relue (stockage) est une donnée NON FIABLE : elle repasse par check() champ par champ.
+ *
+ * Appelle : I18n, Model
+ * Appelée par : Journal
+ */
+const ErrLog = (() => {
+  /** Conservation (décision J2) : 200 lignes et 30 jours au plus. */
+  const MAX_LINES = 200;
+  const MAX_AGE_MS = 30 * 24 * 3600 * 1000;
+  /** Au-delà, le texte relu est refusé en entier (200 lignes font environ 50 000 caractères). */
+  const MAX_CHARS = 200000;
+  const LEVELS = ['INFO', 'WARN', 'ERROR'];
+  const ACTS = ['import', 'export', 'open', 'paste', 'restore', 'store', 'calc', 'edit', 'app'];
+  const CMPS = ['files', 'library', 'recovery', 'settings', 'home', 'clipboard', 'versions', 'state', 'editor', 'shortcuts', 'bulk', 'gestures',
+    'resources', 'calendar', 'main', 'window'];
+  const RES = ['refused', 'failed'];
+  /** Types d'exception gardés tels quels ; tout autre nom devient « Other » (un nom de classe peut être fabriqué). */
+  const ERRS = ['Invalid', 'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'URIError', 'EvalError', 'AggregateError',
+    'DOMException', 'QuotaExceededError', 'SecurityError', 'NotAllowedError', 'DataError', 'OperationError', 'AbortError', 'Other'];
+  /** Seuls ces codes sont journalisés : refus d'import, mots de passe, stockage, calcul, et l'erreur imprévue
+   * « app.unexpected ». Jamais err.* (refus de saisie). */
+  const CODE_PREFIXES = ['imp.', 'pwd.', 'store.', 'calc.'];
+  const UNEXPECTED = 'app.unexpected';
+  const CODE_RE = /^[a-z]{2,8}\.[A-Za-z]{1,30}$/;
+  const TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  const SID_RE = /^[0-9a-f]{8}$/;
+  const VER_RE = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  /** Décision J4 : nom de fonction et numéro de ligne, rien d'autre. */
+  const AT_RE = /^[\w$.]{1,40}:\d+$/;
+  const FIELDS = ['ts', 'lvl', 'act', 'code', 'cmp', 'res', 'sid', 'ver', 'err', 'at'];
+
+  /**
+   * Le code existe dans le catalogue français (source de vérité des clés) et porte un préfixe journalisable.
+   * Appelle : aucune
+   * Appelée par : ErrLog.check()
+   */
+  const knownCode = code => typeof code === 'string' && CODE_RE.test(code) && (code === UNEXPECTED || CODE_PREFIXES.some(p => code.startsWith(p)))
+    && Object.prototype.hasOwnProperty.call(I18n.CATALOGS.fr, code);
+
+  /**
+   * Nom du type d'une exception, ramené à la liste fermée ERRS.
+   * Appelle : aucune
+   * Appelée par : ErrLog.make()
+   */
+  function errName(e) {
+    if (e === null || e === undefined) return undefined;
+    let n;
+    try { n = e instanceof Model.Invalid ? 'Invalid' : typeof e.name === 'string' ? e.name : 'Other'; } catch { n = 'Other'; }
+    return ERRS.includes(n) ? n : 'Other';
+  }
+
+  /**
+   * Premier cadre utile d'une pile, réduit à « fonction:ligne » (décision J4). Formats Chromium
+   * (« at nom (adresse:ligne:colonne) ») et Firefox/WebKit (« nom@adresse:ligne:colonne »). L'adresse (chemin du
+   * fichier, qui peut révéler un nom de personne) n'est jamais gardée ; un cadre sans nom devient « anonymous ».
+   * Renvoie undefined si rien ne correspond au motif strict.
+   * `head` est l'en-tête « Type: message » que Chromium place avant les cadres : il est retiré d'abord, pour qu'un
+   * message sur plusieurs lignes ne puisse pas imiter un cadre (le message lui-même n'est jamais gardé).
+   * Appelle : aucune
+   * Appelée par : ErrLog.make()
+   */
+  function frame(stack, head = '') {
+    if (typeof stack !== 'string') return undefined;
+    let text = stack.slice(0, 8000);
+    if (head && text.startsWith(head)) text = text.slice(head.length);
+    for (const raw of text.split('\n').slice(0, 12)) {
+      const s = raw.trim();
+      let name, line;
+      let m = /^at (?:async )?(?:(.+?) \()?.*:(\d+):\d+\)?$/.exec(s);
+      if (m) { name = m[1]; line = m[2]; } else {
+        m = /^(?:([^@\s]*)@)?.*:(\d+):\d+$/.exec(s);
+        if (m) { name = m[1]; line = m[2]; }
+      }
+      if (!line) continue;
+      name = (name || 'anonymous').replace(/^(?:new |Object\.)/, '').split(' ')[0];
+      const at = `${name}:${Number(line)}`;
+      if (AT_RE.test(at)) return at;
+    }
+    return undefined;
+  }
+
+  /**
+   * Contrôle une ligne (construite ou relue) par liste blanche ; renvoie une copie propre ou null.
+   * Appelle : ErrLog.knownCode()
+   * Appelée par : ErrLog.make(), ErrLog.parse()
+   */
+  function check(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    if (Object.keys(o).some(k => !FIELDS.includes(k))) return null;
+    if (typeof o.ts !== 'string' || !TS_RE.test(o.ts) || !Number.isFinite(Date.parse(o.ts))) return null;
+    if (!LEVELS.includes(o.lvl) || !ACTS.includes(o.act) || !CMPS.includes(o.cmp) || !RES.includes(o.res)) return null;
+    if (!knownCode(o.code)) return null;
+    if (typeof o.sid !== 'string' || !SID_RE.test(o.sid) || typeof o.ver !== 'string' || !VER_RE.test(o.ver)) return null;
+    if (o.err !== undefined && !ERRS.includes(o.err)) return null;
+    if (o.at !== undefined && (typeof o.at !== 'string' || !AT_RE.test(o.at))) return null;
+    const out = { ts: o.ts, lvl: o.lvl, act: o.act, code: o.code, cmp: o.cmp, res: o.res, sid: o.sid, ver: o.ver };
+    if (o.err !== undefined) out.err = o.err;
+    if (o.at !== undefined) out.at = o.at;
+    return out;
+  }
+
+  /**
+   * Construit une ligne. `error` (facultatif) ne fournit que son type et sa pile réduite, jamais son message.
+   * @param {{code:string, act:string, cmp:string, lvl?:string, res?:string, error?:*}} ev
+   * @param {{now:number, sid:string, ver:string}} ctx
+   * @returns {object|null} null si un champ sort des listes fermées
+   * Appelle : ErrLog.check(), ErrLog.errName(), ErrLog.frame()
+   * Appelée par : Journal.record()
+   */
+  function make(ev, ctx) {
+    const o = { ts: new Date(ctx.now).toISOString(), lvl: ev.lvl || (ev.code === UNEXPECTED ? 'ERROR' : 'WARN'), act: ev.act, code: ev.code,
+      cmp: ev.cmp, res: ev.res || (ev.code === UNEXPECTED ? 'failed' : 'refused'), sid: ctx.sid, ver: ctx.ver };
+    if (ev.error !== undefined && ev.error !== null) {
+      o.err = errName(ev.error);
+      let stack, head = '';
+      try { stack = ev.error.stack; head = `${ev.error.name}: ${ev.error.message}`; } catch { stack = undefined; }
+      const at = frame(stack, head);
+      if (at) o.at = at;
+    }
+    return check(o);
+  }
+
+  /**
+   * Rotation et purge (décision J2) : lignes de plus de 30 jours ou datées du futur retirées, 200 dernières gardées.
+   * Appelle : aucune
+   * Appelée par : ErrLog.parse(), ErrLog.push()
+   */
+  function purge(lines, now) {
+    const kept = lines.filter(l => { const t = Date.parse(l.ts); return t >= now - MAX_AGE_MS && t <= now + 60000; });
+    return kept.slice(-MAX_LINES);
+  }
+
+  /**
+   * Ajoute une ligne et applique la rotation (la plus ancienne sort).
+   * Appelle : ErrLog.purge()
+   * Appelée par : Journal.record()
+   */
+  const push = (lines, line, now) => purge([...lines, line], now);
+
+  /**
+   * Relecture tolérante du journal stocké : texte absent, illisible ou trop gros = journal vide (remis à zéro) ;
+   * ligne hostile ou mal formée = ignorée ; puis purge.
+   * Appelle : ErrLog.check(), ErrLog.purge()
+   * Appelée par : Journal.init()
+   */
+  function parse(text, now) {
+    if (typeof text !== 'string' || !text || text.length > MAX_CHARS) return [];
+    let raw;
+    try { raw = JSON.parse(text); } catch { return []; }
+    if (!Array.isArray(raw)) return [];
+    return purge(raw.slice(-MAX_LINES * 2).map(check).filter(Boolean), now);
+  }
+
+  /**
+   * Texte stocké : un tableau JSON.
+   * Appelle : aucune
+   * Appelée par : Journal.save()
+   */
+  const serialize = lines => JSON.stringify(lines);
+
+  /**
+   * Fichier exporté (décision J3) : JSON Lines, une première ligne d'en-tête (application, version, langue, date),
+   * puis une ligne par entrée. JSON.stringify échappe les retours à la ligne : aucune ligne ne peut en fabriquer une autre.
+   * Appelle : aucune
+   * Appelée par : Journal.exportFile()
+   */
+  function toJsonl(lines, { ver, lang, now }) {
+    const head = { app: 'GanttPro', ver: VER_RE.test(ver) ? ver : '0.0.0', lang: lang === 'en' ? 'en' : 'fr', exported: new Date(now).toISOString(), lines: lines.length };
+    return [head, ...lines].map(l => JSON.stringify(l)).join('\n') + '\n';
+  }
+
+  return { make, check, frame, purge, push, parse, serialize, toJsonl, knownCode, UNEXPECTED, MAX_LINES, MAX_AGE_MS, MAX_CHARS, ACTS, CMPS };
 })();
 
 // ── js/core/60-xml.js ──
@@ -5329,7 +5545,7 @@ const Secure = (() => {
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 89 fonctions (usage général)
+ * Appelée par : 90 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -5340,7 +5556,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 84 fonctions (usage général)
+ * Appelée par : 86 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -5379,7 +5595,7 @@ function append(el, children) {
  * Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
  * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu.
  * Appelle : aucune
- * Appelée par : 31 fonctions (usage général)
+ * Appelée par : 32 fonctions (usage général)
  */
 function clear(el) {
   const a = document.activeElement;
@@ -5429,6 +5645,7 @@ function announce(msg) {
  *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
+ *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-61) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
  * Rien n'est jamais envoyé. Toute lecture est une donnée NON FIABLE (une autre page locale peut
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
@@ -5438,16 +5655,17 @@ function announce(msg) {
 const DEFAULT_THEME = 'light';
 /**
  * Appelle : aucune
- * Appelée par : 41-money.js, 50-render.js, 55-tooltip.js, 85-library.js, 87-settings.js, 99-main.js, Recovery
+ * Appelée par : 41-money.js, 50-render.js, 55-tooltip.js, 85-library.js, 87-settings.js, 99-main.js, Journal,
+ *   Recovery
  */
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'], errlog: ['on', 'off'] };
 
   /**
    * Appelle : aucune
-   * Appelée par : action « toggleTheme », applyShortcutTips(), applyTheme(), init(), openSettings(),
-   *   Recovery.enabled(), Recovery.protectedMode(), renderTopbar(), storageNotice()
+   * Appelée par : action « toggleTheme », applyShortcutTips(), applyTheme(), init(), Journal.keeping(),
+   *   openSettings(), Recovery.enabled(), Recovery.protectedMode(), renderTopbar(), storageNotice()
    */
   function get(key) {
     try {
@@ -5457,8 +5675,8 @@ const Settings = (() => {
   }
   /**
    * Appelle : aucune
-   * Appelée par : action « toggleMask », action « toggleTheme », enableAutosave(), openSettings(), setLanguage(),
-   *   storageNotice()
+   * Appelée par : action « toggleMask », action « toggleTheme », enableAutosave(), Journal.setKeep(), openSettings(),
+   *   setLanguage(), storageNotice()
    */
   function set(key, value) {
     if (!ALLOWED[key] || !ALLOWED[key].includes(value)) return false;
@@ -5482,13 +5700,13 @@ const Settings = (() => {
 })();
 
 /**
- * Entrepôt de textes sous des espaces de noms fixes (bibliothèque et récupération).
+ * Entrepôt de textes sous des espaces de noms fixes (bibliothèque, récupération, journal d'erreurs).
  *
  * Appelle : aucune
- * Appelée par : 85-library.js, 87-settings.js, Library, Recovery
+ * Appelée par : 85-library.js, 87-settings.js, Journal, Library, Recovery
  */
 const Store = (() => {
-  const SPACES = { lib: 'ganttpro.lib.', rec: 'ganttpro.rec.' };
+  const SPACES = { lib: 'ganttpro.lib.', rec: 'ganttpro.rec.', log: 'ganttpro.log.' };
   const KEY_RE = /^[a-z0-9-]{1,40}$/;
   /**
    * Appelle : aucune
@@ -5501,7 +5719,8 @@ const Store = (() => {
   /**
    * Écrit un texte. Renvoie 'ok', 'full' (espace insuffisant) ou 'off' (stockage indisponible).
    * Appelle : Store.full()
-   * Appelée par : Library.put(), Library.writeIndex(), openLibrary(), Recovery.flushSync(), Recovery.saveAll()
+   * Appelée par : Journal.save(), Library.put(), Library.writeIndex(), openLibrary(), Recovery.flushSync(),
+   *   Recovery.saveAll()
    */
   function write(space, key, text) {
     try { window.localStorage.setItem(full(space, key), text); return 'ok'; } catch (e) {
@@ -5510,15 +5729,15 @@ const Store = (() => {
   }
   /**
    * Appelle : Store.full()
-   * Appelée par : Library.index(), Library.load(), openLibrary(), Recovery.found()
+   * Appelée par : Journal.init(), Library.index(), Library.load(), openLibrary(), Recovery.found()
    */
   function read(space, key) {
     try { return window.localStorage.getItem(full(space, key)); } catch { return null; }
   }
   /**
    * Appelle : Store.full()
-   * Appelée par : Library.put(), Library.remove(), openLibrary(), openSettings(), Recovery.clearAllCopies(),
-   *   Recovery.drop()
+   * Appelée par : Journal.clearAll(), Journal.setKeep(), Library.put(), Library.remove(), openLibrary(),
+   *   openSettings(), Recovery.clearAllCopies(), Recovery.drop()
    */
   function remove(space, key) {
     try { window.localStorage.removeItem(full(space, key)); return true; } catch { return false; }
@@ -5555,7 +5774,7 @@ const Store = (() => {
   }
   /**
    * Appelle : aucune
-   * Appelée par : enableAutosave(), storageNotice()
+   * Appelée par : enableAutosave(), Journal.setKeep(), storageNotice()
    */
   const available = () => { try { const k = 'ganttpro.probe'; window.localStorage.setItem(k, '1'); window.localStorage.removeItem(k); return true; } catch { return false; } };
   return { write, read, remove, keys, usage, available };
@@ -5612,6 +5831,242 @@ const HomeLink = (() => {
   return { takeProject, saveProject, homeUrl };
 })();
 
+// ── js/ui/15-errlog.js ──
+/*
+ * Journal local d'erreurs (EF-151, RG-60 à RG-64) : interface et branchements.
+ *
+ * - Les lignes sont TOUJOURS tenues en mémoire pendant la session ; elles ne sont écrites sur l'appareil (par Store,
+ *   espace « log ») que si l'utilisateur a coché « Conserver le journal sur cet appareil » (décision J1, désactivé par
+ *   défaut). Rien n'est jamais envoyé : l'utilisateur exporte lui-même le fichier .jsonl pour un signalement (J3).
+ * - Les lignes sont construites par ErrLog (moteur sans DOM), qui n'accepte que des valeurs de listes fermées : ni
+ *   message d'exception, ni contenu de projet, ni nom de ressource, ni chemin de fichier (J4 à J6).
+ * - Un échec d'écriture du journal lui-même n'est pas journalisé (J2) : il n'y a pas de récursion possible.
+ * - Une exception imprévue (« app.unexpected ») affiche un bandeau non bloquant, au plus un toutes les 10 secondes,
+ *   avec la référence de la ligne et le bouton « Exporter le journal ». Jamais de pile à l'écran.
+ *
+ * Appelle : Dialog, ErrLog, I18n, Model, Settings, Store
+ * Appelée par : 14 modules et fichiers (voir Architecture.md)
+ */
+const Journal = (() => {
+  const KEY = 'journal';
+  const BANNER_GAP_MS = 10000;
+  /** Erreurs des analyseurs du moteur (xml, zip, csv, xlsx, calendrier) : refus ATTENDUS d'un fichier mal formé. */
+  const EXPECTED_RE = /^(xml|zip|csv|xlsx|calendar)(\.|$)/;
+  let lines = [], sid = '00000000', busy = false, lastBanner = -Infinity;
+
+  /**
+   * Appelle : Settings.get()
+   * Appelée par : Journal.init(), Journal.save(), openSettings()
+   */
+  const keeping = () => Settings.get('errlog') === 'on';
+
+  /**
+   * Identifiant de corrélation : 8 chiffres hexadécimaux tirés au hasard à chaque chargement (J6).
+   * Appelle : aucune
+   * Appelée par : Journal.init()
+   */
+  function newSid() {
+    const a = new Uint8Array(4);
+    crypto.getRandomValues(a);
+    return [...a].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Écrit le journal sur l'appareil si l'option est active. Le résultat n'est pas journalisé (J2).
+   * Appelle : ErrLog.serialize(), Journal.keeping(), Store.write()
+   * Appelée par : Journal.init(), Journal.record(), Journal.setKeep()
+   */
+  function save() {
+    if (keeping()) Store.write('log', KEY, ErrLog.serialize(lines));
+  }
+
+  /**
+   * Au lancement : relecture tolérante et purge du journal conservé, puis gestionnaires globaux d'erreurs.
+   * Un événement « error » sans objet d'erreur (boucle de ResizeObserver, ressource) n'est pas une exception du
+   * programme : il est ignoré.
+   * Appelle : ErrLog.parse(), Journal.keeping(), Journal.newSid(), Journal.save(), Journal.unexpected(), Store.read()
+   * Appelée par : init()
+   */
+  function init() {
+    sid = newSid();
+    if (keeping()) { lines = ErrLog.parse(Store.read('log', KEY), Date.now()); save(); }
+    window.addEventListener('error', ev => { if (ev.error !== null && ev.error !== undefined) unexpected(ev.error, 'app', 'main'); });
+    window.addEventListener('unhandledrejection', ev => unexpected(ev.reason, 'app', 'main'));
+  }
+
+  /**
+   * Ajoute une ligne (refus attendu ou erreur imprévue). Un code hors catalogue ou hors des préfixes journalisés est
+   * ignoré par ErrLog.make. Renvoie la ligne ou null.
+   * @param {string} code clé du catalogue (imp.*, pwd.*, store.*, calc.*, app.unexpected)
+   * @param {string} act action métier (ErrLog.ACTS)
+   * @param {string} cmp composant (ErrLog.CMPS)
+   * @param {*} [error] exception d'origine : seuls son type et « fonction:ligne » sont gardés
+   * Appelle : ErrLog.make(), ErrLog.push(), Journal.save()
+   * Appelée par : enableAutosave(), importFile(), Journal.calc(), Journal.failure(), Journal.store(),
+   *   Journal.unexpected(), storageNotice()
+   */
+  function record(code, act, cmp, error) {
+    if (busy) return null;
+    busy = true;
+    try {
+      const now = Date.now();
+      const line = ErrLog.make({ code, act, cmp, error }, { now, sid, ver: APP_VERSION });
+      if (!line) return null;
+      lines = ErrLog.push(lines, line, now);
+      save();
+      return line;
+    } finally { busy = false; }
+  }
+
+  /**
+   * Référence affichée et cherchable dans le journal : identifiant de session et heure UTC de la ligne.
+   * Appelle : aucune
+   * Appelée par : Journal.banner(), Journal.view()
+   */
+  const ref = line => `${line.sid}-${line.ts.slice(11, 19).replace(/:/g, '')}`;
+
+  /**
+   * Bandeau non bloquant « Erreur inattendue (réf. …) », au plus un toutes les 10 secondes.
+   * Appelle : $(), clear(), h(), Journal.exportFile(), Journal.ref(), t()
+   * Appelée par : Journal.unexpected()
+   */
+  function banner(line) {
+    const now = Date.now();
+    if (!line || now - lastBanner < BANNER_GAP_MS) return;
+    lastBanner = now;
+    let box = $('errlog-banner');
+    if (!box) { box = h('div', { id: 'errlog-banner', class: 'errlog-banner', role: 'alert' }); document.body.append(box); }
+    const exp = h('button', { type: 'button', id: 'errlog-export' }, t('log.export'));
+    const close = h('button', { type: 'button', class: 'dlg-x', id: 'errlog-close', aria: { label: t('log.dismiss') } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
+    exp.addEventListener('click', () => exportFile());
+    close.addEventListener('click', () => { box.hidden = true; });
+    clear(box).append(h('span', { text: t('log.banner', { ref: ref(line) }) }), exp, close);
+    box.hidden = false;
+  }
+
+  /**
+   * Exception imprévue : ligne « app.unexpected » (ERROR, failed) et bandeau. Les exceptions levées ici même ne
+   * peuvent pas être journalisées (le journal ne se journalise pas, J2) : elles sont abandonnées volontairement.
+   * Appelle : Journal.banner(), Journal.record()
+   * Appelée par : Journal.calc(), Journal.failure(), Journal.init()
+   */
+  function unexpected(error, act, cmp) {
+    let line = null;
+    try { line = record(ErrLog.UNEXPECTED, act, cmp, error); banner(line); } catch { /* le journal ne se journalise pas (J2) */ }
+    return line;
+  }
+
+  /**
+   * Message à montrer pour une exception attrapée, en distinguant le refus attendu de l'erreur imprévue :
+   *  - Model.Invalid : refus d'un contrôle, journalisé par son code seul (un mot de passe refusé = « pwd.bad », J5) ;
+   *  - erreur d'un analyseur du moteur (xml, zip, csv, xlsx, calendrier) : refus attendu « imp.zip » ou « imp.unreadable » ;
+   *  - toute autre exception : « app.unexpected » et bandeau ; le message de repli `fallback` est rendu.
+   * Le message de l'exception sert seulement à reconnaître l'analyseur : il n'est jamais écrit dans le journal.
+   * Appelle : I18n.error(), Journal.record(), Journal.unexpected(), t()
+   * Appelée par : action « verRestore », doExport(), importFile(), importText(), initHome(), newFromTemplate(),
+   *   openLibrary(), pasteInternal(), pasteText(), Recovery.offer(), sheetWizard()
+   */
+  function failure(error, act, cmp, fallback = 'imp.unreadable') {
+    if (error instanceof Model.Invalid) { record(error.key, act, cmp, error); return I18n.error(error); }
+    const msg = error instanceof Error && typeof error.message === 'string' ? error.message : '';
+    if (EXPECTED_RE.test(msg)) {
+      const code = /^zip/.test(msg) ? 'imp.zip' : 'imp.unreadable';
+      record(code, act, cmp, error);
+      return t(code);
+    }
+    unexpected(error, act, cmp);
+    return t(fallback);
+  }
+
+  /**
+   * Échec d'un calcul de planning : une RangeError (date au-delà de 2199) est un refus attendu « calc.error » ; toute
+   * autre exception est imprévue.
+   * Appelle : Journal.record(), Journal.unexpected()
+   * Appelée par : action « duplicateSelection », action « duplicateTask », action « rsAbsAdd », action «
+   *   setProjectStart », bulkWindow(), calendarWindow(), Editor.save(), finishGesture(), nudge(), recompute()
+   */
+  function calc(error, cmp) {
+    if (error instanceof RangeError) record('calc.error', 'calc', cmp, error);
+    else unexpected(error, 'calc', cmp);
+  }
+
+  /**
+   * Échec d'écriture du stockage ('full' ou 'off') ; tout autre résultat est ignoré.
+   * Appelle : Journal.record()
+   * Appelée par : homeSave(), Recovery.saveAll(), storeFailed()
+   */
+  function store(result, cmp) {
+    if (result === 'full' || result === 'off') record('store.' + result, 'store', cmp);
+  }
+
+  /**
+   * Option « Conserver le journal sur cet appareil » : activée, écrit les lignes de la session ; désactivée, retire
+   * le journal de l'appareil (les lignes de la session restent en mémoire). Renvoie false si le stockage manque.
+   * Appelle : Journal.save(), Settings.set(), Store.available(), Store.remove()
+   * Appelée par : openSettings()
+   */
+  function setKeep(on) {
+    if (on) {
+      if (!Store.available() || !Settings.set('errlog', 'on')) return false;
+      save();
+      return true;
+    }
+    Settings.set('errlog', 'off');
+    Store.remove('log', KEY);
+    return true;
+  }
+
+  /**
+   * Efface le journal en mémoire et sur l'appareil (bouton « Effacer le journal », « Effacer toutes les données »).
+   * Appelle : Store.remove()
+   * Appelée par : openSettings()
+   */
+  function clearAll() {
+    lines = [];
+    Store.remove('log', KEY);
+  }
+
+  /**
+   * Télécharge le journal en JSON Lines (J3) par le mécanisme d'export existant.
+   * Appelle : download(), ErrLog.toJsonl(), I18n.getLang(), t(), toast()
+   * Appelée par : Journal.banner(), Journal.view(), openSettings()
+   */
+  function exportFile() {
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10).replace(/-/g, '');
+    download(ErrLog.toJsonl(lines, { ver: APP_VERSION, lang: I18n.getLang(), now }), `ganttpro_journal_${day}.jsonl`, 'application/x-ndjson');
+    toast(t('log.exported'));
+  }
+
+  /**
+   * Fenêtre « Journal d'erreurs » : tableau des lignes, de la plus récente à la plus ancienne. Le message affiché est
+   * le libellé du code, sans ses paramètres (qui ne sont pas journalisés).
+   * Appelle : Dialog.open(), h(), Journal.exportFile(), Journal.ref(), t()
+   * Appelée par : openSettings()
+   */
+  function view() {
+    const cols = ['ts', 'lvl', 'act', 'code', 'msg', 'cmp', 'ref', 'at'];
+    const cell = l => ({ ts: l.ts.replace('T', ' ').slice(0, 19), lvl: l.lvl, act: l.act, code: l.code, msg: t(l.code).replace(/\{\w+\}/g, '…'),
+      cmp: l.cmp, ref: ref(l), at: l.at || '—' });
+    const body = lines.length
+      ? h('div', { class: 'log-scroll', id: 'log-table', tabindex: '0', role: 'region', aria: { label: t('log.caption') } },
+        h('table', { class: 'manage' }, h('caption', { class: 'sr-only', text: t('log.caption') }),
+          h('thead', {}, h('tr', {}, cols.map(c => h('th', { scope: 'col', text: t('log.c.' + c) })))),
+          h('tbody', {}, lines.slice().reverse().map(l => { const c = cell(l); return h('tr', {}, cols.map(k => h('td', { text: c[k] }))); }))))
+      : h('p', { id: 'log-table', text: t('log.empty') });
+    return Dialog.open({ title: t('log.title'), size: 'wide', body: [body],
+      actions: [{ label: t('log.export'), value: 'export' }, { label: t('dlg.close'), value: 'cancel', focus: true }],
+      onAction: v => { if (v === 'export') { exportFile(); return false; } return true; } });
+  }
+
+  /**
+   * Appelle : aucune
+   * Appelée par : openSettings()
+   */
+  const size = () => lines.length;
+  return { init, record, failure, calc, store, setKeep, clearAll, exportFile, view, size, keeping };
+})();
+
 // ── js/ui/20-actions.js ──
 /* Aucune action n'est attachée par un attribut onclick= (interdit, et bloqué par la CSP).
  * Les éléments portent data-click / data-change / data-input / data-submit (+ data-arg) ;
@@ -5665,7 +6120,7 @@ function initActions() {
  * annoncée comme un dialogue titré (EX-02). Plusieurs fenêtres peuvent s'empiler.
  *
  * Appelle : App, I18n
- * Appelée par : 22 modules et fichiers (voir Architecture.md)
+ * Appelée par : 23 modules et fichiers (voir Architecture.md)
  */
 const Dialog = (() => {
   let seq = 0;
@@ -5681,7 +6136,7 @@ const Dialog = (() => {
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    * Appelle : Dialog.confirm(), h(), I18n.t()
-   * Appelée par : 32 fonctions (usage général)
+   * Appelée par : 33 fonctions (usage général)
    */
   function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
@@ -5742,7 +6197,7 @@ const Dialog = (() => {
   /**
    * Message simple.
    * Appelle : Dialog.open(), h(), I18n.t()
-   * Appelée par : 27 fonctions (usage général)
+   * Appelée par : 28 fonctions (usage général)
    */
   function message(title, text) {
     return open({ title, body: [h('p', { text })], actions: [{ label: I18n.t('dlg.ok'), value: 'ok', kind: 'primary', focus: true }] });
@@ -5810,16 +6265,17 @@ function normalizeOrder(project) {
 }
 
 /**
- * Appelle : Schedule.compute()
+ * Appelle : Journal.calc(), Schedule.compute()
  * Appelée par : commit(), loadProject(), Tabs.restore(), undoStep()
  */
 function recompute() {
   try {
     App.sched = Schedule.compute(App.project);
     App.calcError = null;
-  } catch {
+  } catch (e) {
+    Journal.calc(e, 'state'); // RangeError attendue (date au-delà de 2199) ou erreur imprévue (bandeau)
     App.sched = null;
-    App.calcError = 'calc.error'; // RangeError : date au-delà de 2199
+    App.calcError = 'calc.error';
   }
 }
 
@@ -6038,7 +6494,7 @@ action('toggleMask', (arg, el) => {
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 180 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**
@@ -7024,7 +7480,7 @@ function applyShortcutTips() {
  * Rien n'est appliqué avant « Enregistrer » : le formulaire travaille sur un brouillon.
  * Chaque champ refusé affiche un message précis sous lui, annoncé, et reçoit le focus (EX-06).
  *
- * Appelle : App, Budget, Dates, I18n, Model, Money, Rates, Schedule
+ * Appelle : App, Budget, Dates, I18n, Journal, Model, Money, Rates, Schedule
  * Appelée par : 40-state.js, 62-shortcuts.js, 63-selection.js, 66-layout.js, 79-versions.js, 87-settings.js,
  *   99-main.js, Tabs
  */
@@ -7356,7 +7812,7 @@ const Editor = (() => {
 
   /**
    * Appelle : $(), announce(), clone(), commit(), Editor.applyTask(), Editor.showErrors(), Editor.validate(),
-   *   Schedule.compute(), t(), taskById(), toast()
+   *   Journal.calc(), Schedule.compute(), t(), taskById(), toast()
    * Appelée par : (initialisation de Editor), Editor
    */
   async function save() {
@@ -7385,7 +7841,7 @@ const Editor = (() => {
     // Simulation : le planning doit rester calculable (dates ≤ 2199).
     const trial = clone(App.project);
     applyTask(trial, oldId, final);
-    try { Schedule.compute(trial); } catch { showErrors({ forcedStart: t('calc.error') }); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'editor'); showErrors({ forcedStart: t('calc.error') }); return; }
     // Fiche fermée AVANT la mise à jour : une seule reconstruction de l'affichage (EX-15).
     $('editor').hidden = true;
     draft = null;
@@ -7525,8 +7981,8 @@ function duplicateBlock(p, id) {
 }
 
 /**
- * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Editor.close(), render(),
- *   Schedule.compute(), t(), taskById()
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Editor.close(), Journal.calc(),
+ *   render(), Schedule.compute(), t(), taskById()
  * Appelée par : l'événement « duplicateTask » (table ACTIONS)
  */
 action('duplicateTask', () => {
@@ -7537,7 +7993,7 @@ action('duplicateTask', () => {
   const trial = clone(App.project);
   ids = duplicateBlock(trial, id);
   if (!ids) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'shortcuts'); announce(t('calc.error')); return; }
   commit(p => { duplicateBlock(p, id); });
   Editor.close();
   App.selected = ids[0];
@@ -7549,8 +8005,8 @@ action('duplicateTask', () => {
 
 /**
  * Alt + ←/→ : date imposée d'un jour ouvré ; Alt + Maj + ←/→ : durée d'un jour (EF-78).
- * Appelle : announce(), clone(), commit(), Dates.parse(), Dates.toISO(), I18n.date(), Schedule.compute(), t(),
- *   taskById()
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Dates.toISO(), I18n.date(), Journal.calc(),
+ *   Schedule.compute(), t(), taskById()
  * Appelée par : initShortcuts()
  */
 function nudge(dir, duration) {
@@ -7567,7 +8023,7 @@ function nudge(dir, duration) {
   } else {
     const iso = Dates.toISO(cal.dnOf(r.s + dir));
     const trial = clone(App.project); trial.tasks.find(x => x.id === task.id).forcedStart = iso;
-    try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'shortcuts'); announce(t('calc.error')); return; }
     commit(p => { p.tasks.find(x => x.id === task.id).forcedStart = iso; });
     announce(t('kb.forced', { date: I18n.date(Dates.parse(iso)) }));
   }
@@ -8091,8 +8547,8 @@ function initListKeys() {
  * si une tâche refuse une valeur, rien n'est appliqué et le message liste les tâches en cause. */
 
 /**
- * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), render(), Schedule.compute(), t(),
- *   taskById(), topSelected()
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Journal.calc(), render(),
+ *   Schedule.compute(), t(), taskById(), topSelected()
  * Appelée par : l'événement « duplicateSelection » (table ACTIONS)
  */
 action('duplicateSelection', () => {
@@ -8101,7 +8557,7 @@ action('duplicateSelection', () => {
   const trial = clone(App.project);
   const created = [];
   for (const id of ids) { const c = duplicateBlock(trial, id); if (!c) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; } created.push(...c); }
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'bulk'); announce(t('calc.error')); return; }
   commit(p => { for (const id of ids) duplicateBlock(p, id); });
   App.multi = new Set(created.filter(id => ids.some(o => taskById(o) && created.includes(id))));
   render();
@@ -8109,7 +8565,7 @@ action('duplicateSelection', () => {
 });
 
 /**
- * Appelle : 18 fonctions
+ * Appelle : 19 fonctions
  * Appelée par : action « bulkEdit »
  */
 function bulkWindow() {
@@ -8195,7 +8651,7 @@ function bulkWindow() {
       apply(trial);
       if (refused.length) return err(t('bulk.refused', { list: refused.join(' ; ') }));
       if (projectTagCount(trial.tasks) > Model.LIMITS.projectTags) return err(t('err.projectTags', { max: Model.LIMITS.projectTags }));
-      try { Schedule.compute(trial); } catch { return err(t('calc.error')); }
+      try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'bulk'); return err(t('calc.error')); }
       commit(apply);
       announce(t('bulk.done', { count: ids.length }));
       return true;
@@ -8218,7 +8674,8 @@ const Gesture = { g: null, suppressClick: false };
 /**
  * Appelle : $(), announce(), clear(), h(), t()
  * Appelée par : action « blCapture », action « blField », action « repCopy », doExport(), Editor.save(),
- *   enableAutosave(), finishGesture(), homeSave(), initGestures(), saveAsTemplate(), saveToLibrary()
+ *   enableAutosave(), finishGesture(), homeSave(), initGestures(), Journal.exportFile(), saveAsTemplate(),
+ *   saveToLibrary()
  */
 function toast(text, undoable) {
   const box = $('toast');
@@ -8371,8 +8828,8 @@ function moveGesture(ev) {
 }
 
 /**
- * Appelle : clone(), commit(), Dates.parse(), endGesture(), I18n.shortDate(), linkError(), linkType(),
- *   Schedule.compute(), t(), toast()
+ * Appelle : clone(), commit(), Dates.parse(), endGesture(), I18n.shortDate(), Journal.calc(), linkError(),
+ *   linkType(), Schedule.compute(), t(), toast()
  * Appelée par : initGestures()
  */
 function finishGesture() {
@@ -8382,7 +8839,7 @@ function finishGesture() {
   endGesture(false);
   if (g.kind === 'move') {
     const trial = clone(App.project); trial.tasks.find(x => x.id === id).forcedStart = g.value;
-    try { Schedule.compute(trial); } catch { toast(t('calc.error')); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'gestures'); toast(t('calc.error')); return; }
     commit(p => { p.tasks.find(x => x.id === id).forcedStart = g.value; });
     toast(t('gst.moved', { id, date: I18n.shortDate(Dates.parse(g.value)) }), true);
   } else if (g.kind === 'resize') {
@@ -9482,8 +9939,8 @@ action('rsCapacity', (id, el) => {
   paintResourceSheet(resourceSheet.body, id, '#rs-cap');
 });
 /**
- * Appelle : $(), announce(), clone(), commit(), Dates.parse(), paintResourceSheet(), resById(), resourceSheet(),
- *   rsError(), Schedule.compute(), t()
+ * Appelle : $(), announce(), clone(), commit(), Dates.parse(), Journal.calc(), paintResourceSheet(), resById(),
+ *   resourceSheet(), rsError(), Schedule.compute(), t()
  * Appelée par : l'événement « rsAbsAdd » (table ACTIONS)
  */
 action('rsAbsAdd', id => {
@@ -9494,7 +9951,7 @@ action('rsAbsAdd', id => {
   if (r.absences.length >= Model.LIMITS.absences) return rsError(t('err.limit', { max: Model.LIMITS.absences, what: t('rs.absences').toLowerCase() }));
   const trial = clone(App.project);
   trial.resources.find(x => x.id === id).absences.push({ start: from, end: to, label });
-  try { Schedule.compute(trial); } catch { return rsError(t('calc.error')); }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'resources'); return rsError(t('calc.error')); }
   commit(p => { p.resources.find(x => x.id === id).absences.push({ start: from, end: to, label }); });
   announce(t('rs.absAdded', { name: r.name }));
   paintResourceSheet(resourceSheet.body, id, '#rs-from');
@@ -9766,7 +10223,7 @@ function paintCalendar(body, focusSel) {
 function calError(msg) { const e = $('cal-err'); e.textContent = msg; e.hidden = false; announce(msg); }
 
 /**
- * Appelle : 13 fonctions
+ * Appelle : 14 fonctions
  * Appelée par : action « openCalendar », repaintCal()
  */
 function calendarWindow() {
@@ -9784,7 +10241,7 @@ function calendarWindow() {
       let checked;
       try { checked = Model.checkCalendar(CalWin.draft); } catch (e) { if (e instanceof Model.Invalid) { calError(I18n.error(e)); return false; } throw e; }
       const trial = clone(App.project); trial.calendar = checked;
-      try { Schedule.compute(trial); } catch { calError(t('calc.error')); return false; }
+      try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'calendar'); calError(t('calc.error')); return false; }
       commit(p => { p.calendar = checked; });
       announce(t('cal.saved'));
       return true;
@@ -11037,8 +11494,8 @@ action('verSave', () => {
   versionsWindow.paint && versionsWindow.paint('#ver-name');
 });
 /**
- * Appelle : announce(), clearSelection(), commit(), Dialog.confirm(), Dialog.message(), Editor.close(), I18n.error(),
- *   Model.sanitize(), render(), t(), versionsWindow()
+ * Appelle : announce(), clearSelection(), commit(), Dialog.confirm(), Dialog.message(), Editor.close(),
+ *   Journal.failure(), Model.sanitize(), render(), t(), versionsWindow()
  * Appelée par : l'événement « verRestore » (table ACTIONS)
  */
 action('verRestore', async id => {
@@ -11046,7 +11503,7 @@ action('verRestore', async id => {
   if (!v) return;
   if (!(await Dialog.confirm(t('ver.restoreQ', { name: v.label }), [t('ver.restoreHint')], t('ver.restore'), false))) return;
   let restored;
-  try { restored = Model.sanitize(v.state, { nested: true }).project; } catch (e) { Dialog.message(t('top.versions'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { restored = Model.sanitize(v.state, { nested: true }).project; } catch (e) { Dialog.message(t('top.versions'), Journal.failure(e, 'restore', 'versions')); return; }
   commit(p => {
     const keep = p.versions;
     for (const k of Object.keys(restored)) p[k] = restored[k];
@@ -11085,7 +11542,7 @@ function exportFileName(name, ext = 'json') {
 
 /**
  * Appelle : h()
- * Appelée par : doExport()
+ * Appelée par : doExport(), Journal.exportFile()
  */
 function download(data, filename, type) {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
@@ -11197,7 +11654,7 @@ async function doExport() {
       download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
     } else if (o.format === 'png') download(await ganttPng(o), exportFileName(p.name, 'png'), 'image/png');
   } catch (e) {
-    err(e instanceof Model.Invalid ? I18n.error(e) : t('exp.failed'));
+    err(Journal.failure(e, 'export', 'files', 'exp.failed'));
     return;
   }
   document.querySelector('dialog[open] [data-dlg="cancel"]').click();
@@ -11287,24 +11744,24 @@ function ganttPng(o) {
 
 /*
  * ── Import (EF-52, EF-95, EF-96, EF-102) ───────────────────────────────────────────────────
- * Appelle : Dialog.message(), I18n.error(), importMsp(), importText(), sheetWizard(), t()
+ * Appelle : Dialog.message(), importMsp(), importText(), Journal.failure(), Journal.record(), sheetWizard(), t()
  * Appelée par : action « fileChosen », init()
  */
 async function importFile(file) {
-  if (file.size > 20 * 1024 * 1024) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+  if (file.size > 20 * 1024 * 1024) { Journal.record('imp.tooBig', 'import', 'files'); await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
   const ext = (file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
   try {
     // Aiguillage par le contenu (signature) puis par l'extension : un fichier mal nommé est lu correctement.
     const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
     if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 3 && head[3] === 4) return await sheetWizard({ kind: 'xlsx', bytes: new Uint8Array(await file.arrayBuffer()), name: file.name });
-    if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+    if (file.size > Model.MAX_BYTES) { Journal.record('imp.tooBig', 'import', 'files'); await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
     const text = await file.text(), lead = text.replace(/^\uFEFF/, '').trimStart();
     if (lead.startsWith('<')) return await importMsp(text);
     if (lead.startsWith('{')) return await importText(text);
     if (/^(csv|tsv|txt)$/i.test(ext) || !ext) return await sheetWizard({ kind: 'csv', text, name: file.name });
     return await importText(text);
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : /^zip/.test(e.message) ? t('imp.zip') : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'import', 'files'));
   }
 }
 
@@ -11323,7 +11780,7 @@ async function askPassword(title, hint) {
 }
 
 /**
- * Appelle : announce(), askPassword(), confirmOpen(), Dialog.message(), I18n.error(), Model.parseFile(),
+ * Appelle : announce(), askPassword(), confirmOpen(), Dialog.message(), Journal.failure(), Model.parseFile(),
  *   Secure.decrypt(), t()
  * Appelée par : importFile()
  */
@@ -11338,7 +11795,7 @@ async function importText(text, origin = 'file') {
       result = Model.parseFile(await Secure.decrypt(result.envelope, pwd));
     }
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'import', 'files'));
     return;
   }
   const p = result.project;
@@ -11464,12 +11921,12 @@ async function sheetWizard(src) {
       if (W.step === 1) { W.step = 2; paint(); return false; }
       if (W.step === 2) {
         if (W.map.name === undefined) return err(t('wiz.needName'));
-        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(Journal.failure(e, 'import', 'files')); }
         W.step = 3; paint(); return false;
       }
       if (!W.result.rows.length) return err(t('wiz.none'));
       let merged;
-      try { merged = Exchange.mergeRows(App.project, W.result.rows, W.mode); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+      try { merged = Exchange.mergeRows(App.project, W.result.rows, W.mode); } catch (e) { return err(Journal.failure(e, 'import', 'files')); }
       commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
       announce(t('wiz.imported', { count: merged.added.length }));
       done = true;
@@ -11543,7 +12000,7 @@ function pasteInternal(clip) {
   const at = anchor ? trial.tasks.indexOf(trial.tasks.find(y => y.id === anchor)) + 1 + descendants(anchor, trial.tasks).length : trial.tasks.length;
   trial.tasks.splice(at, 0, ...copies);
   normalizeOrder(trial);
-  try { Model.sanitize(Model.serialize(trial)); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { Model.sanitize(Model.serialize(trial)); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   commit(q => { q.tasks.splice(at, 0, ...clone(copies)); });
   App.multi = new Set(copies.map(c => c.id));
   render();
@@ -11552,7 +12009,7 @@ function pasteInternal(clip) {
 
 /**
  * Appelle : announce(), commit(), Csv.parse(), Dialog.message(), Dialog.open(), Exchange.guessMapping(),
- *   Exchange.mergeRows(), Exchange.rowsToTasks(), h(), I18n.error(), render(), t()
+ *   Exchange.mergeRows(), Exchange.rowsToTasks(), h(), Journal.failure(), render(), t()
  * Appelée par : initClipboard()
  */
 async function pasteText(text) {
@@ -11562,7 +12019,7 @@ async function pasteText(text) {
   let header = map.name !== undefined;
   if (!header) { map = {}; CLIP_COLS.forEach((f, i) => { map[f] = i; }); }
   let res;
-  try { res = Exchange.rowsToTasks(rows, map, App.project.tasks.map(x => x.id), { skipHeader: header }); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { res = Exchange.rowsToTasks(rows, map, App.project.tasks.map(x => x.id), { skipHeader: header }); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   if (res.errors.length) {
     const ok = await Dialog.open({ title: t('clip.paste'), body: [h('p', { text: t('wiz.valid', { count: res.rows.length, total: res.total }) }),
       h('ul', {}, res.errors.slice(0, 50).map(e => h('li', { text: `${t('wiz.line')} ${e.line} : ${e.msg}` })))],
@@ -11571,7 +12028,7 @@ async function pasteText(text) {
   }
   if (!res.rows.length) return;
   let merged;
-  try { merged = Exchange.mergeRows(App.project, res.rows, 'add'); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { merged = Exchange.mergeRows(App.project, res.rows, 'add'); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
   App.multi = new Set(merged.added);
   render();
@@ -11914,11 +12371,12 @@ const Library = (() => {
 
 /**
  * Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce.
- * Appelle : Dialog.message(), Dialog.open(), h(), Settings.get(), Settings.set(), Store.available(), t()
+ * Appelle : Dialog.message(), Dialog.open(), h(), Journal.record(), Settings.get(), Settings.set(),
+ *   Store.available(), t()
  * Appelée par : saveAsTemplate(), saveToLibrary()
  */
 async function storageNotice() {
-  if (!Store.available()) { await Dialog.message(t('lib.title'), t('store.off')); return false; }
+  if (!Store.available()) { Journal.record('store.off', 'store', 'library'); await Dialog.message(t('lib.title'), t('store.off')); return false; }
   if (Settings.get('noticed') === 'yes') return true;
   const v = await Dialog.open({ title: t('store.noticeTitle'), body: [t('store.notice1'), t('store.notice2'), t('store.notice3')].map(x => h('p', { text: x })),
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('store.understood'), value: 'ok', kind: 'primary', focus: true }] });
@@ -11928,10 +12386,11 @@ async function storageNotice() {
 }
 
 /**
- * Appelle : Dialog.message(), t()
+ * Appelle : Dialog.message(), Journal.store(), t()
  * Appelée par : openLibrary(), saveAsTemplate(), saveToLibrary()
  */
 function storeFailed(r) {
+  Journal.store(r, 'library');
   return Dialog.message(t('lib.title'), r === 'limit' ? t('lib.limit', { max: Library.MAX_ENTRIES }) : r === 'full' ? t('store.full') : t('store.off'));
 }
 
@@ -12090,7 +12549,7 @@ async function newFromTemplate() {
   try {
     if (chosen.entry.builtin) p = chosen.entry.build(chosen.start);
     else { p = await Library.load(chosen.entry); if (!p) return; p = shiftTemplate(toTemplate(p, true), chosen.start); }
-  } catch (e) { await Dialog.message(t('tpl.newFrom'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  } catch (e) { await Dialog.message(t('tpl.newFrom'), Journal.failure(e, 'open', 'library')); return; }
   p.name = chosen.name; p.id = 'P' + Date.now().toString(36); p.createdAt = Date.now();
   if (Tabs.pristine()) Tabs.replace(p, { dirty: true }); else if (!Tabs.open(p, { dirty: true })) return;
   announce(t('imp.opened', { name: p.name }));
@@ -12143,7 +12602,7 @@ async function openLibrary(focusSel) {
     if (!entry) { paint(); return; }
     if (cmd === 'open') {
       let p;
-      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
+      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), Journal.failure(e, 'open', 'library')); paint(); return; }
       if (!p) { paint(`#lib-open-${key}`); return; }
       closeDlg();
       if (Tabs.pristine()) Tabs.replace(p, { libKey: key }); else Tabs.open(p, { libKey: key });
@@ -12211,7 +12670,7 @@ action('newFromTemplate', () => newFromTemplate());
  * gardé UNIQUEMENT en mémoire pendant la session ; après un rechargement, la sauvegarde reste en
  * pause tant que le mot de passe n'a pas été ressaisi (Réglages ou fenêtre de récupération).
  *
- * Appelle : App, Dialog, I18n, Model, Secure, Settings, Store, Tabs
+ * Appelle : App, Dialog, I18n, Journal, Model, Secure, Settings, Store, Tabs
  * Appelée par : 40-state.js, 80-files.js, 85-library.js, 87-settings.js, 99-main.js, Tabs
  */
 const Recovery = (() => {
@@ -12248,8 +12707,8 @@ const Recovery = (() => {
   }
 
   /**
-   * Appelle : Dialog.message(), Recovery.enabled(), Recovery.paint(), Recovery.paused(), Recovery.wrap(),
-   *   Store.write(), t(), Tabs.all()
+   * Appelle : Dialog.message(), Journal.store(), Recovery.enabled(), Recovery.paint(), Recovery.paused(),
+   *   Recovery.wrap(), Store.write(), t(), Tabs.all()
    * Appelée par : enableAutosave(), openSettings(), Recovery.touch()
    */
   async function saveAll() {
@@ -12262,7 +12721,7 @@ const Recovery = (() => {
       if (r !== 'ok') break;
     }
     if (r === 'ok') { lastSaved = Date.now(); failed = ''; }
-    else if (failed !== r) { failed = r; Dialog.message(t('auto.title'), r === 'full' ? t('store.full') : t('store.off')); }
+    else if (failed !== r) { failed = r; Journal.store(r, 'recovery'); Dialog.message(t('auto.title'), r === 'full' ? t('store.full') : t('store.off')); }
     paint();
   }
 
@@ -12321,7 +12780,7 @@ const Recovery = (() => {
 
   /**
    * Au lancement : pour chaque copie, restaurer dans un onglet, ignorer ou supprimer (EF-101).
-   * Appelle : 14 fonctions
+   * Appelle : 15 fonctions
    * Appelée par : init()
    */
   async function offer() {
@@ -12349,7 +12808,7 @@ const Recovery = (() => {
       if (c === 'delete') { drop(e.key); continue; }
       if (c !== 'restore') continue;
       let p;
-      try { p = await unwrap(e, pwd); } catch { bad++; continue; }
+      try { p = await unwrap(e, pwd); } catch (err) { Journal.failure(err, 'restore', 'recovery'); bad++; continue; }
       if (e.enc && protectedMode()) password = pwd; // la sauvegarde protégée reprend
       const ok = Tabs.pristine() ? (Tabs.replace(p, { dirty: true, recKey: e.key }), true) : Tabs.open(p, { dirty: true, recKey: e.key });
       if (!ok) break;
@@ -12422,12 +12881,12 @@ function setLanguage(next) {
 
 /**
  * Activation de la sauvegarde automatique : message sur ce qui est conservé, où, et le risque.
- * Appelle : Dialog.confirm(), Dialog.message(), Recovery.saveAll(), Recovery.touch(), Settings.set(),
- *   Store.available(), t(), toast()
+ * Appelle : Dialog.confirm(), Dialog.message(), Journal.record(), Recovery.saveAll(), Recovery.touch(),
+ *   Settings.set(), Store.available(), t(), toast()
  * Appelée par : openSettings()
  */
 async function enableAutosave() {
-  if (!Store.available()) { await Dialog.message(t('auto.title'), t('store.off')); return false; }
+  if (!Store.available()) { Journal.record('store.off', 'store', 'settings'); await Dialog.message(t('auto.title'), t('store.off')); return false; }
   const ok = await Dialog.confirm(t('auto.enableTitle'), [t('auto.enable1'), t('auto.enable2'), t('auto.enable3')], t('auto.enableBtn'), false);
   if (!ok) return false;
   Settings.set('noticed', 'yes');
@@ -12439,7 +12898,7 @@ async function enableAutosave() {
 }
 
 /**
- * Appelle : 31 fonctions
+ * Appelle : 38 fonctions
  * Appelée par : action « openSettings »
  */
 async function openSettings() {
@@ -12459,6 +12918,14 @@ async function openSettings() {
         auto ? h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-recprot', checked: Recovery.protectedMode() }), h('label', { for: 'set-recprot', text: t('set.recProtect') })) : null,
         auto && Recovery.paused() ? h('div', {}, h('p', { class: 'warning', text: t('auto.paused') }),
           h('button', { type: 'button', id: 'set-recpwd' }, t('set.recPwdEnter'))) : null),
+      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-61).
+      h('fieldset', { class: 'sub' }, h('legend', { text: t('log.title') }),
+        h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-log', checked: Journal.keeping(), aria: { describedby: 'set-log-hint' } }), h('label', { for: 'set-log', text: t('log.keep') })),
+        h('p', { class: 'hint', id: 'set-log-hint', text: t('log.keepHint') }),
+        h('p', { id: 'set-log-count', text: t('log.count', { count: Journal.size() }) }),
+        h('div', { class: 'row-buttons' }, h('button', { type: 'button', id: 'set-log-view' }, t('log.view')),
+          h('button', { type: 'button', id: 'set-log-export', disabled: !Journal.size() }, t('log.export')),
+          h('button', { type: 'button', class: 'danger', id: 'set-log-clear', disabled: !Journal.size() }, t('log.clear')))),
       h('fieldset', { class: 'sub' }, h('legend', { text: t('set.data') }),
         h('p', { text: t('lib.usage', { size: I18n.number(Math.round(Store.usage() / 1024)) }) }),
         h('p', { class: 'hint', text: t('set.dataHint') }),
@@ -12497,6 +12964,11 @@ async function openSettings() {
       } else { Settings.set('recprotect', 'off'); Recovery.clearAllCopies(); Recovery.setPassword(null); Recovery.saveNow(); }
       paint('set-recprot');
     }
+    if (id === 'set-log') {
+      if (!Journal.setKeep(ev.target.checked)) { ev.target.checked = false; await Dialog.message(t('log.title'), t('store.off')); }
+      else announce(t(ev.target.checked ? 'log.on' : 'log.off'));
+      paint('set-log');
+    }
   });
   body.addEventListener('click', async ev => {
     const b = ev.target.closest('button');
@@ -12505,10 +12977,19 @@ async function openSettings() {
       const pwd = await askPassword(t('set.recProtect'), t('set.recPwdHint'));
       if (pwd && Secure.passwordOk(pwd)) { Recovery.setPassword(pwd); Recovery.saveNow(); }
       paint('set-auto');
+    } else if (b.id === 'set-log-view') {
+      await Journal.view();
+      paint('set-log-view');
+    } else if (b.id === 'set-log-export') {
+      Journal.exportFile();
+    } else if (b.id === 'set-log-clear') {
+      if (await Dialog.confirm(t('log.clear'), [t('log.clearConfirm')], t('log.clearBtn'))) { Journal.clearAll(); announce(t('log.cleared')); paint('set-log-view'); }
+      else paint('set-log-clear');
     } else if (b.id === 'set-clear') {
       if (!(await Dialog.confirm(t('set.clearAll'), [t('set.clearConfirm1'), t('set.clearConfirm2')], t('set.clearBtn')))) { paint('set-clear'); return; }
       Recovery.stop();
       Settings.clearAll();
+      Journal.clearAll(); // le journal en mémoire aussi (EF-151)
       for (const k of Store.keys('rec')) Store.remove('rec', k);
       App.libKey = '';
       applyTheme();
@@ -12554,7 +13035,7 @@ const Home = { url: null };
 
 /**
  * Au lancement : projet transmis (contrôlé comme un import) et adresse de retour validée.
- * Appelle : $(), announce(), Dialog.message(), HomeLink.homeUrl(), HomeLink.takeProject(), I18n.error(),
+ * Appelle : $(), announce(), Dialog.message(), HomeLink.homeUrl(), HomeLink.takeProject(), Journal.failure(),
  *   Model.parseFile(), t(), Tabs.replace()
  * Appelée par : init()
  */
@@ -12570,18 +13051,18 @@ async function initHome() {
     Tabs.replace(r.project, { dirty: false });
     announce(t('imp.opened', { name: r.project.name }));
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'open', 'home'));
   }
 }
 
 /**
- * Appelle : Dialog.message(), HomeLink.saveProject(), Model.serialize(), Recovery.clearCurrent(), render(), t(),
- *   toast()
+ * Appelle : Dialog.message(), HomeLink.saveProject(), Journal.store(), Model.serialize(), Recovery.clearCurrent(),
+ *   render(), t(), toast()
  * Appelée par : action « goHome », action « homeSave »
  */
 function homeSave() {
   const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
-  if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
+  if (r !== 'ok') { Journal.store(r, 'home'); Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
   App.dirty = false;
   Recovery.clearCurrent();
   render();
@@ -12681,14 +13162,14 @@ action('moveTask', dir => {
 });
 
 /**
- * Appelle : announce(), clone(), commit(), Dates.parse(), Schedule.compute(), t()
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Journal.calc(), Schedule.compute(), t()
  * Appelée par : l'événement « setProjectStart » (table ACTIONS)
  */
 action('setProjectStart', (arg, el) => {
   if (Dates.parse(el.value) == null) { announce(t('err.date', { field: t('top.start') })); el.value = App.project.projectStart; return; }
   const trial = clone(App.project);
   trial.projectStart = el.value;
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); el.value = App.project.projectStart; return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'main'); announce(t('calc.error')); el.value = App.project.projectStart; return; }
   commit(p => { p.projectStart = el.value; });
 });
 
@@ -12853,10 +13334,11 @@ function initKeyboard() {
 }
 
 /**
- * Appelle : 26 fonctions
+ * Appelle : 27 fonctions
  * Appelée par : (initialisation de 99-main.js)
  */
 function init() {
+  Journal.init(); // en premier : les erreurs du lancement sont aussi journalisées (EF-151)
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();

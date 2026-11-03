@@ -3,7 +3,7 @@
  * Rien n'est appliqué avant « Enregistrer » : le formulaire travaille sur un brouillon.
  * Chaque champ refusé affiche un message précis sous lui, annoncé, et reçoit le focus (EX-06).
  *
- * Appelle : App, Budget, Dates, I18n, Model, Money, Rates, Schedule
+ * Appelle : App, Budget, Dates, I18n, Journal, Model, Money, Rates, Schedule
  * Appelée par : 40-state.js, 62-shortcuts.js, 63-selection.js, 66-layout.js, 79-versions.js, 87-settings.js,
  *   99-main.js, Tabs
  */
@@ -335,7 +335,7 @@ const Editor = (() => {
 
   /**
    * Appelle : $(), announce(), clone(), commit(), Editor.applyTask(), Editor.showErrors(), Editor.validate(),
-   *   Schedule.compute(), t(), taskById(), toast()
+   *   Journal.calc(), Schedule.compute(), t(), taskById(), toast()
    * Appelée par : (initialisation de Editor), Editor
    */
   async function save() {
@@ -364,7 +364,7 @@ const Editor = (() => {
     // Simulation : le planning doit rester calculable (dates ≤ 2199).
     const trial = clone(App.project);
     applyTask(trial, oldId, final);
-    try { Schedule.compute(trial); } catch { showErrors({ forcedStart: t('calc.error') }); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'editor'); showErrors({ forcedStart: t('calc.error') }); return; }
     // Fiche fermée AVANT la mise à jour : une seule reconstruction de l'affichage (EX-15).
     $('editor').hidden = true;
     draft = null;

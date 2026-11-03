@@ -47,8 +47,8 @@ action('verSave', () => {
   versionsWindow.paint && versionsWindow.paint('#ver-name');
 });
 /**
- * Appelle : announce(), clearSelection(), commit(), Dialog.confirm(), Dialog.message(), Editor.close(), I18n.error(),
- *   Model.sanitize(), render(), t(), versionsWindow()
+ * Appelle : announce(), clearSelection(), commit(), Dialog.confirm(), Dialog.message(), Editor.close(),
+ *   Journal.failure(), Model.sanitize(), render(), t(), versionsWindow()
  * Appelée par : l'événement « verRestore » (table ACTIONS)
  */
 action('verRestore', async id => {
@@ -56,7 +56,7 @@ action('verRestore', async id => {
   if (!v) return;
   if (!(await Dialog.confirm(t('ver.restoreQ', { name: v.label }), [t('ver.restoreHint')], t('ver.restore'), false))) return;
   let restored;
-  try { restored = Model.sanitize(v.state, { nested: true }).project; } catch (e) { Dialog.message(t('top.versions'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { restored = Model.sanitize(v.state, { nested: true }).project; } catch (e) { Dialog.message(t('top.versions'), Journal.failure(e, 'restore', 'versions')); return; }
   commit(p => {
     const keep = p.versions;
     for (const k of Object.keys(restored)) p[k] = restored[k];

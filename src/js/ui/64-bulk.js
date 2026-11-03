@@ -2,8 +2,8 @@
  * si une tâche refuse une valeur, rien n'est appliqué et le message liste les tâches en cause. */
 
 /**
- * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), render(), Schedule.compute(), t(),
- *   taskById(), topSelected()
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Journal.calc(), render(),
+ *   Schedule.compute(), t(), taskById(), topSelected()
  * Appelée par : l'événement « duplicateSelection » (table ACTIONS)
  */
 action('duplicateSelection', () => {
@@ -12,7 +12,7 @@ action('duplicateSelection', () => {
   const trial = clone(App.project);
   const created = [];
   for (const id of ids) { const c = duplicateBlock(trial, id); if (!c) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; } created.push(...c); }
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'bulk'); announce(t('calc.error')); return; }
   commit(p => { for (const id of ids) duplicateBlock(p, id); });
   App.multi = new Set(created.filter(id => ids.some(o => taskById(o) && created.includes(id))));
   render();
@@ -20,7 +20,7 @@ action('duplicateSelection', () => {
 });
 
 /**
- * Appelle : 18 fonctions
+ * Appelle : 19 fonctions
  * Appelée par : action « bulkEdit »
  */
 function bulkWindow() {
@@ -106,7 +106,7 @@ function bulkWindow() {
       apply(trial);
       if (refused.length) return err(t('bulk.refused', { list: refused.join(' ; ') }));
       if (projectTagCount(trial.tasks) > Model.LIMITS.projectTags) return err(t('err.projectTags', { max: Model.LIMITS.projectTags }));
-      try { Schedule.compute(trial); } catch { return err(t('calc.error')); }
+      try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'bulk'); return err(t('calc.error')); }
       commit(apply);
       announce(t('bulk.done', { count: ids.length }));
       return true;

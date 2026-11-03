@@ -4,7 +4,7 @@
  * affiche toujours le résultat par textContent, jamais par innerHTML.
  *
  * Appelle : Dates
- * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ * Appelée par : 29 modules et fichiers (voir Architecture.md)
  */
 const I18n = (() => {
   const FR = {
@@ -488,9 +488,19 @@ const I18n = (() => {
     'auto.enable3': 'La copie est supprimée quand vous exportez ou enregistrez le projet, ou quand vous fermez son onglet. Tout peut être effacé dans Réglages.', 'auto.enableBtn': 'Activer', 'auto.disabled': 'Sauvegarde automatique désactivée ; les copies ont été supprimées.',
     'set.tips': 'Afficher les raccourcis clavier au survol des boutons', 'set.tipsOn': 'Raccourcis affichés au survol.', 'set.tipsOff': 'Raccourcis masqués au survol.', 'set.title': 'Réglages', 'set.lang': 'Langue', 'set.theme': 'Thème', 'set.autosave': 'Sauvegarde automatique sur cet appareil', 'set.autosaveHint': 'Désactivée par défaut. Permet de retrouver un travail non exporté après une fermeture accidentelle.',
     'set.recProtect': 'Protéger la sauvegarde automatique par mot de passe', 'set.recPwdEnter': 'Saisir le mot de passe', 'set.recPwdHint': 'Le mot de passe de la sauvegarde automatique est demandé à chaque ouverture de GanttPro ; il reste en mémoire seulement.',
-    'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques et réglages. Les fichiers exportés ne sont jamais touchés.",
-    'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': 'La bibliothèque, les modèles, les sauvegardes automatiques et les réglages seront supprimés définitivement de cet appareil.',
+    'set.data': 'Données sur cet appareil', 'set.dataHint': "Bibliothèque, modèles, sauvegardes automatiques, journal d'erreurs et réglages. Les fichiers exportés ne sont jamais touchés.",
+    'set.clearAll': "Effacer toutes les données de l'application sur cet appareil", 'set.clearConfirm1': "La bibliothèque, les modèles, les sauvegardes automatiques, le journal d'erreurs et les réglages seront supprimés définitivement de cet appareil.",
     'set.clearConfirm2': 'Les projets ouverts et les fichiers exportés ne sont pas touchés.', 'set.clearBtn': 'Tout effacer', 'set.cleared': 'Toutes les données de GanttPro sur cet appareil ont été effacées.',
+    // Journal local d'erreurs (EF-151)
+    'app.unexpected': 'Erreur inattendue.',
+    'log.title': "Journal d'erreurs", 'log.banner': 'Erreur inattendue (réf. {ref}). Exportez votre projet.', 'log.export': 'Exporter le journal', 'log.dismiss': 'Fermer le message',
+    'log.keep': 'Conserver le journal sur cet appareil',
+    'log.keepHint': "Le journal ne contient que des codes d'erreur, jamais le contenu des projets ni les noms des ressources. Sans cette option, il est oublié à la fermeture de la page. 30 jours et 200 lignes au plus.",
+    'log.count': { one: '{count} ligne dans le journal.', other: '{count} lignes dans le journal.' },
+    'log.view': 'Voir le journal', 'log.clear': 'Effacer le journal', 'log.clearConfirm': 'Toutes les lignes du journal seront supprimées, en mémoire et sur cet appareil.', 'log.clearBtn': 'Effacer',
+    'log.cleared': 'Journal effacé.', 'log.empty': 'Le journal est vide.', 'log.on': 'Le journal est conservé sur cet appareil.', 'log.off': "Le journal n'est plus conservé sur cet appareil.",
+    'log.exported': 'Journal exporté.', 'log.caption': 'Lignes du journal, de la plus récente à la plus ancienne',
+    'log.c.ts': 'Date (UTC)', 'log.c.lvl': 'Niveau', 'log.c.act': 'Action', 'log.c.code': 'Code', 'log.c.msg': 'Message', 'log.c.cmp': 'Composant', 'log.c.ref': 'Référence', 'log.c.at': 'Origine',
     'home.back': '← Accueil', 'home.save': 'Sauvegarder', 'home.saved': "Copie du projet remise à la page d'accueil.",
     'help.title': 'Aide', 'help.about': 'À propos', 'help.version': 'GanttPro, version {version}',
     'help.license': "Logiciel libre sous licence MIT. Il fonctionne entièrement dans votre navigateur, sans serveur et sans connexion.",
@@ -932,9 +942,19 @@ const I18n = (() => {
     'auto.enable3': 'The copy is deleted when you export or save the project, or close its tab. Everything can be erased in Settings.', 'auto.enableBtn': 'Turn on', 'auto.disabled': 'Automatic backup turned off; copies were deleted.',
     'set.tips': 'Show keyboard shortcuts when hovering buttons', 'set.tipsOn': 'Shortcuts shown on hover.', 'set.tipsOff': 'Shortcuts hidden on hover.', 'set.title': 'Settings', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.autosave': 'Automatic backup on this device', 'set.autosaveHint': 'Off by default. Lets you recover unexported work after an accidental close.',
     'set.recProtect': 'Protect the automatic backup with a password', 'set.recPwdEnter': 'Enter the password', 'set.recPwdHint': 'The automatic backup password is asked each time GanttPro opens; it is only kept in memory.',
-    'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups and settings. Exported files are never affected.',
-    'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups and settings will be permanently deleted from this device.',
+    'set.data': 'Data on this device', 'set.dataHint': 'Library, templates, automatic backups, error log and settings. Exported files are never affected.',
+    'set.clearAll': 'Erase all application data on this device', 'set.clearConfirm1': 'The library, templates, automatic backups, error log and settings will be permanently deleted from this device.',
     'set.clearConfirm2': 'Open projects and exported files are not affected.', 'set.clearBtn': 'Erase everything', 'set.cleared': 'All GanttPro data on this device was erased.',
+    // Local error log (EF-151)
+    'app.unexpected': 'Unexpected error.',
+    'log.title': 'Error log', 'log.banner': 'Unexpected error (ref. {ref}). Export your project.', 'log.export': 'Export the log', 'log.dismiss': 'Close the message',
+    'log.keep': 'Keep the log on this device',
+    'log.keepHint': 'The log only holds error codes, never project content or resource names. Without this option, it is forgotten when the page closes. 30 days and 200 lines at most.',
+    'log.count': { one: '{count} line in the log.', other: '{count} lines in the log.' },
+    'log.view': 'View the log', 'log.clear': 'Erase the log', 'log.clearConfirm': 'All log lines will be deleted, in memory and on this device.', 'log.clearBtn': 'Erase',
+    'log.cleared': 'Log erased.', 'log.empty': 'The log is empty.', 'log.on': 'The log is kept on this device.', 'log.off': 'The log is no longer kept on this device.',
+    'log.exported': 'Log exported.', 'log.caption': 'Log lines, most recent first',
+    'log.c.ts': 'Date (UTC)', 'log.c.lvl': 'Level', 'log.c.act': 'Action', 'log.c.code': 'Code', 'log.c.msg': 'Message', 'log.c.cmp': 'Component', 'log.c.ref': 'Reference', 'log.c.at': 'Origin',
     'home.back': '← Home', 'home.save': 'Save', 'home.saved': 'Project copy handed to the home page.',
     'help.title': 'Help', 'help.about': 'About', 'help.version': 'GanttPro, version {version}',
     'help.license': 'Free software under the MIT licence. It runs entirely in your browser, with no server and no connection.',
@@ -994,7 +1014,7 @@ const I18n = (() => {
   function setLang(l) { lang = CATALOGS[l] ? l : 'fr'; }
   /**
    * Appelle : aucune
-   * Appelée par : 15 fonctions (usage général)
+   * Appelée par : 16 fonctions (usage général)
    */
   function getLang() { return lang; }
 
@@ -1026,8 +1046,7 @@ const I18n = (() => {
   /**
    * Message d'une erreur de contrôle (Model.Invalid) : {key, params}.
    * Appelle : I18n.group(), I18n.t()
-   * Appelée par : action « verRestore », calendarWindow(), doExport(), importFile(), importText(), initHome(),
-   *   newFromTemplate(), openLibrary(), pasteInternal(), pasteText(), sheetWizard()
+   * Appelée par : calendarWindow(), Journal.failure()
    */
   function error(e) {
     const p = { ...e.params };

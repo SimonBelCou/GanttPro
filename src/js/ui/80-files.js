@@ -14,7 +14,7 @@ function exportFileName(name, ext = 'json') {
 
 /**
  * Appelle : h()
- * Appelée par : doExport()
+ * Appelée par : doExport(), Journal.exportFile()
  */
 function download(data, filename, type) {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
@@ -126,7 +126,7 @@ async function doExport() {
       download(Exchange.mspXml(q, o.anonymize ? Schedule.compute(q) : s), exportFileName(p.name, 'xml'), 'application/xml');
     } else if (o.format === 'png') download(await ganttPng(o), exportFileName(p.name, 'png'), 'image/png');
   } catch (e) {
-    err(e instanceof Model.Invalid ? I18n.error(e) : t('exp.failed'));
+    err(Journal.failure(e, 'export', 'files', 'exp.failed'));
     return;
   }
   document.querySelector('dialog[open] [data-dlg="cancel"]').click();
@@ -216,24 +216,24 @@ function ganttPng(o) {
 
 /*
  * ── Import (EF-52, EF-95, EF-96, EF-102) ───────────────────────────────────────────────────
- * Appelle : Dialog.message(), I18n.error(), importMsp(), importText(), sheetWizard(), t()
+ * Appelle : Dialog.message(), importMsp(), importText(), Journal.failure(), Journal.record(), sheetWizard(), t()
  * Appelée par : action « fileChosen », init()
  */
 async function importFile(file) {
-  if (file.size > 20 * 1024 * 1024) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+  if (file.size > 20 * 1024 * 1024) { Journal.record('imp.tooBig', 'import', 'files'); await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
   const ext = (file.name.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
   try {
     // Aiguillage par le contenu (signature) puis par l'extension : un fichier mal nommé est lu correctement.
     const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
     if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 3 && head[3] === 4) return await sheetWizard({ kind: 'xlsx', bytes: new Uint8Array(await file.arrayBuffer()), name: file.name });
-    if (file.size > Model.MAX_BYTES) { await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
+    if (file.size > Model.MAX_BYTES) { Journal.record('imp.tooBig', 'import', 'files'); await Dialog.message(t('top.import'), t('imp.tooBig')); return; }
     const text = await file.text(), lead = text.replace(/^\uFEFF/, '').trimStart();
     if (lead.startsWith('<')) return await importMsp(text);
     if (lead.startsWith('{')) return await importText(text);
     if (/^(csv|tsv|txt)$/i.test(ext) || !ext) return await sheetWizard({ kind: 'csv', text, name: file.name });
     return await importText(text);
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : /^zip/.test(e.message) ? t('imp.zip') : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'import', 'files'));
   }
 }
 
@@ -252,7 +252,7 @@ async function askPassword(title, hint) {
 }
 
 /**
- * Appelle : announce(), askPassword(), confirmOpen(), Dialog.message(), I18n.error(), Model.parseFile(),
+ * Appelle : announce(), askPassword(), confirmOpen(), Dialog.message(), Journal.failure(), Model.parseFile(),
  *   Secure.decrypt(), t()
  * Appelée par : importFile()
  */
@@ -267,7 +267,7 @@ async function importText(text, origin = 'file') {
       result = Model.parseFile(await Secure.decrypt(result.envelope, pwd));
     }
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'import', 'files'));
     return;
   }
   const p = result.project;
@@ -393,12 +393,12 @@ async function sheetWizard(src) {
       if (W.step === 1) { W.step = 2; paint(); return false; }
       if (W.step === 2) {
         if (W.map.name === undefined) return err(t('wiz.needName'));
-        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+        try { W.result = Exchange.rowsToTasks(rowsOf(), W.map, App.project.tasks.map(x => x.id), { skipHeader: W.header, symbol: Money.symbol() }); } catch (e) { return err(Journal.failure(e, 'import', 'files')); }
         W.step = 3; paint(); return false;
       }
       if (!W.result.rows.length) return err(t('wiz.none'));
       let merged;
-      try { merged = Exchange.mergeRows(App.project, W.result.rows, W.mode); } catch (e) { return err(e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); }
+      try { merged = Exchange.mergeRows(App.project, W.result.rows, W.mode); } catch (e) { return err(Journal.failure(e, 'import', 'files')); }
       commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
       announce(t('wiz.imported', { count: merged.added.length }));
       done = true;

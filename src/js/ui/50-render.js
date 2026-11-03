@@ -2,7 +2,7 @@
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 180 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**

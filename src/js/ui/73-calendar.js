@@ -88,7 +88,7 @@ function paintCalendar(body, focusSel) {
 function calError(msg) { const e = $('cal-err'); e.textContent = msg; e.hidden = false; announce(msg); }
 
 /**
- * Appelle : 13 fonctions
+ * Appelle : 14 fonctions
  * Appelée par : action « openCalendar », repaintCal()
  */
 function calendarWindow() {
@@ -106,7 +106,7 @@ function calendarWindow() {
       let checked;
       try { checked = Model.checkCalendar(CalWin.draft); } catch (e) { if (e instanceof Model.Invalid) { calError(I18n.error(e)); return false; } throw e; }
       const trial = clone(App.project); trial.calendar = checked;
-      try { Schedule.compute(trial); } catch { calError(t('calc.error')); return false; }
+      try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'calendar'); calError(t('calc.error')); return false; }
       commit(p => { p.calendar = checked; });
       announce(t('cal.saved'));
       return true;

@@ -200,6 +200,8 @@ flowchart LR
   Budget --> Metrics
   Budget --> Model
   Columns --> Budget
+  ErrLog --> I18n
+  ErrLog --> Model
   Evm --> Budget
   Evm --> Model
   Exchange --> Budget
@@ -303,7 +305,7 @@ Dépendance de l'interface vers le moteur : l'interface appelle le moteur, jamai
 | `78-print.js` | `Budget`, `Dates`, `I18n`, `Metrics` |
 | `79-versions.js` | `I18n`, `Model` |
 | `80-files.js` | `Csv`, `Dates`, `Exchange`, `I18n`, `Metrics`, `Model`, `Schedule`, `Secure`, `Xlsx` |
-| `82-clipboard.js` | `Csv`, `Exchange`, `I18n`, `Model` |
+| `82-clipboard.js` | `Csv`, `Exchange`, `Model` |
 | `85-library.js` | `Dates`, `I18n`, `Model`, `Secure` |
 | `87-settings.js` | `I18n`, `Model`, `Secure` |
 | `99-main.js` | `Dates`, `I18n`, `Model`, `Schedule` |

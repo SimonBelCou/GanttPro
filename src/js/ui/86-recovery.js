@@ -8,7 +8,7 @@
  * gardé UNIQUEMENT en mémoire pendant la session ; après un rechargement, la sauvegarde reste en
  * pause tant que le mot de passe n'a pas été ressaisi (Réglages ou fenêtre de récupération).
  *
- * Appelle : App, Dialog, I18n, Model, Secure, Settings, Store, Tabs
+ * Appelle : App, Dialog, I18n, Journal, Model, Secure, Settings, Store, Tabs
  * Appelée par : 40-state.js, 80-files.js, 85-library.js, 87-settings.js, 99-main.js, Tabs
  */
 const Recovery = (() => {
@@ -45,8 +45,8 @@ const Recovery = (() => {
   }
 
   /**
-   * Appelle : Dialog.message(), Recovery.enabled(), Recovery.paint(), Recovery.paused(), Recovery.wrap(),
-   *   Store.write(), t(), Tabs.all()
+   * Appelle : Dialog.message(), Journal.store(), Recovery.enabled(), Recovery.paint(), Recovery.paused(),
+   *   Recovery.wrap(), Store.write(), t(), Tabs.all()
    * Appelée par : enableAutosave(), openSettings(), Recovery.touch()
    */
   async function saveAll() {
@@ -59,7 +59,7 @@ const Recovery = (() => {
       if (r !== 'ok') break;
     }
     if (r === 'ok') { lastSaved = Date.now(); failed = ''; }
-    else if (failed !== r) { failed = r; Dialog.message(t('auto.title'), r === 'full' ? t('store.full') : t('store.off')); }
+    else if (failed !== r) { failed = r; Journal.store(r, 'recovery'); Dialog.message(t('auto.title'), r === 'full' ? t('store.full') : t('store.off')); }
     paint();
   }
 
@@ -118,7 +118,7 @@ const Recovery = (() => {
 
   /**
    * Au lancement : pour chaque copie, restaurer dans un onglet, ignorer ou supprimer (EF-101).
-   * Appelle : 14 fonctions
+   * Appelle : 15 fonctions
    * Appelée par : init()
    */
   async function offer() {
@@ -146,7 +146,7 @@ const Recovery = (() => {
       if (c === 'delete') { drop(e.key); continue; }
       if (c !== 'restore') continue;
       let p;
-      try { p = await unwrap(e, pwd); } catch { bad++; continue; }
+      try { p = await unwrap(e, pwd); } catch (err) { Journal.failure(err, 'restore', 'recovery'); bad++; continue; }
       if (e.enc && protectedMode()) password = pwd; // la sauvegarde protégée reprend
       const ok = Tabs.pristine() ? (Tabs.replace(p, { dirty: true, recKey: e.key }), true) : Tabs.open(p, { dirty: true, recKey: e.key });
       if (!ok) break;

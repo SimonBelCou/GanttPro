@@ -62,6 +62,7 @@ jobs:
           npm install --no-save axe-core@4.14.0 acorn@8.19.0
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
+          python3 tests/test_v3_journal.py
           PERF_FACTOR=2 python3 tests/test_v3_recette.py
           PERF_FACTOR=2 python3 tests/test_v3_budget.py
           PERF_FACTOR=2 python3 tests/test_v3_recette_manuelle.py

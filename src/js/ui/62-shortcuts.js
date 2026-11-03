@@ -24,8 +24,8 @@ function duplicateBlock(p, id) {
 }
 
 /**
- * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Editor.close(), render(),
- *   Schedule.compute(), t(), taskById()
+ * Appelle : announce(), clone(), commit(), Dialog.message(), duplicateBlock(), Editor.close(), Journal.calc(),
+ *   render(), Schedule.compute(), t(), taskById()
  * Appelée par : l'événement « duplicateTask » (table ACTIONS)
  */
 action('duplicateTask', () => {
@@ -36,7 +36,7 @@ action('duplicateTask', () => {
   const trial = clone(App.project);
   ids = duplicateBlock(trial, id);
   if (!ids) { Dialog.message(t('edit.duplicate'), t('err.limit', { max: Model.LIMITS.tasks, what: 'tâches' })); return; }
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'shortcuts'); announce(t('calc.error')); return; }
   commit(p => { duplicateBlock(p, id); });
   Editor.close();
   App.selected = ids[0];
@@ -48,8 +48,8 @@ action('duplicateTask', () => {
 
 /**
  * Alt + ←/→ : date imposée d'un jour ouvré ; Alt + Maj + ←/→ : durée d'un jour (EF-78).
- * Appelle : announce(), clone(), commit(), Dates.parse(), Dates.toISO(), I18n.date(), Schedule.compute(), t(),
- *   taskById()
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Dates.toISO(), I18n.date(), Journal.calc(),
+ *   Schedule.compute(), t(), taskById()
  * Appelée par : initShortcuts()
  */
 function nudge(dir, duration) {
@@ -66,7 +66,7 @@ function nudge(dir, duration) {
   } else {
     const iso = Dates.toISO(cal.dnOf(r.s + dir));
     const trial = clone(App.project); trial.tasks.find(x => x.id === task.id).forcedStart = iso;
-    try { Schedule.compute(trial); } catch { announce(t('calc.error')); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'shortcuts'); announce(t('calc.error')); return; }
     commit(p => { p.tasks.find(x => x.id === task.id).forcedStart = iso; });
     announce(t('kb.forced', { date: I18n.date(Dates.parse(iso)) }));
   }

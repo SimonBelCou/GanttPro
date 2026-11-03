@@ -60,14 +60,14 @@ action('moveTask', dir => {
 });
 
 /**
- * Appelle : announce(), clone(), commit(), Dates.parse(), Schedule.compute(), t()
+ * Appelle : announce(), clone(), commit(), Dates.parse(), Journal.calc(), Schedule.compute(), t()
  * Appelée par : l'événement « setProjectStart » (table ACTIONS)
  */
 action('setProjectStart', (arg, el) => {
   if (Dates.parse(el.value) == null) { announce(t('err.date', { field: t('top.start') })); el.value = App.project.projectStart; return; }
   const trial = clone(App.project);
   trial.projectStart = el.value;
-  try { Schedule.compute(trial); } catch { announce(t('calc.error')); el.value = App.project.projectStart; return; }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'main'); announce(t('calc.error')); el.value = App.project.projectStart; return; }
   commit(p => { p.projectStart = el.value; });
 });
 
@@ -232,10 +232,11 @@ function initKeyboard() {
 }
 
 /**
- * Appelle : 26 fonctions
+ * Appelle : 27 fonctions
  * Appelée par : (initialisation de 99-main.js)
  */
 function init() {
+  Journal.init(); // en premier : les erreurs du lancement sont aussi journalisées (EF-151)
   const lang = Settings.get('lang') || ((navigator.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr');
   I18n.setLang(lang);
   applyTheme();

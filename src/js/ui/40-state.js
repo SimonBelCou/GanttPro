@@ -43,16 +43,17 @@ function normalizeOrder(project) {
 }
 
 /**
- * Appelle : Schedule.compute()
+ * Appelle : Journal.calc(), Schedule.compute()
  * Appelée par : commit(), loadProject(), Tabs.restore(), undoStep()
  */
 function recompute() {
   try {
     App.sched = Schedule.compute(App.project);
     App.calcError = null;
-  } catch {
+  } catch (e) {
+    Journal.calc(e, 'state'); // RangeError attendue (date au-delà de 2199) ou erreur imprévue (bandeau)
     App.sched = null;
-    App.calcError = 'calc.error'; // RangeError : date au-delà de 2199
+    App.calcError = 'calc.error';
   }
 }
 

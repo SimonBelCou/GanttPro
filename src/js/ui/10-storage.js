@@ -4,6 +4,7 @@
  *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
+ *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-61) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
  * Rien n'est jamais envoyé. Toute lecture est une donnée NON FIABLE (une autre page locale peut
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
@@ -13,16 +14,17 @@
 const DEFAULT_THEME = 'light';
 /**
  * Appelle : aucune
- * Appelée par : 41-money.js, 50-render.js, 55-tooltip.js, 85-library.js, 87-settings.js, 99-main.js, Recovery
+ * Appelée par : 41-money.js, 50-render.js, 55-tooltip.js, 85-library.js, 87-settings.js, 99-main.js, Journal,
+ *   Recovery
  */
 const Settings = (() => {
   const PREFIX = 'ganttpro.settings.';
-  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'] };
+  const ALLOWED = { theme: ['system', 'light', 'dark'], lang: ['fr', 'en'], autosave: ['on', 'off'], recprotect: ['on', 'off'], noticed: ['yes'], mask: ['on', 'off'], tips: ['on', 'off'], errlog: ['on', 'off'] };
 
   /**
    * Appelle : aucune
-   * Appelée par : action « toggleTheme », applyShortcutTips(), applyTheme(), init(), openSettings(),
-   *   Recovery.enabled(), Recovery.protectedMode(), renderTopbar(), storageNotice()
+   * Appelée par : action « toggleTheme », applyShortcutTips(), applyTheme(), init(), Journal.keeping(),
+   *   openSettings(), Recovery.enabled(), Recovery.protectedMode(), renderTopbar(), storageNotice()
    */
   function get(key) {
     try {
@@ -32,8 +34,8 @@ const Settings = (() => {
   }
   /**
    * Appelle : aucune
-   * Appelée par : action « toggleMask », action « toggleTheme », enableAutosave(), openSettings(), setLanguage(),
-   *   storageNotice()
+   * Appelée par : action « toggleMask », action « toggleTheme », enableAutosave(), Journal.setKeep(), openSettings(),
+   *   setLanguage(), storageNotice()
    */
   function set(key, value) {
     if (!ALLOWED[key] || !ALLOWED[key].includes(value)) return false;
@@ -57,13 +59,13 @@ const Settings = (() => {
 })();
 
 /**
- * Entrepôt de textes sous des espaces de noms fixes (bibliothèque et récupération).
+ * Entrepôt de textes sous des espaces de noms fixes (bibliothèque, récupération, journal d'erreurs).
  *
  * Appelle : aucune
- * Appelée par : 85-library.js, 87-settings.js, Library, Recovery
+ * Appelée par : 85-library.js, 87-settings.js, Journal, Library, Recovery
  */
 const Store = (() => {
-  const SPACES = { lib: 'ganttpro.lib.', rec: 'ganttpro.rec.' };
+  const SPACES = { lib: 'ganttpro.lib.', rec: 'ganttpro.rec.', log: 'ganttpro.log.' };
   const KEY_RE = /^[a-z0-9-]{1,40}$/;
   /**
    * Appelle : aucune
@@ -76,7 +78,8 @@ const Store = (() => {
   /**
    * Écrit un texte. Renvoie 'ok', 'full' (espace insuffisant) ou 'off' (stockage indisponible).
    * Appelle : Store.full()
-   * Appelée par : Library.put(), Library.writeIndex(), openLibrary(), Recovery.flushSync(), Recovery.saveAll()
+   * Appelée par : Journal.save(), Library.put(), Library.writeIndex(), openLibrary(), Recovery.flushSync(),
+   *   Recovery.saveAll()
    */
   function write(space, key, text) {
     try { window.localStorage.setItem(full(space, key), text); return 'ok'; } catch (e) {
@@ -85,15 +88,15 @@ const Store = (() => {
   }
   /**
    * Appelle : Store.full()
-   * Appelée par : Library.index(), Library.load(), openLibrary(), Recovery.found()
+   * Appelée par : Journal.init(), Library.index(), Library.load(), openLibrary(), Recovery.found()
    */
   function read(space, key) {
     try { return window.localStorage.getItem(full(space, key)); } catch { return null; }
   }
   /**
    * Appelle : Store.full()
-   * Appelée par : Library.put(), Library.remove(), openLibrary(), openSettings(), Recovery.clearAllCopies(),
-   *   Recovery.drop()
+   * Appelée par : Journal.clearAll(), Journal.setKeep(), Library.put(), Library.remove(), openLibrary(),
+   *   openSettings(), Recovery.clearAllCopies(), Recovery.drop()
    */
   function remove(space, key) {
     try { window.localStorage.removeItem(full(space, key)); return true; } catch { return false; }
@@ -130,7 +133,7 @@ const Store = (() => {
   }
   /**
    * Appelle : aucune
-   * Appelée par : enableAutosave(), storageNotice()
+   * Appelée par : enableAutosave(), Journal.setKeep(), storageNotice()
    */
   const available = () => { try { const k = 'ganttpro.probe'; window.localStorage.setItem(k, '1'); window.localStorage.removeItem(k); return true; } catch { return false; } };
   return { write, read, remove, keys, usage, available };

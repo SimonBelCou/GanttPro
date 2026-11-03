@@ -99,8 +99,8 @@ action('rsCapacity', (id, el) => {
   paintResourceSheet(resourceSheet.body, id, '#rs-cap');
 });
 /**
- * Appelle : $(), announce(), clone(), commit(), Dates.parse(), paintResourceSheet(), resById(), resourceSheet(),
- *   rsError(), Schedule.compute(), t()
+ * Appelle : $(), announce(), clone(), commit(), Dates.parse(), Journal.calc(), paintResourceSheet(), resById(),
+ *   resourceSheet(), rsError(), Schedule.compute(), t()
  * Appelée par : l'événement « rsAbsAdd » (table ACTIONS)
  */
 action('rsAbsAdd', id => {
@@ -111,7 +111,7 @@ action('rsAbsAdd', id => {
   if (r.absences.length >= Model.LIMITS.absences) return rsError(t('err.limit', { max: Model.LIMITS.absences, what: t('rs.absences').toLowerCase() }));
   const trial = clone(App.project);
   trial.resources.find(x => x.id === id).absences.push({ start: from, end: to, label });
-  try { Schedule.compute(trial); } catch { return rsError(t('calc.error')); }
+  try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'resources'); return rsError(t('calc.error')); }
   commit(p => { p.resources.find(x => x.id === id).absences.push({ start: from, end: to, label }); });
   announce(t('rs.absAdded', { name: r.name }));
   paintResourceSheet(resourceSheet.body, id, '#rs-from');

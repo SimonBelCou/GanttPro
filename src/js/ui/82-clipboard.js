@@ -43,7 +43,7 @@ function pasteInternal(clip) {
   const at = anchor ? trial.tasks.indexOf(trial.tasks.find(y => y.id === anchor)) + 1 + descendants(anchor, trial.tasks).length : trial.tasks.length;
   trial.tasks.splice(at, 0, ...copies);
   normalizeOrder(trial);
-  try { Model.sanitize(Model.serialize(trial)); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { Model.sanitize(Model.serialize(trial)); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   commit(q => { q.tasks.splice(at, 0, ...clone(copies)); });
   App.multi = new Set(copies.map(c => c.id));
   render();
@@ -52,7 +52,7 @@ function pasteInternal(clip) {
 
 /**
  * Appelle : announce(), commit(), Csv.parse(), Dialog.message(), Dialog.open(), Exchange.guessMapping(),
- *   Exchange.mergeRows(), Exchange.rowsToTasks(), h(), I18n.error(), render(), t()
+ *   Exchange.mergeRows(), Exchange.rowsToTasks(), h(), Journal.failure(), render(), t()
  * Appelée par : initClipboard()
  */
 async function pasteText(text) {
@@ -62,7 +62,7 @@ async function pasteText(text) {
   let header = map.name !== undefined;
   if (!header) { map = {}; CLIP_COLS.forEach((f, i) => { map[f] = i; }); }
   let res;
-  try { res = Exchange.rowsToTasks(rows, map, App.project.tasks.map(x => x.id), { skipHeader: header }); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { res = Exchange.rowsToTasks(rows, map, App.project.tasks.map(x => x.id), { skipHeader: header }); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   if (res.errors.length) {
     const ok = await Dialog.open({ title: t('clip.paste'), body: [h('p', { text: t('wiz.valid', { count: res.rows.length, total: res.total }) }),
       h('ul', {}, res.errors.slice(0, 50).map(e => h('li', { text: `${t('wiz.line')} ${e.line} : ${e.msg}` })))],
@@ -71,7 +71,7 @@ async function pasteText(text) {
   }
   if (!res.rows.length) return;
   let merged;
-  try { merged = Exchange.mergeRows(App.project, res.rows, 'add'); } catch (e) { Dialog.message(t('clip.paste'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  try { merged = Exchange.mergeRows(App.project, res.rows, 'add'); } catch (e) { Dialog.message(t('clip.paste'), Journal.failure(e, 'paste', 'clipboard')); return; }
   commit(p => { for (const k of Object.keys(merged.project)) if (k !== 'versions') p[k] = merged.project[k]; });
   App.multi = new Set(merged.added);
   render();

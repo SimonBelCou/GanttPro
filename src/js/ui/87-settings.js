@@ -17,12 +17,12 @@ function setLanguage(next) {
 
 /**
  * Activation de la sauvegarde automatique : message sur ce qui est conservé, où, et le risque.
- * Appelle : Dialog.confirm(), Dialog.message(), Recovery.saveAll(), Recovery.touch(), Settings.set(),
- *   Store.available(), t(), toast()
+ * Appelle : Dialog.confirm(), Dialog.message(), Journal.record(), Recovery.saveAll(), Recovery.touch(),
+ *   Settings.set(), Store.available(), t(), toast()
  * Appelée par : openSettings()
  */
 async function enableAutosave() {
-  if (!Store.available()) { await Dialog.message(t('auto.title'), t('store.off')); return false; }
+  if (!Store.available()) { Journal.record('store.off', 'store', 'settings'); await Dialog.message(t('auto.title'), t('store.off')); return false; }
   const ok = await Dialog.confirm(t('auto.enableTitle'), [t('auto.enable1'), t('auto.enable2'), t('auto.enable3')], t('auto.enableBtn'), false);
   if (!ok) return false;
   Settings.set('noticed', 'yes');
@@ -34,7 +34,7 @@ async function enableAutosave() {
 }
 
 /**
- * Appelle : 31 fonctions
+ * Appelle : 38 fonctions
  * Appelée par : action « openSettings »
  */
 async function openSettings() {
@@ -54,6 +54,14 @@ async function openSettings() {
         auto ? h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-recprot', checked: Recovery.protectedMode() }), h('label', { for: 'set-recprot', text: t('set.recProtect') })) : null,
         auto && Recovery.paused() ? h('div', {}, h('p', { class: 'warning', text: t('auto.paused') }),
           h('button', { type: 'button', id: 'set-recpwd' }, t('set.recPwdEnter'))) : null),
+      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-61).
+      h('fieldset', { class: 'sub' }, h('legend', { text: t('log.title') }),
+        h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-log', checked: Journal.keeping(), aria: { describedby: 'set-log-hint' } }), h('label', { for: 'set-log', text: t('log.keep') })),
+        h('p', { class: 'hint', id: 'set-log-hint', text: t('log.keepHint') }),
+        h('p', { id: 'set-log-count', text: t('log.count', { count: Journal.size() }) }),
+        h('div', { class: 'row-buttons' }, h('button', { type: 'button', id: 'set-log-view' }, t('log.view')),
+          h('button', { type: 'button', id: 'set-log-export', disabled: !Journal.size() }, t('log.export')),
+          h('button', { type: 'button', class: 'danger', id: 'set-log-clear', disabled: !Journal.size() }, t('log.clear')))),
       h('fieldset', { class: 'sub' }, h('legend', { text: t('set.data') }),
         h('p', { text: t('lib.usage', { size: I18n.number(Math.round(Store.usage() / 1024)) }) }),
         h('p', { class: 'hint', text: t('set.dataHint') }),
@@ -92,6 +100,11 @@ async function openSettings() {
       } else { Settings.set('recprotect', 'off'); Recovery.clearAllCopies(); Recovery.setPassword(null); Recovery.saveNow(); }
       paint('set-recprot');
     }
+    if (id === 'set-log') {
+      if (!Journal.setKeep(ev.target.checked)) { ev.target.checked = false; await Dialog.message(t('log.title'), t('store.off')); }
+      else announce(t(ev.target.checked ? 'log.on' : 'log.off'));
+      paint('set-log');
+    }
   });
   body.addEventListener('click', async ev => {
     const b = ev.target.closest('button');
@@ -100,10 +113,19 @@ async function openSettings() {
       const pwd = await askPassword(t('set.recProtect'), t('set.recPwdHint'));
       if (pwd && Secure.passwordOk(pwd)) { Recovery.setPassword(pwd); Recovery.saveNow(); }
       paint('set-auto');
+    } else if (b.id === 'set-log-view') {
+      await Journal.view();
+      paint('set-log-view');
+    } else if (b.id === 'set-log-export') {
+      Journal.exportFile();
+    } else if (b.id === 'set-log-clear') {
+      if (await Dialog.confirm(t('log.clear'), [t('log.clearConfirm')], t('log.clearBtn'))) { Journal.clearAll(); announce(t('log.cleared')); paint('set-log-view'); }
+      else paint('set-log-clear');
     } else if (b.id === 'set-clear') {
       if (!(await Dialog.confirm(t('set.clearAll'), [t('set.clearConfirm1'), t('set.clearConfirm2')], t('set.clearBtn')))) { paint('set-clear'); return; }
       Recovery.stop();
       Settings.clearAll();
+      Journal.clearAll(); // le journal en mémoire aussi (EF-151)
       for (const k of Store.keys('rec')) Store.remove('rec', k);
       App.libKey = '';
       applyTheme();
@@ -149,7 +171,7 @@ const Home = { url: null };
 
 /**
  * Au lancement : projet transmis (contrôlé comme un import) et adresse de retour validée.
- * Appelle : $(), announce(), Dialog.message(), HomeLink.homeUrl(), HomeLink.takeProject(), I18n.error(),
+ * Appelle : $(), announce(), Dialog.message(), HomeLink.homeUrl(), HomeLink.takeProject(), Journal.failure(),
  *   Model.parseFile(), t(), Tabs.replace()
  * Appelée par : init()
  */
@@ -165,18 +187,18 @@ async function initHome() {
     Tabs.replace(r.project, { dirty: false });
     announce(t('imp.opened', { name: r.project.name }));
   } catch (e) {
-    await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
+    await Dialog.message(t('top.import'), Journal.failure(e, 'open', 'home'));
   }
 }
 
 /**
- * Appelle : Dialog.message(), HomeLink.saveProject(), Model.serialize(), Recovery.clearCurrent(), render(), t(),
- *   toast()
+ * Appelle : Dialog.message(), HomeLink.saveProject(), Journal.store(), Model.serialize(), Recovery.clearCurrent(),
+ *   render(), t(), toast()
  * Appelée par : action « goHome », action « homeSave »
  */
 function homeSave() {
   const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
-  if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
+  if (r !== 'ok') { Journal.store(r, 'home'); Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
   App.dirty = false;
   Recovery.clearCurrent();
   render();

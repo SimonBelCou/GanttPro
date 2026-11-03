@@ -1,0 +1,12 @@
+{
+  "format": 3,
+  "name": "Journal : import refusé",
+  "projectStart": "2026-01-05",
+  "tasks": [
+    { "id": "A", "name": "Tâche fictive", "dur": 2, "res": "Camille Exemple" }
+  ],
+  "resources": [
+    { "name": "Camille Exemple", "role": "Rôle fictif" },
+    { "name": "Camille Exemple", "role": "Doublon volontaire" }
+  ]
+}

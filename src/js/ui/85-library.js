@@ -91,11 +91,12 @@ const Library = (() => {
 
 /**
  * Message à la première écriture sur l'appareil (EX-22). Renvoie false si l'utilisateur renonce.
- * Appelle : Dialog.message(), Dialog.open(), h(), Settings.get(), Settings.set(), Store.available(), t()
+ * Appelle : Dialog.message(), Dialog.open(), h(), Journal.record(), Settings.get(), Settings.set(),
+ *   Store.available(), t()
  * Appelée par : saveAsTemplate(), saveToLibrary()
  */
 async function storageNotice() {
-  if (!Store.available()) { await Dialog.message(t('lib.title'), t('store.off')); return false; }
+  if (!Store.available()) { Journal.record('store.off', 'store', 'library'); await Dialog.message(t('lib.title'), t('store.off')); return false; }
   if (Settings.get('noticed') === 'yes') return true;
   const v = await Dialog.open({ title: t('store.noticeTitle'), body: [t('store.notice1'), t('store.notice2'), t('store.notice3')].map(x => h('p', { text: x })),
     actions: [{ label: t('dlg.cancel'), value: 'cancel' }, { label: t('store.understood'), value: 'ok', kind: 'primary', focus: true }] });
@@ -105,10 +106,11 @@ async function storageNotice() {
 }
 
 /**
- * Appelle : Dialog.message(), t()
+ * Appelle : Dialog.message(), Journal.store(), t()
  * Appelée par : openLibrary(), saveAsTemplate(), saveToLibrary()
  */
 function storeFailed(r) {
+  Journal.store(r, 'library');
   return Dialog.message(t('lib.title'), r === 'limit' ? t('lib.limit', { max: Library.MAX_ENTRIES }) : r === 'full' ? t('store.full') : t('store.off'));
 }
 
@@ -267,7 +269,7 @@ async function newFromTemplate() {
   try {
     if (chosen.entry.builtin) p = chosen.entry.build(chosen.start);
     else { p = await Library.load(chosen.entry); if (!p) return; p = shiftTemplate(toTemplate(p, true), chosen.start); }
-  } catch (e) { await Dialog.message(t('tpl.newFrom'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
+  } catch (e) { await Dialog.message(t('tpl.newFrom'), Journal.failure(e, 'open', 'library')); return; }
   p.name = chosen.name; p.id = 'P' + Date.now().toString(36); p.createdAt = Date.now();
   if (Tabs.pristine()) Tabs.replace(p, { dirty: true }); else if (!Tabs.open(p, { dirty: true })) return;
   announce(t('imp.opened', { name: p.name }));
@@ -320,7 +322,7 @@ async function openLibrary(focusSel) {
     if (!entry) { paint(); return; }
     if (cmd === 'open') {
       let p;
-      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
+      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), Journal.failure(e, 'open', 'library')); paint(); return; }
       if (!p) { paint(`#lib-open-${key}`); return; }
       closeDlg();
       if (Tabs.pristine()) Tabs.replace(p, { libKey: key }); else Tabs.open(p, { libKey: key });

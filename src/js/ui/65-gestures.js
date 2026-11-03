@@ -7,7 +7,8 @@ const Gesture = { g: null, suppressClick: false };
 /**
  * Appelle : $(), announce(), clear(), h(), t()
  * Appelée par : action « blCapture », action « blField », action « repCopy », doExport(), Editor.save(),
- *   enableAutosave(), finishGesture(), homeSave(), initGestures(), saveAsTemplate(), saveToLibrary()
+ *   enableAutosave(), finishGesture(), homeSave(), initGestures(), Journal.exportFile(), saveAsTemplate(),
+ *   saveToLibrary()
  */
 function toast(text, undoable) {
   const box = $('toast');
@@ -160,8 +161,8 @@ function moveGesture(ev) {
 }
 
 /**
- * Appelle : clone(), commit(), Dates.parse(), endGesture(), I18n.shortDate(), linkError(), linkType(),
- *   Schedule.compute(), t(), toast()
+ * Appelle : clone(), commit(), Dates.parse(), endGesture(), I18n.shortDate(), Journal.calc(), linkError(),
+ *   linkType(), Schedule.compute(), t(), toast()
  * Appelée par : initGestures()
  */
 function finishGesture() {
@@ -171,7 +172,7 @@ function finishGesture() {
   endGesture(false);
   if (g.kind === 'move') {
     const trial = clone(App.project); trial.tasks.find(x => x.id === id).forcedStart = g.value;
-    try { Schedule.compute(trial); } catch { toast(t('calc.error')); return; }
+    try { Schedule.compute(trial); } catch (e) { Journal.calc(e, 'gestures'); toast(t('calc.error')); return; }
     commit(p => { p.tasks.find(x => x.id === id).forcedStart = g.value; });
     toast(t('gst.moved', { id, date: I18n.shortDate(Dates.parse(g.value)) }), true);
   } else if (g.kind === 'resize') {

@@ -427,7 +427,14 @@ body.dragging { user-select: none; cursor: grabbing; }
 .g-body.with-bl .real-band { top: 24px; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 30; display: flex; gap: .8rem; align-items: center; padding: .5rem .8rem; border-radius: 8px; background: var(--text); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 .toast button { background: var(--bg); color: var(--text); }
-@media print { .toast, .tooltip { display: none !important; } }
+@media print { .toast, .tooltip, .errlog-banner { display: none !important; } }
+
+/* Journal d'erreurs (EF-151) : bandeau non bloquant en haut de la fenêtre, tableau défilant des lignes */
+.errlog-banner { position: fixed; left: 50%; top: .6rem; transform: translateX(-50%); z-index: 31; display: flex; gap: .8rem; align-items: center; max-width: calc(100vw - 2rem); padding: .5rem .8rem; border: 2px solid var(--critical); border-radius: 8px; background: var(--bg); color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.errlog-banner[hidden] { display: none; }
+.row-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+.log-scroll { max-height: 60vh; overflow: auto; }
+.log-scroll td { white-space: nowrap; }
 
 /* Onglets du tableau de bord et charge (EF-87) */
 .tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); margin-bottom: .8rem; }
