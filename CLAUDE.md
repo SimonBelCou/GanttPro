@@ -324,7 +324,7 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 | `PCA.md` | Continuité : hébergement, reprise, problèmes récurrents, codes d'erreur. |
 | `docs/guide-utilisateur.md` | Mode d'emploi. `docs/guide-ia-json.md` : faire créer ou modifier un projet par une IA. |
 | `docs/recette-manuelle.md` | Parcours de validation par le propriétaire du produit ; fichiers d'essai dans `tests/fixtures/`. |
-| `docs/reprise-budget.md` | Reprise du chantier Budget. `docs/veille-securite.md` : veille datée. `CHANGELOG.md` : historique. |
+| `docs/reprise-budget.md` | Reprise du chantier Budget. `docs/veille-securite.md` : veille datée. `docs/plan-audit-rgaa.md` : plan de l'audit RGAA (EX-05). `CHANGELOG.md` : historique. |
 
 ### 13.6 Obligatoire à chaque modification
 1. `python3 tools/build.py`
