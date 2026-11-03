@@ -10,6 +10,7 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 ## Non publié
 
 ### Documentation et organisation
+- **Premier test de restauration du PCA** (contrôle sur clone neuf, Windows) et **mesure d'EX-15 sans `PERF_FACTOR`** : résultats, écarts et corrections proposées dans `PCA.md` §5 ; ligne n° 5 de l'annexe C.2 mise à jour. Aucun code ni seuil modifié.
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec
   une annexe C : journal des arbitrages et écarts connus), `Architecture.md`, `PCA.md`, `docs/veille-securite.md` et ce

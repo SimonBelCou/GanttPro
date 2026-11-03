@@ -88,7 +88,33 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 
 | Date du test | Procédure | Résultat | Écarts relevés |
 |---|---|---|---|
-| *À réaliser* (proposé au plus tard le 31 janvier 2027) | A | — | — |
+| 3 novembre 2026 (poste Windows 11, Node 22, Python 3.14, Playwright 1.64.1 ; clone neuf de `main` au commit `a190a2b`) | **Contrôle seul** (clone neuf depuis GitHub, puis commandes du « Contrôle après restauration ») ; la **procédure A** (nouveau dépôt, `git push --all`, recréation de la protection de `main`) **n'a pas été exécutée** | **Partiel : le contrôle n'est pas vert tel qu'écrit.** Durée : 3 s de clone, environ 3,5 min cumulées pour les commandes (dont 2 min pour les essais de bout en bout), environ 15 min avec le diagnostic. Avec `core.autocrlf=false` (fins de ligne LF) et `PYTHONUTF8=1`, tout passe sauf `build.py --check` (écart 1) et, sans `PERF_FACTOR`, un seuil d'EX-25 (écart 6). | Liste ci-dessous. |
+
+**Écarts du test du 3 novembre 2026** (aucune procédure n'a été corrigée ; corrections proposées) :
+
+1. **`python3 tools/build.py --check` échoue sur Windows** (« GanttPro.html n'est pas à jour »), même sur un clone neuf : le build réécrit le fichier avec des fins de ligne CRLF. Cause connue, corrigée dans la PR #14 (non fusionnée au moment du test). Proposition : refaire ce contrôle une fois la PR #14 fusionnée.
+2. **`python3` n'existe pas sur le PATH de Windows** : seul l'alias du Microsoft Store (`WindowsApps\python3.exe`) répond « Python est introuvable ». Les commandes écrites ne passent donc pas telles quelles. Proposition : ajouter au PCA « sous Windows, remplacer `python3` par `python` (ou `py`) », ou désactiver l'alias dans les paramètres Windows. Le test a utilisé un script d'enrobage `python3` vers `python`, hors du dépôt.
+3. **`core.autocrlf=true` (réglage courant de Git pour Windows) casse deux contrôles de plus** sur un clone neuf, car les fichiers sont extraits en CRLF : `node --test tests/core/*.test.mjs` (2 tests sur 121 : « guide IA : l'exemple de fichier est accepté… » et « …les règles citées correspondent aux contrôles », erreur « bloc d'exemple introuvable ») et `node tools/dependances.mjs --check` (« Dépendances périmées » dans 50 fichiers). Avec `git clone -c core.autocrlf=false`, ces deux contrôles passent. Proposition : ajouter un `.gitattributes` (`* text=auto eol=lf`) pour imposer LF quel que soit le poste, ou documenter `-c core.autocrlf=false` dans la procédure.
+4. **Les essais de bout en bout plantent quand leur sortie est redirigée** (`UnicodeEncodeError: 'charmap' codec can't encode character` dans `test_v3.py`, `test_v3_budget.py`) : Python écrit en cp1252 dès que la sortie n'est pas une console. Contournement : `PYTHONUTF8=1`. Proposition : l'ajouter à la procédure, ou forcer l'encodage dans les essais (`sys.stdout.reconfigure(encoding='utf-8')`). Non vérifié : le comportement dans une console interactive.
+5. **Les `&&` des lignes d'essais s'arrêtent au premier échec** : sans `PYTHONUTF8`, `test_v3_espace.py` et `test_v3_recette.py` n'ont pas été exécutés, et le résultat de la ligne n'est pas informatif. Proposition : un script `tools/controle-restauration` qui exécute chaque contrôle, note la durée et affiche un bilan.
+6. **Sans `PERF_FACTOR`, `test_v3_recette.py` échoue 5 fois sur 7** sur « EX-25 : regroupement de 1 000 tâches en moins de 100 ms » (70 à 121 ms ; voir ci-dessous). Les 86 autres vérifications passent. La commande de la procédure n'a pas de `PERF_FACTOR` : sur ce poste, elle est donc rouge. Proposition, à trancher par le propriétaire du produit : optimiser le regroupement, relever son seuil, ou écrire `PERF_FACTOR=2` dans la procédure.
+7. **Sans écart** : `pip install playwright` et `playwright install chromium` (déjà installés, 4 s), `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (2 s), `test_v3.py` (27 s), `test_v3_espace.py` (19 s), `test_v3_budget.py` (48 s) et `test_v3_recette_manuelle.py` (5 s), tous verts en LF avec `PYTHONUTF8=1`. Le test a été lancé sous Git Bash ; non vérifié sous Windows PowerShell 5.1, où `&&` n'existe pas.
+
+**Reste à faire** pour clore l'écart C.2 n° 5 : exécuter la procédure A sur un dépôt de test (jamais fait), corriger les écarts 1 à 6, puis refaire le contrôle.
+
+### Mesures de performance (EX-15 et EX-25), sans `PERF_FACTOR`
+Mesure du 3 novembre 2026 : `python3 tests/test_v3_recette.py` sans facteur, 7 passages successifs sur un clone neuf (LF) de `main`, poste Windows 11 de développement ; temps mesurés dans Chromium par `performance.now()`. D'autres sessions de travail tournaient en parallèle sur le poste, ce qui peut majorer les temps. Les seuils n'ont pas été modifiés.
+
+| Exigence | Seuil | Mesures (7 passages, triées) | Médiane | Verdict |
+|---|---|---|---|---|
+| EX-15, 50 tâches (modification d'une durée) | < 100 ms | 15, 15, 15, 16, 16, 16, 16 ms | 16 ms | Tenu |
+| EX-15 / R-35, 1 000 tâches | < 500 ms | 216, 218, 219, 223, 236, 237, 246 ms | 223 ms | Tenu (marge d'un facteur 2) |
+| EX-25, recherche sur 1 000 tâches | < 100 ms | 1 ms à chaque passage | 1 ms | Tenu |
+| EX-25, filtre sur 1 000 tâches | < 100 ms | 24 à 39 ms | 31 ms | Tenu |
+| EX-25, regroupement de 1 000 tâches | < 100 ms | 70, 74, 108, 110, 112, 114, 121 ms | 110 ms | **Non tenu 5 fois sur 7** |
+| EX-25, export Excel de 1 000 tâches | < 3 s | 197 à 241 ms | 228 ms | Tenu |
+
+Constat : EX-15 est tenu sans facteur, avec une marge d'un facteur 2 ; seul le regroupement d'EX-25 dépasse son seuil (il passe avec `PERF_FACTOR=2`). Le seuil de 150 ms pour 200 tâches n'est pas mesuré par la recette automatique. Ce poste n'est pas forcément « un ordinateur de bureau courant » : à confirmer par le propriétaire du produit.
 
 ## 6. Problèmes récurrents
 
