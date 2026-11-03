@@ -75,7 +75,7 @@ correctif, fusion après recette, mention dans `CHANGELOG.md`.
 ```bash
 python3 tools/build.py --check
 node --test tests/core/*.test.mjs
-pip install playwright && python3 -m playwright install chromium
+pip install playwright==1.64.1 && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0
 node tools/dependances.mjs --check && node --test tests/test_dependances.mjs
 python3 tests/test_v3.py && python3 tests/test_v3_espace.py && python3 tests/test_v3_recette.py

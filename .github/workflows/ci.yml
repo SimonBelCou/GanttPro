@@ -56,7 +56,7 @@ jobs:
 
       - name: Tests de bout en bout (sécurité, parcours, accessibilité)
         run: |
-          pip install playwright
+          pip install playwright==1.64.1   # version épinglée (veille du 2 novembre 2026)
           python3 -m playwright install --with-deps chromium
           npm install --no-save axe-core@4.14.0 acorn@8.19.0
           python3 tests/test_v3.py
