@@ -824,55 +824,10 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 
 ## Partie B — Ergonomie de l'écran principal
 
-Exigences : EF-46, EF-111, EF-151, EF-152, 4.1, 4.2, 4.4 ; décisions A.9. Fichier : `legende-nombreuses-ressources.json` (30 ressources
-et 12 catégories fictives, 60 tâches).
-
-### Écran 1 — La légende reste en bas de la fenêtre (EF-151)
-
-Départ : fenêtre du navigateur d'au moins 1280 × 720 px, zoom du navigateur à 100 % ; ouvrez `legende-nombreuses-ressources.json`.
-
-- [ ] 1. Regardez le bas de la fenêtre. *Attendu :* la légende est visible en bas, dépliée, sans faire défiler la page ; il n'y a pas de bouton « Légende » au-dessus d'elle.
-- [ ] 2. Faites tourner la molette au-dessus de la légende. *Attendu :* la légende défile dans sa zone (ressources « Personne … ») ; la page ne bouge pas.
-- [ ] 3. Appuyez sur Tab jusqu'à la légende (contour de focus visible), puis sur la flèche bas. *Attendu :* la légende défile au clavier.
-- [ ] 4. Faites défiler la liste et le Gantt jusqu'en bas, puis vers la droite. *Attendu :* les deux barres de défilement horizontales sont visibles juste au-dessus de la légende, jamais recouvertes.
-- [ ] 5. Agrandissez puis réduisez la hauteur de la fenêtre. *Attendu :* la zone liste + Gantt s'allonge ou se raccourcit, la légende reste collée en bas.
-
-### Écran 2 — Plein écran : légende repliable (EF-111, EF-151)
-
-Départ : comme Écran 1.
-
-- [ ] 1. Cliquez **Plein écran du Gantt**. *Attendu :* les barres du haut disparaissent ; la liste et le Gantt occupent la fenêtre ; la barre zoom − / + / **Quitter le plein écran** est au-dessus de la légende ; un titre **▾ Légende** apparaît.
-- [ ] 2. Cliquez **▾ Légende**. *Attendu :* la légende se replie (titre **▸ Légende**), le Gantt s'agrandit vers le bas ; un lecteur d'écran annonce « réduit ».
-- [ ] 3. Appuyez sur Entrée sur le titre. *Attendu :* la légende se déplie (« développé »).
-- [ ] 4. Repliez-la, puis appuyez sur Échap. *Attendu :* sortie du plein écran, focus sur **Plein écran du Gantt**, légende de nouveau dépliée et sans titre.
-
-### Écran 3 — Petits écrans et zoom de 200 % (EX-04, 4.4)
-
-- [ ] 1. Zoom du navigateur à 200 % (Ctrl + +) sur un écran de 1280 × 720 ou moins. *Attendu :* la page défile normalement ; la légende est sous le Gantt ; aucun défilement horizontal de la page.
-- [ ] 2. Mode téléphone des outils du navigateur (360 px de large). *Attendu :* même chose ; liste puis Gantt l'un sous l'autre.
-- [ ] 3. Revenez à 100 % puis lancez l'impression du Gantt (**Imprimer le Gantt**). *Attendu :* l'aperçu est le même qu'avant cette mise à jour.
-
-### Écran 4 — Trois barres par thème (EF-152, 4.2)
-
-Départ : comme Écran 1.
-
-- [ ] 1. Lisez la barre du projet. *Attendu :* nom du projet, « Début projet », Annuler, Rétablir, **Fichier ▾**, puis à droite Thème, English, ⚙, ?.
-- [ ] 2. Lisez la deuxième barre. *Attendu :* groupes **CRÉER** (+ Tâche, + Jalon, + Récapitulative), **PROJET** (Ressources, Catégories, Étiquettes, Calendrier), **SUIVI** (Baselines, Tableau de bord, Rapport d'état, Versions, Imprimer le Gantt), puis « Charge des ressources ».
-- [ ] 3. Lisez la barre **AFFICHAGE**. *Attendu :* Rechercher, Surligner, Filtres, Grouper par | Liens, Masquer les montants, Étiquettes | − Zoom 100 % + ↺ | Replier la liste, **Colonnes ▾**, Tout replier, Tout déplier, Trier | Plein écran du Gantt.
-- [ ] 4. Cliquez sur le nom du projet, puis appuyez sur Tab plusieurs fois. *Attendu :* le focus suit l'ordre de lecture, barre après barre, de gauche à droite ; il ne passe pas par les choix de « Fichier » tant que la liste est repliée.
-- [ ] 5. Ouvrez `projet-surcharge.json`. *Attendu :* le badge « n conflits » et **Résoudre…** apparaissent dans le groupe Charge ; le bandeau d'alertes s'affiche sans faire sortir la légende de la fenêtre.
-- [ ] 6. Ctrl + clic sur deux lignes de la liste. *Attendu :* la barre de sélection apparaît au-dessus de la liste ; la légende reste en bas de la fenêtre.
-
-### Écran 5 — « Fichier ▾ » et « Colonnes ▾ » au clavier (EF-152)
-
-- [ ] 1. Tab jusqu'à **Fichier ▾**, Entrée. *Attendu :* la liste se déplie (Nouveau, Importer, Exporter, Bibliothèque) ; un lecteur d'écran annonce « développé ».
-- [ ] 2. Tab. *Attendu :* le focus est sur **Nouveau**. Échap. *Attendu :* la liste se replie, le focus revient sur **Fichier ▾** (« réduit »).
-- [ ] 3. Entrée, Tab trois fois jusqu'à **Exporter**, Entrée. *Attendu :* la fenêtre Exporter s'ouvre, la liste est repliée. Échap. *Attendu :* le focus revient sur **Fichier ▾**.
-- [ ] 4. Tab jusqu'à **Colonnes ▾**, Espace, Tab. *Attendu :* le focus est sur **Figer** ; choisissez « La première colonne » : la liste reste dépliée et la colonne N° est figée.
-- [ ] 5. Cliquez ailleurs dans la page. *Attendu :* la liste se replie.
-- [ ] 6. Ctrl + S. *Attendu :* la bibliothèque s'ouvre comme avant (raccourci inchangé).
-- [ ] 7. Passez en anglais (**English**). *Attendu :* « File ▾ », « Create », « Project », « Tracking », « View », « Columns ▾ ».
-
+Exigences : EF-46, EF-111, EF-151, EF-152 ; décisions A.9. Les parcours sont des fiches courtes dans `docs/recettes/` :
+[légende en bas](recettes/ecran-legende-fixee-en-bas.md), [légende en plein écran](recettes/ecran-legende-plein-ecran.md),
+[petits écrans et zoom](recettes/ecran-petits-ecrans-et-zoom.md), [trois barres](recettes/ecran-trois-barres-par-theme.md),
+[listes « Fichier » et « Colonnes »](recettes/ecran-listes-fichier-et-colonnes.md).
 
 ### Contrôle final de la mise à jour
 
