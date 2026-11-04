@@ -10,6 +10,8 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 ## Non publié
 
 ### Documentation et organisation
+- Recette manuelle **par petits paquets** : une fiche courte par pull request dans `docs/recettes/` (10 étapes et
+  15 minutes au plus), index des fiches dans `docs/recette-manuelle.md` (`CLAUDE.md` §13.6, point 7).
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec
   une annexe C : journal des arbitrages et écarts connus), `Architecture.md`, `PCA.md`, `docs/veille-securite.md` et ce
