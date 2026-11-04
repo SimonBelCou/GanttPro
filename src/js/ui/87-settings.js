@@ -1,5 +1,5 @@
 /* Réglages (EF-104), aide et à propos (EF-57, EF-58) et page d'accueil facultative (EF-56). */
-const APP_VERSION = '3.0.0';
+const APP_VERSION = Model.APP_VERSION; // source unique : fichier VERSION, injecté par tools/build.py
 
 /**
  * Appelle : Editor.isOpen(), Editor.open(), I18n.getLang(), I18n.setLang(), Recovery.paint(), render(),

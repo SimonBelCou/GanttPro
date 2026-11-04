@@ -34,6 +34,27 @@ test('fichier de la version 2.3 : liens par identifiant, ressource et catégorie
   assert.equal(r.notices.unknown, 1); // « color » de la 2.3 est ignoré et compté
 });
 
+test('versionnement (V3, V5, V6) : formats 3 et 2.3 lus, format 5 refusé avec la version requise, écriture en format 4 avec « app »', () => {
+  assert.equal(Model.FORMAT, 4);
+  assert.match(Model.APP_VERSION, /^\d+\.\d+\.\d+$/); // injecté depuis le fichier VERSION, jamais le marqueur
+  assert.equal(imp({ format: 3, tasks: [task('A')] }).notices.unknown, 0);
+  assert.equal(imp({ format: 4, tasks: [task('A')] }).notices.unknown, 0);
+  const e = (() => { try { imp({ format: 5, tasks: [] }); } catch (x) { return x; } })();
+  assert.equal(e.key, 'imp.newer');
+  I18n.setLang('fr');
+  assert.match(I18n.error(e), /format 5 : GanttPro 4\.0\.0 ou ultérieur/);
+  I18n.setLang('en');
+  assert.match(I18n.error(e), /format 5: GanttPro 4\.0\.0 or later/);
+  I18n.setLang('fr');
+  // « app » est informatif : n'importe quelle valeur est acceptée sans être comptée comme inconnue, puis réécrite.
+  const r = imp({ format: 4, app: '<script>99</script>', tasks: [task('A')] });
+  assert.equal(r.notices.unknown, 0);
+  const out = Model.serialize(r.project);
+  assert.equal(out.format, 4);
+  assert.equal(out.app, Model.APP_VERSION);
+  assert.equal(imp(out).notices.unknown, 0);
+});
+
 test('R-27 refus : identifiant dangereux, fichier trop gros, trop de tâches, boucle', () => {
   assert.equal(keyOf({ tasks: [task('<img src=x>')] }), 'imp.badId');
   assert.equal(errorKey(() => Model.parseFile('{"tasks":[],"pad":"' + 'x'.repeat(5 * 1024 * 1024) + '"}')), 'imp.tooBig');
@@ -53,7 +74,7 @@ test('contrôles de forme', () => {
   assert.equal(keyOf([]), 'imp.unreadable');
   assert.equal(errorKey(() => Model.parseFile('pas du json')), 'imp.unreadable');
   assert.equal(keyOf({}), 'imp.noTasks');
-  assert.equal(keyOf({ format: 4, tasks: [] }), 'imp.newer');
+  assert.equal(keyOf({ format: 5, tasks: [] }), 'imp.newer');
   assert.equal(keyOf({ tasks: [task('A'), task('A')] }), 'imp.dupId');
   assert.equal(keyOf({ tasks: [task('a')] }), 'imp.badId');
   assert.equal(keyOf({ tasks: [task('A', { dur: 0 })] }), 'imp.field');

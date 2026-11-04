@@ -18,9 +18,14 @@ que la CSP n'interdit pas.
 
     python3 tools/build.py            # écrit GanttPro.html
     python3 tools/build.py --check    # échoue si GanttPro.html n'est pas à jour (CI)
+
+Version (SemVer, source unique : fichier VERSION à la racine) : injectée à la place du marqueur @VERSION@ du
+gabarit (titre, <meta name="generator">) et de la chaîne '@VERSION@' du JavaScript (Model.APP_VERSION).
+En mode --check, la concordance avec le CHANGELOG est aussi contrôlée (tools/version.py).
 """
 import base64
 import hashlib
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -28,6 +33,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'src'
 OUT = ROOT / 'GanttPro.html'
+VERSION_FILE = ROOT / 'VERSION'
+SEMVER = re.compile(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)')
+JS_MARKER = "'@VERSION@'"
 
 # Motifs interdits dans les sources (règles A03 de CLAUDE.md) : contrôlés à chaque build.
 FORBIDDEN_JS = [
@@ -100,7 +108,17 @@ def js_files() -> list[Path]:
     return sorted((SRC / 'js' / 'core').glob('*.js')) + sorted((SRC / 'js' / 'ui').glob('*.js'))
 
 
+def read_version() -> str:
+    """Numéro lu dans VERSION : X.Y.Z strict (SemVer sans suffixe), sinon build refusé.
+    Appelée par : assemble(), tools/version.py"""
+    v = VERSION_FILE.read_text(encoding='utf-8').strip() if VERSION_FILE.exists() else ''
+    if not SEMVER.fullmatch(v):
+        raise SystemExit(f"Build refusé : le fichier VERSION doit contenir un numéro X.Y.Z (trouvé : « {v[:40]} »)")
+    return v
+
+
 def assemble() -> str:
+    version = read_version()
     template = (SRC / 'index.html').read_text(encoding='utf-8')
     styles = '\n'.join(p.read_text(encoding='utf-8') for p in sorted((SRC / 'styles').glob('*.css')))
     errors, parts = [], []
@@ -114,7 +132,14 @@ def assemble() -> str:
         raise SystemExit("Build refusé :\n  " + "\n  ".join(errors))
     if re.search(r'\sstyle\s*=|\son[a-z]+\s*=', re.sub(r'<!--.*?-->', '', template, flags=re.S)):
         raise SystemExit("Build refusé : attribut style= ou on…= dans src/index.html")
-    script = "\n(() => {\n'use strict';\n" + "\n".join(parts) + "})();\n"
+    if '@VERSION@' not in template:
+        raise SystemExit("Build refusé : le marqueur @VERSION@ manque dans src/index.html")
+    template = template.replace('@VERSION@', version)
+    js = "\n".join(parts)
+    if js.count(JS_MARKER) != 1:
+        raise SystemExit(f"Build refusé : la chaîne {JS_MARKER} doit apparaître une fois dans le JavaScript")
+    js = js.replace(JS_MARKER, f"'{version}'")
+    script = "\n(() => {\n'use strict';\n" + js + "})();\n"
     style = "\n" + styles + "\n"
     for marker in ('<!--CSP-->', '/*@STYLES@*/', '//@SCRIPT@'):
         if template.count(marker) != 1:
@@ -132,13 +157,27 @@ def assemble() -> str:
     return html.replace('<!--CSP-->', f'<meta http-equiv="Content-Security-Policy" content="{csp}">')
 
 
+def changelog_errors() -> list[str]:
+    """Concordance VERSION / CHANGELOG.md, contrôlée par tools/version.py (chargé par son chemin : build.py peut être
+    importé comme module par les tests, sans que tools/ soit dans le chemin de recherche).
+    Appelée par : main()"""
+    spec = importlib.util.spec_from_file_location('version', ROOT / 'tools' / 'version.py')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.check(read_version(), (ROOT / 'CHANGELOG.md').read_text(encoding='utf-8'))
+
+
 def main() -> int:
     html = assemble()
     if '--check' in sys.argv[1:]:
         if not OUT.exists() or OUT.read_text(encoding='utf-8') != html:
             print("GanttPro.html n'est pas à jour : lancez « python3 tools/build.py » puis recommitez.")
             return 1
-        print("GanttPro.html à jour.")
+        errors = changelog_errors()
+        if errors:
+            print("Version incohérente :\n  " + "\n  ".join(errors))
+            return 1
+        print("GanttPro.html à jour, version concordante avec CHANGELOG.md.")
         return 0
     # newline='\n' : fins de ligne LF sur tout poste (Windows écrirait des CRLF), même fichier qu'en CI.
     OUT.write_text(html, encoding='utf-8', newline='\n')

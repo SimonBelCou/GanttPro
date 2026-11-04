@@ -1,6 +1,6 @@
 /*
  * Données du projet : limites (3.7), projet initial (3.8), contrôle complet d'un fichier (8.3)
- * et écriture au format 3 (8.2).
+ * et écriture au format 4 (8.2, avec la version « app »).
  *
  * Sécurité (A03, A08 – SECURITY.md) : un fichier importé est une donnée NON FIABLE. Il n'est
  * jamais copié tel quel : chaque objet est reconstruit champ par champ à partir d'une liste
@@ -12,7 +12,12 @@
  * Appelée par : 28 modules et fichiers (voir Architecture.md)
  */
 const Model = (() => {
-  const FORMAT = 3;
+  // Format de fichier (8.2) : il ne monte qu'en cas de rupture de sens, jamais pour un champ facultatif ajouté (règle V4,
+  // journal C du 3 novembre 2026). Les formats 1 à 3 restent lus ; un format supérieur est refusé. Le format N (N >= 4)
+  // demande GanttPro (N - 1).0.0 ou ultérieur (SemVer : majeur = format incompatible).
+  const FORMAT = 4;
+  // Version de l'application, injectée par tools/build.py depuis le fichier VERSION : ne jamais écrire de numéro ici.
+  const APP_VERSION = '@VERSION@';
   const MAX_BYTES = 5 * 1024 * 1024;
   const LIMITS = Object.freeze({
     tasks: 1000, depth: 5, resources: 100, categories: 100, deps: 50, assign: 10, tags: 10, projectTags: 200,
@@ -241,9 +246,10 @@ const Model = (() => {
     const stats = { unknown: 0 };
     if (!isObj(raw)) fail('imp.unreadable');
     if (has(raw, 'format') && !(Number.isInteger(raw.format) && raw.format >= 1)) fail('imp.field', { obj: 'project', field: 'format', rule: 'rule.int', min: 1, max: FORMAT });
-    if (raw.format > FORMAT) fail('imp.newer');
+    if (raw.format > FORMAT) fail('imp.newer', { format: raw.format, version: `${raw.format - 1}.0.0` });
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
-    const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
+    // « app » (version qui a écrit le fichier, V6) est informatif : accepté par la liste blanche, jamais contrôlé ni relu.
+    const P = reader(raw, { obj: 'project' }, ['format', 'app', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
       'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns', 'profiles'], stats);
 
@@ -570,7 +576,7 @@ const Model = (() => {
   const profName = (project, id) => ((project.profiles || []).find(p => p.id === id) || { name: '' }).name;
 
   /**
-   * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51).
+   * Écriture au format 4 (8.2), avec la version de l'application (champ « app »). anonymize : « Ressource 1 », sans rôle (EF-51).
    * Appelle : Model.profName(), Model.resName(), Model.stripAmounts()
    * Appelée par : action « verSave », doExport(), Exchange.mergeRows(), homeSave(), Library.put(), Model.sanitize(),
    *   pasteInternal(), Recovery.flushSync(), Recovery.wrap()
@@ -580,7 +586,7 @@ const Model = (() => {
     const nameOf = id => (anonymize ? `Ressource ${rIndex.get(id) + 1}` : resName(project, id));
     const catName = id => (project.categories.find(c => c.id === id) || { name: '' }).name;
     const file = {
-      format: FORMAT, id: project.id, createdAt: project.createdAt,
+      format: FORMAT, app: APP_VERSION, id: project.id, createdAt: project.createdAt,
       name: project.name, desc: project.desc, emoji: project.emoji, projectStart: project.projectStart, reportNote: project.reportNote,
       calendar: JSON.parse(JSON.stringify(project.calendar)),
       leveling: project.leveling || 'level',
@@ -683,5 +689,5 @@ const Model = (() => {
    */
   const checkCalendar = c => sanitizeCalendar(c, { unknown: 0 });
 
-  return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
+  return { checkCalendar, FORMAT, APP_VERSION, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
 })();
