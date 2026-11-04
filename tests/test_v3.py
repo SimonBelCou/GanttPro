@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Tests de bout en bout de GanttPro v3 (GanttPro.html) : Chromium ou Firefox headless, CSP réellement appliquée.
+"""Tests de bout en bout de GanttPro v3 (GanttPro.html) : Chromium, Firefox ou WebKit headless, CSP réellement appliquée.
 
     python3 tools/build.py
-    pip install playwright==1.64.1 && python3 -m playwright install chromium firefox
+    pip install playwright==1.64.1 && python3 -m playwright install chromium firefox webkit
     npm install --no-save axe-core          # audit d'accessibilité (WCAG 2.1 AA)
     python3 tests/test_v3.py                   # Chromium (défaut)
     BROWSER=firefox python3 tests/test_v3.py   # Firefox (décision O4 du 3 novembre 2026)
+    BROWSER=webkit python3 tests/test_v3.py    # WebKit de Playwright (décision O6 du 4 novembre 2026)
 
 Couvre : CSP (script et style par empreinte, aucun réseau), import malveillant (XSS, refus complet),
 parcours clavier et souris (ajout, édition, dépendances, boucle refusée, annuler/rétablir),
@@ -21,11 +22,11 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parent.parent
 HTML = Path(os.environ.get('GANTT_HTML', ROOT / 'GanttPro.html'))
 AXE = Path(os.environ.get('AXE_JS', ROOT / 'node_modules' / 'axe-core' / 'axe.min.js'))
-# Navigateur des tests : « chromium » (défaut) ou « firefox ». Les mesures de temps (EX-15, EX-25) restent
-# propres à Chromium (tests/test_v3_recette.py, qui n'est pas lancé sous Firefox : décision O4, Specs annexe C).
+# Navigateur des tests : « chromium » (défaut), « firefox » ou « webkit ». Les mesures de temps (EX-15, EX-25) restent
+# propres à Chromium (tests/test_v3_recette.py, qui n'est pas lancé sous Firefox ni WebKit : décisions O4 et O6, Specs annexe C).
 BROWSER = os.environ.get('BROWSER', 'chromium')
-if BROWSER not in ('chromium', 'firefox'):
-    sys.exit(f"BROWSER={BROWSER!r} : valeurs possibles « chromium » ou « firefox ».")
+if BROWSER not in ('chromium', 'firefox', 'webkit'):
+    sys.exit(f"BROWSER={BROWSER!r} : valeurs possibles « chromium », « firefox » ou « webkit ».")
 
 results = []
 
@@ -37,19 +38,47 @@ def launch(p):
     Sous Firefox, les deux préférences de test autorisent navigator.clipboard.readText() sans le menu
     « Coller » que Firefox affiche à l'utilisateur : c'est l'équivalent des permissions presse-papiers
     accordées à Chromium par new_context(), qui ne les connaît pas pour Firefox.
+    WebKit n'a besoin d'aucune option de lancement : ses permissions presse-papiers passent par new_context().
     """
     if BROWSER == 'firefox':
         return p.firefox.launch(firefox_user_prefs={'dom.events.asyncClipboard.readText': True,
                                                     'dom.events.testing.asyncClipboard': True})
+    if BROWSER == 'webkit':
+        return p.webkit.launch()
     return p.chromium.launch(args=['--no-sandbox'])
+
+
+def is_webkit_select_css(text):
+    """Vrai pour les deux messages de console propres à WebKit, sans lien avec un défaut de GanttPro :
+    la feuille de style interne des <select> (voir is_csp_message) et le chargement refusé de l'image « x »
+    des charges XSS d'essai (<img src=x>), que WebKit signale en erreur au lieu de la violation CSP."""
+    return BROWSER == 'webkit' and (text.startswith('Refused to apply a stylesheet because')
+                                    or (text.startswith('Not allowed to load local resource: ') and text.endswith('/x')))
 
 
 def is_csp_message(text):
     """Vrai si un message de console signale une violation de la CSP.
 
-    Chromium écrit « Content Security Policy » ou « Refused to … », Firefox « Content-Security-Policy: … ».
+    Chromium écrit « Content Security Policy » ou « Refused to … », WebKit « Refused to … », Firefox « Content-Security-Policy: … ».
     """
+    if is_webkit_select_css(text):
+        # Particularité de WebKit, reproduite sur une page de deux lignes sans GanttPro : sous un style-src strict,
+        # chaque <select> déclenche ce message pour la feuille de style interne du navigateur. Les violations
+        # d'un style ou d'un script de la page (« Refused to apply inline style », « Refused to execute … ») restent comptées.
+        return False
     return 'Content Security Policy' in text or 'Content-Security-Policy' in text or 'Refused' in text
+
+
+def read_clipboard(pg):
+    """Texte du presse-papiers. Chromium et Firefox : navigator.clipboard.readText().
+
+    WebKit de Playwright refuse readText() (menu « Coller » réservé à l'utilisateur) et ne colle pas par Ctrl + V :
+    new_context() y installe donc un espion de navigator.clipboard.writeText() qui garde le dernier texte écrit
+    par l'application. Ce qui est vérifié reste le texte que GanttPro envoie au presse-papiers.
+    """
+    if BROWSER != 'webkit':
+        return pg.evaluate("navigator.clipboard.readText()")
+    return pg.evaluate("window.__lastClipboardText || ''")
 
 
 def new_context(browser, **options):
@@ -60,6 +89,9 @@ def new_context(browser, **options):
     ctx = browser.new_context(**options)
     if BROWSER == 'chromium':
         ctx.grant_permissions(['clipboard-read', 'clipboard-write'])
+    elif BROWSER == 'webkit':
+        ctx.add_init_script("""(() => { const c = navigator.clipboard; if (!c) return; const w = c.writeText.bind(c);
+            c.writeText = (t) => { window.__lastClipboardText = t; return w(t); }; })();""")
     return ctx
 
 
@@ -129,7 +161,7 @@ def main():
         errors, csp = [], []
         pg.on('pageerror', lambda e: errors.append(str(e)))
         pg.on('console', lambda m: csp.append(m.text) if is_csp_message(m.text)
-              else (errors.append(m.text) if m.type == 'error' else None))
+              else (errors.append(m.text) if m.type == 'error' and not is_webkit_select_css(m.text) else None))
         pg.clock.set_fixed_time('2026-01-14T10:00:00')
         pg.goto(HTML.as_uri())
         pg.wait_for_selector('#task-rows tr')
@@ -530,7 +562,7 @@ def main():
         axe_check(pg, "rapport d'état")
         pg.click('#rep-win button:has-text("Copier le texte")')
         pg.wait_for_timeout(200)
-        clip = pg.evaluate("navigator.clipboard.readText()")
+        clip = read_clipboard(pg)
         check('rapport : texte brut copié', 'Voyant : ' in clip and 'Point hebdomadaire' in clip, clip[:120])
         close_dialog('Fermer')
         pg.click('button[data-click="openPrint"]')
@@ -669,7 +701,7 @@ def main():
             # constructeur d'un ClipboardEvent : on y passe par un vrai Ctrl + C puis on relit le presse-papiers.
             if BROWSER == 'firefox':
                 pg.keyboard.press('Control+c')
-                return pg.evaluate("navigator.clipboard.readText()")
+                return read_clipboard(pg)
             return pg.evaluate("""() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent('copy', {clipboardData: dt, bubbles: true})); return dt.getData('text/plain'); }""")
 
         def paste_tsv(text):

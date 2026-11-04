@@ -29,6 +29,11 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   dans les tests ; sous Firefox, le copier-coller passe par de vrais Ctrl + C / Ctrl + V (Firefox ignore le
   `clipboardData` d'un `ClipboardEvent` simulé) et les messages « Content-Security-Policy » sont reconnus comme
   violations CSP. Aucun défaut de GanttPro constaté sous Firefox.
+- **WebKit en CI** : nouveau job `webkit` (bloquant), même périmètre que Firefox (décision O6, Specs annexe C) ;
+  `BROWSER=webkit` dans les tests. Le texte copié est lu par un espion de `clipboard.writeText` ; deux messages
+  de console propres à WebKit sont tolérés (feuille interne des `<select>` sous CSP stricte, image `x` des charges XSS).
+  WebKit de Playwright n'est pas Safari : la recette G15 reste nécessaire. Le job ne sera vert qu'avec le correctif du
+  clic perdu après un `change` (PR séparée).
 - **Actions GitHub épinglées** sur le SHA complet du commit de leur étiquette, version en commentaire (`checkout` v7.0.1,
   `setup-python` v7.1.0, `setup-node` v7.1.0, `gitleaks-action` v3.0.0) : une étiquette déplacée ne peut plus changer le
   code exécuté par la CI. Aucun changement de version ; Dependabot continue de proposer les mises à jour.

@@ -90,3 +90,30 @@ jobs:
           npm install --no-save axe-core@4.14.0
           python3 tests/test_v3.py
           python3 tests/test_v3_espace.py
+
+  # WebKit (décision O6 du 4 novembre 2026, Specs_fonctionnelles.md annexe C), sur le modèle du job « firefox » :
+  # mêmes suites, sans les mesures de temps. WebKit de Playwright sous Linux n'est PAS Safari : la recette sur un
+  # vrai Safari / iPad (docs/recette-manuelle.md, G15) reste nécessaire. Étape bloquante.
+  webkit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+
+      - name: Tests de bout en bout sous WebKit (sécurité, parcours, accessibilité)
+        env:
+          BROWSER: webkit
+        run: |
+          pip install playwright==1.64.1   # même version que les autres jobs
+          python3 -m playwright install --with-deps webkit
+          npm install --no-save axe-core@4.14.0
+          python3 tests/test_v3.py
+          python3 tests/test_v3_espace.py
