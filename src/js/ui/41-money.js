@@ -31,7 +31,7 @@ const Money = (() => {
   /**
    * Texte brut (infobulles, annonces) : « •••• » si masqué.
    * Appelle : Budget.format(), Budget.formatCompact(), Money.masked(), Money.opts()
-   * Appelée par : Editor.summaryText(), paintBudget()
+   * Appelée par : Editor.summaryText(), moneyAxis(), paintBudget(), paintEvmCurves()
    */
   function text(cents, { compact = false } = {}) {
     if (masked()) return DOTS;

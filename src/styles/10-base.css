@@ -304,9 +304,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .tooltip div:first-child { font-weight: 700; }
 
 /* Tableau de bord (EF-37 à EF-40) — couleurs de séries validées (outil dataviz, clair et sombre) */
-:root { --series-planned: #2a78d6; --series-real: #eb6834; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; } }
-:root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; }
+:root { --series-planned: #2a78d6; --series-real: #eb6834; --series-earned: #1baf7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; --series-earned: #199e70; } }
+:root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; --series-earned: #199e70; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
 .tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; min-width: 0; container-type: inline-size; }
 .tile dt { color: var(--muted); font-size: .85rem; }
@@ -341,6 +341,22 @@ svg.scurve { width: 100%; height: auto; display: block; }
 .chart-legend .key.planned { border-top-color: var(--series-planned); }
 .chart-legend .key.real { border-top-color: var(--series-real); }
 .chart-legend .key.baseline { border-top-style: dashed; }
+/* Courbes PV / EV / AC (EF-151) : PV continue, EV en ronds, AC en carrés ; forme et texte doublent la couleur. Le vert de
+   l'EV a moins de 3:1 sur le fond clair : légende, étiquettes directes et tableau des valeurs le suppléent (outil
+   dataviz, palette par défaut, emplacements 1 à 3, contrôlée en clair et en sombre). */
+.scurve .series.pv { stroke: var(--series-planned); }
+.scurve .series.ev { stroke: var(--series-earned); }
+.scurve .series.ac { stroke: var(--series-real); }
+.scurve .mark { stroke: var(--panel); stroke-width: 2; }
+.scurve .mark.ev { fill: var(--series-earned); }
+.scurve .mark.ac { fill: var(--series-real); }
+.chart-legend .key { position: relative; }
+.chart-legend .key.pv { border-top-color: var(--series-planned); }
+.chart-legend .key.ev { border-top-color: var(--series-earned); }
+.chart-legend .key.ac { border-top-color: var(--series-real); }
+.chart-legend .key.mark-circle::after, .chart-legend .key.mark-square::after { content: ''; position: absolute; left: 6px; top: -6px; width: 10px; height: 10px; }
+.chart-legend .key.mark-circle::after { border-radius: 50%; background: var(--series-earned); }
+.chart-legend .key.mark-square::after { background: var(--series-real); }
 .table-scroll { overflow-x: auto; max-height: 360px; overflow-y: auto; }
 table.tracking th { position: sticky; top: 0; background: var(--panel); }
 button.sort { background: transparent; border: 0; padding: 0; min-height: 24px; font-weight: 600; }

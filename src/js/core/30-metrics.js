@@ -3,8 +3,8 @@
  * Un seul calcul de statut pour toute l'application (défaut A-06 de la version 2.3).
  *
  * Appelle : Dates
- * Appelée par : 50-render.js, 75-dashboard.js, 76-load.js, 77-report.js, 78-print.js, 80-files.js, Budget, Exchange,
- *   Tooltip, View
+ * Appelée par : 50-render.js, 75-dashboard.js, 76-load.js, 77-report.js, 78-print.js, 80-files.js, Budget, Evm,
+ *   Exchange, Tooltip, View
  */
 const Metrics = (() => {
   const STATUS = Object.freeze({ DONE: 'done', LATE: 'late', ONGOING: 'ongoing', NOT_STARTED: 'notStarted', UPCOMING: 'upcoming' });
@@ -87,7 +87,8 @@ const Metrics = (() => {
   /**
    * RG-17 : périodes (semaines du lundi au dimanche, ou mois civils) couvrant [fromDn, toDn].
    * Appelle : Dates.mondayOf(), Dates.monthEnd(), Dates.monthStart()
-   * Appelée par : Budget.costCurve(), buildPrintGantt(), ganttPng(), loadPeriods(), Metrics.sCurve(), renderGantt()
+   * Appelée par : Budget.costCurve(), buildPrintGantt(), Evm.curves(), ganttPng(), loadPeriods(), Metrics.sCurve(),
+   *   renderGantt()
    */
   function periods(fromDn, toDn, unit) {
     const out = [];

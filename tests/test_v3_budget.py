@@ -695,6 +695,51 @@ def main():
         check('Budget 18 : référence replanifiée BAC 510, EV 244, CPI 1,16, SPI 0,48, plus de tâche ajoutée', all(x in tl for x in ['510,00 €', '244,00 €', '1,16', '0,48']) and pg.locator('#evm-scope').count() == 0, tl)
         esc()
 
+        # ── Courbes PV / EV / AC dans le temps (EF-151, RG-59, R-101) ──────────────────────────────
+        load_fx('valeur-acquise-courbes.json')
+        txt = evm_text('#evc')
+        check('EF-151 : section « Courbes PV / EV / AC » sous la valeur acquise, sur la baseline de référence',
+              'Courbes PV / EV / AC' in txt and 'Baseline initiale' in sp(pg.inner_text('#evc-ref')) and pg.evaluate("!!document.querySelector('#evm ~ #evc')"), txt)
+        legend = pg.evaluate("[...document.querySelectorAll('#evc .chart-legend li')].map(l => l.textContent)")
+        check('EF-151 : légende par forme et texte', legend == ['PV, valeur planifiée (trait continu)', 'EV, valeur acquise (ronds aux mesures)', 'AC, coût réel (carrés aux mesures)'], legend)
+        check('EF-151 : EV et AC marqués aux seules mesures (point du 09/01, aujourd\'hui)', pg.locator('#evc circle.mark.ev').count() == 2 and pg.locator('#evc rect.mark.ac').count() == 2)
+        check('EF-151 : titre et description propres à la courbe, aucun identifiant en double dans l\'onglet',
+              pg.get_attribute('#evc svg.scurve', 'aria-labelledby') == 'evc-title evc-desc' and pg.evaluate("(() => { const ids = [...document.querySelectorAll('#dash-win [id]')].map(e => e.id); return ids.length === new Set(ids).size; })()"))
+        check('RG-59 : le point relu sans montants est signalé, non tracé', '1 (sans montants' in sp(pg.inner_text('#evc-skipped')), pg.inner_text('#evc-skipped') if pg.locator('#evc-skipped').count() else '')
+        check('RG-59 : l\'aide explique que l\'AC n\'est pas celui de la courbe des coûts', 'tâches terminées' in txt)
+        pg.click('[data-click="dashEvcValues"]'); pg.wait_for_timeout(100)
+        rows = pg.evaluate("[...document.querySelectorAll('#evc-values tbody tr')].map(r => r.textContent)")
+        check('R-101 : tableau par semaine — 100,00 / 80,00 / 140,00 au point du 09/01, 200,00 / 140,00 / 150,00 aujourd\'hui',
+              len(rows) == 2 and all(x in sp(rows[0]) for x in ['100,00 €', '80,00 €', '140,00 €', 'Revue etude']) and all(x in sp(rows[1]) for x in ['200,00 €', '140,00 €', '150,00 €', 'Aujourd\'hui']), rows)
+        check('EF-151 : le bouton « Afficher les valeurs » garde le focus et dit son état', pg.evaluate("document.activeElement.dataset.click") == 'dashEvcValues' and pg.get_attribute('[data-click="dashEvcValues"]', 'aria-expanded') == 'true')
+        axe_check(pg, 'onglet Budget avec les courbes PV / EV / AC et leurs valeurs')
+        pg.click('#evc-month'); pg.wait_for_timeout(100)
+        rows = pg.evaluate("[...document.querySelectorAll('#evc-values tbody tr')].map(r => r.textContent)")
+        check('R-101 : par mois, une période où la mesure du jour l\'emporte, focus sur le choix', len(rows) == 1 and '150,00 €' in sp(rows[0]) and pg.evaluate("document.activeElement.id") == 'evc-month', rows)
+        pg.click('#evc-week'); pg.wait_for_timeout(100)
+        pg.click('dialog[open] button.dlg-mask'); pg.wait_for_timeout(100)
+        vals = sp(pg.inner_text('#evc-values'))
+        check('EF-125 : montants des courbes masqués (tableau, axe, étiquettes)', '200,00' not in vals and '••••' in vals and '200,00' not in sp(pg.locator('#evc svg').text_content()), vals)
+        pg.click('dialog[open] button.dlg-mask'); pg.wait_for_timeout(100)
+        pg.click('[data-click="dashEvcValues"]'); pg.wait_for_timeout(100)
+        esc()
+        load_fx('valeur-acquise-passe.json')
+        txt = evm_text('#evc')
+        check('B2 : sans baseline de référence, la section dit pourquoi aucune courbe ne s\'affiche', 'Aucune courbe' in txt and 'Capturez une baseline' in txt and pg.locator('#evc svg').count() == 0, txt)
+        esc()
+
+        # X2 : bloc « Valeur acquise » du rapport d'état pour un projet qui n'a plus que des points de situation.
+        load('points-sans-montants.json')
+        pg.click('button[data-click="openReport"]'); pg.wait_for_selector('#report-preview')
+        rep = sp(pg.inner_text('#report-preview'))
+        check('X2 : sans montant, le rapport garde le bloc Valeur acquise avec les CPI et SPI des points', 'Valeur acquise' in rep and 'Revue 1 : CPI 1,16, SPI 0,55' in rep, rep)
+        check('X2 : l\'indice du jour reste « non calculable » avec sa raison, jamais 0', 'CPI, indice de coût : non calculable (aucun budget de tâche saisi)' in rep, rep)
+        esc()
+        load_fx('budget-sans-montant.json')
+        pg.click('button[data-click="openReport"]'); pg.wait_for_selector('#report-preview')
+        check('X2 : sans montant ni point de situation, pas de bloc Valeur acquise', 'Valeur acquise' not in pg.inner_text('#report-preview'))
+        esc()
+
         # ── Colonnes de la liste (EF-143 à EF-146, RG-52, RG-53, R-89 à R-91) ─────────────────────
         heads_js = "[...document.querySelectorAll('#tasks-table thead th')].map(t => t.textContent.trim())"
         load_fx('colonnes-personnalisees.json')

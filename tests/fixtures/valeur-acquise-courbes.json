@@ -1,0 +1,50 @@
+{
+  "format": 3,
+  "name": "Projet fictif courbes PV EV AC",
+  "projectStart": "2026-01-05",
+  "currency": "€",
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Etude",
+      "dur": 5,
+      "pct": 100,
+      "budget": 10000,
+      "actual": 9000,
+      "realEnd": "2026-01-09"
+    },
+    {
+      "id": "T2",
+      "name": "Realisation",
+      "dur": 5,
+      "pct": 40,
+      "budget": 10000,
+      "actual": 6000,
+      "deps": [
+        "T1"
+      ]
+    }
+  ],
+  "baselines": [
+    {
+      "id": "B1",
+      "name": "Baseline initiale",
+      "color": "#e8590c",
+      "initial": true,
+      "projectStart": "2026-01-05",
+      "shownOnGantt": false,
+      "shownOnScurve": false,
+      "provision": 0,
+      "tasks": [
+        { "id": "T1", "name": "Etude", "dur": 5, "deps": [], "start": "2026-01-05", "end": "2026-01-09", "budget": 10000 },
+        { "id": "T2", "name": "Realisation", "dur": 5, "deps": ["T1"], "start": "2026-01-12", "end": "2026-01-16", "budget": 10000 }
+      ]
+    }
+  ],
+  "baselineRef": "B1",
+  "statusPoints": [
+    { "date": "2026-01-07", "label": "Point mi-etude", "ref": "Baseline initiale", "cpi": 83, "bac": 20000, "pv": 0, "ev": 5000, "ac": 6000 },
+    { "date": "2026-01-09", "label": "Revue etude", "ref": "Baseline initiale", "cpi": 57, "spi": 80, "bac": 20000, "pv": 10000, "ev": 8000, "ac": 14000 },
+    { "date": "2026-01-09", "label": "Relu sans montants", "ref": "Baseline initiale", "cpi": 57, "spi": 80 }
+  ]
+}

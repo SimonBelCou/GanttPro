@@ -201,6 +201,7 @@ flowchart LR
   Budget --> Model
   Columns --> Budget
   Evm --> Budget
+  Evm --> Metrics
   Evm --> Model
   Exchange --> Budget
   Exchange --> Calendar

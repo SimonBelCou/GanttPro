@@ -2,13 +2,12 @@
  * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
 
 /**
- * Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries.
+ * Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des valeurs (montants en centimes, null ignoré).
  * Appelle : aucune
- * Appelée par : paintBudget()
+ * Appelée par : paintBudget(), paintEvmCurves()
  */
-function costScale(curve) {
-  const all = [...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()];
-  const max = Math.max(0, ...all);
+function costScale(all) {
+  const max = all.reduce((a, v) => (v != null && v > a ? v : a), 0);
   if (max <= 0) return { max: 10000, ticks: [0, 10000] };
   const raw = max / 4, mag = Math.max(1, 10 ** Math.floor(Math.log10(raw))), norm = raw / mag;
   const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
@@ -26,12 +25,21 @@ function costScale(curve) {
 const budgetTile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
 /**
  * Appelle : h(), Money.node()
- * Appelée par : paintBudget(), paintRatesCost()
+ * Appelée par : paintBudget(), paintEvmCurves(), paintRatesCost()
  */
 const amountCell = cents => h('td', { class: 'num' }, Money.node(cents));
+/**
+ * Réglages d'axe et de format d'une courbe en montants : graduations de costScale(), axe compact sans « ,00 ».
+ * Appelle : Money.text()
+ * Appelée par : paintBudget(), paintEvmCurves()
+ */
+const moneyAxis = scale => ({
+  max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')),
+  fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+});
 
 /**
- * Appelle : 17 fonctions
+ * Appelle : 19 fonctions
  * Appelée par : paintDashboard()
  */
 function paintBudget(panel) {
@@ -56,9 +64,9 @@ function paintBudget(panel) {
 
   // Courbe en S des coûts (RG-38, RG-39).
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
-  const scale = costScale(curve);
+  const scale = costScale([...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()]);
   const opts = {
-    max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    ...moneyAxis(scale),
     title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
   };
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
@@ -70,8 +78,9 @@ function paintBudget(panel) {
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
     h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
-    Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+    Dash.showCostValues ? curveTable(curve, { cell: amountCell, id: 'bud-values', caption: 'bud.valuesCaption' }) : null));
   paintEvm(panel);
+  paintEvmCurves(panel);
 }
 
 /**
@@ -200,6 +209,57 @@ function paintEvm(panel) {
     h('button', { type: 'button', id: 'evm-add', data: { click: 'evmPointAdd' } }, t('evm.pointAdd')));
   panel.append(sec);
 }
+
+/**
+ * Courbes PV / EV / AC dans le temps (EF-151, RG-59), sous la valeur acquise. La PV est continue ; EV et AC ne sont
+ * tracées qu'aux mesures (points de situation avec montants, aujourd'hui), marquées d'un rond et d'un carré et reliées.
+ * Sans baseline de référence ou sans budget dans celle-ci, la section dit pourquoi rien n'est tracé (jamais une courbe
+ * à 0). Identifiants propres (« evc- ») : la courbe des coûts du même onglet garde les siens.
+ * Appelle : amountCell(), costScale(), curveLegend(), curveTable(), Dates.todayDn(), Evm.curves(), h(), I18n.date(),
+ *   Money.text(), moneyAxis(), sCurveChart(), t()
+ * Appelée par : paintBudget()
+ */
+function paintEvmCurves(panel) {
+  const today = Dates.todayDn();
+  const c = Evm.curves(App.project, App.sched, today, Dash.unit);
+  const sec = h('section', { class: 'dash-section', id: 'evc', aria: { labelledby: 'evc-h' } },
+    h('h3', { id: 'evc-h', text: t('evc.title') }), h('p', { class: 'hint', text: t('evc.intro') }));
+  panel.append(sec);
+  if (c.reason) {
+    sec.append(h('p', { class: 'note', id: 'evc-none', text: t('evc.none.' + c.reason, { name: c.ref ? c.ref.name : '' }) }));
+    return;
+  }
+  sec.append(h('p', { class: 'hint', id: 'evc-ref', text: t('evm.refBaseline', { name: c.ref.name }) }));
+  const series = [
+    { name: t('evm.pv'), vals: c.pv, cls: 'pv', legend: t('evc.legPv') },
+    { name: t('evm.ev'), vals: c.ev, cls: 'ev', mark: 'circle', legend: t('evc.legEv') },
+    { name: t('evm.ac'), vals: c.ac, cls: 'ac', mark: 'square', legend: t('evc.legAc') },
+  ];
+  const now = c.marks.findIndex(mk => mk && mk.today); // période d'aujourd'hui : dernière mesure de EV et AC
+  const opts = {
+    ...moneyAxis(costScale([...c.pv, ...c.ev, ...c.ac])), id: 'evc', series: () => series, title: 'evc.title',
+    desc: () => t('evc.desc', { bac: Money.text(c.pv[c.pv.length - 1]), ev: Money.text(c.ev[now]), ac: Money.text(c.ac[now]) }),
+  };
+  const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+    ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'evc-unit', id: 'evc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
+      h('label', { for: 'evc-' + u, text: ' ' + t('dash.' + u) }))));
+  const toggle = h('button', { type: 'button', data: { click: 'dashEvcValues' }, aria: { expanded: String(Dash.showEvcValues), controls: 'evc-values' } },
+    t(Dash.showEvcValues ? 'dash.hideValues' : 'dash.showValues'));
+  const measure = k => {
+    const mk = c.marks[k];
+    return h('td', { text: !mk ? '—' : mk.today ? t('evc.today') : I18n.date(mk.dn) + (mk.label ? ' — ' + mk.label : '') });
+  };
+  sec.append(h('div', { class: 'row' }, unit, toggle), curveLegend(series), sCurveChart(c, opts),
+    h('p', { class: 'hint', text: t('evc.acNote') }),
+    c.skipped ? h('p', { class: 'note', id: 'evc-skipped', text: t('evc.skipped', { count: c.skipped }) }) : null,
+    Dash.showEvcValues ? curveTable(c, { cell: amountCell, id: 'evc-values', caption: 'evc.valuesCaption', series, extra: { head: t('evc.measure'), cell: measure } }) : null);
+}
+
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashEvcValues » (table ACTIONS)
+ */
+action('dashEvcValues', () => { Dash.showEvcValues = !Dash.showEvcValues; repaintDashboard('[data-click="dashEvcValues"]'); });
 
 /**
  * Appelle : $(), announce(), commit(), Dates.parse(), Dates.todayDn(), Dialog.message(), Evm.compute(), Evm.point(),

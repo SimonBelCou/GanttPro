@@ -15,7 +15,7 @@
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48).
  *
- * Appelle : Budget, Dates, Model
+ * Appelle : Budget, Dates, Metrics, Model
  * Appelée par : 72-baselines.js, 76-budget.js, 77-report.js, Rates
  */
 const Evm = (() => {
@@ -46,7 +46,7 @@ const Evm = (() => {
    * Baseline de référence (RG-44) : celle que désigne le projet ; à défaut la baseline « initiale », à défaut la
    * première. Sans aucune baseline : null, et le calcul porte sur le planning actuel.
    * Appelle : aucune
-   * Appelée par : baselinesWindow(), Evm.compute()
+   * Appelée par : baselinesWindow(), Evm.compute(), Evm.curves()
    */
   function reference(project) {
     const list = project.baselines || [];
@@ -97,7 +97,7 @@ const Evm = (() => {
    *   eac.* : { cents, vac, reason } ; reason vaut null, 'noBudget', 'noActual', 'noEarned', 'noEtc' ou 'overflow'.
    * Appelle : Budget.totals(), Dates.parse(), Evm.amount(), Evm.divRound(), Evm.noAmount(), Evm.none(), Evm.ratio(),
    *   Evm.reference()
-   * Appelée par : action « evmPointAdd », paintEvm(), reportSections()
+   * Appelée par : action « evmPointAdd », Evm.curves(), paintEvm(), reportSections()
    */
   function compute(project, sched, today) {
     const ref = reference(project);
@@ -176,7 +176,7 @@ const Evm = (() => {
    *            ev:(number|null)[], ac:(number|null)[], marks:({dn,label,today:boolean}|null)[], skipped:number}}
    *   Sans baseline de référence, ou si elle n'a aucun budget, rien n'est tracé et la raison est donnée (jamais 0).
    *   skipped : points de situation non tracés (sans montants ou datés après aujourd'hui).
-   * Appelle : Budget.amt(), Dates.parse(), Evm.compute(), Evm.reference(), Metrics.periods()
+   * Appelle : Dates.parse(), Evm.compute(), Evm.reference(), Metrics.periods()
    * Appelée par : paintEvmCurves()
    */
   function curves(project, sched, today, unit = 'week') {

@@ -15,7 +15,7 @@ const Dates = (() => {
   /**
    * 'AAAA-MM-JJ' → dn, ou null si la chaîne n'est pas une date existante dans les bornes.
    * Appelle : aucune
-   * Appelée par : 49 fonctions (usage général)
+   * Appelée par : 51 fonctions (usage général)
    */
   function parse(s) {
     if (typeof s !== 'string') return null;
@@ -68,7 +68,7 @@ const Dates = (() => {
   /**
    * Date du jour dans le fuseau de l'ordinateur de l'utilisateur.
    * Appelle : Dates.fromYMD()
-   * Appelée par : 24 fonctions (usage général)
+   * Appelée par : 25 fonctions (usage général)
    */
   function todayDn(now = new Date()) {
     return fromYMD(now.getFullYear(), now.getMonth() + 1, now.getDate());

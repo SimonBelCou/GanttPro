@@ -2,7 +2,7 @@
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, showEvcValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 /**
  * Appelle : I18n.number()
@@ -17,17 +17,36 @@ const PCT_CHART = {
 };
 
 /**
- * Appelle : Dates.todayDn(), h(), I18n.monthLabel(), I18n.shortDate(), safeColor(), svg(), t()
- * Appelée par : paintBudget(), paintDashboard(), reportArticle()
+ * Séries d'une courbe en S « prévu, réel, baselines cochées », dans l'ordre du tableau des valeurs et de l'infobulle.
+ * Une série : { name, vals, cls, color?, mark? } ; vals donne une valeur ou null par période (un tableau plus court que
+ * la grille : rien au-delà) ; mark ('circle' ou 'square') marque chaque valeur connue.
+ * Appelle : safeColor(), t()
+ * Appelée par : curveLegend(), curveTable(), sCurveChart()
+ */
+function curveSeries(curve) {
+  return [{ name: t('dash.planned'), vals: curve.planned, cls: 'planned' }, { name: t('dash.real'), vals: curve.real, cls: 'real' },
+    ...App.project.baselines.filter(b => b.shownOnScurve).map(b => ({ name: b.name, vals: curve.baselines[b.id] || [], cls: 'baseline', color: safeColor(b.color), dashed: true }))];
+}
+
+/**
+ * Courbe en S en SVG : étiquettes directes, repère « aujourd'hui », réticule au survol et au clavier.
+ * Réglages (o) : échelle (max, ticks, axis), formats (fmt, fmtFull), titre et description ; id, préfixe des identifiants
+ * du titre et de la description (« sc » par défaut : deux courbes d'un même onglet n'ont aucun id en commun) ; series,
+ * fonction qui donne les séries (curveSeries() par défaut). Une valeur null n'est pas tracée : une série clairsemée
+ * (mesures de la valeur acquise) relie ses seules valeurs connues, chacune marquée d'un rond ou d'un carré.
+ * Appelle : curveSeries(), Dates.todayDn(), h(), I18n.monthLabel(), I18n.shortDate(), svg(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves(), reportArticle()
  */
 function sCurveChart(curve, o = PCT_CHART) {
   const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
-  const n = curve.periods.length;
+  const n = curve.periods.length, id = o.id || 'sc';
+  const series = (o.series || curveSeries)(curve);
+  const at = (s, i) => (s.vals[i] == null ? null : s.vals[i]);
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
   const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
-  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': `${id}-title ${id}-desc` });
   const last = a => (a.length ? a[a.length - 1] : 0);
-  chart.append(svg('title', { id: 'sc-title', text: t(o.title) }), svg('desc', { id: 'sc-desc', text: o.desc(curve, last) }));
+  chart.append(svg('title', { id: id + '-title', text: t(o.title) }), svg('desc', { id: id + '-desc', text: o.desc(curve, last) }));
   for (const v of o.ticks) {
     chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
       svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: o.axis(v) }));
@@ -42,20 +61,21 @@ function sCurveChart(curve, o = PCT_CHART) {
   const ti = curve.periods.findIndex(p => p.start <= td && td <= p.end);
   if (ti >= 0) chart.append(svg('line', { x1: px(ti), x2: px(ti), y1: m.t, y2: H - m.b, class: 'today' }),
     svg('text', { x: px(ti) + 4, y: m.t + 10, class: 'axis', text: t('gantt.today') }));
-  const line = (vals, cls, color) => {
-    if (!vals.length) return;
-    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
-    chart.append(svg('polyline', { points: pts, class: 'series ' + cls, stroke: color || null, fill: 'none' }));
-  };
+  // Baselines dessous, puis les séries du projet ; chaque série relie ses seules valeurs connues.
   const labels = [];
-  for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
-    line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
+  for (const s of [...series].sort((a, b) => (b.cls === 'baseline') - (a.cls === 'baseline'))) {
+    const known = [];
+    for (let i = 0; i < n; i++) if (at(s, i) != null) known.push(i);
+    if (!known.length) continue;
+    chart.append(svg('polyline', { points: known.map(i => `${px(i)},${py(at(s, i))}`).join(' '), class: 'series ' + s.cls, stroke: s.color || null, fill: 'none' }));
+    if (s.mark) for (const i of known) {
+      chart.append(s.mark === 'square'
+        ? svg('rect', { x: px(i) - 4.5, y: py(at(s, i)) - 4.5, width: 9, height: 9, class: 'mark ' + s.cls })
+        : svg('circle', { cx: px(i), cy: py(at(s, i)), r: 4.5, class: 'mark ' + s.cls }));
+    }
+    const li = known[known.length - 1];
+    labels.push({ v: at(s, li), name: s.name, value: o.fmt(at(s, li)), i: li });
   }
-  line(curve.planned, 'planned');
-  line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
   // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
@@ -79,10 +99,8 @@ function sCurveChart(curve, o = PCT_CHART) {
     idx = Math.max(0, Math.min(n - 1, i));
     cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
     const p = curve.periods[idx];
-    const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
-      `${t('dash.planned')} ${o.fmtFull(curve.planned[idx])}`];
-    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${o.fmtFull(curve.real[idx])}`);
-    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${o.fmtFull((curve.baselines[b.id] || [])[idx] || 0)}`);
+    const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`];
+    for (const s of series) if (at(s, idx) != null) parts.push(`${s.name} ${o.fmtFull(at(s, idx))}`);
     tip.textContent = parts.join(' · ');
     tip.hidden = false;
   };
@@ -105,32 +123,37 @@ function sCurveChart(curve, o = PCT_CHART) {
 }
 
 /**
- * Appelle : h(), safeColor(), t()
- * Appelée par : paintBudget(), paintDashboard()
+ * Légende d'une courbe : un trait (continu ou pointillé) et, pour une série clairsemée, sa forme (rond, carré), puis le
+ * texte (s.legend, à défaut le nom) ; la couleur n'est jamais seule à distinguer les séries.
+ * Appelle : curveSeries(), h(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves()
  */
-function curveLegend() {
-  const item = (cls, label, color) => {
-    const sw = h('span', { class: 'key ' + cls, aria: { hidden: 'true' } });
-    if (color) sw.style.setProperty('border-top-color', safeColor(color));
-    return h('li', {}, sw, label);
+function curveLegend(series = curveSeries({ planned: [], real: [], baselines: {} })) {
+  const item = s => {
+    const sw = h('span', { class: 'key ' + s.cls + (s.mark ? ' mark-' + s.mark : ''), aria: { hidden: 'true' } });
+    if (s.color) sw.style.setProperty('border-top-color', s.color);
+    return h('li', {}, sw, s.legend || (s.dashed ? `${s.name} (${t('dash.dashed')})` : s.name));
   };
-  return h('ul', { class: 'chart-legend' }, item('planned', t('dash.planned')), item('real', t('dash.real')),
-    App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
+  return h('ul', { class: 'chart-legend' }, series.map(item));
 }
 
 /**
- * Appelle : fmtPct(), h(), I18n.monthLabel(), I18n.shortDate(), t()
- * Appelée par : paintBudget(), paintDashboard()
+ * Tableau des valeurs d'une courbe (équivalent texte, EF-40, EF-119, EF-151) : une ligne par période, une colonne par
+ * série, « — » quand la série n'a pas de valeur dans la période. Réglages (o) : cell (cellule d'une valeur), id, caption
+ * (clé du titre), series (curveSeries() par défaut), extra ({ head, cell(i) } : colonne de plus en fin de ligne).
+ * Appelle : curveSeries(), fmtPct(), h(), I18n.monthLabel(), I18n.shortDate(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves()
  */
-function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
-  const bls = App.project.baselines.filter(b => b.shownOnScurve);
-  return h('table', { class: 'manage values', id },
-    h('caption', { text: t(caption) }),
-    h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
+function curveTable(curve, o = {}) {
+  const cell = o.cell || (v => h('td', { text: fmtPct(v) }));
+  const series = o.series || curveSeries(curve);
+  return h('table', { class: 'manage values', id: o.id || 'sc-values' },
+    h('caption', { text: t(o.caption || 'dash.valuesCaption') }),
+    h('thead', {}, h('tr', {}, [t('dash.period'), ...series.map(s => s.name), ...(o.extra ? [o.extra.head] : [])].map(x => h('th', { scope: 'col', text: x })))),
     h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
       h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
-      cell(curve.planned[i]), i < curve.real.length ? cell(curve.real[i]) : h('td', { text: '—' }),
-      bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
+      series.map(s => (s.vals[i] == null ? h('td', { text: '—' }) : cell(s.vals[i]))),
+      o.extra ? o.extra.cell(i) : null))));
 }
 
 /**
@@ -254,7 +277,7 @@ function dashboardWindow() {
 
 /**
  * Appelle : dashboardWindow(), paintDashboard()
- * Appelée par : 14 fonctions (usage général)
+ * Appelée par : 15 fonctions (usage général)
  */
 function repaintDashboard(focusSel) {
   if (!dashboardWindow.body) return;
@@ -278,7 +301,7 @@ document.addEventListener('keydown', ev => {
  * Appelle : repaintDashboard()
  * Appelée par : l'événement « dashUnit » (table ACTIONS)
  */
-action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#' + (el.name === 'evc-unit' ? 'evc-' : 'sc-') + Dash.unit); });
 /**
  * Appelle : repaintDashboard()
  * Appelée par : l'événement « dashOngoing » (table ACTIONS)

@@ -14,7 +14,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 84 fonctions (usage général)
+ * Appelée par : 85 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -65,8 +65,8 @@ function clear(el) {
 /**
  * Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre.
  * Appelle : aucune
- * Appelée par : baselinesWindow(), buildPrintGantt(), categoriesWindow(), curveLegend(), ganttPng(), inkOn(),
- *   paintResourceSheet(), renderGantt(), renderLegend(), resourcesWindow(), sCurveChart()
+ * Appelée par : baselinesWindow(), buildPrintGantt(), categoriesWindow(), curveSeries(), ganttPng(), inkOn(),
+ *   paintResourceSheet(), renderGantt(), renderLegend(), resourcesWindow()
  */
 function safeColor(c, fallback = '#8a94a6') { return typeof c === 'string' && Model.COLOR_RE.test(c) ? c : fallback; }
 

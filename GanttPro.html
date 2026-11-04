@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5V6Or6yjVOQa/3eJETt0j2Qfak+zHV3f4u3YAib1G8k='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GsMX5HLXMItJJKZgxSu74csxRp5V9h6VGQSJYmdo5rA='; style-src 'sha256-uRa2W+n1IPsdsD3OiSFAVZHmI0Yb/GnFJRQM4/I1Ehw='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -319,9 +319,9 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 .tooltip div:first-child { font-weight: 700; }
 
 /* Tableau de bord (EF-37 à EF-40) — couleurs de séries validées (outil dataviz, clair et sombre) */
-:root { --series-planned: #2a78d6; --series-real: #eb6834; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; } }
-:root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; }
+:root { --series-planned: #2a78d6; --series-real: #eb6834; --series-earned: #1baf7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-planned: #3987e5; --series-real: #d95926; --series-earned: #199e70; } }
+:root[data-theme="dark"] { --series-planned: #3987e5; --series-real: #d95926; --series-earned: #199e70; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
 .tile { border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; min-width: 0; container-type: inline-size; }
 .tile dt { color: var(--muted); font-size: .85rem; }
@@ -356,6 +356,22 @@ svg.scurve { width: 100%; height: auto; display: block; }
 .chart-legend .key.planned { border-top-color: var(--series-planned); }
 .chart-legend .key.real { border-top-color: var(--series-real); }
 .chart-legend .key.baseline { border-top-style: dashed; }
+/* Courbes PV / EV / AC (EF-151) : PV continue, EV en ronds, AC en carrés ; forme et texte doublent la couleur. Le vert de
+   l'EV a moins de 3:1 sur le fond clair : légende, étiquettes directes et tableau des valeurs le suppléent (outil
+   dataviz, palette par défaut, emplacements 1 à 3, contrôlée en clair et en sombre). */
+.scurve .series.pv { stroke: var(--series-planned); }
+.scurve .series.ev { stroke: var(--series-earned); }
+.scurve .series.ac { stroke: var(--series-real); }
+.scurve .mark { stroke: var(--panel); stroke-width: 2; }
+.scurve .mark.ev { fill: var(--series-earned); }
+.scurve .mark.ac { fill: var(--series-real); }
+.chart-legend .key { position: relative; }
+.chart-legend .key.pv { border-top-color: var(--series-planned); }
+.chart-legend .key.ev { border-top-color: var(--series-earned); }
+.chart-legend .key.ac { border-top-color: var(--series-real); }
+.chart-legend .key.mark-circle::after, .chart-legend .key.mark-square::after { content: ''; position: absolute; left: 6px; top: -6px; width: 10px; height: 10px; }
+.chart-legend .key.mark-circle::after { border-radius: 50%; background: var(--series-earned); }
+.chart-legend .key.mark-square::after { background: var(--series-real); }
 .table-scroll { overflow-x: auto; max-height: 360px; overflow-y: auto; }
 table.tracking th { position: sticky; top: 0; background: var(--panel); }
 button.sort { background: transparent; border: 0; padding: 0; min-height: 24px; font-weight: 600; }
@@ -676,7 +692,7 @@ const Dates = (() => {
   /**
    * 'AAAA-MM-JJ' → dn, ou null si la chaîne n'est pas une date existante dans les bornes.
    * Appelle : aucune
-   * Appelée par : 49 fonctions (usage général)
+   * Appelée par : 51 fonctions (usage général)
    */
   function parse(s) {
     if (typeof s !== 'string') return null;
@@ -729,7 +745,7 @@ const Dates = (() => {
   /**
    * Date du jour dans le fuseau de l'ordinateur de l'utilisateur.
    * Appelle : Dates.fromYMD()
-   * Appelée par : 24 fonctions (usage général)
+   * Appelée par : 25 fonctions (usage général)
    */
   function todayDn(now = new Date()) {
     return fromYMD(now.getFullYear(), now.getMonth() + 1, now.getDate());
@@ -1305,8 +1321,8 @@ const Schedule = (() => {
  * Un seul calcul de statut pour toute l'application (défaut A-06 de la version 2.3).
  *
  * Appelle : Dates
- * Appelée par : 50-render.js, 75-dashboard.js, 76-load.js, 77-report.js, 78-print.js, 80-files.js, Budget, Exchange,
- *   Tooltip, View
+ * Appelée par : 50-render.js, 75-dashboard.js, 76-load.js, 77-report.js, 78-print.js, 80-files.js, Budget, Evm,
+ *   Exchange, Tooltip, View
  */
 const Metrics = (() => {
   const STATUS = Object.freeze({ DONE: 'done', LATE: 'late', ONGOING: 'ongoing', NOT_STARTED: 'notStarted', UPCOMING: 'upcoming' });
@@ -1389,7 +1405,8 @@ const Metrics = (() => {
   /**
    * RG-17 : périodes (semaines du lundi au dimanche, ou mois civils) couvrant [fromDn, toDn].
    * Appelle : Dates.mondayOf(), Dates.monthEnd(), Dates.monthStart()
-   * Appelée par : Budget.costCurve(), buildPrintGantt(), ganttPng(), loadPeriods(), Metrics.sCurve(), renderGantt()
+   * Appelée par : Budget.costCurve(), buildPrintGantt(), Evm.curves(), ganttPng(), loadPeriods(), Metrics.sCurve(),
+   *   renderGantt()
    */
   function periods(fromDn, toDn, unit) {
     const out = [];
@@ -2616,7 +2633,7 @@ const Budget = (() => {
  * Aucune somme ni différence n'est faite en nombres à virgule (RG-35) ; les produits qui peuvent dépasser 2^53
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48).
  *
- * Appelle : Budget, Dates, Model
+ * Appelle : Budget, Dates, Metrics, Model
  * Appelée par : 72-baselines.js, 76-budget.js, 77-report.js, Rates
  */
 const Evm = (() => {
@@ -2647,7 +2664,7 @@ const Evm = (() => {
    * Baseline de référence (RG-44) : celle que désigne le projet ; à défaut la baseline « initiale », à défaut la
    * première. Sans aucune baseline : null, et le calcul porte sur le planning actuel.
    * Appelle : aucune
-   * Appelée par : baselinesWindow(), Evm.compute()
+   * Appelée par : baselinesWindow(), Evm.compute(), Evm.curves()
    */
   function reference(project) {
     const list = project.baselines || [];
@@ -2698,7 +2715,7 @@ const Evm = (() => {
    *   eac.* : { cents, vac, reason } ; reason vaut null, 'noBudget', 'noActual', 'noEarned', 'noEtc' ou 'overflow'.
    * Appelle : Budget.totals(), Dates.parse(), Evm.amount(), Evm.divRound(), Evm.noAmount(), Evm.none(), Evm.ratio(),
    *   Evm.reference()
-   * Appelée par : action « evmPointAdd », paintEvm(), reportSections()
+   * Appelée par : action « evmPointAdd », Evm.curves(), paintEvm(), reportSections()
    */
   function compute(project, sched, today) {
     const ref = reference(project);
@@ -2762,7 +2779,64 @@ const Evm = (() => {
     };
   }
 
-  return { LIGHTS, divRound, reference, lightOf, compute, point };
+  /**
+   * Courbes PV / EV / AC dans le temps (EF-151, RG-59), en centimes cumulés, par semaine ou par mois.
+   *
+   * PV est continue : à la fin de chaque période, budget des tâches de la baseline de référence dont la fin prévue est au
+   * plus tard le dernier jour de la période (même palier que compute()). EV et AC ne sont connues qu'aux mesures : les
+   * points de situation qui ont leurs montants (un point relu d'un export « sans montants » n'en a plus) et la date du
+   * jour (calcul de compute()). Aucune valeur passée n'est reconstituée ni enregistrée automatiquement (A.8 ligne 15).
+   * Dans une période, la mesure la plus récente l'emporte ; celle du jour passe devant un point du même jour. Un point
+   * daté après aujourd'hui (horloge de l'appareil reculée) n'est pas tracé. L'AC est le coût réel TOTAL du projet
+   * (RG-47), et non la courbe réelle des coûts de RG-38, qui ne compte que les tâches terminées.
+   *
+   * @returns {{reason:'noBaseline'|'noBudget'}|{reason:null, ref, bac, periods:{start,end}[], pv:number[],
+   *            ev:(number|null)[], ac:(number|null)[], marks:({dn,label,today:boolean}|null)[], skipped:number}}
+   *   Sans baseline de référence, ou si elle n'a aucun budget, rien n'est tracé et la raison est donnée (jamais 0).
+   *   skipped : points de situation non tracés (sans montants ou datés après aujourd'hui).
+   * Appelle : Dates.parse(), Evm.compute(), Evm.reference(), Metrics.periods()
+   * Appelée par : paintEvmCurves()
+   */
+  function curves(project, sched, today, unit = 'week') {
+    const ref = reference(project);
+    if (!ref) return { reason: 'noBaseline' };
+    const ends = ref.tasks.map(bt => ({ budget: amt(bt.budget), endDn: Dates.parse(bt.end) }))
+      .filter(e => e.budget > 0 && e.endDn != null).sort((a, b) => a.endDn - b.endDn);
+    const bac = ends.reduce((a, e) => a + e.budget, 0);
+    if (bac === 0) return { reason: 'noBudget', ref };
+
+    const now = compute(project, sched, today);
+    const marks = [];
+    let skipped = 0;
+    for (const p of project.statusPoints || []) {
+      const dn = Dates.parse(p.date);
+      if (dn == null || dn > today || p.ev == null || p.ac == null) { skipped++; continue; }
+      marks.push({ dn, ev: p.ev, ac: p.ac, label: p.label, today: false });
+    }
+    marks.sort((a, b) => a.dn - b.dn); // tri stable : à date égale, l'ordre d'enregistrement
+    marks.push({ dn: today, ev: now.ev, ac: now.ac, label: '', today: true });
+
+    // Grille : du début du projet (ou d'une fin prévue, d'une mesure plus ancienne) à la fin la plus tardive, aujourd'hui compris.
+    const first = Math.min(Dates.parse(project.projectStart), ends[0].endDn, marks[0].dn);
+    const last = Math.max(sched.projectEndDn, ends[ends.length - 1].endDn, today);
+    const periods = Metrics.periods(first, last, unit);
+    const n = periods.length;
+    const pv = new Array(n), ev = new Array(n).fill(null), ac = new Array(n).fill(null), at = new Array(n).fill(null);
+    // Parcours fusionné (fins triées, périodes croissantes) : O(tâches + périodes).
+    let k = 0, acc = 0;
+    periods.forEach((p, i) => {
+      while (k < ends.length && ends[k].endDn <= p.end) acc += ends[k++].budget;
+      pv[i] = acc;
+    });
+    let i = 0;
+    for (const m of marks) {
+      while (i < n - 1 && periods[i].end < m.dn) i++;
+      ev[i] = m.ev; ac[i] = m.ac; at[i] = { dn: m.dn, label: m.label, today: m.today };
+    }
+    return { reason: null, ref, bac, periods, pv, ev, ac, marks: at, skipped };
+  }
+
+  return { LIGHTS, divRound, reference, lightOf, compute, point, curves };
 })();
 
 // ── js/core/44-columns.js ──
@@ -3404,6 +3478,21 @@ const I18n = (() => {
     'cols.resetDone': 'Colonnes d\'origine rétablies.',
     'cols.pos': 'position {pos}',
     'cols.hiddenCol': 'masquée',
+    'evc.title': 'Courbes PV / EV / AC',
+    'evc.intro': 'La valeur planifiée (PV) est continue, calculée sur la baseline de référence. La valeur acquise (EV) et le coût réel (AC) ne sont connus qu\'aux points de situation et aujourd\'hui : ils sont marqués à ces dates et reliés par un trait, sans valeur inventée entre deux mesures.',
+    'evc.none.noBaseline': 'Aucune courbe : la valeur planifiée se calcule sur une baseline de référence, et le projet n\'en a aucune. Capturez une baseline (fenêtre Baselines) pour tracer les courbes.',
+    'evc.none.noBudget': 'Aucune courbe : la baseline de référence « {name} » n\'a aucun budget de tâche. Capturez une baseline après avoir saisi les budgets.',
+    'evc.legPv': 'PV, valeur planifiée (trait continu)',
+    'evc.legEv': 'EV, valeur acquise (ronds aux mesures)',
+    'evc.legAc': 'AC, coût réel (carrés aux mesures)',
+    'evc.desc': 'Valeur planifiée cumulée jusqu\'à {bac} ; aujourd\'hui, valeur acquise {ev} et coût réel {ac}.',
+    'evc.acNote': 'Ici, l\'AC est le coût réel total du projet, tâches en cours comprises, comme dans les indicateurs de valeur acquise. La courbe des coûts, plus haut, ne compte que les tâches terminées : les deux courbes « réel » diffèrent donc. La PV est lue à la fin de chaque période, l\'EV et l\'AC à la date de la mesure.',
+    'evc.skipped': 'Points de situation non tracés : {count} (sans montants, après un export sans montants, ou datés après aujourd\'hui).',
+    'evc.valuesCaption': 'Valeurs des courbes PV / EV / AC par période',
+    'evc.measure': 'Mesure',
+    'evc.today': 'Aujourd\'hui',
+    'rep.evmPoints': 'Points de situation :',
+    'rep.evmPoint': '{date}{label} : CPI {cpi}, SPI {spi}',
     'evm.title': 'Valeur acquise',
     'evm.refBaseline': 'Référence : baseline « {name} » (budgets et dates figés à la capture, avancement et coût réel d\'aujourd\'hui).',
     'evm.refPlan': 'Référence : planning actuel (aucune baseline capturée). Capturez une baseline pour mesurer l\'écart avec le plan d\'origine.',
@@ -3868,6 +3957,21 @@ const I18n = (() => {
     'cols.resetDone': 'Original columns restored.',
     'cols.pos': 'position {pos}',
     'cols.hiddenCol': 'hidden',
+    'evc.title': 'PV / EV / AC curves',
+    'evc.intro': 'Planned value (PV) is continuous, computed on the reference baseline. Earned value (EV) and actual cost (AC) are only known at status points and today: they are marked at those dates and joined by a line, with no value invented between two measurements.',
+    'evc.none.noBaseline': 'No curves: planned value is computed on a reference baseline, and the project has none. Capture a baseline (Baselines window) to draw the curves.',
+    'evc.none.noBudget': 'No curves: the reference baseline “{name}” has no task budget. Capture a baseline after entering the budgets.',
+    'evc.legPv': 'PV, planned value (solid line)',
+    'evc.legEv': 'EV, earned value (circles at measurements)',
+    'evc.legAc': 'AC, actual cost (squares at measurements)',
+    'evc.desc': 'Cumulative planned value up to {bac}; today, earned value {ev} and actual cost {ac}.',
+    'evc.acNote': 'Here, AC is the total actual cost of the project, tasks in progress included, as in the earned value indicators. The cost curve above only counts finished tasks: the two “actual” curves therefore differ. PV is read at the end of each period, EV and AC at the measurement date.',
+    'evc.skipped': 'Status points not drawn: {count} (without amounts, after an export without amounts, or dated after today).',
+    'evc.valuesCaption': 'PV / EV / AC curve values by period',
+    'evc.measure': 'Measurement',
+    'evc.today': 'Today',
+    'rep.evmPoints': 'Status points:',
+    'rep.evmPoint': '{date}{label}: CPI {cpi}, SPI {spi}',
     'evm.title': 'Earned value',
     'evm.refBaseline': 'Reference: baseline “{name}” (budgets and dates frozen at capture, today\'s progress and actual cost).',
     'evm.refPlan': 'Reference: current schedule (no baseline captured). Capture a baseline to measure the gap with the original plan.',
@@ -4230,7 +4334,7 @@ const I18n = (() => {
   /**
    * Date longue : « lun. 05 janv. 2026 » / « Mon 05 Jan 2026 » (RG-32).
    * Appelle : Dates.weekday(), Dates.ymd()
-   * Appelée par : 21 fonctions (usage général)
+   * Appelée par : 22 fonctions (usage général)
    */
   function date(dn) {
     if (dn == null) return '';
@@ -5340,7 +5444,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 84 fonctions (usage général)
+ * Appelée par : 85 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -5391,8 +5495,8 @@ function clear(el) {
 /**
  * Couleur sûre pour le CSSOM : uniquement #rgb ou #rrggbb (EX-13), sinon la teinte neutre.
  * Appelle : aucune
- * Appelée par : baselinesWindow(), buildPrintGantt(), categoriesWindow(), curveLegend(), ganttPng(), inkOn(),
- *   paintResourceSheet(), renderGantt(), renderLegend(), resourcesWindow(), sCurveChart()
+ * Appelée par : baselinesWindow(), buildPrintGantt(), categoriesWindow(), curveSeries(), ganttPng(), inkOn(),
+ *   paintResourceSheet(), renderGantt(), renderLegend(), resourcesWindow()
  */
 function safeColor(c, fallback = '#8a94a6') { return typeof c === 'string' && Model.COLOR_RE.test(c) ? c : fallback; }
 
@@ -5983,7 +6087,7 @@ const Money = (() => {
   /**
    * Texte brut (infobulles, annonces) : « •••• » si masqué.
    * Appelle : Budget.format(), Budget.formatCompact(), Money.masked(), Money.opts()
-   * Appelée par : Editor.summaryText(), paintBudget()
+   * Appelée par : Editor.summaryText(), moneyAxis(), paintBudget(), paintEvmCurves()
    */
   function text(cents, { compact = false } = {}) {
     if (masked()) return DOTS;
@@ -6038,7 +6142,7 @@ action('toggleMask', (arg, el) => {
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 178 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**
@@ -9937,7 +10041,7 @@ action('colReset', () => {
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
  * réticule, et un tableau des valeurs pour qui ne lit pas un graphique (EF-40). */
-const Dash = { unit: 'week', showValues: false, showCostValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
+const Dash = { unit: 'week', showValues: false, showCostValues: false, showEvcValues: false, ongoing: false, sort: { key: 'order', dir: 1 }, baseline: '', tab: 'summary' };
 
 /**
  * Appelle : I18n.number()
@@ -9952,17 +10056,36 @@ const PCT_CHART = {
 };
 
 /**
- * Appelle : Dates.todayDn(), h(), I18n.monthLabel(), I18n.shortDate(), safeColor(), svg(), t()
- * Appelée par : paintBudget(), paintDashboard(), reportArticle()
+ * Séries d'une courbe en S « prévu, réel, baselines cochées », dans l'ordre du tableau des valeurs et de l'infobulle.
+ * Une série : { name, vals, cls, color?, mark? } ; vals donne une valeur ou null par période (un tableau plus court que
+ * la grille : rien au-delà) ; mark ('circle' ou 'square') marque chaque valeur connue.
+ * Appelle : safeColor(), t()
+ * Appelée par : curveLegend(), curveTable(), sCurveChart()
+ */
+function curveSeries(curve) {
+  return [{ name: t('dash.planned'), vals: curve.planned, cls: 'planned' }, { name: t('dash.real'), vals: curve.real, cls: 'real' },
+    ...App.project.baselines.filter(b => b.shownOnScurve).map(b => ({ name: b.name, vals: curve.baselines[b.id] || [], cls: 'baseline', color: safeColor(b.color), dashed: true }))];
+}
+
+/**
+ * Courbe en S en SVG : étiquettes directes, repère « aujourd'hui », réticule au survol et au clavier.
+ * Réglages (o) : échelle (max, ticks, axis), formats (fmt, fmtFull), titre et description ; id, préfixe des identifiants
+ * du titre et de la description (« sc » par défaut : deux courbes d'un même onglet n'ont aucun id en commun) ; series,
+ * fonction qui donne les séries (curveSeries() par défaut). Une valeur null n'est pas tracée : une série clairsemée
+ * (mesures de la valeur acquise) relie ses seules valeurs connues, chacune marquée d'un rond ou d'un carré.
+ * Appelle : curveSeries(), Dates.todayDn(), h(), I18n.monthLabel(), I18n.shortDate(), svg(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves(), reportArticle()
  */
 function sCurveChart(curve, o = PCT_CHART) {
   const W = 760, H = 280, m = { l: 78, r: 170, t: 16, b: 34 };
-  const n = curve.periods.length;
+  const n = curve.periods.length, id = o.id || 'sc';
+  const series = (o.series || curveSeries)(curve);
+  const at = (s, i) => (s.vals[i] == null ? null : s.vals[i]);
   const px = i => m.l + (n <= 1 ? 0 : (i * (W - m.l - m.r)) / (n - 1));
   const py = v => m.t + (1 - v / o.max) * (H - m.t - m.b);
-  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': 'sc-title sc-desc' });
+  const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'scurve', role: 'img', 'aria-labelledby': `${id}-title ${id}-desc` });
   const last = a => (a.length ? a[a.length - 1] : 0);
-  chart.append(svg('title', { id: 'sc-title', text: t(o.title) }), svg('desc', { id: 'sc-desc', text: o.desc(curve, last) }));
+  chart.append(svg('title', { id: id + '-title', text: t(o.title) }), svg('desc', { id: id + '-desc', text: o.desc(curve, last) }));
   for (const v of o.ticks) {
     chart.append(svg('line', { x1: m.l, x2: W - m.r, y1: py(v), y2: py(v), class: 'grid' }),
       svg('text', { x: m.l - 6, y: py(v) + 4, class: 'axis', 'text-anchor': 'end', text: o.axis(v) }));
@@ -9977,20 +10100,21 @@ function sCurveChart(curve, o = PCT_CHART) {
   const ti = curve.periods.findIndex(p => p.start <= td && td <= p.end);
   if (ti >= 0) chart.append(svg('line', { x1: px(ti), x2: px(ti), y1: m.t, y2: H - m.b, class: 'today' }),
     svg('text', { x: px(ti) + 4, y: m.t + 10, class: 'axis', text: t('gantt.today') }));
-  const line = (vals, cls, color) => {
-    if (!vals.length) return;
-    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
-    chart.append(svg('polyline', { points: pts, class: 'series ' + cls, stroke: color || null, fill: 'none' }));
-  };
+  // Baselines dessous, puis les séries du projet ; chaque série relie ses seules valeurs connues.
   const labels = [];
-  for (const b of App.project.baselines.filter(x => x.shownOnScurve)) {
-    line(curve.baselines[b.id] || [], 'baseline', safeColor(b.color));
-    labels.push({ v: last(curve.baselines[b.id] || []), name: b.name, value: o.fmt(last(curve.baselines[b.id] || [])), i: n - 1 });
+  for (const s of [...series].sort((a, b) => (b.cls === 'baseline') - (a.cls === 'baseline'))) {
+    const known = [];
+    for (let i = 0; i < n; i++) if (at(s, i) != null) known.push(i);
+    if (!known.length) continue;
+    chart.append(svg('polyline', { points: known.map(i => `${px(i)},${py(at(s, i))}`).join(' '), class: 'series ' + s.cls, stroke: s.color || null, fill: 'none' }));
+    if (s.mark) for (const i of known) {
+      chart.append(s.mark === 'square'
+        ? svg('rect', { x: px(i) - 4.5, y: py(at(s, i)) - 4.5, width: 9, height: 9, class: 'mark ' + s.cls })
+        : svg('circle', { cx: px(i), cy: py(at(s, i)), r: 4.5, class: 'mark ' + s.cls }));
+    }
+    const li = known[known.length - 1];
+    labels.push({ v: at(s, li), name: s.name, value: o.fmt(at(s, li)), i: li });
   }
-  line(curve.planned, 'planned');
-  line(curve.real, 'real');
-  labels.push({ v: last(curve.planned), name: t('dash.planned'), value: o.fmt(last(curve.planned)), i: n - 1 });
-  if (curve.real.length) labels.push({ v: last(curve.real), name: t('dash.real'), value: o.fmt(last(curve.real)), i: curve.real.length - 1 });
   // Étiquettes directes, écartées verticalement pour ne pas se chevaucher.
   labels.sort((a, b) => py(a.v) - py(b.v));
   // Deux lignes par étiquette (nom, puis valeur) : elles tiennent dans la marge de droite ; un nom long est coupé
@@ -10014,10 +10138,8 @@ function sCurveChart(curve, o = PCT_CHART) {
     idx = Math.max(0, Math.min(n - 1, i));
     cross.setAttribute('x1', px(idx)); cross.setAttribute('x2', px(idx)); cross.setAttribute('visibility', 'visible');
     const p = curve.periods[idx];
-    const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`,
-      `${t('dash.planned')} ${o.fmtFull(curve.planned[idx])}`];
-    if (idx < curve.real.length) parts.push(`${t('dash.real')} ${o.fmtFull(curve.real[idx])}`);
-    for (const b of App.project.baselines.filter(x => x.shownOnScurve)) parts.push(`${b.name} ${o.fmtFull((curve.baselines[b.id] || [])[idx] || 0)}`);
+    const parts = [`${Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) })}`];
+    for (const s of series) if (at(s, idx) != null) parts.push(`${s.name} ${o.fmtFull(at(s, idx))}`);
     tip.textContent = parts.join(' · ');
     tip.hidden = false;
   };
@@ -10040,32 +10162,37 @@ function sCurveChart(curve, o = PCT_CHART) {
 }
 
 /**
- * Appelle : h(), safeColor(), t()
- * Appelée par : paintBudget(), paintDashboard()
+ * Légende d'une courbe : un trait (continu ou pointillé) et, pour une série clairsemée, sa forme (rond, carré), puis le
+ * texte (s.legend, à défaut le nom) ; la couleur n'est jamais seule à distinguer les séries.
+ * Appelle : curveSeries(), h(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves()
  */
-function curveLegend() {
-  const item = (cls, label, color) => {
-    const sw = h('span', { class: 'key ' + cls, aria: { hidden: 'true' } });
-    if (color) sw.style.setProperty('border-top-color', safeColor(color));
-    return h('li', {}, sw, label);
+function curveLegend(series = curveSeries({ planned: [], real: [], baselines: {} })) {
+  const item = s => {
+    const sw = h('span', { class: 'key ' + s.cls + (s.mark ? ' mark-' + s.mark : ''), aria: { hidden: 'true' } });
+    if (s.color) sw.style.setProperty('border-top-color', s.color);
+    return h('li', {}, sw, s.legend || (s.dashed ? `${s.name} (${t('dash.dashed')})` : s.name));
   };
-  return h('ul', { class: 'chart-legend' }, item('planned', t('dash.planned')), item('real', t('dash.real')),
-    App.project.baselines.filter(b => b.shownOnScurve).map(b => item('baseline', `${b.name} (${t('dash.dashed')})`, b.color)));
+  return h('ul', { class: 'chart-legend' }, series.map(item));
 }
 
 /**
- * Appelle : fmtPct(), h(), I18n.monthLabel(), I18n.shortDate(), t()
- * Appelée par : paintBudget(), paintDashboard()
+ * Tableau des valeurs d'une courbe (équivalent texte, EF-40, EF-119, EF-151) : une ligne par période, une colonne par
+ * série, « — » quand la série n'a pas de valeur dans la période. Réglages (o) : cell (cellule d'une valeur), id, caption
+ * (clé du titre), series (curveSeries() par défaut), extra ({ head, cell(i) } : colonne de plus en fin de ligne).
+ * Appelle : curveSeries(), fmtPct(), h(), I18n.monthLabel(), I18n.shortDate(), t()
+ * Appelée par : paintBudget(), paintDashboard(), paintEvmCurves()
  */
-function curveTable(curve, cell = v => h('td', { text: fmtPct(v) }), id = 'sc-values', caption = 'dash.valuesCaption') {
-  const bls = App.project.baselines.filter(b => b.shownOnScurve);
-  return h('table', { class: 'manage values', id },
-    h('caption', { text: t(caption) }),
-    h('thead', {}, h('tr', {}, [t('dash.period'), t('dash.planned'), t('dash.real'), ...bls.map(b => b.name)].map(x => h('th', { scope: 'col', text: x })))),
+function curveTable(curve, o = {}) {
+  const cell = o.cell || (v => h('td', { text: fmtPct(v) }));
+  const series = o.series || curveSeries(curve);
+  return h('table', { class: 'manage values', id: o.id || 'sc-values' },
+    h('caption', { text: t(o.caption || 'dash.valuesCaption') }),
+    h('thead', {}, h('tr', {}, [t('dash.period'), ...series.map(s => s.name), ...(o.extra ? [o.extra.head] : [])].map(x => h('th', { scope: 'col', text: x })))),
     h('tbody', {}, curve.periods.map((p, i) => h('tr', {},
       h('th', { scope: 'row', text: Dash.unit === 'month' ? I18n.monthLabel(p.start) : t('gantt.week', { date: I18n.shortDate(p.start) }) }),
-      cell(curve.planned[i]), i < curve.real.length ? cell(curve.real[i]) : h('td', { text: '—' }),
-      bls.map(b => cell((curve.baselines[b.id] || [])[i] || 0))))));
+      series.map(s => (s.vals[i] == null ? h('td', { text: '—' }) : cell(s.vals[i]))),
+      o.extra ? o.extra.cell(i) : null))));
 }
 
 /**
@@ -10189,7 +10316,7 @@ function dashboardWindow() {
 
 /**
  * Appelle : dashboardWindow(), paintDashboard()
- * Appelée par : 14 fonctions (usage général)
+ * Appelée par : 15 fonctions (usage général)
  */
 function repaintDashboard(focusSel) {
   if (!dashboardWindow.body) return;
@@ -10213,7 +10340,7 @@ document.addEventListener('keydown', ev => {
  * Appelle : repaintDashboard()
  * Appelée par : l'événement « dashUnit » (table ACTIONS)
  */
-action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#sc-' + Dash.unit); });
+action('dashUnit', (arg, el) => { Dash.unit = el.value === 'month' ? 'month' : 'week'; repaintDashboard('#' + (el.name === 'evc-unit' ? 'evc-' : 'sc-') + Dash.unit); });
 /**
  * Appelle : repaintDashboard()
  * Appelée par : l'événement « dashOngoing » (table ACTIONS)
@@ -10248,13 +10375,12 @@ action('dashSort', k => {
  * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
 
 /**
- * Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des séries.
+ * Graduations « rondes » (1, 2, 5 × 10^k centimes) jusqu'au maximum des valeurs (montants en centimes, null ignoré).
  * Appelle : aucune
- * Appelée par : paintBudget()
+ * Appelée par : paintBudget(), paintEvmCurves()
  */
-function costScale(curve) {
-  const all = [...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()];
-  const max = Math.max(0, ...all);
+function costScale(all) {
+  const max = all.reduce((a, v) => (v != null && v > a ? v : a), 0);
   if (max <= 0) return { max: 10000, ticks: [0, 10000] };
   const raw = max / 4, mag = Math.max(1, 10 ** Math.floor(Math.log10(raw))), norm = raw / mag;
   const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
@@ -10272,12 +10398,21 @@ function costScale(curve) {
 const budgetTile = (label, ...value) => h('div', { class: 'tile' }, h('dt', { text: label }), h('dd', {}, value));
 /**
  * Appelle : h(), Money.node()
- * Appelée par : paintBudget(), paintRatesCost()
+ * Appelée par : paintBudget(), paintEvmCurves(), paintRatesCost()
  */
 const amountCell = cents => h('td', { class: 'num' }, Money.node(cents));
+/**
+ * Réglages d'axe et de format d'une courbe en montants : graduations de costScale(), axe compact sans « ,00 ».
+ * Appelle : Money.text()
+ * Appelée par : paintBudget(), paintEvmCurves()
+ */
+const moneyAxis = scale => ({
+  max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')),
+  fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+});
 
 /**
- * Appelle : 17 fonctions
+ * Appelle : 19 fonctions
  * Appelée par : paintDashboard()
  */
 function paintBudget(panel) {
@@ -10302,9 +10437,9 @@ function paintBudget(panel) {
 
   // Courbe en S des coûts (RG-38, RG-39).
   const curve = Budget.costCurve(P, App.sched, Dates.todayDn(), Dash.unit, { ongoing: Dash.ongoing });
-  const scale = costScale(curve);
+  const scale = costScale([...curve.planned, ...curve.real, ...Object.values(curve.baselines).flat()]);
   const opts = {
-    max: scale.max, ticks: scale.ticks, axis: v => (v === 0 ? '0' : Money.text(v, { compact: true }).replace(/[,.]00(?=\D|$)/, '')), fmt: v => Money.text(v, { compact: true }), fmtFull: v => Money.text(v),
+    ...moneyAxis(scale),
     title: 'bud.curve', desc: (c, last) => t('bud.curveDesc', { planned: Money.text(last(c.planned)), real: Money.text(last(c.real)) }),
   };
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
@@ -10316,8 +10451,9 @@ function paintBudget(panel) {
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
     h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
-    Dash.showCostValues ? curveTable(curve, v => h('td', { class: 'num' }, Money.node(v)), 'bud-values', 'bud.valuesCaption') : null));
+    Dash.showCostValues ? curveTable(curve, { cell: amountCell, id: 'bud-values', caption: 'bud.valuesCaption' }) : null));
   paintEvm(panel);
+  paintEvmCurves(panel);
 }
 
 /**
@@ -10446,6 +10582,57 @@ function paintEvm(panel) {
     h('button', { type: 'button', id: 'evm-add', data: { click: 'evmPointAdd' } }, t('evm.pointAdd')));
   panel.append(sec);
 }
+
+/**
+ * Courbes PV / EV / AC dans le temps (EF-151, RG-59), sous la valeur acquise. La PV est continue ; EV et AC ne sont
+ * tracées qu'aux mesures (points de situation avec montants, aujourd'hui), marquées d'un rond et d'un carré et reliées.
+ * Sans baseline de référence ou sans budget dans celle-ci, la section dit pourquoi rien n'est tracé (jamais une courbe
+ * à 0). Identifiants propres (« evc- ») : la courbe des coûts du même onglet garde les siens.
+ * Appelle : amountCell(), costScale(), curveLegend(), curveTable(), Dates.todayDn(), Evm.curves(), h(), I18n.date(),
+ *   Money.text(), moneyAxis(), sCurveChart(), t()
+ * Appelée par : paintBudget()
+ */
+function paintEvmCurves(panel) {
+  const today = Dates.todayDn();
+  const c = Evm.curves(App.project, App.sched, today, Dash.unit);
+  const sec = h('section', { class: 'dash-section', id: 'evc', aria: { labelledby: 'evc-h' } },
+    h('h3', { id: 'evc-h', text: t('evc.title') }), h('p', { class: 'hint', text: t('evc.intro') }));
+  panel.append(sec);
+  if (c.reason) {
+    sec.append(h('p', { class: 'note', id: 'evc-none', text: t('evc.none.' + c.reason, { name: c.ref ? c.ref.name : '' }) }));
+    return;
+  }
+  sec.append(h('p', { class: 'hint', id: 'evc-ref', text: t('evm.refBaseline', { name: c.ref.name }) }));
+  const series = [
+    { name: t('evm.pv'), vals: c.pv, cls: 'pv', legend: t('evc.legPv') },
+    { name: t('evm.ev'), vals: c.ev, cls: 'ev', mark: 'circle', legend: t('evc.legEv') },
+    { name: t('evm.ac'), vals: c.ac, cls: 'ac', mark: 'square', legend: t('evc.legAc') },
+  ];
+  const now = c.marks.findIndex(mk => mk && mk.today); // période d'aujourd'hui : dernière mesure de EV et AC
+  const opts = {
+    ...moneyAxis(costScale([...c.pv, ...c.ev, ...c.ac])), id: 'evc', series: () => series, title: 'evc.title',
+    desc: () => t('evc.desc', { bac: Money.text(c.pv[c.pv.length - 1]), ev: Money.text(c.ev[now]), ac: Money.text(c.ac[now]) }),
+  };
+  const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
+    ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'evc-unit', id: 'evc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
+      h('label', { for: 'evc-' + u, text: ' ' + t('dash.' + u) }))));
+  const toggle = h('button', { type: 'button', data: { click: 'dashEvcValues' }, aria: { expanded: String(Dash.showEvcValues), controls: 'evc-values' } },
+    t(Dash.showEvcValues ? 'dash.hideValues' : 'dash.showValues'));
+  const measure = k => {
+    const mk = c.marks[k];
+    return h('td', { text: !mk ? '—' : mk.today ? t('evc.today') : I18n.date(mk.dn) + (mk.label ? ' — ' + mk.label : '') });
+  };
+  sec.append(h('div', { class: 'row' }, unit, toggle), curveLegend(series), sCurveChart(c, opts),
+    h('p', { class: 'hint', text: t('evc.acNote') }),
+    c.skipped ? h('p', { class: 'note', id: 'evc-skipped', text: t('evc.skipped', { count: c.skipped }) }) : null,
+    Dash.showEvcValues ? curveTable(c, { cell: amountCell, id: 'evc-values', caption: 'evc.valuesCaption', series, extra: { head: t('evc.measure'), cell: measure } }) : null);
+}
+
+/**
+ * Appelle : repaintDashboard()
+ * Appelée par : l'événement « dashEvcValues » (table ACTIONS)
+ */
+action('dashEvcValues', () => { Dash.showEvcValues = !Dash.showEvcValues; repaintDashboard('[data-click="dashEvcValues"]'); });
 
 /**
  * Appelle : $(), announce(), commit(), Dates.parse(), Dates.todayDn(), Dialog.message(), Evm.compute(), Evm.point(),
@@ -10642,8 +10829,7 @@ function lineNode(l, out) {
 }
 
 /**
- * Appelle : alertMessages(), Budget.bacVariation(), Budget.hasAmounts(), Budget.totals(), Evm.compute(), I18n.date(),
- *   I18n.number(), I18n.shortDate(), reportData(), signed(), t(), taskLabel()
+ * Appelle : 13 fonctions
  * Appelée par : reportArticle(), reportText()
  */
 function reportSections() {
@@ -10670,8 +10856,11 @@ function reportSections() {
     out.push({ key: 'budget', title: t('rep.b.budget'), lines });
   }
   // Valeur acquise (EF-142) : les indices CPI et SPI sont des rapports, lisibles sans montants ; les montants
-  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124).
-  if (B.budget && Budget.hasAmounts(App.project)) {
+  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124). Le bloc paraît aussi pour
+  // un projet qui n'a plus que des points de situation (relu après un export sans montants) : il donne alors ce qui se
+  // calcule, les CPI et SPI des points, comme l'onglet Budget (A.8 ligne 16, décision X2 du 3 novembre 2026).
+  const pts = App.project.statusPoints;
+  if (B.budget && (Budget.hasAmounts(App.project) || pts.length)) {
     const e = Evm.compute(App.project, App.sched, today);
     const idx = (k, r) => `${t(k)} : ${r.hundredths == null ? t('evm.na') + ' (' + t('evm.na.' + r.reason) + ')' : I18n.number(r.hundredths / 100, 2) + ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)}`;
     const lines = [e.ref ? t('evm.refBaseline', { name: e.ref.name }) : t('evm.refPlan'), idx('evm.cpi', e.cpi), idx('evm.spi', e.spi)];
@@ -10679,6 +10868,10 @@ function reportSections() {
       const L = (k, c, signed) => ({ label: t(k) + ' : ', cents: c, signed });
       lines.push(L('evm.pv', e.pv), L('evm.ev', e.ev), L('evm.ac', e.ac), L('evm.cv', e.cv, true), L('evm.sv', e.sv, true));
       if (e.eac.byCpi.cents != null) lines.push(L('evm.eac1', e.eac.byCpi.cents));
+    }
+    if (pts.length) {
+      const r2 = v => (v == null ? t('evm.pointNoRatio') : I18n.number(v / 100, 2));
+      lines.push(t('rep.evmPoints'), ...pts.map(p => t('rep.evmPoint', { date: I18n.date(Dates.parse(p.date)), label: p.label ? ' — ' + p.label : '', cpi: r2(p.cpi), spi: r2(p.spi) })));
     }
     out.push({ key: 'evm', title: t('evm.title'), lines });
   }

@@ -216,6 +216,21 @@ const I18n = (() => {
     'cols.resetDone': 'Colonnes d\'origine rétablies.',
     'cols.pos': 'position {pos}',
     'cols.hiddenCol': 'masquée',
+    'evc.title': 'Courbes PV / EV / AC',
+    'evc.intro': 'La valeur planifiée (PV) est continue, calculée sur la baseline de référence. La valeur acquise (EV) et le coût réel (AC) ne sont connus qu\'aux points de situation et aujourd\'hui : ils sont marqués à ces dates et reliés par un trait, sans valeur inventée entre deux mesures.',
+    'evc.none.noBaseline': 'Aucune courbe : la valeur planifiée se calcule sur une baseline de référence, et le projet n\'en a aucune. Capturez une baseline (fenêtre Baselines) pour tracer les courbes.',
+    'evc.none.noBudget': 'Aucune courbe : la baseline de référence « {name} » n\'a aucun budget de tâche. Capturez une baseline après avoir saisi les budgets.',
+    'evc.legPv': 'PV, valeur planifiée (trait continu)',
+    'evc.legEv': 'EV, valeur acquise (ronds aux mesures)',
+    'evc.legAc': 'AC, coût réel (carrés aux mesures)',
+    'evc.desc': 'Valeur planifiée cumulée jusqu\'à {bac} ; aujourd\'hui, valeur acquise {ev} et coût réel {ac}.',
+    'evc.acNote': 'Ici, l\'AC est le coût réel total du projet, tâches en cours comprises, comme dans les indicateurs de valeur acquise. La courbe des coûts, plus haut, ne compte que les tâches terminées : les deux courbes « réel » diffèrent donc. La PV est lue à la fin de chaque période, l\'EV et l\'AC à la date de la mesure.',
+    'evc.skipped': 'Points de situation non tracés : {count} (sans montants, après un export sans montants, ou datés après aujourd\'hui).',
+    'evc.valuesCaption': 'Valeurs des courbes PV / EV / AC par période',
+    'evc.measure': 'Mesure',
+    'evc.today': 'Aujourd\'hui',
+    'rep.evmPoints': 'Points de situation :',
+    'rep.evmPoint': '{date}{label} : CPI {cpi}, SPI {spi}',
     'evm.title': 'Valeur acquise',
     'evm.refBaseline': 'Référence : baseline « {name} » (budgets et dates figés à la capture, avancement et coût réel d\'aujourd\'hui).',
     'evm.refPlan': 'Référence : planning actuel (aucune baseline capturée). Capturez une baseline pour mesurer l\'écart avec le plan d\'origine.',
@@ -680,6 +695,21 @@ const I18n = (() => {
     'cols.resetDone': 'Original columns restored.',
     'cols.pos': 'position {pos}',
     'cols.hiddenCol': 'hidden',
+    'evc.title': 'PV / EV / AC curves',
+    'evc.intro': 'Planned value (PV) is continuous, computed on the reference baseline. Earned value (EV) and actual cost (AC) are only known at status points and today: they are marked at those dates and joined by a line, with no value invented between two measurements.',
+    'evc.none.noBaseline': 'No curves: planned value is computed on a reference baseline, and the project has none. Capture a baseline (Baselines window) to draw the curves.',
+    'evc.none.noBudget': 'No curves: the reference baseline “{name}” has no task budget. Capture a baseline after entering the budgets.',
+    'evc.legPv': 'PV, planned value (solid line)',
+    'evc.legEv': 'EV, earned value (circles at measurements)',
+    'evc.legAc': 'AC, actual cost (squares at measurements)',
+    'evc.desc': 'Cumulative planned value up to {bac}; today, earned value {ev} and actual cost {ac}.',
+    'evc.acNote': 'Here, AC is the total actual cost of the project, tasks in progress included, as in the earned value indicators. The cost curve above only counts finished tasks: the two “actual” curves therefore differ. PV is read at the end of each period, EV and AC at the measurement date.',
+    'evc.skipped': 'Status points not drawn: {count} (without amounts, after an export without amounts, or dated after today).',
+    'evc.valuesCaption': 'PV / EV / AC curve values by period',
+    'evc.measure': 'Measurement',
+    'evc.today': 'Today',
+    'rep.evmPoints': 'Status points:',
+    'rep.evmPoint': '{date}{label}: CPI {cpi}, SPI {spi}',
     'evm.title': 'Earned value',
     'evm.refBaseline': 'Reference: baseline “{name}” (budgets and dates frozen at capture, today\'s progress and actual cost).',
     'evm.refPlan': 'Reference: current schedule (no baseline captured). Capture a baseline to measure the gap with the original plan.',
@@ -1042,7 +1072,7 @@ const I18n = (() => {
   /**
    * Date longue : « lun. 05 janv. 2026 » / « Mon 05 Jan 2026 » (RG-32).
    * Appelle : Dates.weekday(), Dates.ymd()
-   * Appelée par : 21 fonctions (usage général)
+   * Appelée par : 22 fonctions (usage général)
    */
   function date(dn) {
     if (dn == null) return '';

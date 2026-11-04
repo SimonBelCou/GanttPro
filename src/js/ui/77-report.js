@@ -38,8 +38,7 @@ function lineNode(l, out) {
 }
 
 /**
- * Appelle : alertMessages(), Budget.bacVariation(), Budget.hasAmounts(), Budget.totals(), Evm.compute(), I18n.date(),
- *   I18n.number(), I18n.shortDate(), reportData(), signed(), t(), taskLabel()
+ * Appelle : 13 fonctions
  * Appelée par : reportArticle(), reportText()
  */
 function reportSections() {
@@ -66,8 +65,11 @@ function reportSections() {
     out.push({ key: 'budget', title: t('rep.b.budget'), lines });
   }
   // Valeur acquise (EF-142) : les indices CPI et SPI sont des rapports, lisibles sans montants ; les montants
-  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124).
-  if (B.budget && Budget.hasAmounts(App.project)) {
+  // (PV, EV, AC, écarts, EAC) n'y figurent que si « Inclure les montants » est coché (EF-124). Le bloc paraît aussi pour
+  // un projet qui n'a plus que des points de situation (relu après un export sans montants) : il donne alors ce qui se
+  // calcule, les CPI et SPI des points, comme l'onglet Budget (A.8 ligne 16, décision X2 du 3 novembre 2026).
+  const pts = App.project.statusPoints;
+  if (B.budget && (Budget.hasAmounts(App.project) || pts.length)) {
     const e = Evm.compute(App.project, App.sched, today);
     const idx = (k, r) => `${t(k)} : ${r.hundredths == null ? t('evm.na') + ' (' + t('evm.na.' + r.reason) + ')' : I18n.number(r.hundredths / 100, 2) + ' ' + LIGHT_MARK[r.light] + ' ' + t('evm.light.' + r.light)}`;
     const lines = [e.ref ? t('evm.refBaseline', { name: e.ref.name }) : t('evm.refPlan'), idx('evm.cpi', e.cpi), idx('evm.spi', e.spi)];
@@ -75,6 +77,10 @@ function reportSections() {
       const L = (k, c, signed) => ({ label: t(k) + ' : ', cents: c, signed });
       lines.push(L('evm.pv', e.pv), L('evm.ev', e.ev), L('evm.ac', e.ac), L('evm.cv', e.cv, true), L('evm.sv', e.sv, true));
       if (e.eac.byCpi.cents != null) lines.push(L('evm.eac1', e.eac.byCpi.cents));
+    }
+    if (pts.length) {
+      const r2 = v => (v == null ? t('evm.pointNoRatio') : I18n.number(v / 100, 2));
+      lines.push(t('rep.evmPoints'), ...pts.map(p => t('rep.evmPoint', { date: I18n.date(Dates.parse(p.date)), label: p.label ? ' — ' + p.label : '', cpi: r2(p.cpi), spi: r2(p.spi) })));
     }
     out.push({ key: 'evm', title: t('evm.title'), lines });
   }
