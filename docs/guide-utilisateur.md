@@ -326,7 +326,15 @@ Cet onglet n'apparaît que si au moins un montant ou un taux de ressource est sa
 - **Prévision à terminaison** (EAC), trois hypothèses côte à côte : BAC / CPI (la dérive durera), AC + ETC (votre estimation du reste à faire ; non calculable tant qu'il n'est pas saisi), AC + BAC − EV (la dérive était exceptionnelle). VAC = BAC − EAC. En fin de projet ces indicateurs sont moins pertinents : regardez le coût réel final.
 - **Diagramme CPI / SPI** : un point courant (et les points de situation en gris) ; la zone en haut à droite est celle où coût et délai sont maîtrisés.
 - **Points de situation** : « Enregistrer un point de situation » garde une photo (date, libellé facultatif, référence, CPI, SPI et montants) dans le projet, 60 au plus. Rien n'est enregistré automatiquement. L'export « sans montants » en retire les montants et garde les indices.
-- Le CPI et le SPI ne sont pas des montants : ils restent visibles quand les montants sont masqués. Le rapport d'état les reprend dans le bloc Budget ; les montants n'y figurent que si « Inclure les montants » est coché.
+- Le CPI et le SPI ne sont pas des montants : ils restent visibles quand les montants sont masqués. Le rapport d'état les reprend dans le bloc « Valeur acquise », avec les CPI et SPI de chaque point de situation ; ce bloc reste présent pour un projet qui n'a plus que des points (rouvert après un export sans montants). Les montants n'y figurent que si « Inclure les montants » est coché.
+
+**Courbes PV / EV / AC** (même onglet, sous la valeur acquise) : l'évolution dans le temps des trois valeurs, par semaine ou par mois.
+
+- La **PV** (trait continu) se calcule pour chaque période sur la **baseline de référence**, par palier comme plus haut. Sans baseline de référence, ou si elle n'a aucun budget, la section le dit et ne trace rien : capturez une baseline après avoir saisi les budgets.
+- L'**EV** (ronds) et l'**AC** (carrés) ne sont connues qu'aux **points de situation** et **aujourd'hui** : GanttPro ne reconstitue pas le passé et n'enregistre rien tout seul. Pour suivre la courbe, enregistrez un point à chaque revue. Les marques sont reliées par un trait ; entre deux mesures, aucune valeur n'est inventée.
+- L'**AC** de ces courbes est le **coût réel total** (tâches en cours comprises), comme dans les indicateurs ; la courbe des coûts, plus haut, ne compte que les tâches terminées : leurs deux « réels » diffèrent normalement.
+- Un point relu d'un export « sans montants » n'a plus d'EV ni d'AC : il n'est pas tracé, et la section dit combien de points sont dans ce cas.
+- « Afficher les valeurs » donne, pour chaque période, PV, EV, AC et la mesure (date et libellé du point, ou « Aujourd'hui ») ; « — » quand la période n'a pas de mesure. Les montants se masquent avec les autres.
 
 ### Tableau de bord, onglet « Charge »
 

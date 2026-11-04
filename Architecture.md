@@ -178,7 +178,7 @@ pour 1 000 tâches). L'interface n'écrit jamais dans `App.project` autrement.
 | `35-resolve.js` | `Resolve` | Propositions de résolution des conflits, simulées sur une copie (EF-31, RG-34) |
 | `40-model.js` | `Model` | Limites, validation par liste blanche, lecture et écriture du format 3 |
 | `42-budget.js` | `Budget` | Budget, coût réel, provision, BAC, courbe des coûts, entiers de centimes (RG-35 à RG-43) |
-| `43-evm.js` | `Evm` | Valeur acquise : PV, EV, AC, CV, SV, CPI, SPI, EAC, VAC, points de situation |
+| `43-evm.js` | `Evm` | Valeur acquise : PV, EV, AC, CV, SV, CPI, SPI, EAC, VAC, points de situation, courbes PV / EV / AC dans le temps (`curves`, appelle `Metrics.periods`) |
 | `44-columns.js` | `Columns` | Colonnes affichées et leur ordre (EF-143 à EF-146) |
 | `45-view.js` | `View` | Recherche, filtres, regroupements : affichage seulement |
 | `46-rates.js` | `Rates` | Taux des ressources : lignes datées, normalisation, coût par jour ouvré (EF-147 à EF-150) |
@@ -270,7 +270,7 @@ Chaque fonction de niveau module, et chaque module, porte à la fin de son comme
 | `52-viewbar.js`, `55-tooltip.js` | Recherche et filtres ; infobulles |
 | `60-editor.js` à `66-layout.js` | Panneau d'édition, raccourcis, sélection, actions groupées, gestes, mise en page |
 | `70-windows.js` à `74-columns.js` | Fenêtres projet, ressources, catégories, baselines, calendrier, colonnes |
-| `75-dashboard.js`, `76-budget.js`, `76-load.js` | Tableau de bord, onglet Budget et valeur acquise, charge |
+| `75-dashboard.js`, `76-budget.js`, `76-load.js` | Tableau de bord, onglet Budget, valeur acquise et ses courbes (`sCurveChart` et `curveTable` paramétrés par séries), charge |
 | `77-report.js`, `78-print.js` | Rapport d'état, impression |
 | `79-versions.js` à `87-settings.js` | Versions, fichiers, presse-papiers, onglets, bibliothèque, récupération, réglages |
 | `88-ofl.js` | Texte de licence des polices (généré depuis `THIRD_PARTY_LICENSES.md`) |

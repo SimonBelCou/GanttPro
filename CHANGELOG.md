@@ -23,6 +23,15 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   dans `.claude/regles-nr/` et importées par `CLAUDE.md` §13.10 ; sous-agents de revue `eco-check` et
   `accessibilite-check` dans `.claude/agents/`. Aucun changement de code.
 
+### Budget, fin de l'étape B : courbes PV / EV / AC (branche `claude/courbes-pv-ev-ac-c4dd89`, PR à ouvrir après la PR #14)
+- Onglet Budget, section « Courbes PV / EV / AC » : PV continue par période sur la baseline de référence, EV (ronds) et AC
+  (carrés) aux seuls points de situation et à aujourd'hui, légende par forme et texte, tableau des valeurs, raison
+  affichée sans baseline de référence (EF-151, RG-59, R-101, décisions B1 et B2 du 3 novembre 2026). Moteur
+  `Evm.curves` ; `sCurveChart`, `curveLegend` et `curveTable` deviennent paramétrables (séries, identifiants).
+- Corrigé : le bloc « Valeur acquise » du rapport d'état disparaissait pour un projet qui n'a que des points de situation
+  (après un export sans montants) ; il reste et liste les CPI et SPI des points (décision X2, A.8 ligne 16).
+- Recette « Budget 21 », fichier d'essai `tests/fixtures/valeur-acquise-courbes.json`.
+
 ### Budget, étape C (PR #14, en attente de la recette « Taux 1 à 10 »)
 - Profils de coût et taux datés des ressources (par jour ouvré), coût des ressources par tâche, par ressource et face au
   budget saisi, signalement des ressources sans taux, exports avec ou sans taux (EF-147 à EF-150, RG-54 à RG-58, R-92 à R-100).
