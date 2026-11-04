@@ -974,6 +974,8 @@ Montants en euros, à titre d'exemple. R-71 à R-77, R-79 et R-83 se vérifient 
 
 ### 9.8 Journal d'erreurs
 
+Fiches de recette manuelle : `docs/recettes/journal-*.md`.
+
 | ID | Données et action | Résultat attendu | Références |
 | --- | --- | --- | --- |
 | R-101 | Option de conservation désactivée (par défaut) ; on importe `journal-import-refuse.json` (deux ressources du même nom fictif) ; une exception imprévue puis une promesse rejetée surviennent ; on ouvre « Voir le journal » puis « Exporter le journal ». | Import refusé avec son message ; bandeau « Erreur inattendue (réf. …). Exportez votre projet. » une seule fois (deuxième erreur en moins de 10 s sans nouveau bandeau), sans message ni pile ; trois lignes (`imp.dupResource`, deux `app.unexpected`) sans nom, message ni chemin ; fichier `.jsonl` avec en-tête version et langue ; aucune clé `ganttpro.log.` sur l'appareil. | EF-151, RG-59, RG-60, RG-62, RG-63 |

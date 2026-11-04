@@ -19,7 +19,7 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   attendu de l'erreur imprévue (`Journal.failure`, `Journal.calc`) ; le message affiché ne change pas.
 - Nouveaux modules `src/js/core/55-errlog.js` et `src/js/ui/15-errlog.js` ; tests `tests/core/journal.test.mjs` (10) et
   `tests/test_v3_journal.py` (40, ajouté à la CI) ; fichier d'essai `tests/fixtures/journal-import-refuse.json` ;
-  recette manuelle « Journal 1 à 3 ».
+  fiches de recette `docs/recettes/journal-*.md` (trois fiches, index `docs/recettes/README.md`).
 - Revues `accessibilite-check` et `eco-check` appliquées : zone d'alerte créée vide au lancement (RGAA 7.5), bandeau placé
   dans la fenêtre ouverte et focus rendu à sa fermeture (RGAA 12.8), identifiants techniques du tableau en `lang="en"`
   (RGAA 8.7), région nommée par sa légende ; pas de réécriture du journal au lancement s'il n'a pas changé, erreur
