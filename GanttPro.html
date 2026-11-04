@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e4o1q2ljjk9E3Ut4KQpdvEpkvMZlYWvmg+dwwhmSXQY='; style-src 'sha256-/8+RvKSnljWbvSvuJ8pikPaGaveMXx8hJH2AZb7evUU='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9GLM98+hDVyKM8Lkf6YqSKWoNPJiCXX83JHOtc0cFw4='; style-src 'sha256-uJtf9Kb1pDxaoKlNZowF13t/yMXrh5TFjQ934O3KnaI='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -103,6 +103,7 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
 .tasks td.money { font-variant-numeric: tabular-nums; text-align: right; position: relative; }
 .money { font-variant-numeric: tabular-nums; }
+output.masked-field { display: block; padding: .3rem 0; }
 .tasks td.name { padding-left: calc(.45rem + var(--depth, 0) * 1.1rem); max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.select { background: transparent; border: 0; padding: 0 .2rem; min-height: 28px; text-align: left; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.toggle { background: transparent; border: 0; min-height: 26px; min-width: 26px; }
@@ -5368,7 +5369,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 85 fonctions (usage général)
+ * Appelée par : 86 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -6030,8 +6031,7 @@ const Money = (() => {
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
    * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
    * Appelle : Budget.format(), Budget.formatCompact(), h(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), costCell(), lineNode(), moneyCell(),
-   *   paintBudget(), paintEvm(), paintRatesCost(), rateTodayNode(), resourceCostSection(), Tooltip.show()
+   * Appelée par : 13 fonctions (usage général)
    */
   function node(cents, { compact = false, cls = '' } = {}) {
     if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
@@ -6040,7 +6040,20 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, node };
+  /**
+   * Champ de montant pendant le masquage (EF-125, décision du 3 novembre 2026) : un texte « •••• » lu « montant masqué »,
+   * même rendu que Money.node(), à la place d'un champ désactivé qui contiendrait « •••• ». <output> est un élément
+   * « étiquetable » : le <label for> du champ reste relié et nomme la valeur. Il n'est pas focalisable, comme le champ
+   * désactivé qu'il remplace. aria-live="off" : <output> est une région « status », rien n'est annoncé quand la fenêtre
+   * est redessinée. attrs : id, aria (label, describedby).
+   * Appelle : h(), Money.node()
+   * Appelée par : Editor.budgetEditor(), editProjectWindow(), rateLinesEditor()
+   */
+  function field(attrs = {}) {
+    return h('output', { ...attrs, class: 'masked-field', aria: { ...(attrs.aria || {}), live: 'off' } }, node(0));
+  }
+
+  return { symbol, masked, text, plain, node, field };
 })();
 
 /**
@@ -7157,15 +7170,16 @@ const Editor = (() => {
 
   /**
    * Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112).
-   * Appelle : Budget.toInput(), Editor.field(), Editor.input(), h(), I18n.getLang(), Money.masked(), Money.symbol(),
-   *   t()
+   * Appelle : Budget.toInput(), Editor.field(), Editor.input(), h(), I18n.getLang(), Money.field(), Money.masked(),
+   *   Money.symbol(), t()
    * Appelée par : Editor.build()
    */
   function budgetEditor() {
     const lang = I18n.getLang(), masked = Money.masked();
     const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
     const mk = (name, label, cents, raw, hint) => {
-      const inp = input('text', masked ? Money.DOTS : (raw ?? Budget.toInput(cents || 0, lang)), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', disabled: masked, maxlength: 20 });
+      // Masqué : un texte « •••• » (Money.field), l'étiquette restant reliée ; sinon le champ de saisie.
+      const inp = masked ? Money.field() : input('text', raw ?? Budget.toInput(cents || 0, lang), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20 });
       return field(name, `${label} (${Money.symbol()})`, inp, hint);
     };
     if (masked) box.append(h('p', { class: 'note', text: t('f.maskedFields') }));
@@ -7280,8 +7294,9 @@ const Editor = (() => {
     if (f.pct) d.pctRaw = val('pct');
     if (f.reached) d.pct = f.reached.checked ? 100 : 0;
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) if (f[k]) d[k] = val(k);
-    if (f.budget && !f.budget.disabled) d.budgetRaw = val('budget');
-    if (f.actual && !f.actual.disabled) d.actualRaw = val('actual');
+    // Un montant masqué est un <output> (Money.field) : sa valeur n'est pas une saisie.
+    if (f.budget && f.budget.tagName === 'INPUT') d.budgetRaw = val('budget');
+    if (f.actual && f.actual.tagName === 'INPUT') d.actualRaw = val('actual');
     d.tagsRaw = val('tags') || '';
     d.notes = val('notes') || '';
   }
@@ -8663,7 +8678,7 @@ function initLayout() {
 
 /**
  * Appelle : $(), Budget.format(), Budget.parse(), Budget.toInput(), commit(), Dialog.open(), h(), I18n.getLang(),
- *   Money.masked(), t()
+ *   Money.field(), Money.masked(), t()
  * Appelée par : action « editProject »
  */
 async function editProjectWindow() {
@@ -8677,7 +8692,9 @@ async function editProjectWindow() {
   // Budget (EF-114) : symbole de la devise, unique pour le projet et sans conversion, et provision globale.
   const masked = Money.masked();
   const currency = h('input', { type: 'text', id: 'p-currency', value: p.currency || '€', maxlength: Model.LIMITS.currency, autocomplete: 'off', aria: { describedby: 'p-currency-err' } });
-  const provision = h('input', { type: 'text', id: 'p-provision', value: masked ? Money.DOTS : Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-provision-err' } });
+  // Masqué : un texte « •••• » (Money.field) relié à son étiquette, à la place du champ (EF-125).
+  const provision = masked ? Money.field({ id: 'p-provision' })
+    : h('input', { type: 'text', id: 'p-provision', value: Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', aria: { describedby: 'p-provision-err' } });
   const budgetBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
     h('p', { class: 'hint', text: t('proj.budgetNote') }),
     h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
@@ -8686,7 +8703,8 @@ async function editProjectWindow() {
   // Valeur acquise : seuils des voyants CPI / SPI (en %) et reste à faire estimé (ETC), propres au projet.
   const evmGreen = h('input', { type: 'text', id: 'p-evmgreen', value: String(p.evmGreen), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
   const evmRed = h('input', { type: 'text', id: 'p-evmred', value: String(p.evmRed), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
-  const etc = h('input', { type: 'text', id: 'p-etc', value: masked ? Money.DOTS : (p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang())), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-etc-err' } });
+  const etc = masked ? Money.field({ id: 'p-etc' })
+    : h('input', { type: 'text', id: 'p-etc', value: p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', aria: { describedby: 'p-etc-err' } });
   const evmBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('proj.evmGroup') }),
     h('p', { class: 'hint', text: t('proj.evmNote') }),
     h('div', { class: 'field' }, h('label', { for: 'p-evmgreen', text: t('proj.evmGreen') }), evmGreen),
@@ -9152,8 +9170,8 @@ function rateOwner(kind, id) {
 /**
  * Éditeur des lignes de taux d'un propriétaire (EF-148). La ligne sans date vaut « depuis le début » ; les autres
  * s'appliquent à partir de leur date. Saisie désactivée quand les montants sont masqués.
- * Appelle : Budget.toInput(), Dates.parse(), h(), I18n.date(), I18n.getLang(), Money.masked(), Money.symbol(),
- *   rateOwner(), t()
+ * Appelle : Budget.toInput(), Dates.parse(), h(), I18n.date(), I18n.getLang(), Money.field(), Money.masked(),
+ *   Money.symbol(), rateOwner(), t()
  * Appelée par : profilesWindow(), resourceCostSection()
  */
 function rateLinesEditor(kind, id, label) {
@@ -9172,8 +9190,11 @@ function rateLinesEditor(kind, id, label) {
     // Étiquette visible reliée par for (RGAA 11.2) ; le nom accessible commence par ce texte visible (WCAG 2.5.3) et le
     // complète du propriétaire et de la date, qui distinguent les lignes pour un lecteur d'écran.
     const rateText = `${t('rt.rate')} (${Money.symbol()})`;
-    const rate = h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20, disabled: masked,
-      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${rateText} (${label}, ${when})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
+    // Masqué : un texte « •••• » (Money.field) qui garde son étiquette et son nom, à la place du champ (EF-125).
+    const rateAria = { label: `${rateText} (${label}, ${when})` };
+    const rate = masked ? Money.field({ id: `rl-${key}-rate-${i}`, aria: rateAria })
+      : h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20,
+        value: Budget.toInput(l.rate, lang), aria: { ...rateAria, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
     list.append(h('li', {}, from, h('label', { for: `rl-${key}-rate-${i}`, text: rateText }), rate,
       h('button', { type: 'button', class: 'icon', disabled: masked, data: { click: 'rlRemove', arg: `${kind}:${id}:${i}` }, aria: { label: t('rt.removeLine', { name: `${label}, ${when}` }) } }, '✕')));
   });

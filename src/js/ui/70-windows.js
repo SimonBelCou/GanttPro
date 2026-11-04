@@ -2,7 +2,7 @@
 
 /**
  * Appelle : $(), Budget.format(), Budget.parse(), Budget.toInput(), commit(), Dialog.open(), h(), I18n.getLang(),
- *   Money.masked(), t()
+ *   Money.field(), Money.masked(), t()
  * Appelée par : action « editProject »
  */
 async function editProjectWindow() {
@@ -16,7 +16,9 @@ async function editProjectWindow() {
   // Budget (EF-114) : symbole de la devise, unique pour le projet et sans conversion, et provision globale.
   const masked = Money.masked();
   const currency = h('input', { type: 'text', id: 'p-currency', value: p.currency || '€', maxlength: Model.LIMITS.currency, autocomplete: 'off', aria: { describedby: 'p-currency-err' } });
-  const provision = h('input', { type: 'text', id: 'p-provision', value: masked ? Money.DOTS : Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-provision-err' } });
+  // Masqué : un texte « •••• » (Money.field) relié à son étiquette, à la place du champ (EF-125).
+  const provision = masked ? Money.field({ id: 'p-provision' })
+    : h('input', { type: 'text', id: 'p-provision', value: Budget.toInput(p.provision || 0, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', aria: { describedby: 'p-provision-err' } });
   const budgetBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('f.budgetGroup') }),
     h('p', { class: 'hint', text: t('proj.budgetNote') }),
     h('div', { class: 'field' }, h('label', { for: 'p-currency', text: t('proj.currency') }), currency, h('p', { class: 'field-error', id: 'p-currency-err', hidden: true })),
@@ -25,7 +27,8 @@ async function editProjectWindow() {
   // Valeur acquise : seuils des voyants CPI / SPI (en %) et reste à faire estimé (ETC), propres au projet.
   const evmGreen = h('input', { type: 'text', id: 'p-evmgreen', value: String(p.evmGreen), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
   const evmRed = h('input', { type: 'text', id: 'p-evmred', value: String(p.evmRed), inputmode: 'numeric', autocomplete: 'off', aria: { describedby: 'p-evm-err' } });
-  const etc = h('input', { type: 'text', id: 'p-etc', value: masked ? Money.DOTS : (p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang())), inputmode: 'decimal', autocomplete: 'off', disabled: masked, aria: { describedby: 'p-etc-err' } });
+  const etc = masked ? Money.field({ id: 'p-etc' })
+    : h('input', { type: 'text', id: 'p-etc', value: p.etc == null ? '' : Budget.toInput(p.etc, I18n.getLang()), inputmode: 'decimal', autocomplete: 'off', aria: { describedby: 'p-etc-err' } });
   const evmBox = h('fieldset', { class: 'sub' }, h('legend', { text: t('proj.evmGroup') }),
     h('p', { class: 'hint', text: t('proj.evmNote') }),
     h('div', { class: 'field' }, h('label', { for: 'p-evmgreen', text: t('proj.evmGreen') }), evmGreen),

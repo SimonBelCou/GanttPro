@@ -61,6 +61,19 @@ def main():
         pg.goto(HTML.as_uri())
         pg.wait_for_selector('#task-rows tr')
 
+        def masked_field(sel, label):
+            """EF-125 (3 novembre 2026) : un montant masqué est un texte « •••• » lu « montant masqué », relié à son étiquette,
+            hors de l'ordre de tabulation comme l'ancien champ désactivé ; plus aucun champ ne contient « •••• »."""
+            return pg.evaluate("""([sel, label]) => {
+                const el = document.querySelector(sel);
+                if (!el || el.tagName !== 'OUTPUT' || el.tabIndex >= 0) return 'pas un texte hors tabulation : ' + (el && el.outerHTML);
+                const lab = [...el.labels].map(l => l.textContent.trim());
+                if (!lab.includes(label)) return 'étiquette ' + JSON.stringify(lab);
+                const dots = el.querySelector('[aria-hidden="true"]'), sr = el.querySelector('.sr-only');
+                if (!dots || dots.textContent !== '••••' || !sr || sr.textContent !== 'montant masqué') return 'rendu ' + el.innerHTML;
+                if ([...document.querySelectorAll('input')].some(i => i.value === '••••')) return 'un champ contient encore ••••';
+                return 'ok'; }""", [sel, label])
+
         def btn(label, scope='dialog[open]'):
             pg.locator(scope).last.locator(f'button:has-text("{label}")').first.click()
             pg.wait_for_timeout(80)
@@ -187,8 +200,22 @@ def main():
         check('masquage : « •••• » dans la colonne, sans montant', '••••' in cell('T1') and '100' not in cell('T1'), cell('T1'))
         check('masquage : nom accessible « montant masqué »', 'montant masqué' in pg.evaluate("document.querySelector('#task-rows tr[data-id=\"T1\"] td.money').textContent"))
         open_task('T1')
-        check('masquage : champs de la fiche désactivés', pg.is_disabled('#f-budget') and pg.is_disabled('#f-actual'))
+        for sel, label in [('#f-budget', 'Budget (€)'), ('#f-actual', 'Coût réel cumulé (€)')]:
+            r = masked_field(sel, label)
+            check(f'EF-125 : {label} masqué, texte « •••• » lu « montant masqué » avec son étiquette, hors tabulation', r == 'ok', r)
+        check('EF-125 : la fiche reste enregistrable, les montants masqués ne sont pas modifiés',
+              pg.evaluate("document.querySelector('#f-budget').name") == 'budget')
         axe_check(pg, 'fiche de tâche, montants masqués')
+        pg.fill('#f-name', 'T1 renommée'); pg.click('#edit-form button[type=submit]'); pg.wait_for_timeout(120)
+        pg.click('#btn-mask'); pg.wait_for_timeout(80)
+        check('EF-125 : enregistrer la fiche pendant le masquage garde le budget et le coût réel',
+              '100,00 € / 90,00 €' in cell('T1') and 'T1 renommée' in sp(pg.inner_text('#task-rows tr[data-id="T1"]')), cell('T1'))
+        pg.click('#btn-mask'); pg.wait_for_timeout(80)
+        pg.click('#project-label'); pg.wait_for_selector('#p-provision')
+        for sel, label in [('#p-provision', 'Provision globale (€)'), ('#p-etc', 'Reste à faire estimé, ETC (€)')]:
+            r = masked_field(sel, label)
+            check(f'EF-125 : fenêtre du projet, {label} masqué en texte relié à son étiquette', r == 'ok', r)
+        axe_check(pg, 'fenêtre du projet, montants masqués')
         esc()
         pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget')
         check('masquage : onglet Budget masqué', '€' not in sp(pg.inner_text('#bud-tiles')) and '••••' in pg.inner_text('#bud-tiles'))
@@ -881,7 +908,9 @@ def main():
         pg.click('button[data-click="openResources"]'); pg.wait_for_timeout(100)
         check('RG-41 : taux masqués dans la fenêtre Ressources', '400,00' not in sp(pg.inner_text('#res-win')) and '••••' in pg.inner_text('#res-win'))
         pg.click('#btn-profiles'); pg.wait_for_timeout(100)
-        check('RG-41 : lignes de taux désactivées et expliquées quand les montants sont masqués', pg.locator('#prof-win input[id^="rl-"]:not([disabled])').count() == 0 and 'masqués' in pg.inner_text('#prof-win'))
+        check('RG-41 : lignes de taux non modifiables et expliquées quand les montants sont masqués', pg.locator('#prof-win input[id^="rl-"]:not([disabled])').count() == 0 and 'masqués' in pg.inner_text('#prof-win'))
+        r = masked_field('#rl-pP1-rate-0', 'Taux par jour (€)')
+        check('EF-125 : un taux masqué est un texte « •••• » lu « montant masqué », étiquette « Taux par jour (€) » conservée', r == 'ok', r)
         axe_check(pg, 'fenêtre des profils, montants masqués')
         esc(); esc()
         pg.click('button[data-click="openDashboard"]'); pg.click('#dtab-budget'); pg.wait_for_timeout(100)

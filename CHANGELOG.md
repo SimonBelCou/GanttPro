@@ -49,6 +49,9 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   « Profil 2 »… dans leur ordre, en JSON comme en Excel, avec le lien ressource → profil et leurs lignes de taux (si les
   montants sont inclus). Aide sous le nom d'un profil : « Intitulé de fonction (ex. Chef de projet), jamais le nom d'une
   personne ». Recette « Taux 7 » mise à jour.
+- Montants masqués (décision du 3 novembre 2026, EF-125) : un champ de montant (budget et coût réel de la fiche, provision
+  et ETC du projet, taux) n'est plus un champ désactivé contenant « •••• » mais un texte « •••• » lu « montant masqué »,
+  relié à l'étiquette du champ (`Money.field`, élément `<output>`). Recette « Budget 6 » mise à jour.
 - Recette manuelle : parcours « Taux 11 ».
 
 ## 3.0.0

@@ -456,17 +456,21 @@ Départ : ouvrez `budget-montants-geants.json` (cinq tâches, du petit montant a
 - [ ] 5. (Facultatif, lecteur d'écran) Sur une ligne abrégée, le lecteur annonce le montant abrégé puis le
   montant complet entre parenthèses.
 
-### Budget 6 — Masquer les montants à l'écran (EF-126, RG-41, R-78)
+### Budget 6 — Masquer les montants à l'écran (EF-125, EF-126, RG-41, R-78)
 
 Départ : `budget-base.json` ouvert.
 
 - [ ] 1. Cliquez **Masquer les montants** (barre du haut). *Attendu :* le bouton paraît enfoncé ; la colonne
   affiche `••••` partout ; aucun chiffre de montant n'est visible.
-- [ ] 2. Ouvrez la fiche d'Etude. *Attendu :* les champs budget et coût réel sont **désactivés**.
-- [ ] 3. Ouvrez le tableau de bord, onglet Budget. *Attendu :* tuiles, tableau des catégories et valeurs de la
+- [ ] 2. Ouvrez la fiche d'Etude. *Attendu :* sous les étiquettes « Budget (€) » et « Coût réel cumulé (€) », plus de champ de
+  saisie mais le texte `••••` ; un lecteur d'écran lit l'étiquette puis « montant masqué » ; la touche Tab ne s'arrête pas
+  sur ces textes. Fermez la fiche par Échap.
+- [ ] 3. Ouvrez la fenêtre du projet (clic sur son nom). *Attendu :* « Provision globale (€) » et « Reste à faire estimé, ETC (€) »
+  affichent `••••` en texte, lu « montant masqué », avec une phrase qui dit de désactiver le masquage pour les modifier. Échap.
+- [ ] 4. Ouvrez le tableau de bord, onglet Budget. *Attendu :* tuiles, tableau des catégories et valeurs de la
   courbe sont masqués.
-- [ ] 4. Rechargez la page (F5). *Attendu :* le masquage est conservé (réglage mémorisé sur votre poste).
-- [ ] 5. Cliquez de nouveau sur le bouton. *Attendu :* les montants reviennent. Le masquage n'a modifié aucune
+- [ ] 5. Rechargez la page (F5). *Attendu :* le masquage est conservé (réglage mémorisé sur votre poste).
+- [ ] 6. Cliquez de nouveau sur le bouton. *Attendu :* les montants reviennent. Le masquage n'a modifié aucune
   donnée (le bouton **Annuler** reste grisé).
 
 ### Budget 7 — Baselines et BAC (EF-121, RG-39, R-75)
@@ -641,7 +645,7 @@ Départ : `valeur-acquise-passe.json`, **Projet** (clic sur le nom du projet).
 
 - [ ] 1. Dans le groupe **Valeur acquise**, mettez le seuil vert à `80` et le seuil rouge à `90`, **Enregistrer**. *Attendu :* refus avec un message (le seuil rouge ne dépasse pas le vert), le champ fautif reçoit le focus.
 - [ ] 2. Mettez vert `120`, rouge `110`, vide l'ETC, **Enregistrer**. *Attendu :* onglet Budget : CPI `1,16` passe à « ▲ à surveiller » ; la ligne AC + ETC devient « non calculable ».
-- [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, le champ ETC est désactivé et affiche `••••`.
+- [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, l'ETC s'affiche en texte `••••` (lu « montant masqué »), non modifiable.
 - [ ] 4. Barre du haut, **Annuler**. *Attendu :* les seuils reviennent à leur valeur précédente.
 
 ### Budget 20 — Points de situation (EF-141, RG-51, R-88)
@@ -786,7 +790,7 @@ Départ : ouvrez `taux-sans-taux.json`.
 Départ : `taux-historique.json`.
 
 - [ ] 1. Cliquez **Masquer les montants**. *Attendu :* dans **Ressources**, les taux du jour sont `••••` ; dans **Profils de coût…**,
-  les lignes de taux sont grisées et un message explique qu'il faut désactiver le masquage ; l'onglet Budget montre `••••` pour tous
+  chaque taux est le texte `••••` (lu « Taux par jour (€) … montant masqué »), les dates et boutons des lignes sont grisés et un message explique qu'il faut désactiver le masquage ; l'onglet Budget montre `••••` pour tous
   les montants mais garde les jours-personne. Réactivez les montants.
 - [ ] 2. **Exporter** (JSON), **sans** « Inclure les montants ». Ouvrez le fichier dans un éditeur de texte. *Attendu :* aucune
   valeur de taux ; les profils gardent leur nom avec `"rates": []`.

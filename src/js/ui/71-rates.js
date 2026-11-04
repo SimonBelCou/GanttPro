@@ -55,8 +55,8 @@ function rateOwner(kind, id) {
 /**
  * Éditeur des lignes de taux d'un propriétaire (EF-148). La ligne sans date vaut « depuis le début » ; les autres
  * s'appliquent à partir de leur date. Saisie désactivée quand les montants sont masqués.
- * Appelle : Budget.toInput(), Dates.parse(), h(), I18n.date(), I18n.getLang(), Money.masked(), Money.symbol(),
- *   rateOwner(), t()
+ * Appelle : Budget.toInput(), Dates.parse(), h(), I18n.date(), I18n.getLang(), Money.field(), Money.masked(),
+ *   Money.symbol(), rateOwner(), t()
  * Appelée par : profilesWindow(), resourceCostSection()
  */
 function rateLinesEditor(kind, id, label) {
@@ -75,8 +75,11 @@ function rateLinesEditor(kind, id, label) {
     // Étiquette visible reliée par for (RGAA 11.2) ; le nom accessible commence par ce texte visible (WCAG 2.5.3) et le
     // complète du propriétaire et de la date, qui distinguent les lignes pour un lecteur d'écran.
     const rateText = `${t('rt.rate')} (${Money.symbol()})`;
-    const rate = h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20, disabled: masked,
-      value: masked ? Money.DOTS : Budget.toInput(l.rate, lang), aria: { label: `${rateText} (${label}, ${when})`, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
+    // Masqué : un texte « •••• » (Money.field) qui garde son étiquette et son nom, à la place du champ (EF-125).
+    const rateAria = { label: `${rateText} (${label}, ${when})` };
+    const rate = masked ? Money.field({ id: `rl-${key}-rate-${i}`, aria: rateAria })
+      : h('input', { type: 'text', id: `rl-${key}-rate-${i}`, inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20,
+        value: Budget.toInput(l.rate, lang), aria: { ...rateAria, describedby: 'rl-err-' + key }, data: { change: 'rlField', arg: arg('rate') } });
     list.append(h('li', {}, from, h('label', { for: `rl-${key}-rate-${i}`, text: rateText }), rate,
       h('button', { type: 'button', class: 'icon', disabled: masked, data: { click: 'rlRemove', arg: `${kind}:${id}:${i}` }, aria: { label: t('rt.removeLine', { name: `${label}, ${when}` }) } }, '✕')));
   });

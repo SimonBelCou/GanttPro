@@ -88,6 +88,7 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks td.id { font-family: 'Fira Code', monospace; }
 .tasks td.money { font-variant-numeric: tabular-nums; text-align: right; position: relative; }
 .money { font-variant-numeric: tabular-nums; }
+output.masked-field { display: block; padding: .3rem 0; }
 .tasks td.name { padding-left: calc(.45rem + var(--depth, 0) * 1.1rem); max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.select { background: transparent; border: 0; padding: 0 .2rem; min-height: 28px; text-align: left; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
 .tasks button.toggle { background: transparent; border: 0; min-height: 26px; min-width: 26px; }

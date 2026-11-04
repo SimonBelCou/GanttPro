@@ -50,8 +50,7 @@ const Money = (() => {
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
    * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
    * Appelle : Budget.format(), Budget.formatCompact(), h(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), costCell(), lineNode(), moneyCell(),
-   *   paintBudget(), paintEvm(), paintRatesCost(), rateTodayNode(), resourceCostSection(), Tooltip.show()
+   * Appelée par : 13 fonctions (usage général)
    */
   function node(cents, { compact = false, cls = '' } = {}) {
     if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
@@ -60,7 +59,20 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, node };
+  /**
+   * Champ de montant pendant le masquage (EF-125, décision du 3 novembre 2026) : un texte « •••• » lu « montant masqué »,
+   * même rendu que Money.node(), à la place d'un champ désactivé qui contiendrait « •••• ». <output> est un élément
+   * « étiquetable » : le <label for> du champ reste relié et nomme la valeur. Il n'est pas focalisable, comme le champ
+   * désactivé qu'il remplace. aria-live="off" : <output> est une région « status », rien n'est annoncé quand la fenêtre
+   * est redessinée. attrs : id, aria (label, describedby).
+   * Appelle : h(), Money.node()
+   * Appelée par : Editor.budgetEditor(), editProjectWindow(), rateLinesEditor()
+   */
+  function field(attrs = {}) {
+    return h('output', { ...attrs, class: 'masked-field', aria: { ...(attrs.aria || {}), live: 'off' } }, node(0));
+  }
+
+  return { symbol, masked, text, plain, node, field };
 })();
 
 /**

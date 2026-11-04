@@ -108,15 +108,16 @@ const Editor = (() => {
 
   /**
    * Groupe « Budget » de la fiche d'une tâche (EF-113) : budget et coût réel cumulé, en unités (EF-112).
-   * Appelle : Budget.toInput(), Editor.field(), Editor.input(), h(), I18n.getLang(), Money.masked(), Money.symbol(),
-   *   t()
+   * Appelle : Budget.toInput(), Editor.field(), Editor.input(), h(), I18n.getLang(), Money.field(), Money.masked(),
+   *   Money.symbol(), t()
    * Appelée par : Editor.build()
    */
   function budgetEditor() {
     const lang = I18n.getLang(), masked = Money.masked();
     const box = h('fieldset', { class: 'sub', id: 'budget-box' }, h('legend', { text: t('f.budgetGroup') }));
     const mk = (name, label, cents, raw, hint) => {
-      const inp = input('text', masked ? Money.DOTS : (raw ?? Budget.toInput(cents || 0, lang)), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', disabled: masked, maxlength: 20 });
+      // Masqué : un texte « •••• » (Money.field), l'étiquette restant reliée ; sinon le champ de saisie.
+      const inp = masked ? Money.field() : input('text', raw ?? Budget.toInput(cents || 0, lang), { inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false', maxlength: 20 });
       return field(name, `${label} (${Money.symbol()})`, inp, hint);
     };
     if (masked) box.append(h('p', { class: 'note', text: t('f.maskedFields') }));
@@ -231,8 +232,9 @@ const Editor = (() => {
     if (f.pct) d.pctRaw = val('pct');
     if (f.reached) d.pct = f.reached.checked ? 100 : 0;
     for (const k of ['forcedStart', 'notBefore', 'deadline', 'realStart', 'realEnd']) if (f[k]) d[k] = val(k);
-    if (f.budget && !f.budget.disabled) d.budgetRaw = val('budget');
-    if (f.actual && !f.actual.disabled) d.actualRaw = val('actual');
+    // Un montant masqué est un <output> (Money.field) : sa valeur n'est pas une saisie.
+    if (f.budget && f.budget.tagName === 'INPUT') d.budgetRaw = val('budget');
+    if (f.actual && f.actual.tagName === 'INPUT') d.actualRaw = val('actual');
     d.tagsRaw = val('tags') || '';
     d.notes = val('notes') || '';
   }
