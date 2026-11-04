@@ -23,6 +23,20 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   dans `.claude/regles-nr/` et importées par `CLAUDE.md` §13.10 ; sous-agents de revue `eco-check` et
   `accessibilite-check` dans `.claude/agents/`. Aucun changement de code.
 
+### Outillage et CI
+- **Firefox en CI** : nouveau job `firefox` (bloquant) qui lance `tests/test_v3.py` et `tests/test_v3_espace.py`
+  sous Firefox, contrôles axe compris, sans mesures de temps (décisions O4 et O5, Specs annexe C). Variable `BROWSER`
+  dans les tests ; sous Firefox, le copier-coller passe par de vrais Ctrl + C / Ctrl + V (Firefox ignore le
+  `clipboardData` d'un `ClipboardEvent` simulé) et les messages « Content-Security-Policy » sont reconnus comme
+  violations CSP. Aucun défaut de GanttPro constaté sous Firefox.
+- **Actions GitHub épinglées** sur le SHA complet du commit de leur étiquette, version en commentaire (`checkout` v7.0.1,
+  `setup-python` v7.1.0, `setup-node` v7.1.0, `gitleaks-action` v3.0.0) : une étiquette déplacée ne peut plus changer le
+  code exécuté par la CI. Aucun changement de version ; Dependabot continue de proposer les mises à jour.
+- **Playwright épinglé** en 1.64.1 dans la CI et dans les commandes de `CLAUDE.md`, `README.md` et `PCA.md`.
+- **Fins de ligne LF** imposées par un nouveau `.gitattributes` : sous Windows avec `core.autocrlf=true`,
+  `node tools/dependances.mjs --check` et deux tests de `tests/core/fichiers.test.mjs` échouaient (fichiers extraits en
+  CRLF). Le dépôt était déjà entièrement en LF : la renormalisation ne change aucun fichier, `GanttPro.html` est identique.
+
 ## 3.0.0
 
 ### 2026-10-30

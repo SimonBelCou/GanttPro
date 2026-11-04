@@ -289,11 +289,12 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 | Action | Commande |
 |---|---|
 | Utiliser | ouvrir `GanttPro.html` dans un navigateur (aucune installation) |
-| Outils de test (une fois) | `pip install playwright` · `python3 -m playwright install chromium` · `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (**une seule commande** : npm retire sinon l'outil installé avant) |
+| Outils de test (une fois) | `pip install playwright==1.64.1` · `python3 -m playwright install chromium firefox` · `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (**une seule commande** : npm retire sinon l'outil installé avant) |
 | Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) |
 | Tester le moteur | `node --test tests/core/*.test.mjs` |
 | Dépendances entre fonctions | `node tools/dependances.mjs` (écrit les commentaires et le graphe) · `--check` (CI) · test : `node --test tests/test_dependances.mjs` |
 | Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
+| Tester sous Firefox | `BROWSER=firefox python3 tests/test_v3.py` et `BROWSER=firefox python3 tests/test_v3_espace.py` (contrôles axe compris, sans mesure de temps ; job `firefox` de la CI, bloquant) |
 | Veille sécurité | voir §0 ; résultat dans `docs/veille-securite.md` |
 
 ### 13.3 Structure du code
@@ -331,7 +332,8 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 2. `node --test tests/core/*.test.mjs` (moteur, scénarios chiffrés de la recette)
    puis `node tools/dependances.mjs` (commentaires « Appelle / Appelée par » et graphe) et `node --test tests/test_dependances.mjs`.
 3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`, `python3 tests/test_v3_recette_manuelle.py`
-   (`npm install --no-save axe-core@4.14.0 acorn@8.19.0` pour le contrôle d'accessibilité et l'outil de dépendances ; `PERF_FACTOR=2` sur une machine lente).
+   (`npm install --no-save axe-core@4.14.0 acorn@8.19.0` pour le contrôle d'accessibilité et l'outil de dépendances ; `PERF_FACTOR=2` sur une machine lente),
+   puis `BROWSER=firefox python3 tests/test_v3.py` et `BROWSER=firefox python3 tests/test_v3_espace.py` (Firefox, bloquant en CI).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
 5. **Documents à jour dans la même modification** (§7) : toute fonction ajoutée ou tout arbitrage est reporté dans
    `Specs_fonctionnelles.md` (exigence + annexe A ou journal C) et, s'il change l'usage, dans

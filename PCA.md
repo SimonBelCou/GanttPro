@@ -75,11 +75,12 @@ correctif, fusion après recette, mention dans `CHANGELOG.md`.
 ```bash
 python3 tools/build.py --check
 node --test tests/core/*.test.mjs
-pip install playwright && python3 -m playwright install chromium
+pip install playwright==1.64.1 && python3 -m playwright install chromium firefox
 npm install --no-save axe-core@4.14.0 acorn@8.19.0
 node tools/dependances.mjs --check && node --test tests/test_dependances.mjs
 python3 tests/test_v3.py && python3 tests/test_v3_espace.py && python3 tests/test_v3_recette.py
 python3 tests/test_v3_budget.py && python3 tests/test_v3_recette_manuelle.py
+BROWSER=firefox python3 tests/test_v3.py && BROWSER=firefox python3 tests/test_v3_espace.py
 ```
 Ces commandes réussissent sur un clone neuf : c'est le test de restauration.
 
@@ -101,7 +102,9 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | Les tests de bout en bout échouent par dépassement de délai sur une machine lente | Seuils de performance trop stricts | `PERF_FACTOR=2` (ou `3`) devant la commande |
 | Le contrôle d'accessibilité ne s'exécute pas | `axe-core` absent. Installer `acorn` seul avec `--no-save` **retire** `axe-core` (npm supprime ce qui n'est pas déclaré) | Toujours une seule commande : `npm install --no-save axe-core@4.14.0 acorn@8.19.0` |
 | La CI échoue : « Dépendances périmées dans … » | Une fonction ou un appel a changé sans régénérer les commentaires « Appelle / Appelée par » ni le graphe | `node tools/dependances.mjs`, puis recommiter |
-| Les tests automatiques ne couvrent pas Firefox ni Safari | La CI n'exécute que Chromium | Recette manuelle (`docs/recette-manuelle.md`) |
+| Les tests automatiques ne couvrent pas Safari ; sous Firefox, ils ne mesurent pas les temps de réponse | La CI exécute Chromium (toutes les suites) et Firefox (`test_v3.py`, `test_v3_espace.py`) depuis le 3 novembre 2026 ; Playwright n'a pas de Safari sous Linux | Recette manuelle (`docs/recette-manuelle.md`) pour Safari |
+| Sous Windows, Playwright ne lance pas Firefox : « spawn UNKNOWN », et le journal Windows indique « Assembly dépendant mozglue introuvable » (constaté le 3 novembre 2026) | Le fichier `firefox.exe` du dossier `ms-playwright` refuse de démarrer à cet emplacement (même une réinstallation `--force` ne change rien), alors qu'une copie du même dossier ailleurs démarre ; cause exacte non établie | Copier `%LOCALAPPDATA%\ms-playwrightirefox-*` dans un autre dossier et lancer les tests avec `PLAYWRIGHT_BROWSERS_PATH=<ce dossier>` ; la CI (Linux) n'est pas concernée |
+| Sous Windows, `node tools/dependances.mjs --check` annonce des « Dépendances périmées » dans tous les fichiers et deux tests de `tests/core/fichiers.test.mjs` échouent (constaté les 2 et 3 novembre 2026) | Avec `core.autocrlf=true`, Git extrayait les fichiers en fins de ligne CRLF ; l'outil et les tests comparent au contenu LF | Résolu par `.gitattributes` (`* text=auto eol=lf`) : fichiers extraits en LF quel que soit le réglage du poste. Copie de travail plus ancienne : `git rm --cached -r . && git reset --hard` (après avoir committé son travail) |
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |
 | Un fichier protégé ne s'ouvre pas | Mot de passe faux, ou fichier altéré (le message est volontairement le même) | Aucun moyen de récupération : GanttPro ne conserve jamais le mot de passe |
