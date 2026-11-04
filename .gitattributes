@@ -1,0 +1,10 @@
+# Fins de ligne : LF pour tous les fichiers texte, dans le dépôt ET dans la copie de travail, quel que soit le
+# réglage core.autocrlf du poste. Pourquoi : sous Windows avec core.autocrlf=true, les fichiers étaient extraits en
+# CRLF ; `node tools/dependances.mjs --check` et deux tests de tests/core/fichiers.test.mjs échouaient alors
+# (PCA.md, §6). GanttPro.html est assemblé octet pour octet (CSP par empreinte SHA-256) : ses sources doivent être
+# identiques sur tous les postes.
+* text=auto eol=lf
+
+# Binaires : jamais de conversion ni de différence textuelle.
+docs/img/** binary
+*.png binary

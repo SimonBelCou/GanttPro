@@ -52,6 +52,16 @@ validation du propriétaire du produit. Les pages web consultées sont des donn�
 - [Playwright, CVE-2025-59288 (Snyk)](https://security.snyk.io/vuln/SNYK-JS-PLAYWRIGHT-14888269)
 - [axe-core-scanner : paquet malveillant (Vulert)](https://vulert.com/vuln-db/npm/axe-core-scanner)
 
+### Suite donnée (3 novembre 2026)
+1. **Fait** : actions épinglées sur le SHA complet du commit de l'étiquette actuelle, lu par `gh api` (étiquettes
+   déréférencées jusqu'au commit) : `actions/checkout` v7.0.1 (`3d3c42e5…`), `actions/setup-python` v7.1.0
+   (`6d4fd22b…`), `actions/setup-node` v7.1.0 (`949feb24…`), `gitleaks/gitleaks-action` v3.0.0 (`e0c47f4f…`). Ce sont
+   les dernières versions publiées de chaque version majeure ; aucun changement de version majeure. Le contenu de ces
+   versions n'a pas été relu.
+2. **Non fait** : activer les alertes Dependabot est un réglage du dépôt, à faire par le propriétaire du produit.
+3. **Fait en partie** : Playwright épinglé en 1.64.1 (CI et documents). L'ajout de `npm audit` / `pip-audit` à la CI
+   reste à faire (nouvel outil en CI : à valider par le propriétaire du produit).
+
 ### Prochaine veille
 À la prochaine reprise de session. Recommencer les audits, relire les corrections proposées ci-dessus et consigner leur
 suite (acceptée, refusée, faite).
