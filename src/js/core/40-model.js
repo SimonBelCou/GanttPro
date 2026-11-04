@@ -9,7 +9,7 @@
  * traduction avec paramètres : ils ne contiennent jamais de HTML.
  *
  * Appelle : Calendar, Columns, Dates, Rates, Schedule
- * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ * Appelée par : 29 modules et fichiers (voir Architecture.md)
  */
 const Model = (() => {
   // Format de fichier (8.2) : il ne monte qu'en cas de rupture de sens, jamais pour un champ facultatif ajouté (règle V4,

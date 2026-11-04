@@ -33,6 +33,9 @@ def xss(n):
     return f"<img src=x onerror=(window.__xss=window.__xss||[]).push({n})>"
 
 
+VERSION = (Path(__file__).resolve().parent.parent / 'VERSION').read_text(encoding='utf-8').strip()
+
+
 def project(**over):
     p = {
         'format': 3, 'name': 'Projet de test', 'projectStart': '2026-01-05',
@@ -559,7 +562,7 @@ def main():
         path = dl.value.path()
         data = json.loads(Path(path).read_text(encoding='utf-8'))
         check('export : nom de fichier', dl.value.suggested_filename == 'projet_de_test_gantt.json', dl.value.suggested_filename)
-        check('export : format 3, tâches et ressources', data['format'] == 3 and [t['id'] for t in data['tasks']] == ['A', 'B'] and data['tasks'][1]['res'] == 'Alice')
+        check('export : format 4 avec la version (« app »), tâches et ressources', data['format'] == 4 and data['app'] == VERSION and [t['id'] for t in data['tasks']] == ['A', 'B'] and data['tasks'][1]['res'] == 'Alice')
         files['export.json'] = path
         import_file('export.json')
         check('réimport accepté', 'Aperçu' in dialog_text())

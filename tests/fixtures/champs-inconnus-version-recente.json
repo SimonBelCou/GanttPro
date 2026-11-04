@@ -1,0 +1,15 @@
+{
+  "format": 4,
+  "app": "3.4.0",
+  "name": "Projet venu d'une version plus récente",
+  "emoji": "🚀",
+  "desc": "Projet fictif : deux champs inconnus de cette version (registreRisques, priorite) simulent un fichier écrit par une version plus récente de GanttPro.",
+  "projectStart": "2026-01-05",
+  "registreRisques": [{ "titre": "Risque fictif", "niveau": 2 }],
+  "tasks": [
+    { "id": "A", "name": "Cadrage", "dur": 5, "res": "Ressource A", "cat": "Études", "priorite": "haute" },
+    { "id": "B", "name": "Réalisation", "dur": 10, "deps": ["A"], "res": "Ressource A", "cat": "Études" }
+  ],
+  "resources": [{ "name": "Ressource A" }],
+  "categories": [{ "name": "Études", "color": "#4d9fff" }]
+}

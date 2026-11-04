@@ -162,8 +162,10 @@ async function initHome() {
   try {
     const r = Model.parseFile(raw);
     if (r.encrypted) throw new Model.Invalid('imp.unreadable');
-    Tabs.replace(r.project, { dirty: false });
+    Tabs.replace(r.project, { dirty: false, unknown: r.notices.unknown });
     announce(t('imp.opened', { name: r.project.name }));
+    // Garde-fou V4 : pas de fenêtre de résultat d'import ici, l'avertissement est donné dans un message.
+    if (r.notices.unknown) await Dialog.message(t('unk.title'), t('imp.notice.unknown', { count: r.notices.unknown }));
   } catch (e) {
     await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
   }
@@ -171,13 +173,14 @@ async function initHome() {
 
 /**
  * Appelle : Dialog.message(), HomeLink.saveProject(), Model.serialize(), Recovery.clearCurrent(), render(), t(),
- *   toast()
+ *   toast(), unknownGuard()
  * Appelée par : action « goHome », action « homeSave »
  */
-function homeSave() {
+async function homeSave() {
+  if (!(await unknownGuard('home'))) return false;
   const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
   if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
-  App.dirty = false;
+  App.dirty = false; App.unknown = 0;
   Recovery.clearCurrent();
   render();
   toast(t('home.saved'));
@@ -193,8 +196,8 @@ action('homeSave', () => homeSave());
  * Appelle : homeSave()
  * Appelée par : l'événement « goHome » (table ACTIONS)
  */
-action('goHome', () => {
-  if (!Home.url || !homeSave()) return;
+action('goHome', async () => {
+  if (!Home.url || !(await homeSave())) return;
   window.location.assign(Home.url); // adresse déjà validée : même origine, http(s) ou file
 });
 /**

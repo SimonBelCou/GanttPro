@@ -7,7 +7,8 @@ Couvre : onglets (R-62, limite de dix), bibliothèque et message de première ut
 EX-22), modèles fournis (EF-100), sauvegarde automatique désactivée par défaut puis récupération
 après fermeture brutale (R-63, RG-31), sauvegarde protégée par mot de passe, réglages et
 effacement des données (EF-104), langue (R-64), aide (EF-57, EF-58), contrat de page d'accueil
-(EF-56, 8.4) et accessibilité des nouvelles fenêtres.
+(EF-56, 8.4), version (titre, aide), garde-fou des champs inconnus (décision V4 : avertissement à
+l'ouverture, confirmation et nom distinct au premier enregistrement) et accessibilité des nouvelles fenêtres.
 """
 import json
 import sys
@@ -15,7 +16,9 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_v3 import HTML, axe_check, check, project, results  # noqa: E402
+from test_v3 import HTML, VERSION, axe_check, check, project, results  # noqa: E402
+
+FIXTURES = Path(__file__).resolve().parent / 'fixtures'
 
 
 def main():
@@ -188,10 +191,14 @@ def main():
         pg.keyboard.press('?')
         pg.wait_for_selector('#help-win')
         help_txt = pg.inner_text('#help-win')
+        check('titre de la page : nom et version (V7)', pg.title() == f'GanttPro {VERSION}', pg.title())
         check('« ? » ouvre l\'aide : version, licence, raccourcis, vie privée, accessibilité',
-              all(x in help_txt for x in ['version 3.0.0', 'MIT', 'Ctrl + Z', 'Vie privée', "Déclaration d'accessibilité", 'partiellement conforme']), help_txt[:300])
+              all(x in help_txt for x in [f'version {VERSION}', 'MIT', 'Ctrl + Z', 'Vie privée', "Déclaration d'accessibilité", 'partiellement conforme']), help_txt[:300])
         axe_check(pg, "fenêtre d'aide")
         pg.keyboard.press('Escape')
+        pg.click('button[data-click="openReport"]'); pg.wait_for_selector('#report-preview')
+        check('pied du rapport : version (V7)', f'Rapport établi avec GanttPro {VERSION}.' in pg.inner_text('#report-preview'), pg.inner_text('#report-preview')[-200:])
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(80)
 
         # ── Page d'accueil (EF-56, 8.4, A-22) ───────────────────────────────────────────────
         check("sans page d'accueil : boutons masqués", pg.is_hidden('#btn-home') and pg.is_hidden('#btn-homesave'))
@@ -209,13 +216,61 @@ def main():
             if expect:
                 pg.click('#btn-homesave')
                 saved = json.loads(pg.evaluate("sessionStorage.getItem('gantt_saved_project')"))
-                check('« Sauvegarder » remet une copie à la page d\'accueil', saved['name'] == 'Transmis' and saved['format'] == 3)
+                check('« Sauvegarder » remet une copie à la page d\'accueil', saved['name'] == 'Transmis' and saved['format'] == 4)
             pg.close()
         pg = ctx.new_page()
         pg.on('pageerror', lambda e: errors.append(str(e)))
         pg.add_init_script("if (!window.__seeded) { window.__seeded = 1; sessionStorage.setItem('gantt_project', '{\"tasks\": \"pas une liste\"}'); }")
         pg.goto(HTML.as_uri()); pg.wait_for_selector('dialog[open]')
         check('projet transmis invalide : refusé comme un import', '"tasks"' in pg.locator('dialog[open]').inner_text(), pg.locator('dialog[open]').inner_text())
+        pg.close()
+
+        # ── Garde-fou des champs inconnus (décision V4, EF-151) ────────────────────────────────────
+        pg = page()
+        pg.set_input_files('#file-input', str(FIXTURES / 'champs-inconnus-version-recente.json'))
+        pg.wait_for_selector('dialog[open] p.warning')
+        warn = pg.inner_text('dialog[open] p.warning')
+        check("ouverture : avertissement mis en évidence dans l'aperçu de l'import",
+              '2 champs inconnus' in warn and 'version plus récente' in warn and 'perdus' in warn, warn)
+        btn('Remplacer le projet ouvert')
+        pg.click('button[data-click="exportFile"]'); pg.wait_for_selector('#exp-win')
+        btn('Exporter')
+        pg.wait_for_selector('dialog[open] >> text=Données ignorées')
+        conf = dialog_text()
+        name = 'projet_venu_d_une_version_plus_recente_gantt'
+        check('export : confirmation qui rappelle la perte et propose un nom distinct',
+              'seront perdus' in conf and f'{name}_v{VERSION.replace(".", "_")}.json' in conf, conf)
+        axe_check(pg, 'confirmation des champs inconnus')
+        btn('Annuler')
+        check("confirmation refusée : rien n'est exporté, la fenêtre d'export reste", pg.is_visible('#exp-win'))
+        btn('Exporter')
+        pg.wait_for_selector('dialog[open] >> text=Données ignorées')
+        with pg.expect_download() as dl:
+            btn('Enregistrer quand même')
+        first = dl.value
+        data = json.loads(Path(first.path()).read_text(encoding='utf-8'))
+        check("export confirmé : nom distinct, format 4, version, sans les champs inconnus",
+              first.suggested_filename == f'{name}_v{VERSION.replace(".", "_")}.json' and data['format'] == 4 and data['app'] == VERSION
+              and 'registreRisques' not in data and 'priorite' not in data['tasks'][0], first.suggested_filename)
+        pg.click('button[data-click="exportFile"]'); pg.wait_for_selector('#exp-win')
+        with pg.expect_download() as dl:
+            btn('Exporter')
+        check('export suivant : sans nouvelle confirmation, nom habituel', dl.value.suggested_filename == f'{name}.json', dl.value.suggested_filename)
+        pg.close()
+        # Page d'accueil : le projet transmis avec des champs inconnus est signalé, la sauvegarde demande confirmation.
+        pg = ctx.new_page()
+        pg.on('pageerror', lambda e: errors.append(str(e)))
+        unk = (FIXTURES / 'champs-inconnus-version-recente.json').read_text(encoding='utf-8')
+        pg.add_init_script(f"if (!window.__seeded) {{ window.__seeded = 1; sessionStorage.setItem('gantt_project', {json.dumps(unk)}); sessionStorage.setItem('gantt_home_url', {json.dumps(home)}); }}")
+        pg.goto(HTML.as_uri()); pg.wait_for_selector('dialog[open] >> text=version plus récente')
+        check("page d'accueil : avertissement à l'ouverture", 'perdus' in pg.locator('dialog[open]').last.inner_text())
+        pg.locator('dialog[open]').last.locator('button').first.click(); pg.wait_for_timeout(100)
+        pg.click('#btn-homesave'); pg.wait_for_selector('dialog[open] >> text=Données ignorées')
+        pg.locator('dialog[open]').last.locator('button:has-text("Annuler")').click(); pg.wait_for_timeout(100)
+        check("page d'accueil : sauvegarde refusée, rien n'est remis", pg.evaluate("sessionStorage.getItem('gantt_saved_project')") is None)
+        pg.click('#btn-homesave'); pg.wait_for_selector('dialog[open] >> text=Données ignorées')
+        pg.locator('dialog[open]').last.locator('button:has-text("Enregistrer quand même")').click(); pg.wait_for_timeout(100)
+        check("page d'accueil : sauvegarde confirmée", json.loads(pg.evaluate("sessionStorage.getItem('gantt_saved_project')"))['format'] == 4)
         pg.close()
 
         check('aucune erreur JavaScript pendant le parcours', not errors, errors)

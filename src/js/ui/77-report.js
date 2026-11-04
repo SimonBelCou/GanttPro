@@ -111,15 +111,18 @@ function reportArticle(out = false) {
     if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', {}, lineNode(l, out)))));
     art.append(el);
   }
+  // Version au pied du rapport (décision V7, EF-151) : un rapport imprimé ou copié dit quelle version l'a établi.
+  art.append(h('footer', { class: 'rep-foot hint', text: t('rep.footer', { version: Model.APP_VERSION }) }));
   return art;
 }
 
 /**
- * Appelle : lineText(), reportSections()
+ * Appelle : lineText(), reportSections(), t()
  * Appelée par : action « repCopy »
  */
 function reportText() {
-  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n')
+    + `\n\n${t('rep.footer', { version: Model.APP_VERSION })}`;
 }
 
 /**

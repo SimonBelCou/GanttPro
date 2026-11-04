@@ -91,7 +91,7 @@ const Dialog = (() => {
   /**
    * Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé.
    * Appelle : Dialog.open(), h(), I18n.t()
-   * Appelée par : 15 fonctions (usage général)
+   * Appelée par : 16 fonctions (usage général)
    */
   async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({

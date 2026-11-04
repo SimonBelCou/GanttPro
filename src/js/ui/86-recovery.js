@@ -33,15 +33,17 @@ const Recovery = (() => {
   const paused = () => enabled() && protectedMode() && !password;
 
   /**
-   * Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, data}.
+   * Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, unknown, data}. « unknown » (garde-fou V4) garde, hors du
+   * projet, le nombre de champs inconnus ignorés à l'ouverture : une copie restaurée demandera encore confirmation avant
+   * d'écraser un enregistrement.
    * Appelle : Model.serialize(), Recovery.protectedMode(), Secure.encrypt()
    * Appelée par : Recovery.saveAll()
    */
-  async function wrap(project) {
+  async function wrap(project, unknown = 0) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: true }));
     const enc = protectedMode();
     const data = enc ? JSON.stringify(await Secure.encrypt(text, password)) : text;
-    return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, data });
+    return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, unknown, data });
   }
 
   /**
@@ -55,7 +57,7 @@ const Recovery = (() => {
     let r = 'ok';
     for (const { state } of Tabs.all()) {
       if (!state.dirty) continue;
-      try { r = Store.write('rec', state.recKey, await wrap(state.project)); } catch { r = 'off'; }
+      try { r = Store.write('rec', state.recKey, await wrap(state.project, state.unknown)); } catch { r = 'off'; }
       if (r !== 'ok') break;
     }
     if (r === 'ok') { lastSaved = Date.now(); failed = ''; }
@@ -101,7 +103,8 @@ const Recovery = (() => {
       try { e = JSON.parse(Store.read('rec', key) || ''); } catch { continue; }
       if (!e || e.v !== 1 || typeof e.data !== 'string' || typeof e.name !== 'string') continue;
       out.push({ key, savedAt: Number.isFinite(e.savedAt) ? e.savedAt : 0, name: e.name.slice(0, 60), emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
-        tasks: Number.isInteger(e.tasks) ? e.tasks : 0, enc: e.enc === true, data: e.data });
+        tasks: Number.isInteger(e.tasks) ? e.tasks : 0, enc: e.enc === true, data: e.data,
+        unknown: Number.isInteger(e.unknown) && e.unknown > 0 && e.unknown <= 1e6 ? e.unknown : 0 });
     }
     return out.sort((a, b) => b.savedAt - a.savedAt);
   }
@@ -148,7 +151,8 @@ const Recovery = (() => {
       let p;
       try { p = await unwrap(e, pwd); } catch { bad++; continue; }
       if (e.enc && protectedMode()) password = pwd; // la sauvegarde protégée reprend
-      const ok = Tabs.pristine() ? (Tabs.replace(p, { dirty: true, recKey: e.key }), true) : Tabs.open(p, { dirty: true, recKey: e.key });
+      const opts = { dirty: true, recKey: e.key, unknown: e.unknown };
+      const ok = Tabs.pristine() ? (Tabs.replace(p, opts), true) : Tabs.open(p, opts);
       if (!ok) break;
       restored++;
     }
@@ -182,7 +186,7 @@ const Recovery = (() => {
     for (const { state } of Tabs.all()) {
       if (!state.dirty) continue;
       const text = JSON.stringify(Model.serialize(state.project, { withVersions: true }));
-      Store.write('rec', state.recKey, JSON.stringify({ v: 1, savedAt: Date.now(), name: state.project.name, emoji: state.project.emoji, tasks: state.project.tasks.length, enc: false, data: text }));
+      Store.write('rec', state.recKey, JSON.stringify({ v: 1, savedAt: Date.now(), name: state.project.name, emoji: state.project.emoji, tasks: state.project.tasks.length, enc: false, unknown: state.unknown || 0, data: text }));
     }
   }
 

@@ -54,7 +54,8 @@ const Library = (() => {
   }
 
   /**
-   * Relit une entrée → projet contrôlé (demande le mot de passe si besoin) ; null si abandon.
+   * Relit une entrée → { project, unknown } contrôlé (demande le mot de passe si besoin) ; null si abandon.
+   * unknown : nombre de champs inconnus ignorés (garde-fou V4, une entrée peut venir d'une version plus récente).
    * Appelle : announce(), askPassword(), Model.parseFile(), Secure.decrypt(), Store.read(), t()
    * Appelée par : newFromTemplate(), openLibrary()
    */
@@ -68,7 +69,7 @@ const Library = (() => {
       announce(t('pwd.working'));
       r = Model.parseFile(await Secure.decrypt(r.envelope, pwd));
     }
-    return r.project;
+    return { project: r.project, unknown: r.notices.unknown };
   }
 
   /**
@@ -137,12 +138,14 @@ function protectFields(prefix) {
 
 /**
  * Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S).
- * Appelle : 14 fonctions
+ * Appelle : 15 fonctions
  * Appelée par : initKeyboard(), openLibrary()
  */
 async function saveToLibrary() {
   if (!(await storageNotice())) return;
-  const existing = App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
+  // Garde-fou V4 : avec des champs inconnus, l'entrée d'origine n'est pas écrasée (nouvelle entrée).
+  if (!(await unknownGuard('lib'))) return;
+  const existing = !App.unknown && App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
   const prot = protectFields('lib');
   let pwd = '';
   const v = await Dialog.open({ title: t('lib.save'), body: [h('p', { text: existing ? t('lib.saveOver', { name: App.project.name }) : t('lib.saveNew', { name: App.project.name }) }),
@@ -159,7 +162,7 @@ async function saveToLibrary() {
   if (pwd) announce(t('pwd.working'));
   const r = await Library.put({ key, kind: 'project' }, App.project, pwd);
   if (r !== 'ok') { await storeFailed(r); return; }
-  App.libKey = key; App.dirty = false;
+  App.libKey = key; App.dirty = false; App.unknown = 0;
   if (typeof Recovery !== 'undefined') Recovery.clearCurrent();
   render();
   toast(t('lib.saved', { name: App.project.name }));
@@ -266,7 +269,7 @@ async function newFromTemplate() {
   let p;
   try {
     if (chosen.entry.builtin) p = chosen.entry.build(chosen.start);
-    else { p = await Library.load(chosen.entry); if (!p) return; p = shiftTemplate(toTemplate(p, true), chosen.start); }
+    else { const r = await Library.load(chosen.entry); if (!r) return; p = shiftTemplate(toTemplate(r.project, true), chosen.start); }
   } catch (e) { await Dialog.message(t('tpl.newFrom'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
   p.name = chosen.name; p.id = 'P' + Date.now().toString(36); p.createdAt = Date.now();
   if (Tabs.pristine()) Tabs.replace(p, { dirty: true }); else if (!Tabs.open(p, { dirty: true })) return;
@@ -319,12 +322,14 @@ async function openLibrary(focusSel) {
     if (cmd === 'newtpl') { closeDlg(); await newFromTemplate(); return; }
     if (!entry) { paint(); return; }
     if (cmd === 'open') {
-      let p;
-      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
-      if (!p) { paint(`#lib-open-${key}`); return; }
+      let r;
+      try { r = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
+      if (!r) { paint(`#lib-open-${key}`); return; }
       closeDlg();
-      if (Tabs.pristine()) Tabs.replace(p, { libKey: key }); else Tabs.open(p, { libKey: key });
+      const p = r.project, opts = { libKey: key, unknown: r.unknown };
+      if (Tabs.pristine()) Tabs.replace(p, opts); else Tabs.open(p, opts);
       announce(t('imp.opened', { name: p.name }));
+      if (r.unknown) await Dialog.message(t('unk.title'), t('imp.notice.unknown', { count: r.unknown }));
     } else if (cmd === 'ren') {
       const inp = h('input', { type: 'text', id: 'lib-newname', maxlength: 60, value: entry.name });
       let n = null;

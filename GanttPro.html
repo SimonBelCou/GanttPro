@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-b2MS4Rmqo8rNsyBaFM23wHmGgUmhYslM/EHWaqwUKaM='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AmFlhntwG+cLwnmvKqfEzn4VU/1+qpnoVb+hdwdEp3I='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -1692,7 +1692,7 @@ const Resolve = (() => {
  * traduction avec paramètres : ils ne contiennent jamais de HTML.
  *
  * Appelle : Calendar, Columns, Dates, Rates, Schedule
- * Appelée par : 28 modules et fichiers (voir Architecture.md)
+ * Appelée par : 29 modules et fichiers (voir Architecture.md)
  */
 const Model = (() => {
   // Format de fichier (8.2) : il ne monte qu'en cas de rupture de sens, jamais pour un champ facultatif ajouté (règle V4,
@@ -3295,7 +3295,14 @@ const I18n = (() => {
     'color.pick': 'Couleur {n}',
     'dlg.new': 'Remplacer le projet ouvert par un nouveau projet ?', 'dlg.unsaved': 'Les modifications non exportées seront perdues.',
     'imp.title': "Aperçu de l'import", 'imp.replace': 'Remplacer le projet ouvert', 'imp.summary': '{tasks} tâches, {resources} ressources, {categories} catégories, {baselines} baselines ; début le {start} ; avancement moyen {pct} %.',
-    'imp.notice.unknown': { one: '{count} champ inconnu a été ignoré.', other: '{count} champs inconnus ont été ignorés.' },
+    'imp.notice.unknown': { one: '{count} champ inconnu a été ignoré : il vient probablement d’une version plus récente de GanttPro et sera perdu si vous réenregistrez ce projet.', other: '{count} champs inconnus ont été ignorés : ils viennent probablement d’une version plus récente de GanttPro et seront perdus si vous réenregistrez ce projet.' },
+    // Garde-fou des champs inconnus (décision V4 du 3 novembre 2026).
+    'unk.title': 'Données ignorées à l’ouverture',
+    'unk.loss': { one: 'Ce projet contenait {count} champ inconnu, venant probablement d’une version plus récente de GanttPro. Il n’est pas enregistré : il sera perdu.', other: 'Ce projet contenait {count} champs inconnus, venant probablement d’une version plus récente de GanttPro. Ils ne sont pas enregistrés : ils seront perdus.' },
+    'unk.file': 'Pour ne pas écraser le fichier d’origine, le fichier sera nommé « {name} ».',
+    'unk.lib': 'L’entrée d’origine de la bibliothèque est conservée : le projet est enregistré dans une nouvelle entrée.',
+    'unk.home': 'Le projet transmis par la page d’accueil sera remplacé.',
+    'unk.save': 'Enregistrer quand même',
     'imp.notice.resources': 'Ressources créées : {names}.', 'imp.notice.categories': 'Catégories créées : {names}.',
     'exp.notice': "Fichier exporté. Il n'est pas chiffré et contient les noms des ressources.",
     'exp.anonymize': 'Exporter sans noms de personnes',
@@ -3603,6 +3610,7 @@ const I18n = (() => {
     'load.value': '{pct} % ({load} j-p chargés pour {avail} j-p disponibles)', 'load.chartLabel': 'Charge de {name} par période ; détail dans le tableau des valeurs.',
     'load.legendOk': 'Occupation', 'load.legendOver': 'Surcharge (▲)', 'load.legendAbsent': 'Absence (hachures)', 'load.legendCap': 'Capacité (100 %)',
     'load.empty': 'Aucune ressource ou aucune tâche planifiée.', 'load.capacity': '(capacité {cap} %)', 'load.values': 'Occupation par période et par ressource',
+    'rep.footer': 'Rapport établi avec GanttPro {version}.',
     'rep.title': "Rapport d'état", 'rep.preview': 'Aperçu du rapport', 'rep.date': 'Rapport du {date}', 'rep.light': 'Voyant : {light}',
     'rep.light.red': 'ROUGE (retard critique ou dérive de plus de 5 jours ouvrés)', 'rep.light.orange': 'ORANGE (retard ou dérive de 1 à 5 jours ouvrés)', 'rep.light.green': 'VERT (dans les temps)',
     'rep.drift': 'fin du projet {days} j ouvrés par rapport à {name}', 'rep.kpis': 'Indicateurs',
@@ -3777,7 +3785,14 @@ const I18n = (() => {
     'dlg.new': 'Replace the open project with a new one?', 'dlg.unsaved': 'Changes that were not exported will be lost.',
     'imp.title': 'Import preview', 'imp.replace': 'Replace the open project',
     'imp.summary': '{tasks} tasks, {resources} resources, {categories} categories, {baselines} baselines; starts {start}; average progress {pct}%.',
-    'imp.notice.unknown': { one: '{count} unknown field was ignored.', other: '{count} unknown fields were ignored.' },
+    'imp.notice.unknown': { one: '{count} unknown field was ignored: it probably comes from a newer version of GanttPro and will be lost if you save this project again.', other: '{count} unknown fields were ignored: they probably come from a newer version of GanttPro and will be lost if you save this project again.' },
+    'rep.footer': 'Report produced with GanttPro {version}.',
+    'unk.title': 'Data ignored on opening',
+    'unk.loss': { one: 'This project contained {count} unknown field, probably from a newer version of GanttPro. It is not saved: it will be lost.', other: 'This project contained {count} unknown fields, probably from a newer version of GanttPro. They are not saved: they will be lost.' },
+    'unk.file': 'To keep the original file, the file will be named “{name}”.',
+    'unk.lib': 'The original library entry is kept: the project is saved in a new entry.',
+    'unk.home': 'The project passed by the home page will be replaced.',
+    'unk.save': 'Save anyway',
     'imp.notice.resources': 'Resources created: {names}.', 'imp.notice.categories': 'Categories created: {names}.',
     'exp.notice': 'File exported. It is not encrypted and contains resource names.', 'exp.anonymize': 'Export without personal names',
     'imp.unreadable': 'This file is not a readable GanttPro project.', 'imp.tooBig': 'File too large (5 MB maximum).',
@@ -5758,7 +5773,7 @@ const Dialog = (() => {
   /**
    * Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé.
    * Appelle : Dialog.open(), h(), I18n.t()
-   * Appelée par : 15 fonctions (usage général)
+   * Appelée par : 16 fonctions (usage général)
    */
   async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({
@@ -5787,6 +5802,9 @@ const App = {
   undo: [],
   redo: [],
   dirty: false,
+  // Garde-fou (décision V4) : nombre de champs inconnus ignorés à l'ouverture de ce projet. En mémoire seulement, jamais
+  // écrit dans le fichier ; tant qu'il n'est pas nul, le premier enregistrement demande confirmation (unknownGuard()).
+  unknown: 0,
   maskAmounts: false, // masquage des montants à l'écran (EF-125) : réglage de l'appareil, relu au démarrage
 };
 const UNDO_MAX = 50;
@@ -6045,7 +6063,7 @@ action('toggleMask', (arg, el) => {
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 178 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**
@@ -10722,15 +10740,18 @@ function reportArticle(out = false) {
     if (sec.lines.length) el.append(h('ul', {}, sec.lines.map(l => h('li', {}, lineNode(l, out)))));
     art.append(el);
   }
+  // Version au pied du rapport (décision V7, EF-151) : un rapport imprimé ou copié dit quelle version l'a établi.
+  art.append(h('footer', { class: 'rep-foot hint', text: t('rep.footer', { version: Model.APP_VERSION }) }));
   return art;
 }
 
 /**
- * Appelle : lineText(), reportSections()
+ * Appelle : lineText(), reportSections(), t()
  * Appelée par : action « repCopy »
  */
 function reportText() {
-  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n');
+  return reportSections().map(sec => [sec.key === 'head' ? sec.title.toUpperCase() : `\n${sec.title}`, ...sec.lines.map(l => (sec.key === 'head' ? lineText(l) : `- ${lineText(l)}`))].join('\n')).join('\n')
+    + `\n\n${t('rep.footer', { version: Model.APP_VERSION })}`;
 }
 
 /**
@@ -11083,11 +11104,36 @@ action('verDelete', async id => {
 /**
  * Nom de fichier : « <nom>_gantt.<ext> », a-z et 0-9 seulement (EF-50).
  * Appelle : aucune
- * Appelée par : doExport()
+ * Appelée par : doExport(), keepOriginalName()
  */
 function exportFileName(name, ext = 'json') {
   const base = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '_') || 'projet';
   return `${base}_gantt.${ext}`;
+}
+
+/**
+ * Nom distinct pour ne pas écraser le fichier d'origine quand des champs inconnus seraient perdus (décision V4) :
+ * « <nom>_gantt_v3_0_0.json » (version qui écrit le fichier, a-z, 0-9 et « _ » seulement comme EF-50).
+ * Appelle : exportFileName()
+ * Appelée par : doExport(), unknownGuard()
+ */
+function keepOriginalName(name) {
+  return exportFileName(name).replace(/\.json$/, `_v${Model.APP_VERSION.replace(/\./g, '_')}.json`);
+}
+
+/**
+ * Garde-fou des champs inconnus (décision V4 du 3 novembre 2026) : un projet ouvert avec des champs inconnus (ignorés,
+ * App.unknown > 0) ne les perd pas sans que l'utilisateur le sache. Au premier export JSON ou enregistrement (fichier,
+ * bibliothèque, page d'accueil), une confirmation rappelle la perte et dit comment l'original est préservé.
+ * where : 'file' | 'lib' | 'home'. Renvoie true si l'enregistrement peut avoir lieu. L'appelant remet App.unknown à 0
+ * après un enregistrement réussi : l'utilisateur a été prévenu une fois, la copie enregistrée n'a plus ces champs.
+ * Appelle : Dialog.confirm(), keepOriginalName(), t()
+ * Appelée par : doExport(), homeSave(), saveToLibrary()
+ */
+async function unknownGuard(where) {
+  if (!App.unknown) return true;
+  const how = where === 'file' ? t('unk.file', { name: keepOriginalName(App.project.name) }) : t('unk.' + where);
+  return Dialog.confirm(t('unk.title'), [t('unk.loss', { count: App.unknown }), how], t('unk.save'), false);
 }
 
 /**
@@ -11178,7 +11224,7 @@ action('expOpt', (key, el) => {
 });
 
 /**
- * Appelle : 18 fonctions
+ * Appelle : 20 fonctions
  * Appelée par : exportWindow()
  */
 async function doExport() {
@@ -11187,6 +11233,9 @@ async function doExport() {
   if (!s) { err(t('calc.error')); return; }
   try {
     if (o.format === 'json') {
+      // Garde-fou V4 : la confirmation s'ouvre au-dessus de la fenêtre d'export ; refusée, rien n'est écrit.
+      if (!(await unknownGuard('file'))) return;
+      const name = App.unknown ? keepOriginalName(p.name) : exportFileName(p.name);
       const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize, amounts: o.amounts }), null, 2);
       if (o.protect) {
         const a = $('exp-pwd').value, b = $('exp-pwd2').value;
@@ -11194,8 +11243,9 @@ async function doExport() {
         if (a !== b) { err(t('pwd.mismatch')); $('exp-pwd2').focus(); return; }
         announce(t('pwd.working'));
         const env = await Secure.encrypt(text, a);
-        download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
-      } else download(text, exportFileName(p.name), 'application/json');
+        download(JSON.stringify(env, null, 2), name, 'application/json');
+      } else download(text, name, 'application/json');
+      App.unknown = 0;
       if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
     } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
     else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -11350,11 +11400,12 @@ async function importText(text, origin = 'file') {
   }
   const p = result.project;
   const extra = [
-    result.notices.unknown ? t('imp.notice.unknown', { count: result.notices.unknown }) : '',
+    // Garde-fou V4 : avertissement mis en évidence (classe « warning »), voir confirmOpen().
+    result.notices.unknown ? { warn: t('imp.notice.unknown', { count: result.notices.unknown }) } : '',
     result.notices.createdResources.length ? t('imp.notice.resources', { names: result.notices.createdResources.join(', ') }) : '',
     result.notices.createdCategories.length ? t('imp.notice.categories', { names: result.notices.createdCategories.join(', ') }) : '',
   ];
-  await confirmOpen(p, extra, origin);
+  await confirmOpen(p, extra, origin, result.notices.unknown);
 }
 
 /**
@@ -11362,14 +11413,14 @@ async function importText(text, origin = 'file') {
  * Appelle : 13 fonctions
  * Appelée par : importMsp(), importText()
  */
-async function confirmOpen(p, extraLines, origin) {
+async function confirmOpen(p, extraLines, origin, unknown = 0) {
   const avg = Math.round(Metrics.globalProgress(p));
   const lines = [
     h('p', { class: 'strong', text: `${p.emoji} ${p.name}` }),
     p.desc ? h('p', { text: p.desc }) : null,
     h('p', { text: t('imp.summary', { tasks: p.tasks.length, resources: p.resources.length, categories: p.categories.length, baselines: p.baselines.length,
       start: I18n.date(Dates.parse(p.projectStart)), pct: avg }) }),
-    ...extraLines.filter(Boolean).map(x => h('p', { class: 'hint', text: x })),
+    ...extraLines.filter(Boolean).map(x => (x.warn ? h('p', { class: 'warning', text: x.warn }) : h('p', { class: 'hint', text: x }))),
   ];
   const canTab = Tabs.canOpen() && !Tabs.pristine();
   if (!Tabs.canOpen()) lines.push(h('p', { class: 'hint', text: t('tabs.max', { max: Tabs.MAX }) }));
@@ -11379,8 +11430,8 @@ async function confirmOpen(p, extraLines, origin) {
   const v = await Dialog.open({ title: t('imp.title'), body: lines, actions });
   if (v === 'cancel') return false;
   if (v === 'ok' && App.dirty && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
-  if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file' });
-  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file' }); }
+  if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file', unknown });
+  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file', unknown }); }
   announce(t('imp.opened', { name: p.name }));
   return true;
 }
@@ -11625,7 +11676,7 @@ function initClipboard() {
  */
 const Tabs = (() => {
   const MAX = 10;
-  const FIELDS = ['project', 'selected', 'multi', 'zoom', 'view', 'undo', 'redo', 'dirty', 'showAlerts', 'libKey', 'recKey'];
+  const FIELDS = ['project', 'selected', 'multi', 'zoom', 'view', 'undo', 'redo', 'dirty', 'showAlerts', 'libKey', 'recKey', 'unknown'];
   let list = [], active = 0, seq = 0;
 
   /**
@@ -11703,7 +11754,7 @@ const Tabs = (() => {
    *   Tabs.freshView(), Tabs.newKey(), Tabs.snapshot(), Tabs.tabOf()
    * Appelée par : confirmOpen(), newFromTemplate(), newProjectAction(), openLibrary(), Recovery.offer()
    */
-  function open(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+  function open(project, { dirty = false, libKey = '', recKey = '', unknown = 0 } = {}) {
     if (!canOpen()) { Dialog.message(t('tabs.title'), t('tabs.max', { max: MAX })); return false; }
     Editor.close();
     tabOf(active).state = snapshot();
@@ -11712,7 +11763,7 @@ const Tabs = (() => {
     active = uid;
     loadProject(project);
     App.multi = new Set(); App.view = freshView(); App.zoom = 100; App.showAlerts = true;
-    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || newKey();
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || newKey(); App.unknown = unknown;
     render();
     if (typeof Recovery !== 'undefined' && App.dirty) Recovery.touch();
     return true;
@@ -11723,12 +11774,12 @@ const Tabs = (() => {
    * Appelle : Editor.close(), loadProject(), Recovery.drop(), render(), Tabs.freshView(), Tabs.newKey()
    * Appelée par : confirmOpen(), initHome(), newFromTemplate(), openLibrary(), Recovery.offer(), Tabs.close()
    */
-  function replace(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+  function replace(project, { dirty = false, libKey = '', recKey = '', unknown = 0 } = {}) {
     Editor.close();
     if (App.recKey && recKey && App.recKey !== recKey && typeof Recovery !== 'undefined') Recovery.drop(App.recKey);
     loadProject(project);
     App.multi = new Set(); App.view = freshView();
-    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || App.recKey || newKey();
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || App.recKey || newKey(); App.unknown = unknown;
     render();
   }
 
@@ -11884,7 +11935,8 @@ const Library = (() => {
   }
 
   /**
-   * Relit une entrée → projet contrôlé (demande le mot de passe si besoin) ; null si abandon.
+   * Relit une entrée → { project, unknown } contrôlé (demande le mot de passe si besoin) ; null si abandon.
+   * unknown : nombre de champs inconnus ignorés (garde-fou V4, une entrée peut venir d'une version plus récente).
    * Appelle : announce(), askPassword(), Model.parseFile(), Secure.decrypt(), Store.read(), t()
    * Appelée par : newFromTemplate(), openLibrary()
    */
@@ -11898,7 +11950,7 @@ const Library = (() => {
       announce(t('pwd.working'));
       r = Model.parseFile(await Secure.decrypt(r.envelope, pwd));
     }
-    return r.project;
+    return { project: r.project, unknown: r.notices.unknown };
   }
 
   /**
@@ -11967,12 +12019,14 @@ function protectFields(prefix) {
 
 /**
  * Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S).
- * Appelle : 14 fonctions
+ * Appelle : 15 fonctions
  * Appelée par : initKeyboard(), openLibrary()
  */
 async function saveToLibrary() {
   if (!(await storageNotice())) return;
-  const existing = App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
+  // Garde-fou V4 : avec des champs inconnus, l'entrée d'origine n'est pas écrasée (nouvelle entrée).
+  if (!(await unknownGuard('lib'))) return;
+  const existing = !App.unknown && App.libKey && Library.index().find(e => e.key === App.libKey && e.kind === 'project');
   const prot = protectFields('lib');
   let pwd = '';
   const v = await Dialog.open({ title: t('lib.save'), body: [h('p', { text: existing ? t('lib.saveOver', { name: App.project.name }) : t('lib.saveNew', { name: App.project.name }) }),
@@ -11989,7 +12043,7 @@ async function saveToLibrary() {
   if (pwd) announce(t('pwd.working'));
   const r = await Library.put({ key, kind: 'project' }, App.project, pwd);
   if (r !== 'ok') { await storeFailed(r); return; }
-  App.libKey = key; App.dirty = false;
+  App.libKey = key; App.dirty = false; App.unknown = 0;
   if (typeof Recovery !== 'undefined') Recovery.clearCurrent();
   render();
   toast(t('lib.saved', { name: App.project.name }));
@@ -12096,7 +12150,7 @@ async function newFromTemplate() {
   let p;
   try {
     if (chosen.entry.builtin) p = chosen.entry.build(chosen.start);
-    else { p = await Library.load(chosen.entry); if (!p) return; p = shiftTemplate(toTemplate(p, true), chosen.start); }
+    else { const r = await Library.load(chosen.entry); if (!r) return; p = shiftTemplate(toTemplate(r.project, true), chosen.start); }
   } catch (e) { await Dialog.message(t('tpl.newFrom'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); return; }
   p.name = chosen.name; p.id = 'P' + Date.now().toString(36); p.createdAt = Date.now();
   if (Tabs.pristine()) Tabs.replace(p, { dirty: true }); else if (!Tabs.open(p, { dirty: true })) return;
@@ -12149,12 +12203,14 @@ async function openLibrary(focusSel) {
     if (cmd === 'newtpl') { closeDlg(); await newFromTemplate(); return; }
     if (!entry) { paint(); return; }
     if (cmd === 'open') {
-      let p;
-      try { p = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
-      if (!p) { paint(`#lib-open-${key}`); return; }
+      let r;
+      try { r = await Library.load(entry); } catch (e) { await Dialog.message(t('lib.title'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable')); paint(); return; }
+      if (!r) { paint(`#lib-open-${key}`); return; }
       closeDlg();
-      if (Tabs.pristine()) Tabs.replace(p, { libKey: key }); else Tabs.open(p, { libKey: key });
+      const p = r.project, opts = { libKey: key, unknown: r.unknown };
+      if (Tabs.pristine()) Tabs.replace(p, opts); else Tabs.open(p, opts);
       announce(t('imp.opened', { name: p.name }));
+      if (r.unknown) await Dialog.message(t('unk.title'), t('imp.notice.unknown', { count: r.unknown }));
     } else if (cmd === 'ren') {
       const inp = h('input', { type: 'text', id: 'lib-newname', maxlength: 60, value: entry.name });
       let n = null;
@@ -12243,15 +12299,17 @@ const Recovery = (() => {
   const paused = () => enabled() && protectedMode() && !password;
 
   /**
-   * Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, data}.
+   * Enveloppe stockée : {v, savedAt, name, emoji, tasks, enc, unknown, data}. « unknown » (garde-fou V4) garde, hors du
+   * projet, le nombre de champs inconnus ignorés à l'ouverture : une copie restaurée demandera encore confirmation avant
+   * d'écraser un enregistrement.
    * Appelle : Model.serialize(), Recovery.protectedMode(), Secure.encrypt()
    * Appelée par : Recovery.saveAll()
    */
-  async function wrap(project) {
+  async function wrap(project, unknown = 0) {
     const text = JSON.stringify(Model.serialize(project, { withVersions: true }));
     const enc = protectedMode();
     const data = enc ? JSON.stringify(await Secure.encrypt(text, password)) : text;
-    return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, data });
+    return JSON.stringify({ v: 1, savedAt: Date.now(), name: project.name, emoji: project.emoji, tasks: project.tasks.length, enc, unknown, data });
   }
 
   /**
@@ -12265,7 +12323,7 @@ const Recovery = (() => {
     let r = 'ok';
     for (const { state } of Tabs.all()) {
       if (!state.dirty) continue;
-      try { r = Store.write('rec', state.recKey, await wrap(state.project)); } catch { r = 'off'; }
+      try { r = Store.write('rec', state.recKey, await wrap(state.project, state.unknown)); } catch { r = 'off'; }
       if (r !== 'ok') break;
     }
     if (r === 'ok') { lastSaved = Date.now(); failed = ''; }
@@ -12311,7 +12369,8 @@ const Recovery = (() => {
       try { e = JSON.parse(Store.read('rec', key) || ''); } catch { continue; }
       if (!e || e.v !== 1 || typeof e.data !== 'string' || typeof e.name !== 'string') continue;
       out.push({ key, savedAt: Number.isFinite(e.savedAt) ? e.savedAt : 0, name: e.name.slice(0, 60), emoji: typeof e.emoji === 'string' ? [...e.emoji].slice(0, 2).join('') : '📁',
-        tasks: Number.isInteger(e.tasks) ? e.tasks : 0, enc: e.enc === true, data: e.data });
+        tasks: Number.isInteger(e.tasks) ? e.tasks : 0, enc: e.enc === true, data: e.data,
+        unknown: Number.isInteger(e.unknown) && e.unknown > 0 && e.unknown <= 1e6 ? e.unknown : 0 });
     }
     return out.sort((a, b) => b.savedAt - a.savedAt);
   }
@@ -12358,7 +12417,8 @@ const Recovery = (() => {
       let p;
       try { p = await unwrap(e, pwd); } catch { bad++; continue; }
       if (e.enc && protectedMode()) password = pwd; // la sauvegarde protégée reprend
-      const ok = Tabs.pristine() ? (Tabs.replace(p, { dirty: true, recKey: e.key }), true) : Tabs.open(p, { dirty: true, recKey: e.key });
+      const opts = { dirty: true, recKey: e.key, unknown: e.unknown };
+      const ok = Tabs.pristine() ? (Tabs.replace(p, opts), true) : Tabs.open(p, opts);
       if (!ok) break;
       restored++;
     }
@@ -12392,7 +12452,7 @@ const Recovery = (() => {
     for (const { state } of Tabs.all()) {
       if (!state.dirty) continue;
       const text = JSON.stringify(Model.serialize(state.project, { withVersions: true }));
-      Store.write('rec', state.recKey, JSON.stringify({ v: 1, savedAt: Date.now(), name: state.project.name, emoji: state.project.emoji, tasks: state.project.tasks.length, enc: false, data: text }));
+      Store.write('rec', state.recKey, JSON.stringify({ v: 1, savedAt: Date.now(), name: state.project.name, emoji: state.project.emoji, tasks: state.project.tasks.length, enc: false, unknown: state.unknown || 0, data: text }));
     }
   }
 
@@ -12574,8 +12634,10 @@ async function initHome() {
   try {
     const r = Model.parseFile(raw);
     if (r.encrypted) throw new Model.Invalid('imp.unreadable');
-    Tabs.replace(r.project, { dirty: false });
+    Tabs.replace(r.project, { dirty: false, unknown: r.notices.unknown });
     announce(t('imp.opened', { name: r.project.name }));
+    // Garde-fou V4 : pas de fenêtre de résultat d'import ici, l'avertissement est donné dans un message.
+    if (r.notices.unknown) await Dialog.message(t('unk.title'), t('imp.notice.unknown', { count: r.notices.unknown }));
   } catch (e) {
     await Dialog.message(t('top.import'), e instanceof Model.Invalid ? I18n.error(e) : t('imp.unreadable'));
   }
@@ -12583,13 +12645,14 @@ async function initHome() {
 
 /**
  * Appelle : Dialog.message(), HomeLink.saveProject(), Model.serialize(), Recovery.clearCurrent(), render(), t(),
- *   toast()
+ *   toast(), unknownGuard()
  * Appelée par : action « goHome », action « homeSave »
  */
-function homeSave() {
+async function homeSave() {
+  if (!(await unknownGuard('home'))) return false;
   const r = HomeLink.saveProject(JSON.stringify(Model.serialize(App.project, { withVersions: true })));
   if (r !== 'ok') { Dialog.message(t('home.save'), r === 'full' ? t('store.full') : t('store.off')); return false; }
-  App.dirty = false;
+  App.dirty = false; App.unknown = 0;
   Recovery.clearCurrent();
   render();
   toast(t('home.saved'));
@@ -12605,8 +12668,8 @@ action('homeSave', () => homeSave());
  * Appelle : homeSave()
  * Appelée par : l'événement « goHome » (table ACTIONS)
  */
-action('goHome', () => {
-  if (!Home.url || !homeSave()) return;
+action('goHome', async () => {
+  if (!Home.url || !(await homeSave())) return;
   window.location.assign(Home.url); // adresse déjà validée : même origine, http(s) ou file
 });
 /**

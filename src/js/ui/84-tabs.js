@@ -9,7 +9,7 @@
  */
 const Tabs = (() => {
   const MAX = 10;
-  const FIELDS = ['project', 'selected', 'multi', 'zoom', 'view', 'undo', 'redo', 'dirty', 'showAlerts', 'libKey', 'recKey'];
+  const FIELDS = ['project', 'selected', 'multi', 'zoom', 'view', 'undo', 'redo', 'dirty', 'showAlerts', 'libKey', 'recKey', 'unknown'];
   let list = [], active = 0, seq = 0;
 
   /**
@@ -87,7 +87,7 @@ const Tabs = (() => {
    *   Tabs.freshView(), Tabs.newKey(), Tabs.snapshot(), Tabs.tabOf()
    * Appelée par : confirmOpen(), newFromTemplate(), newProjectAction(), openLibrary(), Recovery.offer()
    */
-  function open(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+  function open(project, { dirty = false, libKey = '', recKey = '', unknown = 0 } = {}) {
     if (!canOpen()) { Dialog.message(t('tabs.title'), t('tabs.max', { max: MAX })); return false; }
     Editor.close();
     tabOf(active).state = snapshot();
@@ -96,7 +96,7 @@ const Tabs = (() => {
     active = uid;
     loadProject(project);
     App.multi = new Set(); App.view = freshView(); App.zoom = 100; App.showAlerts = true;
-    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || newKey();
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || newKey(); App.unknown = unknown;
     render();
     if (typeof Recovery !== 'undefined' && App.dirty) Recovery.touch();
     return true;
@@ -107,12 +107,12 @@ const Tabs = (() => {
    * Appelle : Editor.close(), loadProject(), Recovery.drop(), render(), Tabs.freshView(), Tabs.newKey()
    * Appelée par : confirmOpen(), initHome(), newFromTemplate(), openLibrary(), Recovery.offer(), Tabs.close()
    */
-  function replace(project, { dirty = false, libKey = '', recKey = '' } = {}) {
+  function replace(project, { dirty = false, libKey = '', recKey = '', unknown = 0 } = {}) {
     Editor.close();
     if (App.recKey && recKey && App.recKey !== recKey && typeof Recovery !== 'undefined') Recovery.drop(App.recKey);
     loadProject(project);
     App.multi = new Set(); App.view = freshView();
-    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || App.recKey || newKey();
+    App.dirty = !!dirty; App.libKey = libKey; App.recKey = recKey || App.recKey || newKey(); App.unknown = unknown;
     render();
   }
 

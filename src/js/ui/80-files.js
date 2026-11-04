@@ -5,11 +5,36 @@
 /**
  * Nom de fichier : « <nom>_gantt.<ext> », a-z et 0-9 seulement (EF-50).
  * Appelle : aucune
- * Appelée par : doExport()
+ * Appelée par : doExport(), keepOriginalName()
  */
 function exportFileName(name, ext = 'json') {
   const base = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '_') || 'projet';
   return `${base}_gantt.${ext}`;
+}
+
+/**
+ * Nom distinct pour ne pas écraser le fichier d'origine quand des champs inconnus seraient perdus (décision V4) :
+ * « <nom>_gantt_v3_0_0.json » (version qui écrit le fichier, a-z, 0-9 et « _ » seulement comme EF-50).
+ * Appelle : exportFileName()
+ * Appelée par : doExport(), unknownGuard()
+ */
+function keepOriginalName(name) {
+  return exportFileName(name).replace(/\.json$/, `_v${Model.APP_VERSION.replace(/\./g, '_')}.json`);
+}
+
+/**
+ * Garde-fou des champs inconnus (décision V4 du 3 novembre 2026) : un projet ouvert avec des champs inconnus (ignorés,
+ * App.unknown > 0) ne les perd pas sans que l'utilisateur le sache. Au premier export JSON ou enregistrement (fichier,
+ * bibliothèque, page d'accueil), une confirmation rappelle la perte et dit comment l'original est préservé.
+ * where : 'file' | 'lib' | 'home'. Renvoie true si l'enregistrement peut avoir lieu. L'appelant remet App.unknown à 0
+ * après un enregistrement réussi : l'utilisateur a été prévenu une fois, la copie enregistrée n'a plus ces champs.
+ * Appelle : Dialog.confirm(), keepOriginalName(), t()
+ * Appelée par : doExport(), homeSave(), saveToLibrary()
+ */
+async function unknownGuard(where) {
+  if (!App.unknown) return true;
+  const how = where === 'file' ? t('unk.file', { name: keepOriginalName(App.project.name) }) : t('unk.' + where);
+  return Dialog.confirm(t('unk.title'), [t('unk.loss', { count: App.unknown }), how], t('unk.save'), false);
 }
 
 /**
@@ -100,7 +125,7 @@ action('expOpt', (key, el) => {
 });
 
 /**
- * Appelle : 18 fonctions
+ * Appelle : 20 fonctions
  * Appelée par : exportWindow()
  */
 async function doExport() {
@@ -109,6 +134,9 @@ async function doExport() {
   if (!s) { err(t('calc.error')); return; }
   try {
     if (o.format === 'json') {
+      // Garde-fou V4 : la confirmation s'ouvre au-dessus de la fenêtre d'export ; refusée, rien n'est écrit.
+      if (!(await unknownGuard('file'))) return;
+      const name = App.unknown ? keepOriginalName(p.name) : exportFileName(p.name);
       const text = JSON.stringify(Model.serialize(p, { anonymize: o.anonymize, amounts: o.amounts }), null, 2);
       if (o.protect) {
         const a = $('exp-pwd').value, b = $('exp-pwd2').value;
@@ -116,8 +144,9 @@ async function doExport() {
         if (a !== b) { err(t('pwd.mismatch')); $('exp-pwd2').focus(); return; }
         announce(t('pwd.working'));
         const env = await Secure.encrypt(text, a);
-        download(JSON.stringify(env, null, 2), exportFileName(p.name), 'application/json');
-      } else download(text, exportFileName(p.name), 'application/json');
+        download(JSON.stringify(env, null, 2), name, 'application/json');
+      } else download(text, name, 'application/json');
+      App.unknown = 0;
       if (!o.anonymize) { App.dirty = false; Recovery.clearCurrent(); }
     } else if (o.format === 'csv') download(Exchange.csv(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'csv'), 'text/csv;charset=utf-8');
     else if (o.format === 'xlsx') download(Exchange.xlsx(p, s, today, { anonymize: o.anonymize, amounts: o.amounts }), exportFileName(p.name, 'xlsx'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -272,11 +301,12 @@ async function importText(text, origin = 'file') {
   }
   const p = result.project;
   const extra = [
-    result.notices.unknown ? t('imp.notice.unknown', { count: result.notices.unknown }) : '',
+    // Garde-fou V4 : avertissement mis en évidence (classe « warning »), voir confirmOpen().
+    result.notices.unknown ? { warn: t('imp.notice.unknown', { count: result.notices.unknown }) } : '',
     result.notices.createdResources.length ? t('imp.notice.resources', { names: result.notices.createdResources.join(', ') }) : '',
     result.notices.createdCategories.length ? t('imp.notice.categories', { names: result.notices.createdCategories.join(', ') }) : '',
   ];
-  await confirmOpen(p, extra, origin);
+  await confirmOpen(p, extra, origin, result.notices.unknown);
 }
 
 /**
@@ -284,14 +314,14 @@ async function importText(text, origin = 'file') {
  * Appelle : 13 fonctions
  * Appelée par : importMsp(), importText()
  */
-async function confirmOpen(p, extraLines, origin) {
+async function confirmOpen(p, extraLines, origin, unknown = 0) {
   const avg = Math.round(Metrics.globalProgress(p));
   const lines = [
     h('p', { class: 'strong', text: `${p.emoji} ${p.name}` }),
     p.desc ? h('p', { text: p.desc }) : null,
     h('p', { text: t('imp.summary', { tasks: p.tasks.length, resources: p.resources.length, categories: p.categories.length, baselines: p.baselines.length,
       start: I18n.date(Dates.parse(p.projectStart)), pct: avg }) }),
-    ...extraLines.filter(Boolean).map(x => h('p', { class: 'hint', text: x })),
+    ...extraLines.filter(Boolean).map(x => (x.warn ? h('p', { class: 'warning', text: x.warn }) : h('p', { class: 'hint', text: x }))),
   ];
   const canTab = Tabs.canOpen() && !Tabs.pristine();
   if (!Tabs.canOpen()) lines.push(h('p', { class: 'hint', text: t('tabs.max', { max: Tabs.MAX }) }));
@@ -301,8 +331,8 @@ async function confirmOpen(p, extraLines, origin) {
   const v = await Dialog.open({ title: t('imp.title'), body: lines, actions });
   if (v === 'cancel') return false;
   if (v === 'ok' && App.dirty && !(await Dialog.confirm(t('imp.replace'), [t('dlg.unsaved')], t('imp.replace')))) return false;
-  if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file' });
-  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file' }); }
+  if (v === 'tab') Tabs.open(p, { dirty: origin !== 'file', unknown });
+  else { clearSelection(); Tabs.replace(p, { dirty: origin !== 'file', unknown }); }
   announce(t('imp.opened', { name: p.name }));
   return true;
 }

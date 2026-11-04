@@ -13,6 +13,9 @@ const App = {
   undo: [],
   redo: [],
   dirty: false,
+  // Garde-fou (décision V4) : nombre de champs inconnus ignorés à l'ouverture de ce projet. En mémoire seulement, jamais
+  // écrit dans le fichier ; tant qu'il n'est pas nul, le premier enregistrement demande confirmation (unknownGuard()).
+  unknown: 0,
   maskAmounts: false, // masquage des montants à l'écran (EF-125) : réglage de l'appareil, relu au démarrage
 };
 const UNDO_MAX = 50;
