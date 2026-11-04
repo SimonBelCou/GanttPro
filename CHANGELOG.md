@@ -23,6 +23,12 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   dans `.claude/regles-nr/` et importées par `CLAUDE.md` §13.10 ; sous-agents de revue `eco-check` et
   `accessibilite-check` dans `.claude/agents/`. Aucun changement de code.
 
+### Performances
+- **Regroupement de 1 000 tâches sous 100 ms (EX-25, décision X1 du 3 novembre 2026)** : liste et Gantt construits sans le
+  coût générique de `h()`, textes répétés calculés une fois par affichage, index `Map` dans `View.group`. Affichage identique
+  (DOM comparé à l'octet près). Test sans `PERF_FACTOR`, 7 passages : avant 77 à 153 ms (médiane 82, 2 dépassements),
+  après 63 à 86 ms (médiane 67, aucun). Nouveau test : regroupements par catégorie et par ressource conformes à RG-27.
+
 ### Budget, étape C (PR #14, en attente de la recette « Taux 1 à 10 »)
 - Profils de coût et taux datés des ressources (par jour ouvré), coût des ressources par tâche, par ressource et face au
   budget saisi, signalement des ressources sans taux, exports avec ou sans taux (EF-147 à EF-150, RG-54 à RG-58, R-92 à R-100).
