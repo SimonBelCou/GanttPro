@@ -13,7 +13,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_v3 import HTML, axe_check, check, results  # noqa: E402
+from test_v3 import HTML, axe_check, check, results, open_disc  # noqa: E402
 
 
 def sp(s):
@@ -95,7 +95,7 @@ def main():
         check('thème clair par défaut', pg.get_attribute('html', 'data-theme') == 'light')
         tip = lambda sel: pg.get_attribute(sel, 'title')
         check('raccourci au survol : Annuler (Ctrl + Z)', tip('#btn-undo') == 'Annuler (Ctrl + Z)', tip('#btn-undo'))
-        check('raccourci au survol : zoom avant (+)', '(+)' in (tip('.topbar button[data-click="zoom"][data-arg="1"]') or ''))
+        check('raccourci au survol : zoom avant (+)', '(+)' in (tip('#viewbar button[data-click="zoom"][data-arg="1"]') or ''))
         pg.click('#btn-settings'); pg.uncheck('#set-tips'); pg.wait_for_timeout(100)
         check('raccourcis masqués : plus d\'infobulle', tip('#btn-undo') is None, tip('#btn-undo'))
         pg.check('#set-tips'); pg.wait_for_timeout(100)
@@ -232,7 +232,7 @@ def main():
 
         # ── Export sans montants (EF-124, R-76) ──────────────────────────────────────────────
         def export(fmt, amounts):
-            pg.click('button[data-click="exportFile"]')
+            open_disc(pg, '#btn-file'); pg.click('button[data-click="exportFile"]')
             pg.check(f'#exp-f-{fmt}')
             check(f'R-76 : case « Inclure les montants » décochée à l\'ouverture ({fmt}, {"cochée" if amounts else "défaut"})', not pg.is_checked('#exp-amounts'))
             if amounts:
@@ -242,7 +242,7 @@ def main():
             path = dl.value.path()
             return Path(path).read_bytes() if fmt == 'xlsx' else Path(path).read_text(encoding='utf-8')
 
-        pg.click('button[data-click="exportFile"]')
+        open_disc(pg, '#btn-file'); pg.click('button[data-click="exportFile"]')
         axe_check(pg, "fenêtre d'export avec « Inclure les montants »")
         esc()
         j0 = export('json', False)
@@ -425,13 +425,13 @@ def main():
         esc()
         pg.keyboard.press('Escape')
         for _ in range(16):
-            pg.click('#btn-zoom-in') if pg.locator('#btn-zoom-in').count() else pg.click('.topbar button[data-click="zoom"][data-arg="1"]')
+            pg.click('#btn-zoom-in') if pg.locator('#btn-zoom-in').count() else pg.click('#viewbar button[data-click="zoom"][data-arg="1"]')
         check('zoom jusqu\'à 400 %', '400' in pg.inner_text('#zoom-level'), pg.inner_text('#zoom-level'))
         for _ in range(4):
-            pg.click('.topbar button[data-click="zoom"][data-arg="1"]')
+            pg.click('#viewbar button[data-click="zoom"][data-arg="1"]')
         check('zoom plafonné à 400 %', '400' in pg.inner_text('#zoom-level'))
         load_fx('projet-atlas-budget.json')
-        zbtn = '.topbar button[data-click="zoom"]'
+        zbtn = '#viewbar button[data-click="zoom"]'
         pg.click(f'{zbtn}[data-arg="0"]')
         for pct, clicks in [(100, 0), (60, 2), (40, 1), (20, 2)]:
             for _ in range(clicks):
@@ -481,6 +481,8 @@ def main():
         for width in [1500, 900, 400]:
             pg.set_viewport_size({'width': width, 'height': 800})
             for opener, label in [('button[data-click="openPrint"]', 'impression'), ('button:has-text("Exporter")', 'export')]:
+                if label == 'export':
+                    open_disc(pg, '#btn-file')
                 pg.click(opener)
                 if label == 'export':
                     pg.check('#exp-f-png')
@@ -511,7 +513,7 @@ def main():
             for _ in range(40):
                 pg.keyboard.press('ArrowLeft')
         check('titres de colonnes entiers même colonnes réduites au minimum', pg.evaluate(clip_js) == [], pg.evaluate(clip_js))
-        pg.click('button:has-text("Largeurs par défaut")')
+        open_disc(pg, '#btn-cols-menu'); pg.click('button:has-text("Largeurs par défaut")')
 
         # EX-30 : l'impression ne perd aucune information (bandes de pages, colonnes Début / Fin / Dépendances, textes non coupés).
         pg.evaluate('window.print = () => {}')
@@ -700,7 +702,7 @@ def main():
         load_fx('colonnes-personnalisees.json')
         check('R-89 : le projet ouvert garde ses colonnes et leur ordre (Budget affiché sans montant)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Début', 'Fin', 'Statut', 'Budget'], pg.evaluate(heads_js))
         check('R-89 : chaque ligne a autant de cellules que de colonnes', pg.evaluate("[...document.querySelectorAll('#task-rows tr')].every(tr => tr.querySelectorAll('td').length === 6 || tr.classList.contains('group-row'))"))
-        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        open_disc(pg, '#btn-cols-menu'); pg.click('#btn-columns'); pg.wait_for_timeout(100)
         check('RG-52 : identifiant et nom sont obligatoires (cases désactivées)', pg.is_disabled('#col-show-id') and pg.is_disabled('#col-show-name') and pg.is_enabled('#col-show-dur'))
         check('RG-53 : les cases cochées sont celles du projet, dans l\'ordre', pg.evaluate("[...document.querySelectorAll('#cols-table tbody tr')].slice(0, 6).map(r => r.querySelector('label').textContent.trim())") == ['Activité', 'N°', 'Début', 'Fin', 'Statut', 'Budget'])
         check('RG-53 : la première colonne n\'a pas de bouton Monter, la dernière affichée pas de bouton Descendre', pg.is_disabled('#col-up-name') and pg.is_disabled('#col-down-budget') and pg.is_disabled('#col-down-actual'))
@@ -718,12 +720,12 @@ def main():
         axe_check(pg, 'fenêtre des colonnes après modifications')
         esc()
         check('EF-143 : le choix est une modification du projet (annulable)', not pg.is_disabled('#btn-undo'))
-        pg.select_option('#freeze-cols', '2'); pg.wait_for_timeout(100)
+        open_disc(pg, '#btn-cols-menu'); pg.select_option('#freeze-cols', '2'); pg.wait_for_timeout(100)
         check('EF-146 : « Figer » garde les deux premières colonnes affichées, quelles qu\'elles soient', pg.evaluate("document.querySelectorAll('#tasks-table thead th')[1].getBoundingClientRect().width > 0") and pg.evaluate("getComputedStyle(document.querySelectorAll('#tasks-table thead th')[1]).position") == 'sticky')
-        pg.select_option('#freeze-cols', '0')
+        open_disc(pg, '#btn-cols-menu'); pg.select_option('#freeze-cols', '0')
         pg.click('#btn-undo'); pg.wait_for_timeout(100)
         check('EF-143 : Annuler annule le dernier changement de colonnes', pg.evaluate(heads_js) != ['N°', 'Activité', 'Durée', 'Fin', 'Début', 'Budget'])
-        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        open_disc(pg, '#btn-cols-menu'); pg.click('#btn-columns'); pg.wait_for_timeout(100)
         pg.click('#col-reset'); pg.wait_for_timeout(100)
         check('RG-52 : l\'ordre d\'origine rétabli n\'affiche Budget et Coût réel que s\'il y a un montant (ici aucun)', pg.evaluate(heads_js) == ['N°', 'Activité', 'Durée', 'Début', 'Fin', 'Début réel', 'Fin réel', 'Dépendances', 'Ressource', 'Statut'], pg.evaluate(heads_js))
         esc()
@@ -733,17 +735,17 @@ def main():
         load_fx('colonnes-personnalisees.json')
         sep_box = pg.locator('#tasks-table .col-resize[data-col="start"]').bounding_box()
         pg.mouse.move(sep_box['x'] + 3, sep_box['y'] + 5); pg.mouse.down(); pg.mouse.move(sep_box['x'] + 43, sep_box['y'] + 5, steps=4); pg.mouse.up(); pg.wait_for_timeout(100)
-        pg.click('#btn-columns'); pg.wait_for_timeout(100); pg.check('#col-show-dur'); pg.check('#col-show-rstart'); pg.check('#col-show-deps'); esc()
+        open_disc(pg, '#btn-cols-menu'); pg.click('#btn-columns'); pg.wait_for_timeout(100); pg.check('#col-show-dur'); pg.check('#col-show-rstart'); pg.check('#col-show-deps'); esc()
         widths = pg.evaluate("[...document.querySelectorAll('#tasks-table col')].map(c => [c.dataset.col, parseInt(c.style.width) || 0])")
         check('Colonnes : après un réglage manuel, toute colonne affichée a une largeur fixée', all(w > 0 for _, w in widths) and len(widths) == 9, widths)
         ths = pg.evaluate("[...document.querySelectorAll('#tasks-table thead th')].map(t => [t.dataset.col, Math.round(t.getBoundingClientRect().width)])")
         check('Colonnes : aucune colonne ne dépasse sa limite, la table vaut la somme des colonnes', all(w <= {'name': 1000}.get(k, 800) for k, w in ths) and abs(pg.evaluate("Math.round(document.getElementById('tasks-table').getBoundingClientRect().width)") - sum(w for _, w in ths)) <= 2, ths)
-        pg.click('button:has-text("Largeurs par défaut")')
+        open_disc(pg, '#btn-cols-menu'); pg.click('button:has-text("Largeurs par défaut")')
         pg.set_viewport_size({'width': 1500, 'height': 950})
 
         # Export puis réimport : le choix voyage avec le fichier.
         load_fx('colonnes-personnalisees.json')
-        pg.click('#btn-columns'); pg.wait_for_timeout(100)
+        open_disc(pg, '#btn-cols-menu'); pg.click('#btn-columns'); pg.wait_for_timeout(100)
         pg.uncheck('#col-show-budget'); pg.wait_for_timeout(100); esc()
         check('EF-144 : masquer Budget laisse la liste choisie (la persistance est vérifiée par R-90)', pg.evaluate(heads_js) == ['Activité', 'N°', 'Début', 'Fin', 'Statut'], pg.evaluate(heads_js))
 
@@ -882,7 +884,7 @@ def main():
         load_fx('taux-historique.json')
 
         def export_c(amounts, anon=False):
-            pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-json')
+            open_disc(pg, '#btn-file'); pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-json')
             if amounts:
                 pg.check('#exp-amounts')
             if anon:

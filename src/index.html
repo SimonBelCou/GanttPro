@@ -20,42 +20,60 @@
 </nav>
 
 <header class="topbar" role="banner">
-  <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
-  <h1 class="brand">GanttPro</h1>
-  <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
-  <label class="field-inline"><span data-i18n="top.start">Début projet</span>
-    <input type="date" id="project-start" data-change="setProjectStart" min="1970-01-01" max="2199-12-31" required>
-  </label>
-  <nav class="toolbar" data-i18n-label="top.toolbar" aria-label="Commandes">
-    <div class="group">
-      <button type="button" data-click="addTask" data-arg="task" data-i18n="top.addTask"></button>
-      <button type="button" data-click="addTask" data-arg="milestone" data-i18n="top.addMilestone"></button>
-      <button type="button" data-click="addTask" data-arg="summary" data-i18n="top.addSummary"></button>
+  <!-- Barres par thème (EF-152) : l'ordre du DOM est l'ordre visuel (WCAG 2.4.3) ; chaque groupe a un nom traduit. -->
+  <div class="tbar tbar-project">
+    <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
+    <h1 class="brand">GanttPro</h1>
+    <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
+    <label class="field-inline"><span data-i18n="top.start">Début projet</span>
+      <input type="date" id="project-start" data-change="setProjectStart" min="1970-01-01" max="2199-12-31" required>
+    </label>
+    <span class="autosave" id="autosave-status" hidden></span>
+    <div class="group" role="group" data-i18n-label="top.g.history" aria-label="Historique">
+      <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
+      <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
-    <div class="group">
+    <div class="group disclosure">
+      <button type="button" id="btn-file" class="disc-btn" data-click="toggleDisclosure" data-arg="file-menu" aria-expanded="false" aria-controls="file-menu" data-i18n="top.file">Fichier</button>
+      <div class="disc-panel" id="file-menu" hidden>
+        <button type="button" data-click="newProject" data-i18n="top.new"></button>
+        <button type="button" data-click="importFile" data-i18n="top.import"></button>
+        <button type="button" data-click="exportFile" data-i18n="top.export"></button>
+        <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
+        <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
+      </div>
+      <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
+    </div>
+    <div class="group end" role="group" data-i18n-label="top.g.prefs" aria-label="Préférences">
+      <button type="button" id="btn-theme" data-click="toggleTheme"></button>
+      <button type="button" id="btn-lang" data-click="toggleLang"></button>
+      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
+      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
+    </div>
+  </div>
+  <div class="tbar tbar-commands">
+    <div class="group" role="group" aria-labelledby="g-create">
+      <span class="g-label" id="g-create" data-i18n="top.g.create">Créer</span>
+      <button type="button" data-click="addTask" data-arg="task" data-i18n="top.btnTask"></button>
+      <button type="button" data-click="addTask" data-arg="milestone" data-i18n="top.btnMilestone"></button>
+      <button type="button" data-click="addTask" data-arg="summary" data-i18n="top.btnSummary"></button>
+    </div>
+    <div class="group" role="group" aria-labelledby="g-project">
+      <span class="g-label" id="g-project" data-i18n="top.g.project">Projet</span>
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
       <button type="button" data-click="openTags" data-i18n="tags.title"></button>
       <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
+    </div>
+    <div class="group" role="group" aria-labelledby="g-track">
+      <span class="g-label" id="g-track" data-i18n="top.g.track">Suivi</span>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
       <button type="button" data-click="openReport" data-i18n="top.report"></button>
-      <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
-      <button type="button" id="btn-links" data-click="toggleLinks"></button>
-      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
+      <button type="button" data-click="openPrint" data-i18n="top.print"></button>
     </div>
-    <div class="group">
-      <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
-      <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
-    </div>
-    <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
-      <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
-      <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
-    </div>
-    <div class="group">
+    <div class="group" role="group" data-i18n-label="top.g.load" aria-label="Charge">
       <label class="field-inline"><span data-i18n="top.leveling">Charge des ressources</span>
         <select id="leveling-mode" data-change="setLeveling">
           <option value="level" data-i18n="lvl.level"></option>
@@ -66,22 +84,7 @@
       <button type="button" id="btn-alerts" class="badge" data-click="toggleAlerts" hidden></button>
       <button type="button" id="btn-resolve" data-click="openResolve" data-i18n="top.resolve" hidden></button>
     </div>
-    <div class="group">
-      <button type="button" data-click="newProject" data-i18n="top.new"></button>
-      <button type="button" data-click="importFile" data-i18n="top.import"></button>
-      <button type="button" data-click="exportFile" data-i18n="top.export"></button>
-      <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
-      <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
-      <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
-    </div>
-    <div class="group">
-      <button type="button" id="btn-theme" data-click="toggleTheme"></button>
-      <button type="button" id="btn-lang" data-click="toggleLang"></button>
-      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
-      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
-    </div>
-    <span class="autosave" id="autosave-status" hidden></span>
-  </nav>
+  </div>
 </header>
 
 <section class="kpis" id="kpis" data-i18n-label="kpi.label" aria-label="Chiffres du planning"></section>
@@ -92,32 +95,53 @@
 </section>
 
 <main id="main" tabindex="-1">
-  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Recherche et filtres">
+  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Affichage">
     <div class="view-row">
-      <label for="search" data-i18n="view.search"></label>
-      <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
-      <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
-      <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
-      <label for="group-by" data-i18n="view.groupBy"></label>
-      <select id="group-by" data-change="groupBy">
-        <option value="" data-i18n="view.group.none"></option>
-        <option value="res" data-i18n="view.group.res"></option>
-        <option value="cat" data-i18n="view.group.cat"></option>
-        <option value="status" data-i18n="view.group.status"></option>
-      </select>
-      <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
-      <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
-      <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
-      <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
-      <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
-      <label for="freeze-cols" data-i18n="lay.freeze"></label>
-      <select id="freeze-cols" data-change="freezeCols">
-        <option value="0" data-i18n="lay.freeze.0"></option>
-        <option value="1" data-i18n="lay.freeze.1"></option>
-        <option value="2" data-i18n="lay.freeze.2"></option>
-      </select>
-      <button type="button" id="btn-columns" data-click="openColumns" aria-haspopup="dialog" data-i18n="cols.button"></button>
-      <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+      <span class="g-label" aria-hidden="true" data-i18n="view.label">Affichage</span>
+      <div class="group" role="group" data-i18n-label="view.g.find" aria-label="Rechercher et filtrer">
+        <label for="search" data-i18n="view.search"></label>
+        <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
+        <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
+        <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
+        <label for="group-by" data-i18n="view.groupBy"></label>
+        <select id="group-by" data-change="groupBy">
+          <option value="" data-i18n="view.group.none"></option>
+          <option value="res" data-i18n="view.group.res"></option>
+          <option value="cat" data-i18n="view.group.cat"></option>
+          <option value="status" data-i18n="view.group.status"></option>
+        </select>
+      </div>
+      <div class="group" role="group" data-i18n-label="view.g.show" aria-label="Afficher">
+        <button type="button" id="btn-links" data-click="toggleLinks"></button>
+        <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
+        <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
+      </div>
+      <div class="group" role="group" aria-labelledby="zoom-level">
+        <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+        <span id="zoom-level" class="zoom-level"></span>
+        <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
+        <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
+      </div>
+      <div class="group" role="group" data-i18n-label="view.g.list" aria-label="Liste des tâches">
+        <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
+        <div class="disclosure">
+          <button type="button" id="btn-cols-menu" class="disc-btn" data-click="toggleDisclosure" data-arg="cols-menu" aria-expanded="false" aria-controls="cols-menu" data-i18n="lay.colsMenu">Colonnes</button>
+          <div class="disc-panel" id="cols-menu" hidden>
+            <label class="field-inline"><span data-i18n="lay.freeze"></span>
+              <select id="freeze-cols" data-change="freezeCols">
+                <option value="0" data-i18n="lay.freeze.0"></option>
+                <option value="1" data-i18n="lay.freeze.1"></option>
+                <option value="2" data-i18n="lay.freeze.2"></option>
+              </select>
+            </label>
+            <button type="button" id="btn-columns" data-click="openColumns" aria-haspopup="dialog" data-i18n="lay.colsChoose"></button>
+            <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+          </div>
+        </div>
+        <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
+        <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
+        <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
+      </div>
       <button type="button" id="btn-full" data-click="toggleFull" aria-pressed="false" aria-keyshortcuts="Escape" data-i18n="lay.full"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>

@@ -29,6 +29,12 @@ def check(name, ok, extra=''):
     print(('OK    ' if ok else 'ECHEC '), name, '' if ok else extra)
 
 
+def open_disc(pg, btn):
+    """Déplie la liste « Fichier ▾ » ou « Colonnes ▾ » si elle est repliée (EF-152)."""
+    if pg.get_attribute(btn, 'aria-expanded') != 'true':
+        pg.click(btn)
+
+
 def task(id, name, dur=5, **kw):
     return {'id': id, 'name': name, 'dur': dur, **kw}
 
@@ -151,7 +157,7 @@ def main():
         check('R-30 : sélectionner, zoomer, changer de thème : aucun avertissement', unload_warns() is False)
         pg.click('#task-rows button.select:has-text("Alpha")'); pg.fill('#f-name', 'Alpha modifiée'); pg.click('#editor button[type=submit]')
         check('R-30 : après une modification : avertissement', unload_warns() is True)
-        pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-json')
+        open_disc(pg, '#btn-file'); pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-json')
         with pg.expect_download():
             dlg('Exporter')
         check('R-30 : après export : plus d\'avertissement', unload_warns() is False)
@@ -196,12 +202,16 @@ def main():
                    ('button[data-click="openVersions"]', 'Versions'), ('#btn-resolve', 'Résoudre'), ('button[data-click="exportFile"]', 'Exporter'),
                    ('button[data-click="openLibrary"]', 'Bibliothèque'), ('#btn-settings', 'Réglages'), ('#btn-help', 'Aide'), ('button[data-click="tabPlus"]', 'Ouvrir un projet')]
         for sel, label in windows:
+            opener = sel
+            if 'exportFile' in sel or 'openLibrary' in sel:
+                # Choix de la liste « Fichier ▾ » : le focus revient au bouton dépliant (EF-152).
+                open_disc(pg, '#btn-file'); opener = '#btn-file'
             pg.focus(sel); pg.keyboard.press('Enter')
             pg.wait_for_selector('dialog[open]', timeout=3000)
             named = pg.evaluate("() => { const d = [...document.querySelectorAll('dialog[open]')].pop(); const h = document.getElementById(d.getAttribute('aria-labelledby')); return !!h && h.textContent.length > 0 && d.contains(document.activeElement); }")
             axe(f'fenêtre « {label} » ouverte au clavier')
             pg.keyboard.press('Escape'); pg.wait_for_timeout(80)
-            back = pg.evaluate(f"document.activeElement === document.querySelector('{sel}')")
+            back = pg.evaluate(f"document.activeElement === document.querySelector('{opener}')")
             check(f'R-34 : « {label} » : dialogue titré, focus dedans, Échap ferme et rend le focus', named and back and pg.locator('dialog[open]').count() == 0)
         pg.focus('button[data-click="addTask"][data-arg="task"]'); pg.keyboard.press('Enter')
         pg.wait_for_selector('#editor:not([hidden])'); pg.keyboard.type('Ajout au clavier'); pg.keyboard.press('Enter')
@@ -309,7 +319,7 @@ def main():
 
         # Modèle personnel : les absences suivent la nouvelle date de début (EF-100)
         open_project('tpl.json')
-        pg.click('button[data-click="openLibrary"]'); pg.wait_for_selector('#lib-win')
+        open_disc(pg, '#btn-file'); pg.click('button[data-click="openLibrary"]'); pg.wait_for_selector('#lib-win')
         pg.click('#lib-tpl')
         if pg.query_selector('dialog[open] button:has-text("J\'ai compris, enregistrer")'):
             dlg("J'ai compris, enregistrer")
@@ -369,7 +379,7 @@ def main():
             const t0 = performance.now(); s.dispatchEvent(new Event('change', {bubbles: true})); return performance.now() - t0; }""")
         check(f'EX-25 : regroupement de 1 000 tâches en moins de 100 ms ({grp:.0f} ms)', grp < 100 * PERF, grp)
         pg.select_option('#group-by', '')
-        pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-xlsx')
+        open_disc(pg, '#btn-file'); pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-xlsx')
         t0 = pg.evaluate('performance.now()')
         with pg.expect_download():
             dlg('Exporter')
@@ -390,8 +400,8 @@ def main():
             check(f'EF-151 / EX-04 : {width} px, la page garde son flux ordinaire (légende sous le planning)', flow['disp'] != 'flex' and flow['scroll'], flow)
             c2.close()
 
-        # ── EF-151 : légende fixée en bas à 1500 × 900, avec 30 ressources et 12 catégories fictives ───
-        c4 = browser.new_context(viewport={'width': 1500, 'height': 900}, locale='fr-FR')
+        # ── EF-151 / EF-152 : légende fixée en bas à 1280 × 720 (barres par thème), avec 30 ressources et 12 catégories fictives ───
+        c4 = browser.new_context(viewport={'width': 1280, 'height': 720}, locale='fr-FR')
         p4 = c4.new_page(); p4.clock.set_fixed_time('2026-01-14T10:00:00')
         p4.goto(HTML.as_uri()); p4.wait_for_selector('#task-rows tr')
         p4.set_input_files('#file-input', str(ROOT / 'tests' / 'fixtures' / 'legende-nombreuses-ressources.json'))
@@ -404,7 +414,7 @@ def main():
           return { bottom: Math.round(l.bottom), vh: innerHeight, page: document.documentElement.scrollHeight - innerHeight,
             inner: b.scrollHeight > b.clientHeight, tab: b.tabIndex, ph: Math.round(document.getElementById('planner').getBoundingClientRect().height),
             leg: Math.round(l.height) }; }""")
-        check('EF-151 : 1500 × 900, légende chargée en bas de la fenêtre, page sans défilement', abs(g['bottom'] - g['vh']) <= 1 and g['page'] <= 1, g)
+        check('EF-151 : 1280 × 720, légende chargée en bas de la fenêtre, page sans défilement', abs(g['bottom'] - g['vh']) <= 1 and g['page'] <= 1, g)
         check('EF-151 : la légende longue défile dans sa zone, atteignable au clavier', g['inner'] and g['tab'] == 0 and g['leg'] <= 180, g)
         check('EF-151 : le planning garde au moins 12 rem de haut', g['ph'] >= 190, g)
         c4.close()

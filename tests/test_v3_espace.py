@@ -15,7 +15,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_v3 import HTML, axe_check, check, project, results  # noqa: E402
+from test_v3 import HTML, axe_check, check, project, results, open_disc  # noqa: E402
 
 
 def main():
@@ -90,7 +90,7 @@ def main():
         btn("J'ai compris, enregistrer")
         btn('Enregistrer')
         check('enregistré dans la bibliothèque : pastille retirée', '(modifié)' not in pg.inner_text('#tabs-list li:nth-child(3)'))
-        pg.click('button:has-text("Bibliothèque")')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Bibliothèque")')
         pg.wait_for_selector('#lib-win')
         check('bibliothèque : projet listé avec ses tâches', 'Essai modèle' in pg.inner_text('#lib-win') and 'appareil' in pg.inner_text('#lib-win'))
         axe_check(pg, 'fenêtre Bibliothèque')
@@ -101,7 +101,7 @@ def main():
         pg.click('#lib-win button[aria-label="Ouvrir Essai modèle"]')
         check('bibliothèque : ouverture dans un nouvel onglet', len(tabs()) == 4 and pg.query_selector('dialog[open]') is None)
         # Projet protégé par mot de passe dans la bibliothèque (EF-102)
-        pg.click('button:has-text("Bibliothèque")'); pg.wait_for_selector('#lib-win')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Bibliothèque")'); pg.wait_for_selector('#lib-win')
         pg.click('#lib-save'); pg.check('#lib-protect')
         pg.fill('#lib-pwd', 'une phrase de passe solide'); pg.fill('#lib-pwd2', 'une phrase de passe solide')
         btn('Enregistrer')
@@ -112,8 +112,8 @@ def main():
 
         # ── Limite de dix onglets (R-62) ─────────────────────────────────────────────────────
         while len(tabs()) < 10:
-            pg.click('button[data-click="newProject"]')
-        pg.click('button[data-click="newProject"]')
+            open_disc(pg, '#btn-file'); pg.click('button[data-click="newProject"]')
+        open_disc(pg, '#btn-file'); pg.click('button[data-click="newProject"]')
         check('onzième onglet refusé avec un message', 'Dix projets au plus' in dialog_text())
         btn('Valider')
         # Fermer un onglet modifié demande confirmation
@@ -207,7 +207,7 @@ def main():
             check(f"projet transmis lu une seule fois ({'même origine' if expect else 'autre origine'})", pg.evaluate("sessionStorage.getItem('gantt_project')") is None)
             check(f"boutons d'accueil {'affichés' if expect else 'masqués pour une autre origine'}", pg.is_visible('#btn-home') == expect)
             if expect:
-                pg.click('#btn-homesave')
+                open_disc(pg, '#btn-file'); pg.click('#btn-homesave')
                 saved = json.loads(pg.evaluate("sessionStorage.getItem('gantt_saved_project')"))
                 check('« Sauvegarder » remet une copie à la page d\'accueil', saved['name'] == 'Transmis' and saved['format'] == 3)
             pg.close()

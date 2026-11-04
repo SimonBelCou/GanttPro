@@ -48,15 +48,24 @@ input.upper { text-transform: uppercase; font-family: 'Fira Code', monospace; }
 [aria-invalid="true"] { border-color: var(--critical); border-width: 2px; }
 
 /* Barre du haut */
-.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .6rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+/* Trois barres par thème (EF-152) : projet et fichier ; commandes (Créer, Projet, Suivi, Charge) ; affichage. */
+.topbar { display: flex; flex-direction: column; gap: .4rem; padding: .45rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.tbar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; }
+:is(.tbar, .view-row) .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .8rem; border-right: 1px solid var(--line); max-width: 100%; }
+:is(.tbar, .view-row) .group:last-of-type, .tbar .group.end { border-right: 0; }
+.tbar .group.end { margin-left: auto; padding-right: 0; }
+.g-label { color: var(--muted); font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; margin-right: .2rem; }
+/* Listes dépliantes « Fichier ▾ » et « Colonnes ▾ » (51-disclosure.js) : le panneau se superpose sous son bouton. */
+.disclosure { position: relative; display: inline-flex; }
+.disc-btn::after { content: " ▾" / ""; }
+.disc-btn[aria-expanded="true"] { border-color: var(--accent); }
+.disc-panel { position: absolute; left: 0; top: calc(100% + 4px); z-index: 8; display: flex; flex-direction: column; align-items: stretch; gap: .25rem; min-width: 14rem; max-width: calc(100vw - 2rem); padding: .4rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.disc-panel button { text-align: left; }
+.disc-panel .field-inline { justify-content: space-between; color: var(--text); }
 .brand { font-size: 1.15rem; letter-spacing: .02em; }
 .project-label { font-weight: 600; background: transparent; }
 .field-inline { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); }
-.toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.toolbar .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); max-width: 100%; }
-.toolbar { max-width: 100%; min-width: 0; }
 .field-inline { flex-wrap: wrap; max-width: 100%; }
-.toolbar .group:last-child { border-right: 0; }
 .zoom-level { min-width: 6.5em; text-align: center; color: var(--muted); }
 .badge { color: var(--critical); border-color: var(--critical); font-weight: 600; }
 
@@ -373,8 +382,8 @@ table.month td.out { border: 0; }
 .avatar { width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
 
 /* Recherche, filtres, regroupement (EF-84 à EF-86) */
-.viewbar { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
-.view-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.viewbar { padding: .45rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.view-row { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
 .view-row input[type="search"] { min-width: 14rem; }
 .view-count { color: var(--muted); }
 .check { display: inline-flex; align-items: center; gap: .3rem; }
@@ -482,7 +491,7 @@ body.dragging { user-select: none; cursor: grabbing; }
   .legend { flex: none; max-height: min(25dvh, 9rem); display: flex; flex-direction: column; border-top: 1px solid var(--line); }
   .legend-body { min-height: 0; overflow-y: auto; }
   /* Une longue liste d'alertes défile dans son bandeau au lieu de pousser le planning. */
-  .alerts ul { max-height: 6.6rem; overflow-y: auto; }
+  .alerts ul { max-height: 4.4rem; overflow-y: auto; }
 }
 body.planner-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 body.planner-full > .tabs, body.planner-full > header, body.planner-full > .kpis, body.planner-full > .alerts,

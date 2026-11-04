@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/teusj9E2l7IuANIiun7CdpMBM6Pve7ANg4t/bEiHwU='; style-src 'sha256-gPrXFA05aPVQR0CDXc20RytAYQrdNIq3vXi877Q5kLk='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HepsoxEFrAA64r558lCeksF4XMkbk4/IHo4EbjSAJo8='; style-src 'sha256-I1oF9dIgSy+nyLsZ8Jj+dyRnJky6uhXR8yAfQ7h5Tec='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -63,15 +63,24 @@ input.upper { text-transform: uppercase; font-family: 'Fira Code', monospace; }
 [aria-invalid="true"] { border-color: var(--critical); border-width: 2px; }
 
 /* Barre du haut */
-.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .6rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+/* Trois barres par thème (EF-152) : projet et fichier ; commandes (Créer, Projet, Suivi, Charge) ; affichage. */
+.topbar { display: flex; flex-direction: column; gap: .4rem; padding: .45rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.tbar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; }
+:is(.tbar, .view-row) .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .8rem; border-right: 1px solid var(--line); max-width: 100%; }
+:is(.tbar, .view-row) .group:last-of-type, .tbar .group.end { border-right: 0; }
+.tbar .group.end { margin-left: auto; padding-right: 0; }
+.g-label { color: var(--muted); font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; margin-right: .2rem; }
+/* Listes dépliantes « Fichier ▾ » et « Colonnes ▾ » (51-disclosure.js) : le panneau se superpose sous son bouton. */
+.disclosure { position: relative; display: inline-flex; }
+.disc-btn::after { content: " ▾" / ""; }
+.disc-btn[aria-expanded="true"] { border-color: var(--accent); }
+.disc-panel { position: absolute; left: 0; top: calc(100% + 4px); z-index: 8; display: flex; flex-direction: column; align-items: stretch; gap: .25rem; min-width: 14rem; max-width: calc(100vw - 2rem); padding: .4rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.disc-panel button { text-align: left; }
+.disc-panel .field-inline { justify-content: space-between; color: var(--text); }
 .brand { font-size: 1.15rem; letter-spacing: .02em; }
 .project-label { font-weight: 600; background: transparent; }
 .field-inline { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); }
-.toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.toolbar .group { display: inline-flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .5rem; border-right: 1px solid var(--line); max-width: 100%; }
-.toolbar { max-width: 100%; min-width: 0; }
 .field-inline { flex-wrap: wrap; max-width: 100%; }
-.toolbar .group:last-child { border-right: 0; }
 .zoom-level { min-width: 6.5em; text-align: center; color: var(--muted); }
 .badge { color: var(--critical); border-color: var(--critical); font-weight: 600; }
 
@@ -388,8 +397,8 @@ table.month td.out { border: 0; }
 .avatar { width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
 
 /* Recherche, filtres, regroupement (EF-84 à EF-86) */
-.viewbar { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
-.view-row { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: center; }
+.viewbar { padding: .45rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.view-row { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
 .view-row input[type="search"] { min-width: 14rem; }
 .view-count { color: var(--muted); }
 .check { display: inline-flex; align-items: center; gap: .3rem; }
@@ -497,7 +506,7 @@ body.dragging { user-select: none; cursor: grabbing; }
   .legend { flex: none; max-height: min(25dvh, 9rem); display: flex; flex-direction: column; border-top: 1px solid var(--line); }
   .legend-body { min-height: 0; overflow-y: auto; }
   /* Une longue liste d'alertes défile dans son bandeau au lieu de pousser le planning. */
-  .alerts ul { max-height: 6.6rem; overflow-y: auto; }
+  .alerts ul { max-height: 4.4rem; overflow-y: auto; }
 }
 body.planner-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 body.planner-full > .tabs, body.planner-full > header, body.planner-full > .kpis, body.planner-full > .alerts,
@@ -538,42 +547,60 @@ svg.cpispi { width: 100%; height: auto; display: block; }
 </nav>
 
 <header class="topbar" role="banner">
-  <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
-  <h1 class="brand">GanttPro</h1>
-  <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
-  <label class="field-inline"><span data-i18n="top.start">Début projet</span>
-    <input type="date" id="project-start" data-change="setProjectStart" min="1970-01-01" max="2199-12-31" required>
-  </label>
-  <nav class="toolbar" data-i18n-label="top.toolbar" aria-label="Commandes">
-    <div class="group">
-      <button type="button" data-click="addTask" data-arg="task" data-i18n="top.addTask"></button>
-      <button type="button" data-click="addTask" data-arg="milestone" data-i18n="top.addMilestone"></button>
-      <button type="button" data-click="addTask" data-arg="summary" data-i18n="top.addSummary"></button>
+  <!-- Barres par thème (EF-152) : l'ordre du DOM est l'ordre visuel (WCAG 2.4.3) ; chaque groupe a un nom traduit. -->
+  <div class="tbar tbar-project">
+    <button type="button" id="btn-home" data-click="goHome" data-i18n="home.back" hidden></button>
+    <h1 class="brand">GanttPro</h1>
+    <button type="button" class="project-label" id="project-label" data-click="editProject"></button>
+    <label class="field-inline"><span data-i18n="top.start">Début projet</span>
+      <input type="date" id="project-start" data-change="setProjectStart" min="1970-01-01" max="2199-12-31" required>
+    </label>
+    <span class="autosave" id="autosave-status" hidden></span>
+    <div class="group" role="group" data-i18n-label="top.g.history" aria-label="Historique">
+      <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
+      <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
     </div>
-    <div class="group">
+    <div class="group disclosure">
+      <button type="button" id="btn-file" class="disc-btn" data-click="toggleDisclosure" data-arg="file-menu" aria-expanded="false" aria-controls="file-menu" data-i18n="top.file">Fichier</button>
+      <div class="disc-panel" id="file-menu" hidden>
+        <button type="button" data-click="newProject" data-i18n="top.new"></button>
+        <button type="button" data-click="importFile" data-i18n="top.import"></button>
+        <button type="button" data-click="exportFile" data-i18n="top.export"></button>
+        <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
+        <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
+      </div>
+      <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
+    </div>
+    <div class="group end" role="group" data-i18n-label="top.g.prefs" aria-label="Préférences">
+      <button type="button" id="btn-theme" data-click="toggleTheme"></button>
+      <button type="button" id="btn-lang" data-click="toggleLang"></button>
+      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
+      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
+    </div>
+  </div>
+  <div class="tbar tbar-commands">
+    <div class="group" role="group" aria-labelledby="g-create">
+      <span class="g-label" id="g-create" data-i18n="top.g.create">Créer</span>
+      <button type="button" data-click="addTask" data-arg="task" data-i18n="top.btnTask"></button>
+      <button type="button" data-click="addTask" data-arg="milestone" data-i18n="top.btnMilestone"></button>
+      <button type="button" data-click="addTask" data-arg="summary" data-i18n="top.btnSummary"></button>
+    </div>
+    <div class="group" role="group" aria-labelledby="g-project">
+      <span class="g-label" id="g-project" data-i18n="top.g.project">Projet</span>
       <button type="button" data-click="openResources" data-i18n="top.resources"></button>
       <button type="button" data-click="openCategories" data-i18n="top.categories"></button>
       <button type="button" data-click="openTags" data-i18n="tags.title"></button>
       <button type="button" data-click="openCalendar" data-i18n="top.calendar"></button>
+    </div>
+    <div class="group" role="group" aria-labelledby="g-track">
+      <span class="g-label" id="g-track" data-i18n="top.g.track">Suivi</span>
       <button type="button" data-click="openBaselines" data-i18n="top.baselines"></button>
       <button type="button" data-click="openDashboard" data-i18n="top.dashboard"></button>
       <button type="button" data-click="openReport" data-i18n="top.report"></button>
-      <button type="button" data-click="openPrint" data-i18n="top.print"></button>
       <button type="button" data-click="openVersions" data-i18n="top.versions"></button>
-      <button type="button" id="btn-links" data-click="toggleLinks"></button>
-      <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
+      <button type="button" data-click="openPrint" data-i18n="top.print"></button>
     </div>
-    <div class="group">
-      <button type="button" id="btn-undo" data-click="undo" data-i18n="top.undo" aria-keyshortcuts="Control+Z"></button>
-      <button type="button" id="btn-redo" data-click="redo" data-i18n="top.redo" aria-keyshortcuts="Control+Y"></button>
-    </div>
-    <div class="group" role="group" aria-labelledby="zoom-level">
-      <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
-      <span id="zoom-level" class="zoom-level"></span>
-      <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
-      <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
-    </div>
-    <div class="group">
+    <div class="group" role="group" data-i18n-label="top.g.load" aria-label="Charge">
       <label class="field-inline"><span data-i18n="top.leveling">Charge des ressources</span>
         <select id="leveling-mode" data-change="setLeveling">
           <option value="level" data-i18n="lvl.level"></option>
@@ -584,22 +611,7 @@ svg.cpispi { width: 100%; height: auto; display: block; }
       <button type="button" id="btn-alerts" class="badge" data-click="toggleAlerts" hidden></button>
       <button type="button" id="btn-resolve" data-click="openResolve" data-i18n="top.resolve" hidden></button>
     </div>
-    <div class="group">
-      <button type="button" data-click="newProject" data-i18n="top.new"></button>
-      <button type="button" data-click="importFile" data-i18n="top.import"></button>
-      <button type="button" data-click="exportFile" data-i18n="top.export"></button>
-      <button type="button" data-click="openLibrary" data-i18n="lib.title" aria-keyshortcuts="Control+S"></button>
-      <button type="button" id="btn-homesave" data-click="homeSave" data-i18n="home.save" hidden></button>
-      <input type="file" id="file-input" accept=".json,.xml,.csv,.tsv,.txt,.xlsx" hidden data-change="fileChosen">
-    </div>
-    <div class="group">
-      <button type="button" id="btn-theme" data-click="toggleTheme"></button>
-      <button type="button" id="btn-lang" data-click="toggleLang"></button>
-      <button type="button" class="icon" id="btn-settings" data-click="openSettings" data-i18n-label="set.title" aria-label="Réglages">⚙</button>
-      <button type="button" class="icon" id="btn-help" data-click="openHelp" data-i18n-label="help.title" aria-label="Aide" aria-keyshortcuts="?">?</button>
-    </div>
-    <span class="autosave" id="autosave-status" hidden></span>
-  </nav>
+  </div>
 </header>
 
 <section class="kpis" id="kpis" data-i18n-label="kpi.label" aria-label="Chiffres du planning"></section>
@@ -610,32 +622,53 @@ svg.cpispi { width: 100%; height: auto; display: block; }
 </section>
 
 <main id="main" tabindex="-1">
-  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Recherche et filtres">
+  <section class="viewbar" id="viewbar" data-i18n-label="view.label" aria-label="Affichage">
     <div class="view-row">
-      <label for="search" data-i18n="view.search"></label>
-      <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
-      <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
-      <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
-      <label for="group-by" data-i18n="view.groupBy"></label>
-      <select id="group-by" data-change="groupBy">
-        <option value="" data-i18n="view.group.none"></option>
-        <option value="res" data-i18n="view.group.res"></option>
-        <option value="cat" data-i18n="view.group.cat"></option>
-        <option value="status" data-i18n="view.group.status"></option>
-      </select>
-      <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
-      <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
-      <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
-      <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
-      <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
-      <label for="freeze-cols" data-i18n="lay.freeze"></label>
-      <select id="freeze-cols" data-change="freezeCols">
-        <option value="0" data-i18n="lay.freeze.0"></option>
-        <option value="1" data-i18n="lay.freeze.1"></option>
-        <option value="2" data-i18n="lay.freeze.2"></option>
-      </select>
-      <button type="button" id="btn-columns" data-click="openColumns" aria-haspopup="dialog" data-i18n="cols.button"></button>
-      <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+      <span class="g-label" aria-hidden="true" data-i18n="view.label">Affichage</span>
+      <div class="group" role="group" data-i18n-label="view.g.find" aria-label="Rechercher et filtrer">
+        <label for="search" data-i18n="view.search"></label>
+        <input type="search" id="search" data-input="search" aria-describedby="view-count" aria-keyshortcuts="/" autocomplete="off" maxlength="200">
+        <span class="check"><input type="checkbox" id="search-hl" data-change="searchHighlight"><label for="search-hl" data-i18n="view.highlight"></label></span>
+        <button type="button" id="btn-filters" data-click="toggleFilters" aria-expanded="false" aria-controls="filters-panel" data-i18n="view.filters"></button>
+        <label for="group-by" data-i18n="view.groupBy"></label>
+        <select id="group-by" data-change="groupBy">
+          <option value="" data-i18n="view.group.none"></option>
+          <option value="res" data-i18n="view.group.res"></option>
+          <option value="cat" data-i18n="view.group.cat"></option>
+          <option value="status" data-i18n="view.group.status"></option>
+        </select>
+      </div>
+      <div class="group" role="group" data-i18n-label="view.g.show" aria-label="Afficher">
+        <button type="button" id="btn-links" data-click="toggleLinks"></button>
+        <button type="button" id="btn-mask" data-click="toggleMask" data-i18n="top.mask" aria-pressed="false"></button>
+        <span class="check"><input type="checkbox" id="show-tags" data-change="showTags"><label for="show-tags" data-i18n="view.showTags"></label></span>
+      </div>
+      <div class="group" role="group" aria-labelledby="zoom-level">
+        <button type="button" class="icon" data-click="zoom" data-arg="-1" data-i18n-label="top.zoomOut" aria-keyshortcuts="-">−</button>
+        <span id="zoom-level" class="zoom-level"></span>
+        <button type="button" class="icon" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
+        <button type="button" class="icon" data-click="zoom" data-arg="0" data-i18n-label="top.zoomReset">↺</button>
+      </div>
+      <div class="group" role="group" data-i18n-label="view.g.list" aria-label="Liste des tâches">
+        <button type="button" id="btn-list" data-click="toggleList" aria-controls="list"></button>
+        <div class="disclosure">
+          <button type="button" id="btn-cols-menu" class="disc-btn" data-click="toggleDisclosure" data-arg="cols-menu" aria-expanded="false" aria-controls="cols-menu" data-i18n="lay.colsMenu">Colonnes</button>
+          <div class="disc-panel" id="cols-menu" hidden>
+            <label class="field-inline"><span data-i18n="lay.freeze"></span>
+              <select id="freeze-cols" data-change="freezeCols">
+                <option value="0" data-i18n="lay.freeze.0"></option>
+                <option value="1" data-i18n="lay.freeze.1"></option>
+                <option value="2" data-i18n="lay.freeze.2"></option>
+              </select>
+            </label>
+            <button type="button" id="btn-columns" data-click="openColumns" aria-haspopup="dialog" data-i18n="lay.colsChoose"></button>
+            <button type="button" data-click="resetColumns" data-i18n="lay.colsReset"></button>
+          </div>
+        </div>
+        <button type="button" data-click="collapseAll" data-arg="1" data-i18n="view.collapseAll"></button>
+        <button type="button" data-click="collapseAll" data-arg="0" data-i18n="view.expandAll"></button>
+        <button type="button" data-click="sortTasks" data-i18n="view.sort"></button>
+      </div>
       <button type="button" id="btn-full" data-click="toggleFull" aria-pressed="false" aria-keyshortcuts="Escape" data-i18n="lay.full"></button>
       <span id="view-count" class="view-count" role="status"></span>
     </div>
@@ -3235,6 +3268,7 @@ const I18n = (() => {
     'top.project': 'Modifier le projet {name}',
     'top.start': 'Début projet',
     'top.addTask': '+ Ajouter tâche', 'top.addMilestone': '+ Ajouter jalon', 'top.addSummary': '+ Ajouter récapitulative',
+    'top.btnTask': '+ Tâche', 'top.btnMilestone': '+ Jalon', 'top.btnSummary': '+ Récapitulative',
     'top.resources': 'Ressources', 'top.categories': 'Catégories', 'top.calendar': 'Calendrier',
     'top.undo': 'Annuler', 'top.redo': 'Rétablir',
     'top.new': 'Nouveau', 'top.import': 'Importer', 'top.export': 'Exporter',
@@ -3244,7 +3278,11 @@ const I18n = (() => {
     'top.links': 'Liens : {state}', 'state.on': 'ON', 'state.off': 'OFF',
     'top.conflicts': { one: '{count} conflit', other: '{count} conflits' },
     'top.alerts': { one: '{count} alerte', other: '{count} alertes' },
-    'top.toolbar': 'Commandes',
+    // Groupes des barres par thème (EF-152)
+    'top.g.history': 'Historique', 'top.g.prefs': 'Préférences', 'top.file': 'Fichier',
+    'top.g.create': 'Créer', 'top.g.project': 'Projet', 'top.g.track': 'Suivi', 'top.g.load': 'Charge',
+    'view.g.find': 'Rechercher et filtrer', 'view.g.show': 'Afficher', 'view.g.list': 'Liste des tâches',
+    'lay.colsMenu': 'Colonnes', 'lay.colsChoose': 'Choisir les colonnes…',
     // Barre de chiffres
     'kpi.label': 'Chiffres du planning',
     'kpi.duration': 'Durée', 'kpi.days': { one: '{count} jour ouvré', other: '{count} jours ouvrés' },
@@ -3586,7 +3624,7 @@ const I18n = (() => {
     'rs.tasks': { one: '{count} tâche', other: '{count} tâches' }, 'rs.units': 'Taux', 'rs.load': 'Charge totale : {load} jours-personne.',
     'rs.capTooLow': 'Capacité : la tâche {task} est affectée à {units} % ; réduisez ce taux d\'abord.', 'rs.order': "La fin de l'absence précède son début.",
     'rs.absAdded': 'Absence ajoutée pour {name} ; planning recalculé.',
-    'view.label': 'Recherche et filtres', 'view.search': 'Rechercher', 'view.highlight': 'Surligner', 'view.filters': 'Filtres',
+    'view.label': 'Affichage', 'view.search': 'Rechercher', 'view.highlight': 'Surligner', 'view.filters': 'Filtres',
     'view.groupBy': 'Grouper par', 'view.group.none': 'Aucun', 'view.group.res': 'Ressource', 'view.group.cat': 'Catégorie', 'view.group.status': 'Statut',
     'view.count': '{shown} sur {total}', 'view.results': { one: '{count} résultat', other: '{count} résultats' },
     'view.groupTotals': '{count} élément(s), {dur} j, {pct} %', 'view.noRes': 'Sans ressource', 'view.noCat': 'Sans catégorie',
@@ -3742,6 +3780,7 @@ const I18n = (() => {
     'app.skip': 'Skip to schedule',
     'top.project': 'Edit project {name}', 'top.start': 'Project start',
     'top.addTask': '+ Add task', 'top.addMilestone': '+ Add milestone', 'top.addSummary': '+ Add summary task',
+    'top.btnTask': '+ Task', 'top.btnMilestone': '+ Milestone', 'top.btnSummary': '+ Summary task',
     'top.resources': 'Resources', 'top.categories': 'Categories', 'top.calendar': 'Calendar',
     'top.undo': 'Undo', 'top.redo': 'Redo', 'top.new': 'New', 'top.import': 'Import', 'top.export': 'Export',
     'top.zoomOut': 'Zoom out', 'top.zoomIn': 'Zoom in', 'top.zoomReset': 'Zoom to 100%', 'top.zoom': 'Zoom {pct}%',
@@ -3749,7 +3788,11 @@ const I18n = (() => {
     'top.lang': 'Français', 'top.langLabel': 'Passer en français',
     'top.links': 'Links: {state}', 'state.on': 'ON', 'state.off': 'OFF',
     'top.conflicts': { one: '{count} conflict', other: '{count} conflicts' }, 'top.alerts': { one: '{count} alert', other: '{count} alerts' },
-    'top.toolbar': 'Commands',
+    // Theme bars (EF-152)
+    'top.g.history': 'History', 'top.g.prefs': 'Preferences', 'top.file': 'File',
+    'top.g.create': 'Create', 'top.g.project': 'Project', 'top.g.track': 'Tracking', 'top.g.load': 'Workload',
+    'view.g.find': 'Search and filter', 'view.g.show': 'Show', 'view.g.list': 'Task list',
+    'lay.colsMenu': 'Columns', 'lay.colsChoose': 'Choose columns…',
     'kpi.label': 'Schedule figures', 'kpi.duration': 'Duration', 'kpi.days': { one: '{count} working day', other: '{count} working days' },
     'kpi.start': 'Start', 'kpi.end': 'Finish', 'kpi.holidays': 'Holidays and days off', 'kpi.critical': 'Critical path', 'kpi.progress': 'Overall progress', 'kpi.none': 'none',
     'list.label': 'Task list', 'col.id': 'ID', 'col.name': 'Activity', 'col.start': 'Start', 'col.end': 'End', 'col.cat': 'Category', 'col.rstart': 'Actual start', 'col.rend': 'Actual end', 'col.dur': 'Duration', 'col.deps': 'Dependencies', 'col.res': 'Resource', 'col.status': 'Status',
@@ -4030,7 +4073,7 @@ const I18n = (() => {
     'rs.tasks': { one: '{count} task', other: '{count} tasks' }, 'rs.units': 'Units', 'rs.load': 'Total workload: {load} person-days.',
     'rs.capTooLow': 'Capacity: task {task} is assigned at {units}%; reduce that rate first.', 'rs.order': 'The absence ends before it starts.',
     'rs.absAdded': 'Absence added for {name}; schedule recalculated.',
-    'view.label': 'Search and filters', 'view.search': 'Search', 'view.highlight': 'Highlight', 'view.filters': 'Filters',
+    'view.label': 'View', 'view.search': 'Search', 'view.highlight': 'Highlight', 'view.filters': 'Filters',
     'view.groupBy': 'Group by', 'view.group.none': 'None', 'view.group.res': 'Resource', 'view.group.cat': 'Category', 'view.group.status': 'Status',
     'view.count': '{shown} of {total}', 'view.results': { one: '{count} result', other: '{count} results' },
     'view.groupTotals': '{count} item(s), {dur} d, {pct}%', 'view.noRes': 'No resource', 'view.noCat': 'No category',
@@ -5362,7 +5405,7 @@ const Secure = (() => {
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 89 fonctions (usage général)
+ * Appelée par : 91 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -6695,6 +6738,68 @@ function renderAll() {
   renderLegend();
   Tabs.paint();
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
+}
+
+// ── js/ui/51-disclosure.js ──
+/*
+ * Listes dépliantes des barres (EF-152) : « Fichier ▾ » et « Colonnes ▾ ». Motif « disclosure » (bouton à
+ * aria-expanded qui montre ou cache le panneau placé juste après lui), sans role="menu" : le panneau contient des
+ * boutons et une liste de choix ordinaires, parcourus par Tab. Échap ou un clic au-dehors ferme le panneau ; le
+ * choix d'un bouton du panneau le ferme aussi et place le focus sur le bouton dépliant, pour que la fenêtre ouverte
+ * par ce choix rende ensuite le focus à un élément visible. Un seul panneau ouvert à la fois. Rien n'est enregistré.
+ */
+
+/**
+ * Ferme le panneau ouvert, s'il y en a un, et rend le focus à son bouton si demandé.
+ * Entrée : focusButton, vrai pour rendre le focus au bouton dépliant.
+ * Appelle : $()
+ * Appelée par : action « toggleDisclosure », initDisclosures()
+ */
+function closeDisclosures(focusButton) {
+  for (const btn of document.querySelectorAll('.disc-btn[aria-expanded="true"]')) {
+    btn.setAttribute('aria-expanded', 'false');
+    $(btn.getAttribute('aria-controls')).hidden = true;
+    if (focusButton) btn.focus();
+  }
+}
+
+/**
+ * Déplie ou replie le panneau dont l'identifiant est donné par data-arg ; ferme les autres.
+ * Appelle : $(), closeDisclosures()
+ * Appelée par : l'événement « toggleDisclosure » (table ACTIONS)
+ */
+action('toggleDisclosure', (panelId, btn) => {
+  const open = btn.getAttribute('aria-expanded') !== 'true';
+  closeDisclosures(false);
+  if (!open) return;
+  btn.setAttribute('aria-expanded', 'true');
+  $(panelId).hidden = false;
+});
+
+/**
+ * Écouteurs : Échap, clic au-dehors, focus qui quitte la liste, choix d'un bouton du panneau. Les écouteurs du
+ * clic et du clavier sont posés sur chaque liste, donc appelés avant l'écouteur général des actions (document).
+ * Appelle : closeDisclosures()
+ * Appelée par : init()
+ */
+function initDisclosures() {
+  for (const box of document.querySelectorAll('.disclosure')) {
+    box.addEventListener('keydown', ev => {
+      if (ev.key !== 'Escape' || !box.querySelector('.disc-btn[aria-expanded="true"]')) return;
+      ev.preventDefault(); ev.stopPropagation();
+      closeDisclosures(true);
+    });
+    box.addEventListener('click', ev => {
+      const item = ev.target.closest('.disc-panel button');
+      if (item && box.contains(item)) closeDisclosures(true);
+    });
+    box.addEventListener('focusout', ev => {
+      if (ev.relatedTarget && !box.contains(ev.relatedTarget)) closeDisclosures(false);
+    });
+  }
+  document.addEventListener('pointerdown', ev => {
+    if (!ev.target.closest('.disclosure')) closeDisclosures(false);
+  });
 }
 
 // ── js/ui/52-viewbar.js ──
@@ -12884,7 +12989,7 @@ function initKeyboard() {
 }
 
 /**
- * Appelle : 26 fonctions
+ * Appelle : 27 fonctions
  * Appelée par : (initialisation de 99-main.js)
  */
 function init() {
@@ -12893,6 +12998,7 @@ function init() {
   applyTheme();
   App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
+  initDisclosures();
   initKeyboard();
   Tooltip.init();
   initViewbar();

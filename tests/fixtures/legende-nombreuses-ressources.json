@@ -525,14 +525,12 @@
       "id": "T31",
       "name": "Tâche fictive 31",
       "dur": 3,
-      "res": "Personne Alpha",
       "cat": "Catégorie 7"
     },
     {
       "id": "T32",
       "name": "Tâche fictive 32",
       "dur": 4,
-      "res": "Personne Bravo",
       "cat": "Catégorie 8",
       "deps": [
         "T31"
@@ -542,7 +540,6 @@
       "id": "T33",
       "name": "Tâche fictive 33",
       "dur": 5,
-      "res": "Personne Charlie",
       "cat": "Catégorie 9",
       "deps": [
         "T32"
@@ -552,7 +549,6 @@
       "id": "T34",
       "name": "Tâche fictive 34",
       "dur": 6,
-      "res": "Personne Delta",
       "cat": "Catégorie 10",
       "deps": [
         "T33"
@@ -562,7 +558,6 @@
       "id": "T35",
       "name": "Tâche fictive 35",
       "dur": 7,
-      "res": "Personne Echo",
       "cat": "Catégorie 11",
       "deps": [
         "T34"
@@ -572,7 +567,6 @@
       "id": "T36",
       "name": "Tâche fictive 36",
       "dur": 3,
-      "res": "Personne Foxtrot",
       "cat": "Catégorie 12",
       "deps": [
         "T35"
@@ -582,14 +576,12 @@
       "id": "T37",
       "name": "Tâche fictive 37",
       "dur": 4,
-      "res": "Personne Golf",
       "cat": "Catégorie 1"
     },
     {
       "id": "T38",
       "name": "Tâche fictive 38",
       "dur": 5,
-      "res": "Personne Hotel",
       "cat": "Catégorie 2",
       "deps": [
         "T37"
@@ -599,7 +591,6 @@
       "id": "T39",
       "name": "Tâche fictive 39",
       "dur": 6,
-      "res": "Personne India",
       "cat": "Catégorie 3",
       "deps": [
         "T38"
@@ -609,7 +600,6 @@
       "id": "T40",
       "name": "Tâche fictive 40",
       "dur": 7,
-      "res": "Personne Juliett",
       "cat": "Catégorie 4",
       "deps": [
         "T39"
@@ -619,7 +609,6 @@
       "id": "T41",
       "name": "Tâche fictive 41",
       "dur": 3,
-      "res": "Personne Kilo",
       "cat": "Catégorie 5",
       "deps": [
         "T40"
@@ -629,7 +618,6 @@
       "id": "T42",
       "name": "Tâche fictive 42",
       "dur": 4,
-      "res": "Personne Lima",
       "cat": "Catégorie 6",
       "deps": [
         "T41"
@@ -639,14 +627,12 @@
       "id": "T43",
       "name": "Tâche fictive 43",
       "dur": 5,
-      "res": "Personne Mike",
       "cat": "Catégorie 7"
     },
     {
       "id": "T44",
       "name": "Tâche fictive 44",
       "dur": 6,
-      "res": "Personne November",
       "cat": "Catégorie 8",
       "deps": [
         "T43"
@@ -656,7 +642,6 @@
       "id": "T45",
       "name": "Tâche fictive 45",
       "dur": 7,
-      "res": "Personne Oscar",
       "cat": "Catégorie 9",
       "deps": [
         "T44"
@@ -666,7 +651,6 @@
       "id": "T46",
       "name": "Tâche fictive 46",
       "dur": 3,
-      "res": "Personne Papa",
       "cat": "Catégorie 10",
       "deps": [
         "T45"
@@ -676,7 +660,6 @@
       "id": "T47",
       "name": "Tâche fictive 47",
       "dur": 4,
-      "res": "Personne Quebec",
       "cat": "Catégorie 11",
       "deps": [
         "T46"
@@ -686,7 +669,6 @@
       "id": "T48",
       "name": "Tâche fictive 48",
       "dur": 5,
-      "res": "Personne Romeo",
       "cat": "Catégorie 12",
       "deps": [
         "T47"
@@ -696,14 +678,12 @@
       "id": "T49",
       "name": "Tâche fictive 49",
       "dur": 6,
-      "res": "Personne Sierra",
       "cat": "Catégorie 1"
     },
     {
       "id": "T50",
       "name": "Tâche fictive 50",
       "dur": 7,
-      "res": "Personne Tango",
       "cat": "Catégorie 2",
       "deps": [
         "T49"
@@ -713,7 +693,6 @@
       "id": "T51",
       "name": "Tâche fictive 51",
       "dur": 3,
-      "res": "Personne Uniform",
       "cat": "Catégorie 3",
       "deps": [
         "T50"
@@ -723,7 +702,6 @@
       "id": "T52",
       "name": "Tâche fictive 52",
       "dur": 4,
-      "res": "Personne Victor",
       "cat": "Catégorie 4",
       "deps": [
         "T51"
@@ -733,7 +711,6 @@
       "id": "T53",
       "name": "Tâche fictive 53",
       "dur": 5,
-      "res": "Personne Whiskey",
       "cat": "Catégorie 5",
       "deps": [
         "T52"
@@ -743,7 +720,6 @@
       "id": "T54",
       "name": "Tâche fictive 54",
       "dur": 6,
-      "res": "Personne Xray",
       "cat": "Catégorie 6",
       "deps": [
         "T53"
@@ -753,14 +729,12 @@
       "id": "T55",
       "name": "Tâche fictive 55",
       "dur": 7,
-      "res": "Personne Yankee",
       "cat": "Catégorie 7"
     },
     {
       "id": "T56",
       "name": "Tâche fictive 56",
       "dur": 3,
-      "res": "Personne Zulu",
       "cat": "Catégorie 8",
       "deps": [
         "T55"
@@ -770,7 +744,6 @@
       "id": "T57",
       "name": "Tâche fictive 57",
       "dur": 4,
-      "res": "Personne Atlas",
       "cat": "Catégorie 9",
       "deps": [
         "T56"
@@ -780,7 +753,6 @@
       "id": "T58",
       "name": "Tâche fictive 58",
       "dur": 5,
-      "res": "Personne Borée",
       "cat": "Catégorie 10",
       "deps": [
         "T57"
@@ -790,7 +762,6 @@
       "id": "T59",
       "name": "Tâche fictive 59",
       "dur": 6,
-      "res": "Personne Cyan",
       "cat": "Catégorie 11",
       "deps": [
         "T58"
@@ -800,7 +771,6 @@
       "id": "T60",
       "name": "Tâche fictive 60",
       "dur": 7,
-      "res": "Personne Dune",
       "cat": "Catégorie 12",
       "deps": [
         "T59"

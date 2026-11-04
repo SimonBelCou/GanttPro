@@ -102,7 +102,7 @@ Départ : importez `projet-exemple.json`.
 
 Départ : `projet-exemple.json` ouvert.
 
-- [ ] 1. **+ Ajouter tâche**. *Attendu :* une ligne apparaît, l'édition s'ouvre, le nom est prêt à être saisi ;
+- [ ] 1. **+ Tâche** (groupe **Créer**). *Attendu :* une ligne apparaît, l'édition s'ouvre, le nom est prêt à être saisi ;
   l'identifiant proposé est libre (A).
 - [ ] 2. Saisissez une durée `0` puis **Enregistrer**. *Attendu :* refus avec le message « Durée (jours ouvrés) :
   entier de 1 à 3 650. » sous le champ ; le curseur y va ; rien n'est enregistré.
@@ -824,7 +824,7 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 
 ## Partie B — Ergonomie de l'écran principal
 
-Exigences : EF-46, EF-111, EF-151, 4.1, 4.4 ; décisions A.9. Fichier : `legende-nombreuses-ressources.json` (30 ressources
+Exigences : EF-46, EF-111, EF-151, EF-152, 4.1, 4.2, 4.4 ; décisions A.9. Fichier : `legende-nombreuses-ressources.json` (30 ressources
 et 12 catégories fictives, 60 tâches).
 
 ### Écran 1 — La légende reste en bas de la fenêtre (EF-151)
@@ -851,6 +851,28 @@ Départ : comme Écran 1.
 - [ ] 1. Zoom du navigateur à 200 % (Ctrl + +) sur un écran de 1280 × 720 ou moins. *Attendu :* la page défile normalement ; la légende est sous le Gantt ; aucun défilement horizontal de la page.
 - [ ] 2. Mode téléphone des outils du navigateur (360 px de large). *Attendu :* même chose ; liste puis Gantt l'un sous l'autre.
 - [ ] 3. Revenez à 100 % puis lancez l'impression du Gantt (**Imprimer le Gantt**). *Attendu :* l'aperçu est le même qu'avant cette mise à jour.
+
+### Écran 4 — Trois barres par thème (EF-152, 4.2)
+
+Départ : comme Écran 1.
+
+- [ ] 1. Lisez la barre du projet. *Attendu :* nom du projet, « Début projet », Annuler, Rétablir, **Fichier ▾**, puis à droite Thème, English, ⚙, ?.
+- [ ] 2. Lisez la deuxième barre. *Attendu :* groupes **CRÉER** (+ Tâche, + Jalon, + Récapitulative), **PROJET** (Ressources, Catégories, Étiquettes, Calendrier), **SUIVI** (Baselines, Tableau de bord, Rapport d'état, Versions, Imprimer le Gantt), puis « Charge des ressources ».
+- [ ] 3. Lisez la barre **AFFICHAGE**. *Attendu :* Rechercher, Surligner, Filtres, Grouper par | Liens, Masquer les montants, Étiquettes | − Zoom 100 % + ↺ | Replier la liste, **Colonnes ▾**, Tout replier, Tout déplier, Trier | Plein écran du Gantt.
+- [ ] 4. Cliquez sur le nom du projet, puis appuyez sur Tab plusieurs fois. *Attendu :* le focus suit l'ordre de lecture, barre après barre, de gauche à droite ; il ne passe pas par les choix de « Fichier » tant que la liste est repliée.
+- [ ] 5. Ouvrez `projet-surcharge.json`. *Attendu :* le badge « n conflits » et **Résoudre…** apparaissent dans le groupe Charge ; le bandeau d'alertes s'affiche sans faire sortir la légende de la fenêtre.
+- [ ] 6. Ctrl + clic sur deux lignes de la liste. *Attendu :* la barre de sélection apparaît au-dessus de la liste ; la légende reste en bas de la fenêtre.
+
+### Écran 5 — « Fichier ▾ » et « Colonnes ▾ » au clavier (EF-152)
+
+- [ ] 1. Tab jusqu'à **Fichier ▾**, Entrée. *Attendu :* la liste se déplie (Nouveau, Importer, Exporter, Bibliothèque) ; un lecteur d'écran annonce « développé ».
+- [ ] 2. Tab. *Attendu :* le focus est sur **Nouveau**. Échap. *Attendu :* la liste se replie, le focus revient sur **Fichier ▾** (« réduit »).
+- [ ] 3. Entrée, Tab trois fois jusqu'à **Exporter**, Entrée. *Attendu :* la fenêtre Exporter s'ouvre, la liste est repliée. Échap. *Attendu :* le focus revient sur **Fichier ▾**.
+- [ ] 4. Tab jusqu'à **Colonnes ▾**, Espace, Tab. *Attendu :* le focus est sur **Figer** ; choisissez « La première colonne » : la liste reste dépliée et la colonne N° est figée.
+- [ ] 5. Cliquez ailleurs dans la page. *Attendu :* la liste se replie.
+- [ ] 6. Ctrl + S. *Attendu :* la bibliothèque s'ouvre comme avant (raccourci inchangé).
+- [ ] 7. Passez en anglais (**English**). *Attendu :* « File ▾ », « Create », « Project », « Tracking », « View », « Columns ▾ ».
+
 
 ### Contrôle final de la mise à jour
 

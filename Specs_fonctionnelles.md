@@ -223,14 +223,14 @@ L'application tient sur un seul écran principal ; les fenêtres s'y superposent
 ```mermaid
 flowchart TB
   tabs["Onglets de projets (dix au plus)"]
-  top["Barre du haut : étiquette, début projet, commandes"]
+  top["Barre 1 : projet, historique, Fichier, préférences<br/>Barre 2 : Créer, Projet, Suivi, Charge"]
   nums["Barre de chiffres"]
   alerts["Bandeau d'alertes (masquable)"]
-  search["Recherche et filtres"]
+  search["Barre 3 : affichage (recherche, zoom, liste, plein écran)"]
   sel["Barre de sélection (si plusieurs lignes)"]
   centre["Centre, côte à côte : liste des tâches | grille de Gantt<br/>(défilent ensemble verticalement)"]
   edit["Panneau d'édition (à droite, à la sélection)"]
-  legend["Légende"]
+  legend["Légende (fixée en bas de la fenêtre)"]
   tabs --> top --> nums --> alerts --> search --> sel --> centre --> legend
   edit -.-> centre
   win(["Fenêtres modales : se superposent à l'écran principal"])
@@ -240,7 +240,7 @@ flowchart TB
 
 | Zone | Contenu | Comportement |
 | --- | --- | --- |
-| Barre du haut | Retour à l'accueil (si une page d'accueil est fournie), étiquette du projet, champ « Début projet », commandes (4.2) | Passe sur plusieurs lignes sur un écran étroit |
+| Barres du haut | Barre 1 : projet, historique, « Fichier ▾ », préférences ; barre 2 : Créer, Projet, Suivi, Charge (4.2, EF-152) | Chaque barre passe sur plusieurs lignes sur un écran étroit |
 | Barre de chiffres | Durée, début et fin du planning, jours fériés de la période, chemin critique, avancement global avec sa barre de progression | Mise à jour après chaque modification |
 | Bandeau d'alertes | Conflits de ressource et dates impossibles (EF-30, EF-18), avec les tâches concernées | Masquable par une croix ; rouvert par le badge de la barre du haut |
 | Liste des tâches | Une ligne par tâche ou jalon : N°, activité, durée, dépendances, ressource, statut | Repliable ; colonnes ajustables (EF-43, EF-44) |
@@ -248,38 +248,47 @@ flowchart TB
 | Édition | Formulaire de la tâche sélectionnée (EF-04) | Apparaît à droite à la sélection, se ferme par « Annuler » ou Échap |
 | Légende | Couleurs des catégories et des ressources, symboles, statuts | Fixée en bas de la fenêtre, toujours visible et dépliée ; défile dans sa zone si elle est longue ; repliable en plein écran du Gantt (EF-151) |
 | Onglets de projets | Un onglet par projet ouvert avec une pastille « modifié », et « + » pour en ouvrir un | Dix projets au plus ; chaque onglet garde zoom, filtres, sélection, historique (EF-98) |
-| Recherche et filtres | Champ de recherche, bouton « Filtres », liste « Grouper par », compteur de lignes affichées | Ne change jamais le planning (EF-84 à EF-86) |
+| Barre « Affichage » | Recherche, filtres, « Grouper par », liens, masquage des montants, étiquettes, zoom, liste et « Colonnes ▾ », plein écran, compteur de lignes affichées (4.2) | Ne change jamais le planning (EF-84 à EF-86) |
 | Barre de sélection | « n tâches sélectionnées » et actions groupées | N'apparaît que si plusieurs lignes sont sélectionnées (EF-81, EF-82) |
 
-### 4.2 Commandes de la barre du haut
+### 4.2 Commandes des trois barres
+
+Les commandes sont rangées en trois barres par thème (EF-152, A.9 ligne 4) ; tout reste visible, sauf le contenu des deux
+listes dépliantes « Fichier ▾ » et « Colonnes ▾ ». L'ordre ci-dessous est l'ordre de lecture et de tabulation.
+
+**Barre 1 — projet et fichier**
 
 | Libellé | Action | Référence |
 | --- | --- | --- |
 | ← Accueil | Revient à la page d'accueil fournie ; absent si aucune n'est fournie | EF-56 |
 | Étiquette du projet (emoji et nom) | Ouvre la fenêtre de modification du projet | EF-48 |
 | Début projet | Champ date : recalcule le planning | EF-12 |
-| + Ajouter tâche, + Ajouter jalon | Créent une tâche ou un jalon | EF-01, EF-02 |
-| Trier | Range la liste selon les dépendances (barre de recherche, avec « Tout replier », « Tout déplier » et « Replier la liste ») | EF-09 |
-| Ressources, Catégories, Baselines | Ouvrent les fenêtres de gestion | EF-24, EF-27, EF-33 |
-| Tableau de bord | Ouvre indicateurs, courbe en S, charge des ressources et tableau de suivi | EF-37 à EF-40, EF-87 |
-| Liens : ON/OFF | Affiche ou masque les flèches de dépendance | EF-45 |
-| −, niveau de zoom, +, ↺ | Zoom de la grille | EF-41 |
-| Annuler, Rétablir | Annulent ou rétablissent la dernière modification | EF-55 |
-| Versions | Ouvre l'historique des versions | EF-54 |
-| n conflit(s), Résoudre… | Badge d'alerte et correction automatique | EF-30, EF-31 |
-| Charge des ressources | Liste : nivellement automatique, lissage dans la marge, sans nivellement | EF-105 |
-| Nouveau, Importer, Exporter | Gestion du fichier du projet | EF-49, EF-52, EF-92, EF-96 |
-| Sauvegarder | Sauvegarde le projet pour la page d'accueil ; absent si aucune n'est fournie | EF-56 |
-| Thème, Aide | Bascule clair ou sombre ; ouvre l'aide | EF-47, EF-57 |
-| + Ajouter récapitulative | Crée une tâche récapitulative | EF-59 |
-| Mettre en retrait, Remonter | Change le niveau de la tâche ou de la sélection dans la hiérarchie (boutons de l'édition et de la barre de sélection) | EF-60 |
-| Dupliquer | Copie la tâche ou la sélection (édition, barre de sélection, Ctrl + D) | EF-80 |
-| Calendrier | Ouvre le calendrier du projet | EF-69 |
-| Rapport d'état, Imprimer le Gantt | Ouvrent l'aperçu du rapport et l'impression du Gantt | EF-88, EF-89 |
-| Bibliothèque | Ouvre les projets et modèles enregistrés sur l'appareil | EF-99, EF-100 |
-| Réglages (engrenage) | Langue, thème, sauvegarde automatique, effacement des données | EF-104 |
-| Étiquettes | Ouvre la liste des étiquettes du projet (renommer, supprimer partout) | EF-91 |
-| Masquer les montants | Bouton à bascule : remplace tous les montants affichés à l'écran par « •••• » ; sans effet sur les fichiers, l'impression et la copie | EF-126, RG-41 |
+| Indicateur d'enregistrement | État de la sauvegarde automatique, si elle est activée | EF-101 |
+| Annuler, Rétablir (groupe « Historique ») | Annulent ou rétablissent la dernière modification | EF-55 |
+| Fichier ▾ : Nouveau, Importer, Exporter, Bibliothèque, Sauvegarder (page d'accueil) | Gestion du fichier du projet ; « Sauvegarder » est absent si aucune page d'accueil n'est fournie | EF-49, EF-52, EF-56, EF-92, EF-96, EF-99, EF-100 |
+| Thème, English / Français, Réglages (engrenage), Aide (groupe « Préférences ») | Bascule clair ou sombre ; langue ; réglages de l'appareil ; aide | EF-47, EF-57, EF-104 |
+
+**Barre 2 — commandes**
+
+| Groupe | Libellés | Référence |
+| --- | --- | --- |
+| Créer | + Tâche, + Jalon, + Récapitulative | EF-01, EF-02, EF-59 |
+| Projet | Ressources, Catégories, Étiquettes, Calendrier | EF-24, EF-27, EF-91, EF-69 |
+| Suivi | Baselines, Tableau de bord, Rapport d'état, Versions, Imprimer le Gantt | EF-33, EF-37 à EF-40, EF-87, EF-88, EF-54, EF-89 |
+| Charge | Charge des ressources (nivellement, lissage, sans nivellement), badge « n conflit(s) », Résoudre… | EF-105, EF-30, EF-31 |
+
+**Barre 3 — affichage** (en tête de la zone de planning)
+
+| Groupe | Libellés | Référence |
+| --- | --- | --- |
+| Rechercher et filtrer | Rechercher, Surligner, Filtres, Grouper par | EF-84 à EF-86 |
+| Afficher | Liens : ON/OFF, Masquer les montants (bouton à bascule : « •••• » à l'écran, sans effet sur les fichiers, l'impression et la copie), Étiquettes | EF-45, EF-126, RG-41 |
+| Zoom | −, niveau de zoom, +, ↺ | EF-41 |
+| Liste des tâches | Replier la liste ; Colonnes ▾ (Figer, Choisir les colonnes…, Largeurs par défaut) ; Tout replier, Tout déplier ; Trier | EF-43, EF-110, EF-143 à EF-146, EF-109, EF-09 |
+| — | Plein écran du Gantt | EF-111 |
+
+Les boutons Mettre en retrait, Remonter et Dupliquer sont dans l'édition et la barre de sélection (EF-60, EF-80). Les
+fenêtres qui affichent des montants (Tableau de bord, Baselines, Rapport d'état) gardent leur propre bouton de masquage.
 
 ### 4.3 Fenêtres et messages
 
@@ -359,7 +368,7 @@ Chaque fonctionnalité décrit ce que l'utilisateur peut faire et ce qu'il doit 
 | EF-107 | **Fermer une fenêtre par une croix** : chaque fenêtre porte, en haut à droite, un bouton rond « × » au nom accessible « Fermer », atteignable au clavier juste après le titre ; il fait comme la touche Échap. Les fenêtres à effet immédiat (ressources, tableau de bord, versions…) se ferment sans question. Une fenêtre de saisie déclarée à risque (modification en masse, calendrier) dont la saisie serait perdue demande d'abord confirmation : « Fermer sans enregistrer ? », avec « Continuer la saisie » par défaut. Le bouton « Annuler » ferme toujours directement. | Should |
 | EF-108 | Régler la largeur de la liste : une barre verticale (rôle « separator », focalisable, large de 24 px sur écran tactile) sépare la liste du Gantt. On la tire, ou on utilise les flèches gauche et droite (20 px, Maj : 100 px) ; Début ou double-clic rétablit la largeur automatique. La liste et le Gantt gardent au moins 200 px chacun ; la valeur est annoncée (aria-valuenow). Masquée en dessous de 900 px de large, où liste et Gantt sont l'un sous l'autre. | Should |
 | EF-109 | Largeur des colonnes à volonté (complète EF-44) : la poignée de chaque en-tête fait 12 px de large et les maximums passent à 300 px (identifiant, durée), 1 000 px (nom), 800 px (prédécesseurs, ressources) et 500 px (statut). Début ou double-clic sur la poignée rétablit la colonne ; le bouton « Colonnes par défaut » les rétablit toutes. | Should |
-| EF-110 | Figer des colonnes : le choix « Figer » de la barre de recherche garde à gauche, pendant le défilement horizontal de la liste, aucune colonne, l'identifiant, ou l'identifiant et le nom. Les colonnes figées gardent la couleur de sélection et l'entête reste figé aussi. Par défaut : aucune. | Could |
+| EF-110 | Figer des colonnes : le choix « Figer » de la liste « Colonnes ▾ » (EF-152) garde à gauche, pendant le défilement horizontal de la liste, aucune colonne, l'identifiant, ou l'identifiant et le nom. Les colonnes figées gardent la couleur de sélection et l'entête reste figé aussi. Par défaut : aucune. | Could |
 | EF-111 | Plein à l'écran du Gantt : le bouton « Plein écran du Gantt » (aria-pressed) donne toute la fenêtre à la liste et au Gantt ; le reste de la page est masqué et inerte (ni focus, ni lecture), sauf la légende, qui reste en bas et se replie par son titre (EF-151). Une barre, entre le Gantt et la légende, offre zoom avant, zoom arrière et « Quitter le plein écran » ; Échap quitte (après la fermeture d'une fenêtre ou de l'édition ouverte). Le focus va sur « Quitter » à l'entrée et revient sur le bouton à la sortie. Le mode occupe la fenêtre du navigateur, sans utiliser l'API de plein écran du navigateur (F11 fait le reste). | Should |
 
 ### 5.7 Baselines
@@ -392,6 +401,7 @@ Chaque fonctionnalité décrit ce que l'utilisateur peut faire et ce qu'il doit 
 | EF-46 | **Légende** sous le Gantt, fixée en bas de la fenêtre (EF-151) : catégories, ressources, barre critique, date imposée, jalon, baseline, statuts. | Should |
 | EF-151 | **Légende fixée en bas de la fenêtre** (A.9, ligne 1). Vue normale : la légende est toujours visible et toujours dépliée, sous le Gantt, au bas de la fenêtre ; la liste et le Gantt prennent toute la hauteur restante (12 rem au moins), leurs barres de défilement horizontales restent au-dessus de la légende (EX-29). Une légende longue (nombreuses ressources ou catégories) est limitée à 9 rem ou un quart de la hauteur de la fenêtre et défile dans sa zone, atteignable au clavier (Tab, puis flèches). Une longue liste d'alertes défile de même dans son bandeau. Plein écran du Gantt (EF-111) : la légende reste visible en bas et se replie ou se déplie par son titre « Légende » (bouton, `aria-expanded`) ; à la sortie du plein écran, elle est de nouveau dépliée. En dessous de 901 × 560 px, flux ordinaire (4.4). L'impression n'est pas modifiée. | Should |
 | EF-47 | **Thèmes** clair et sombre, avec bascule dans la barre du haut. Le choix est mémorisé sur l'appareil, sans cookie ; sans choix, le thème suit le système. | Should |
+| EF-152 | **Trois barres par thème** (A.9, ligne 4 ; détail en 4.2). Barre 1 : projet, indicateur d'enregistrement, Annuler / Rétablir, « Fichier ▾ », thème, langue, réglages, aide. Barre 2 : Créer, Projet, Suivi, Charge. Barre 3 « Affichage » : recherche et filtres, liens, masquage des montants, étiquettes, zoom, liste et « Colonnes ▾ », plein écran. Chaque groupe est un `div role="group"` avec un nom traduit (pas de `role=toolbar` sur la barre) ; l'ordre du DOM est l'ordre visuel (WCAG 2.4.3) ; les raccourcis restent annoncés (`aria-keyshortcuts`). « Fichier ▾ » et « Colonnes ▾ » sont des boutons qui déplient une liste (motif « disclosure », `aria-expanded`, sans `role=menu`) : Entrée ou Espace la déplie, Tab la parcourt, Échap la replie et rend le focus au bouton, un clic au-dehors la replie ; un choix la replie et la fenêtre ouverte rend ensuite le focus au bouton dépliant ; une seule liste est dépliée à la fois. La barre de sélection et le bandeau d'alertes prennent place au-dessus du planning sans pousser la légende hors de la fenêtre (EF-151). | Should |
 
 ### 5.10 Projet, fichiers et versions
 
@@ -728,7 +738,7 @@ Ces exigences s'appliquent à toutes les fonctionnalités de la section 5.
 | EX-37 | Courbe des coûts : le réel cumule le coût réel des tâches terminées ; une tâche terminée sans fin réelle compte dans la période en cours, ou dans la dernière période si la date du jour dépasse la grille (correction RG-20/RG-38). Option « Inclure le coût réel des tâches en cours » (EF-129, décochée par défaut) : ajoute le coût engagé des tâches non terminées à la période en cours. Recette : Budget 14 étapes 1 à 3 ; tests core budget. | Should |
 | EX-38 | Bouton « Masquer les montants » dans l'en-tête des fenêtres Tableau de bord, Baselines et Rapport d'état (EF-130) : même réglage que la barre du haut (RG-41), fenêtre redessinée sans fermeture, focus conservé. Recette : Budget 14 étapes 4 et 5. | Should |
 | EX-39 | Étape B, valeur acquise (EF-131 à EF-142, décisions A.8 lignes 12, 14 et 15). EF-131 à EF-133 : dix baselines au plus dont trois affichées par vue, baseline initiale protégée, baseline de référence enregistrée dans le projet. EF-134 à EF-138 : dans l'onglet Budget, PV, EV, AC, CV, SV, CPI, SPI à la date du jour, avec « non calculable » et sa raison. EF-139, EF-140 : seuils des voyants et ETC dans les réglages du projet. EF-141 : points de situation sur geste explicite. EF-142 : prévision à terminaison (trois hypothèses, VAC), diagramme CPI / SPI et bloc du rapport d'état (indices visibles sans montants). Recette : Budget 15 à 20. Reste à proposer : courbes PV / EV / AC dans le temps. | Must |
-| EX-40 | Colonnes de la liste (EF-143 à EF-146, A.8 ligne 17). EF-143 : bouton « Colonnes… » ouvrant une fenêtre qui affiche, masque et ordonne les 12 colonnes (clavier compris, changement annoncé, focus conservé). EF-144 : le choix est enregistré dans le projet et dans son export, annulable comme une modification. EF-145 : identifiant et nom obligatoires ; Budget et Coût réel masquées tant que le projet n'a aucun montant. EF-146 : « Figer » s'applique aux premières colonnes affichées. Recette : Colonnes 1. | Should |
+| EX-40 | Colonnes de la liste (EF-143 à EF-146, A.8 ligne 17). EF-143 : choix « Choisir les colonnes… » de la liste « Colonnes ▾ » (EF-152) ouvrant une fenêtre qui affiche, masque et ordonne les 12 colonnes (clavier compris, changement annoncé, focus conservé). EF-144 : le choix est enregistré dans le projet et dans son export, annulable comme une modification. EF-145 : identifiant et nom obligatoires ; Budget et Coût réel masquées tant que le projet n'a aucun montant. EF-146 : « Figer » s'applique aux premières colonnes affichées. Recette : Colonnes 1. | Should |
 | EX-41 | Taux des ressources, étape C (EF-147 à EF-150, A.8 lignes 18 et 19). EF-147 : fenêtre « Profils de coût » (un profil porte un taux moyen par jour ouvré, fixé par la comptabilité) ; colonnes « Profil de coût » et « Taux par jour » dans la fenêtre Ressources, seulement si le projet a un profil ou un taux. EF-148 : lignes de taux datées (« à partir du », 10 au plus, une par date) pour un profil, et taux nominatif facultatif par ressource qui remplace celui du profil. EF-149 : coût des ressources (jours ouvrés × taux d'occupation × taux du jour) dans la fiche de tâche, la fiche de ressource et l'onglet Budget (tableau par ressource, comparaison au BAC saisi, coût réel estimé, total partiel) ; le budget saisi reste la référence du BAC et de l'EVM. EF-150 : exports JSON, Excel et CSV, avec « Inclure les montants » seulement, sans taux nominatif ni coût par ressource dans un export sans noms de personnes, jamais vers MS Project. Recette : Taux 1 à 10. | Should |
 
 ## 8. Fichiers d'échange
@@ -1137,6 +1147,7 @@ Demande du propriétaire du produit (`docs/reprise-budget.md` §7) : l'écran es
 | --- | --- | --- |
 | 1. Légende | Fixée en bas de la fenêtre, toujours visible et toujours dépliée dans la vue normale ; la zone liste + Gantt prend toute la hauteur restante. En plein écran du Gantt, visible et repliable. Technique : colonne flexible sur la hauteur de la fenêtre (`100dvh`), sans `position: fixed` ni `sticky` (qui recouvriraient les barres de défilement, EX-29), seulement à partir de 901 × 560 px ; flux ordinaire en dessous (EX-04) ; impression inchangée. La mesure de hauteur en JavaScript (`applyPlannerHeight`) est retirée. | 4.1, 4.4, EF-46, EF-111, EF-151 ; `10-base.css` (« Écran fixe »), `66-layout.js`. |
 | 2. Seuil | 901 px de large (et non 900) : à 900 px exactement, la règle existante des écrans étroits (`max-width: 900px`, liste et Gantt empilés) s'applique déjà ; les deux mises en page ne doivent pas se superposer. | 4.4. |
+| 4. Boutons : variante 1 | Trois barres par thème, tout reste visible : (1) projet (nom, début), indicateur d'enregistrement, Annuler / Rétablir, Fichier ▾ (Nouveau, Importer, Exporter, Bibliothèque, Sauvegarder pour la page d'accueil), Thème, Langue, ⚙, ? ; (2) Créer (+ Tâche, + Jalon, + Récapitulative) · Projet (Ressources, Catégories, Étiquettes, Calendrier) · Suivi (Baselines, Tableau de bord, Rapport d'état, Versions, Imprimer le Gantt) · Charge (liste, alertes, Résoudre) ; (3) Affichage : Rechercher, Filtres, Grouper par · Liens, Masquer les montants, Étiquettes · zoom − 100 % + ↺ · Liste, Colonnes ▾ (Figer, Choisir les colonnes, Largeurs par défaut), Tout replier / Tout déplier, Trier · Plein écran. « Fichier ▾ » et « Colonnes ▾ » suivent le motif « disclosure ». Les fenêtres qui masquent les montants gardent leur bouton. Choix de rédaction : les libellés de création sont raccourcis (« + Tâche ») puisque le groupe « Créer » les nomme ; les titres des messages gardent « + Ajouter tâche ». | 4.1, 4.2, EF-152 ; `src/index.html`, `51-disclosure.js`, `10-base.css`. |
 | 3. Hors chantier | La mémorisation de la mise en page (option désactivée par défaut, effaçable dans les réglages) et la hauteur réglable de la zone de planning sont en attente de décision. | Rien n'est enregistré ; aucune poignée de hauteur. |
 
 ## Annexe B. Glossaire français - anglais

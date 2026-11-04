@@ -13,13 +13,16 @@ GanttPro planifie un projet en jours ouvrés, calcule les dates, le chemin criti
 | Zone | Ce qu'elle contient |
 | --- | --- |
 | Onglets de projets | Un onglet par projet ouvert (dix au plus), un point ● s'il a des modifications non enregistrées, « + » pour en ouvrir un autre |
-| Barre du haut | Nom du projet, « Début projet », et toutes les commandes : ajout, fenêtres de gestion, annuler, zoom, gestion de la charge, fichiers, thème, langue, réglages, aide |
+| Barre du projet | Nom du projet, « Début projet », Annuler / Rétablir, **Fichier ▾** (Nouveau, Importer, Exporter, Bibliothèque), thème, langue, réglages ⚙, aide ? |
+| Barre des commandes | **Créer** (+ Tâche, + Jalon, + Récapitulative), **Projet** (Ressources, Catégories, Étiquettes, Calendrier), **Suivi** (Baselines, Tableau de bord, Rapport d'état, Versions, Imprimer le Gantt), **Charge** (gestion de la charge, badge des conflits, Résoudre…) |
 | Barre de chiffres | Durée, début, fin, jours fériés et chômés, chemin critique, avancement global |
 | Bandeau d'alertes | Conflits de ressources et avertissements de dates ; se masque par ✕ et se rouvre par le badge « n conflits » |
-| Barre de recherche | Recherche, filtres, « Grouper par », étiquettes, tout replier ou déplier, trier, replier la liste |
+| Barre « Affichage » | Recherche, filtres, « Grouper par » ; liens, masquer les montants, étiquettes ; zoom ; replier la liste, **Colonnes ▾** (Figer, Choisir les colonnes…, Largeurs par défaut), tout replier ou déplier, trier ; plein écran du Gantt |
 | Liste des tâches et grille de Gantt | Une ligne par tâche à gauche, sa barre à droite ; les deux défilent ensemble |
 | Légende | Catégories, symboles, ressources et statuts ; toujours visible en bas de la fenêtre |
 | Édition | Panneau à droite qui s'ouvre quand on choisit une tâche |
+
+**Les listes « Fichier ▾ » et « Colonnes ▾ ».** Un clic (ou Entrée, Espace) déplie la liste sous le bouton ; Tab parcourt ses choix ; Échap, ou un clic ailleurs, la replie. Après un choix, la liste se replie d'elle-même.
 
 ![Écran principal avec le projet d'exemple Atlas : barre du haut, chiffres, alertes, liste et grille](img/02-principal.png)
 
@@ -48,7 +51,7 @@ Le planning se construit avec trois types d'éléments : la **tâche** (un trava
 
 ### Ajouter
 
-« + Ajouter tâche », « + Ajouter jalon » ou « + Ajouter récapitulative » crée l'élément aussitôt et ouvre son édition, le nom prêt à être saisi. L'identifiant est proposé dans la suite A, B… Z, AA, AB. Si une récapitulative est sélectionnée, l'élément s'y range. « Annuler » (Ctrl + Z) retire un ajout fait par erreur.
+Dans le groupe **Créer**, « + Tâche », « + Jalon » ou « + Récapitulative » crée l'élément aussitôt et ouvre son édition, le nom prêt à être saisi. L'identifiant est proposé dans la suite A, B… Z, AA, AB. Si une récapitulative est sélectionnée, l'élément s'y range. « Annuler » (Ctrl + Z) retire un ajout fait par erreur.
 
 ### Modifier
 
@@ -83,7 +86,7 @@ Un clic sur le nom d'une ligne, sur sa barre ou son jalon (ou Entrée au clavier
 ### Réordonner, trier, dupliquer, supprimer
 
 - **Monter / Descendre** dans l'édition, ou glisser-déposer une ligne de la liste. Une récapitulative se déplace avec tout son contenu. L'ordre compte : à charge égale, la tâche la plus haute passe en premier.
-- **Trier** (barre de recherche) range la liste pour que chaque prédécesseur soit avant ses successeurs, après une confirmation qui rappelle cet effet sur la priorité.
+- **Trier** (barre « Affichage ») range la liste pour que chaque prédécesseur soit avant ses successeurs, après une confirmation qui rappelle cet effet sur la priorité.
 - **Dupliquer** (Ctrl + D) place une copie « (copie) » juste dessous, sans avancement, dates réelles ni commentaires ; une récapitulative est copiée avec tout son contenu.
 - **Supprimer** (bouton ou Suppr) demande une confirmation qui nomme la tâche (ou, pour plusieurs, les cinq premières puis le nombre des autres) et compte les tâches qui perdront un prédécesseur. Pour une récapitulative, vous choisissez de supprimer aussi ses tâches ou de les conserver. La touche Suppr agit sur ce qui est **sélectionné** ; la ligne qui a le focus n'est visée que s'il n'y a aucune sélection, et elle ne remplace jamais une sélection existante.
 
@@ -204,9 +207,9 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 - **Largeur de la liste.** Tirez la barre verticale qui sépare la liste du Gantt (au doigt, elle est plus large), ou placez-vous dessus et utilisez les flèches gauche et droite (Maj : par pas de 100 px). Un double-clic, ou la touche Début, rétablit la largeur automatique. La liste garde au moins 200 px, le Gantt aussi.
 - **Colonnes de dates.** Après la durée, la liste affiche **Début**, **Fin** (dates prévues calculées), **Début réel** et **Fin réel** (saisies dans la fiche ; vides sinon). Ajouter une ligne sous une récapitulative déjà au cinquième niveau est refusé avec un message, au lieu de la placer en tête de liste.
 - **Saisie.** Dans une fiche, le texte d'un champ est sélectionné quand vous y arrivez : le premier caractère tapé remplace l'ancien contenu.
-- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit la largeur par défaut de cette colonne (les autres gardent la leur) ; **Largeurs par défaut** rétablit toutes les largeurs.
-- **Choisir et ordonner les colonnes.** Le bouton **Colonnes…** ouvre la liste des 12 colonnes : cochez celles à afficher, et déplacez-les avec les boutons ↑ et ↓ (au clavier comme à la souris). L'identifiant et le nom sont obligatoires : ils ne se masquent pas, mais se déplacent. Le choix est **enregistré dans le projet** (et dans son export), s'annule comme une modification, et **Rétablir l'ordre d'origine** le retire. Sans choix, Budget et Coût réel n'apparaissent que si le projet contient un montant.
-- **Figer des colonnes.** Le choix **Figer** de la barre de recherche garde à l'écran la première colonne, ou les deux premières, de la liste telle que vous l'avez ordonnée, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
+- **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit la largeur par défaut de cette colonne (les autres gardent la leur) ; **Largeurs par défaut** (liste **Colonnes ▾**) rétablit toutes les largeurs.
+- **Choisir et ordonner les colonnes.** **Choisir les colonnes…** (liste **Colonnes ▾**) ouvre la liste des 12 colonnes : cochez celles à afficher, et déplacez-les avec les boutons ↑ et ↓ (au clavier comme à la souris). L'identifiant et le nom sont obligatoires : ils ne se masquent pas, mais se déplacent. Le choix est **enregistré dans le projet** (et dans son export), s'annule comme une modification, et **Rétablir l'ordre d'origine** le retire. Sans choix, Budget et Coût réel n'apparaissent que si le projet contient un montant.
+- **Figer des colonnes.** Le choix **Figer** de la liste **Colonnes ▾** garde à l'écran la première colonne, ou les deux premières, de la liste telle que vous l'avez ordonnée, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
 - **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière, le bouton **Quitter le plein écran** (ou Échap) et la légende, repliable par son titre. Le reste de la page est masqué pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
 - Ces réglages valent pour la session : ils ne sont pas enregistrés dans le projet ni dans le navigateur.
 
@@ -246,7 +249,7 @@ Recherche, filtres et regroupements changent seulement ce qui est affiché : auc
 - **Rechercher** : la touche « / » place le curseur dans le champ. GanttPro garde les tâches qui contiennent tous les mots saisis, sans tenir compte des majuscules ni des accents, dans l'identifiant, le nom, les ressources, la catégorie, les étiquettes et les notes. Les autres lignes sont masquées, ou seulement atténuées si vous cochez « Surligner ». Entrée et Maj + Entrée passent au résultat suivant ou précédent ; Échap vide le champ.
 - **Filtres** : statut, ressource (y compris « sans ressource »), catégorie, étiquette, type, « critiques seulement », « en conflit ou avec avertissement », période. Plusieurs valeurs d'un même critère s'additionnent ; plusieurs critères se cumulent. Les filtres actifs deviennent des pastilles qu'un clic retire, et le compteur indique par exemple « 7 sur 41 ». La barre de chiffres précise alors qu'elle porte sur le projet entier.
 - **Grouper par** ressource, catégorie ou statut : chaque groupe a un en-tête repliable avec son nombre de tâches, sa durée totale et son avancement. Une tâche à deux ressources figure dans les deux groupes. Par ressource, les absences sont hachurées sur l'en-tête. La hiérarchie est suspendue tant qu'on regroupe : monter, descendre et changer de niveau sont alors indisponibles.
-- **Étiquettes** (case de la barre de recherche) affiche les étiquettes en pastilles dans la liste ; le bouton « Étiquettes » de la barre du haut les liste avec leur nombre d'usages, pour les renommer ou les supprimer partout.
+- **Étiquettes** (case de la barre « Affichage ») affiche les étiquettes en pastilles dans la liste ; le bouton « Étiquettes » de la barre du haut les liste avec leur nombre d'usages, pour les renommer ou les supprimer partout.
 
 ![Liste filtrée sur « En retard » et regroupée par ressource, pastilles de filtres et compteur](img/13-filtres-groupes.png)
 
@@ -281,7 +284,7 @@ Chaque tâche peut recevoir un **budget** (ce qu'elle doit coûter) et un **coû
 
 - **Format** : un montant en unités, deux décimales au plus (`1 234,56` ou `1234.56`), jamais négatif, `50 000 000 000,00` au plus. Un montant refusé est expliqué sous le champ.
 - **Devise et provision** : dans les réglages du projet (clic sur son nom), le symbole de la devise (1 à 5 caractères, `€` par défaut) et une **provision globale**, réserve de budget qui n'appartient à aucune tâche. Le budget total est le BAC (somme des budgets des tâches) plus la provision.
-- **Liste** : les colonnes « Budget » et « Coût réel » apparaissent dès qu'un montant existe (ou si vous les avez choisies avec **Colonnes…**) et affichent chacune leur montant (elles se redimensionnent séparément). À partir de 1 000 000,00, la liste et l'axe de la courbe passent en forme abrégée (français : `1,23 M €`, `2,5 Md €` ; anglais : `€1.23M`, `€2.5B`) ; la fiche, les tableaux et les fichiers gardent toujours le montant complet. Une récapitulative affiche la somme de ses tâches.
+- **Liste** : les colonnes « Budget » et « Coût réel » apparaissent dès qu'un montant existe (ou si vous les avez choisies avec **Choisir les colonnes…**) et affichent chacune leur montant (elles se redimensionnent séparément). À partir de 1 000 000,00, la liste et l'axe de la courbe passent en forme abrégée (français : `1,23 M €`, `2,5 Md €` ; anglais : `€1.23M`, `€2.5B`) ; la fiche, les tableaux et les fichiers gardent toujours le montant complet. Une récapitulative affiche la somme de ses tâches.
 - **Courbe des coûts** (onglet Budget du tableau de bord) : le réel cumule le coût réel des tâches terminées, à leur date de fin réelle (une tâche terminée sans date de fin réelle compte dans la période en cours, ou dans la dernière période si la date du jour dépasse la fin du projet). Cochez **Inclure le coût réel des tâches en cours** pour y ajouter, dans la période en cours, le coût déjà engagé des tâches non terminées ; la case est décochée par défaut.
 - **Masquer les montants** : le bouton de la barre du haut, ou celui de l'en-tête des fenêtres Tableau de bord, Baselines et Rapport d'état, remplace tous les montants par `••••` à l'écran (utile en réunion ou en partage d'écran) et désactive leur saisie. Il ne change aucune donnée et se mémorise sur votre poste. Il ne s'applique pas aux fichiers, impressions et copies : voir la section 12.
 - GanttPro **ne remplace pas une comptabilité de projet** : ce sont des montants de suivi saisis à la main.
@@ -360,7 +363,7 @@ Le fichier exporté est la copie durable de votre projet : exportez après chaqu
 
 ### Exporter
 
-Le bouton **Exporter** propose cinq formats ; le fichier s'appelle « nom\_du\_projet\_gantt » suivi de l'extension (accents retirés, autres caractères remplacés par « \_ »).
+Le choix **Exporter** de la liste **Fichier ▾** propose cinq formats ; le fichier s'appelle « nom\_du\_projet\_gantt » suivi de l'extension (accents retirés, autres caractères remplacés par « \_ »).
 
 | Format | Contenu | Pour |
 | --- | --- | --- |
@@ -376,7 +379,7 @@ Options : **Inclure les montants** (JSON, Excel, CSV) est **décochée à chaque
 
 ### Importer
 
-**Importer**, ou déposez un fichier sur la fenêtre. GanttPro reconnaît le contenu : projet GanttPro (.json, protégé ou non, y compris les fichiers de la version 2.3), MS Project (.xml), tableur (.xlsx, .csv, .tsv, .txt).
+**Fichier ▾** puis **Importer**, ou déposez un fichier sur la fenêtre. GanttPro reconnaît le contenu : projet GanttPro (.json, protégé ou non, y compris les fichiers de la version 2.3), MS Project (.xml), tableur (.xlsx, .csv, .tsv, .txt).
 
 - Pour un projet, un aperçu montre nom, nombre de tâches, ressources, catégories, baselines, début et avancement moyen. Vous l'ouvrez dans un nouvel onglet, ou il remplace le projet courant (avec une confirmation de plus si celui-ci a des modifications non enregistrées).
 - Un fichier invalide est refusé en entier, avec la raison (par exemple « Tâche n° 12 : identifiant invalide ») : le projet ouvert reste intact. Taille maximale : 5 Mo.

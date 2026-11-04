@@ -265,7 +265,8 @@ Chaque fonction de niveau module, et chaque module, porte à la fin de son comme
 | `30-dialog.js` | `Dialog.open`, `message`, `confirm` : fenêtres natives titrées, focus piégé |
 | `40-state.js` | `App` (état), `commit()`, `recompute()`, annulation (50 pas) |
 | `41-money.js` | Affichage des montants, masquage |
-| `50-render.js` | Barre du haut, chiffres, alertes, liste, grille, légende ; `render()` et `renderAll()` |
+| `50-render.js` | Barres du haut (états des boutons), chiffres, alertes, liste, grille, légende ; `render()` et `renderAll()` |
+| `51-disclosure.js` | Listes dépliantes « Fichier ▾ » et « Colonnes ▾ » des barres (motif « disclosure », EF-152) : `toggleDisclosure`, `closeDisclosures()`, `initDisclosures()` |
 | `52-viewbar.js`, `55-tooltip.js` | Recherche et filtres ; infobulles |
 | `60-editor.js` à `66-layout.js` | Panneau d'édition, raccourcis, sélection, actions groupées, gestes, mise en page (séparateur, colonnes figées, plein écran, légende repliable en plein écran ; la hauteur de l'écran fixe est en CSS, `10-base.css`) |
 | `70-windows.js` à `74-columns.js` | Fenêtres projet, ressources, catégories, baselines, calendrier, colonnes |

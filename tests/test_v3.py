@@ -46,6 +46,12 @@ def project(**over):
     return p
 
 
+def open_disc(pg, btn):
+    """Déplie la liste « Fichier ▾ » ou « Colonnes ▾ » si elle est repliée (EF-152)."""
+    if pg.get_attribute(btn, 'aria-expanded') != 'true':
+        pg.click(btn)
+
+
 def axe_check(pg, label):
     if not AXE.exists():
         check(f'axe : {label} (axe-core absent, ignoré)', True)
@@ -154,15 +160,15 @@ def main():
         pg.dblclick('#tasks-table .col-resize[data-col="name"]')
         nm2 = pg.evaluate("document.querySelector('#tasks-table thead th:nth-child(2)').getBoundingClientRect().width")
         check('colonne : double-clic sur la poignée rétablit la largeur par défaut de la colonne', abs(nm2 - 310) <= 2, nm2)
-        pg.click('button[data-click="resetColumns"]')
+        open_disc(pg, '#btn-cols-menu'); pg.click('button[data-click="resetColumns"]')
         # Colonnes figées : liste étroite, défilement horizontal, le nom reste en place.
         drag_by('#splitter', -(w0 - 300))
-        pg.select_option('#freeze-cols', '2')
+        open_disc(pg, '#btn-cols-menu'); pg.select_option('#freeze-cols', '2')
         pg.evaluate("document.getElementById('list').scrollLeft = 150")
         pos = pg.evaluate("""() => { const l = document.getElementById('list').getBoundingClientRect(); const id = document.querySelector('#task-rows tr[data-id] td:nth-child(1)').getBoundingClientRect(); const nm = document.querySelector('#task-rows tr[data-id] td:nth-child(2)').getBoundingClientRect(); const dur = document.querySelector('#task-rows tr[data-id] td:nth-child(3)').getBoundingClientRect(); return { l: l.left, id: id.left, idw: id.width, nm: nm.left, dur: dur.left }; }""")
         check('colonnes figées : identifiant et nom restent à gauche pendant le défilement', abs(pos['id'] - pos['l']) <= 2 and abs(pos['nm'] - (pos['l'] + pos['idw'])) <= 2, pos)
         check('colonnes figées : les autres colonnes défilent', pos['dur'] < pos['l'] + pos['idw'] + 120, pos)
-        pg.select_option('#freeze-cols', '0')
+        open_disc(pg, '#btn-cols-menu'); pg.select_option('#freeze-cols', '0')
         pos2 = pg.evaluate("document.querySelector('#task-rows tr[data-id] td:nth-child(1)').getBoundingClientRect().left - document.getElementById('list').getBoundingClientRect().left")
         check('colonnes non figées : l\'identifiant défile', pos2 < -100, pos2)
         pg.dblclick('#splitter')
@@ -176,6 +182,56 @@ def main():
         check('EF-151 : légende en bas de la fenêtre, page sans défilement', abs(leg['bottom'] - leg['vh']) <= 1 and leg['scroll'] <= 1, leg)
         check("EF-151 : le planning occupe la hauteur jusqu'à la légende", 0 <= leg['gap'] <= 2, leg)
         check('EF-151 : vue normale, légende dépliée et sans bouton de repli', leg['body'] and not leg['btn'], leg)
+        # Trois barres par thème (EF-152) : groupes nommés, ordre du DOM = ordre visuel, listes dépliantes au clavier.
+        groups = pg.evaluate("""() => [...document.querySelectorAll('header.topbar [role=group], #viewbar [role=group]')].map(g => {
+          const r = g.getBoundingClientRect(), lb = g.getAttribute('aria-labelledby');
+          return { name: g.getAttribute('aria-label') || (lb && document.getElementById(lb).textContent) || '', top: Math.round(r.top), left: Math.round(r.left) }; })""")
+        names = [g['name'] for g in groups]
+        check('EF-152 : groupes nommés dans l\'ordre des barres', len(names) == 10 and names[8].startswith('Zoom')
+              and names[:8] + names[9:] == ['Historique', 'Préférences', 'Créer', 'Projet', 'Suivi', 'Charge', 'Rechercher et filtrer', 'Afficher', 'Liste des tâches'], names)
+        ordered = all(b['top'] > a['top'] + 2 or (abs(b['top'] - a['top']) <= 2 and b['left'] > a['left']) for a, b in zip(groups, groups[1:]))
+        check('EF-152 : l\'ordre du DOM suit l\'ordre visuel (WCAG 2.4.3)', ordered, groups)
+        check('EF-152 : plus de barre d\'outils unique (ni nav ni role=toolbar)', pg.locator('header nav, [role=toolbar]').count() == 0)
+        pg.focus('#project-start'); seq = []
+        for _ in range(12):
+            pg.keyboard.press('Tab'); seq.append(pg.evaluate("document.activeElement.id || document.activeElement.dataset.click || ''"))
+            if seq[-1] == 'btn-help': break
+        tail = [x for x in seq if x in ('btn-undo', 'btn-redo', 'btn-file', 'btn-theme', 'btn-lang', 'btn-settings', 'btn-help')]
+        check('EF-152 : ordre de tabulation de la barre du projet (Annuler, Rétablir, Fichier, Thème, Langue, ⚙, ?)',
+              tail[-5:] == ['btn-file', 'btn-theme', 'btn-lang', 'btn-settings', 'btn-help'] and 'newProject' not in seq, seq)
+        pg.focus('#btn-file'); pg.keyboard.press('Enter')
+        st = pg.evaluate("({ exp: document.getElementById('btn-file').getAttribute('aria-expanded'), shown: !document.getElementById('file-menu').hidden })")
+        check('EF-152 : Entrée déplie « Fichier » (aria-expanded=true)', st['exp'] == 'true' and st['shown'], st)
+        axe_check(pg, 'vue principale, liste « Fichier » dépliée')
+        pg.keyboard.press('Tab')
+        check('EF-152 : Tab entre dans la liste (Nouveau)', pg.evaluate("document.activeElement.dataset.click") == 'newProject')
+        pg.keyboard.press('Escape')
+        st = pg.evaluate("({ exp: document.getElementById('btn-file').getAttribute('aria-expanded'), hidden: document.getElementById('file-menu').hidden, focus: document.activeElement.id, full: document.body.classList.contains('planner-full') })")
+        check('EF-152 : Échap replie la liste et rend le focus à « Fichier »', st['exp'] == 'false' and st['hidden'] and st['focus'] == 'btn-file' and not st['full'], st)
+        pg.keyboard.press('Enter'); pg.keyboard.press('Tab'); pg.keyboard.press('Tab'); pg.keyboard.press('Tab')
+        pg.keyboard.press('Enter'); pg.wait_for_selector('dialog[open]')
+        check('EF-152 : « Exporter » choisi au clavier ouvre sa fenêtre, la liste se replie', pg.is_hidden('#file-menu'))
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
+        check('EF-152 : la fenêtre fermée rend le focus à « Fichier »', pg.evaluate('document.activeElement.id') == 'btn-file')
+        pg.focus('#btn-cols-menu'); pg.keyboard.press('Space')
+        check('EF-152 : Espace déplie « Colonnes »', pg.get_attribute('#btn-cols-menu', 'aria-expanded') == 'true' and pg.is_visible('#freeze-cols'))
+        pg.keyboard.press('Tab')
+        check('EF-152 : Tab mène au choix « Figer »', pg.evaluate('document.activeElement.id') == 'freeze-cols')
+        pg.keyboard.press('Escape')
+        check('EF-152 : Échap replie « Colonnes » et rend le focus', pg.is_hidden('#cols-menu') and pg.evaluate('document.activeElement.id') == 'btn-cols-menu')
+        open_disc(pg, '#btn-cols-menu'); pg.click('#kpis')
+        check('EF-152 : un clic au-dehors replie la liste', pg.is_hidden('#cols-menu') and pg.get_attribute('#btn-cols-menu', 'aria-expanded') == 'false')
+        open_disc(pg, '#btn-file'); open_disc(pg, '#btn-cols-menu')
+        check('EF-152 : une seule liste dépliée à la fois', pg.is_hidden('#file-menu') and pg.is_visible('#cols-menu'))
+        pg.keyboard.press('Escape')
+        sc = pg.evaluate("[...document.querySelectorAll('#btn-undo, #btn-redo, #search, #btn-full, #viewbar [data-click=zoom]:not([data-arg=\"0\"]), [data-click=openLibrary]')].every(b => b.hasAttribute('aria-keyshortcuts'))")
+        check('EF-152 : raccourcis annoncés conservés (aria-keyshortcuts)', sc)
+        rows = pg.locator('#task-rows button.select')
+        if rows.count() >= 2:
+            rows.nth(0).click(); rows.nth(1).click(modifiers=['Control']); pg.wait_for_timeout(100)
+            sb = pg.evaluate(LEG)
+            check('EF-152 : la barre de sélection ne pousse pas la légende hors de la fenêtre', not pg.is_hidden('#selbar') and abs(sb['bottom'] - sb['vh']) <= 1 and sb['scroll'] <= 1, sb)
+            pg.keyboard.press('Escape'); pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
         # Plein écran du Gantt
         pg.click('#btn-full')
         full = pg.evaluate("""() => { const p = document.getElementById('planner').getBoundingClientRect(); return { w: p.width, top: p.top, inert: document.querySelector('header.topbar').inert, focus: document.activeElement.id, pressed: document.getElementById('btn-full').getAttribute('aria-pressed') }; }""")
@@ -243,7 +299,7 @@ def main():
         import_file('ok.json')
         replace_project()
         check('B suit A : B du 12/01 au 14/01', 'du lun. 12 janv. 2026 au mer. 14 janv. 2026' in pg.get_attribute('.bar >> nth=1', 'aria-label'))
-        pg.focus('button:has-text("+ Ajouter tâche")'); pg.keyboard.press('Enter')
+        pg.focus('button:has-text("+ Tâche")'); pg.keyboard.press('Enter')
         pg.wait_for_selector('#editor:not([hidden])')
         check("ajout : l'édition s'ouvre sur la nouvelle tâche C", pg.inner_text('#editor-title') == 'Modifier C')
         pg.fill('#f-name', 'Tests')
@@ -574,7 +630,7 @@ def main():
         check('croix : calendrier non modifié, fermeture sans question', pg.query_selector('dialog[open]') is None)
 
         # ── Export puis réimport ─────────────────────────────────────────────────────────────
-        pg.click('button:has-text("Exporter")')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")')
         with pg.expect_download() as dl:
             close_dialog('Exporter')
         path = dl.value.path()
@@ -588,7 +644,7 @@ def main():
 
         # ── Lot C : exports multiformats, chiffrement, assistant d'import, copier-coller ─────
         import zipfile
-        pg.click('button:has-text("Exporter")')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")')
         pg.wait_for_selector('#exp-win')
         axe_check(pg, "fenêtre d'export")
         pg.check('#exp-f-xlsx')
@@ -598,18 +654,18 @@ def main():
         with zipfile.ZipFile(xp) as z:
             names = z.namelist(); sheet1 = z.read('xl/worksheets/sheet1.xml').decode()
         check('export Excel : classeur valide', dl.value.suggested_filename.endswith('.xlsx') and 'xl/workbook.xml' in names and 'Conception' in sheet1, names)
-        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-csv')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")'); pg.check('#exp-f-csv')
         with pg.expect_download() as dl:
             close_dialog('Exporter')
         csvt = Path(dl.value.path()).read_bytes()
         check('export CSV : BOM et point-virgule', csvt.startswith(b'\xef\xbb\xbf') and b';' in csvt and 'Revue' in csvt.decode('utf-8-sig'))
-        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-msp')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")'); pg.check('#exp-f-msp')
         with pg.expect_download() as dl:
             close_dialog('Exporter')
         mspx = Path(dl.value.path()).read_text(encoding='utf-8')
         check('export MS Project : XML avec tâches et lien', '<Project' in mspx and '<Name>Revue</Name>' in mspx, mspx[:300])
         files['export.xml'] = dl.value.path()
-        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-png')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")'); pg.check('#exp-f-png')
         with pg.expect_download() as dl:
             close_dialog('Exporter')
         png = Path(dl.value.path()).read_bytes()
@@ -619,7 +675,7 @@ def main():
         replace_project()
         check('import MS Project : tâches relues', 'Revue' in pg.inner_text('#task-rows') and 'Conception' in pg.inner_text('#task-rows'))
         # Chiffrement : mot de passe court refusé, aller-retour réussi, mauvais mot de passe refusé
-        pg.click('button:has-text("Exporter")'); pg.check('#exp-f-json'); pg.check('#exp-protect')
+        open_disc(pg, '#btn-file'); pg.click('button:has-text("Exporter")'); pg.check('#exp-f-json'); pg.check('#exp-protect')
         pg.fill('#exp-pwd', 'court'); pg.fill('#exp-pwd2', 'court')
         close_dialog('Exporter')
         check('mot de passe trop court refusé', '12' in pg.inner_text('#exp-err'), pg.inner_text('#exp-err'))
@@ -676,7 +732,7 @@ def main():
 
         # ── Langue ───────────────────────────────────────────────────────────────────────────
         pg.click('#btn-lang')
-        check('langue anglaise : libellés', pg.inner_text('button[data-arg="task"]') == '+ Add task' and pg.get_attribute('html', 'lang') == 'en')
+        check('langue anglaise : libellés', pg.inner_text('button[data-arg="task"]') == '+ Task' and pg.get_attribute('html', 'lang') == 'en')
         check('langue anglaise : dates', 'Mon 05 Jan 2026' in pg.inner_text('#kpis'), pg.inner_text('#kpis'))
         pg.click('#btn-lang')
 

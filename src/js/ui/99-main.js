@@ -232,7 +232,7 @@ function initKeyboard() {
 }
 
 /**
- * Appelle : 26 fonctions
+ * Appelle : 27 fonctions
  * Appelée par : (initialisation de 99-main.js)
  */
 function init() {
@@ -241,6 +241,7 @@ function init() {
   applyTheme();
   App.maskAmounts = Settings.get('mask') === 'on';
   initActions();
+  initDisclosures();
   initKeyboard();
   Tooltip.init();
   initViewbar();

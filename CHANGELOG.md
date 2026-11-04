@@ -14,6 +14,10 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   Gantt prennent la hauteur restante ; défilement interne d'une légende ou d'une liste d'alertes longue ; repliable par son
   titre en plein écran du Gantt (`aria-expanded`). En CSS seul à partir de 901 × 560 px ; flux ordinaire en dessous (EX-04).
   `applyPlannerHeight` et `schedulePlannerHeight` retirés de `66-layout.js`. Fichier d'essai `legende-nombreuses-ressources.json`.
+- **Trois barres par thème** (EF-152, A.9 ligne 4) : barre du projet (historique, « Fichier ▾ », préférences), barre des
+  commandes (Créer, Projet, Suivi, Charge), barre « Affichage » (recherche, liens, montants, zoom, liste et « Colonnes ▾ »,
+  plein écran). Groupes `role="group"` nommés (FR/EN), plus de `nav` de commandes ; listes dépliantes au motif
+  « disclosure » (nouveau module `src/js/ui/51-disclosure.js`). Libellés de création raccourcis (« + Tâche »).
 
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
