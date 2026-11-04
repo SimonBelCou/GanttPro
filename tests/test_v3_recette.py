@@ -386,7 +386,28 @@ def main():
             p2.click('#task-rows button.select >> nth=0')
             ed = p2.evaluate("(() => { const r = document.getElementById('editor').getBoundingClientRect(); return r.left >= -1 && r.right <= innerWidth + 1; })()")
             check(f'EX-04 : {width} px, édition entièrement visible', ed)
+            flow = p2.evaluate("({ disp: getComputedStyle(document.body).display, scroll: document.documentElement.scrollHeight > innerHeight + 1 })")
+            check(f'EF-151 / EX-04 : {width} px, la page garde son flux ordinaire (légende sous le planning)', flow['disp'] != 'flex' and flow['scroll'], flow)
             c2.close()
+
+        # ── EF-151 : légende fixée en bas à 1500 × 900, avec 30 ressources et 12 catégories fictives ───
+        c4 = browser.new_context(viewport={'width': 1500, 'height': 900}, locale='fr-FR')
+        p4 = c4.new_page(); p4.clock.set_fixed_time('2026-01-14T10:00:00')
+        p4.goto(HTML.as_uri()); p4.wait_for_selector('#task-rows tr')
+        p4.set_input_files('#file-input', str(ROOT / 'tests' / 'fixtures' / 'legende-nombreuses-ressources.json'))
+        p4.wait_for_selector('dialog[open]')
+        for _ in range(2):
+            b = p4.locator('dialog[open]').last.locator('button:has-text("Remplacer le projet ouvert")')
+            if b.count(): b.first.click(); p4.wait_for_timeout(120)
+        p4.wait_for_timeout(200)
+        g = p4.evaluate("""() => { const l = document.getElementById('legend').getBoundingClientRect(), b = document.getElementById('legend-body');
+          return { bottom: Math.round(l.bottom), vh: innerHeight, page: document.documentElement.scrollHeight - innerHeight,
+            inner: b.scrollHeight > b.clientHeight, tab: b.tabIndex, ph: Math.round(document.getElementById('planner').getBoundingClientRect().height),
+            leg: Math.round(l.height) }; }""")
+        check('EF-151 : 1500 × 900, légende chargée en bas de la fenêtre, page sans défilement', abs(g['bottom'] - g['vh']) <= 1 and g['page'] <= 1, g)
+        check('EF-151 : la légende longue défile dans sa zone, atteignable au clavier', g['inner'] and g['tab'] == 0 and g['leg'] <= 180, g)
+        check('EF-151 : le planning garde au moins 12 rem de haut', g['ph'] >= 190, g)
+        c4.close()
 
         # ── Limite de la bibliothèque (3.7, EF-99) ─────────────────────────────────────────────
         c3 = browser.new_context(viewport={'width': 1500, 'height': 950}, locale='fr-FR')

@@ -79,8 +79,9 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 .planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; border-bottom: 1px solid var(--line); }
 /* Chaque colonne défile seule dans les deux sens : sa barre horizontale reste toujours visible au bas de la zone (EX-29) ;
-   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. */
-.list, .gantt { max-height: var(--planner-h, calc(100vh - 210px)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
+   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. Hors écran fixe (voir « Écran fixe » plus bas),
+   la zone tient dans une hauteur de fenêtre : une fois la page défilée jusqu'à elle, ses deux barres sont visibles. */
+.list, .gantt { max-height: max(300px, calc(100dvh - 2rem)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
 .list { background: var(--panel); }
 table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
@@ -143,7 +144,13 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .sbar::before { left: 0; border-left-color: var(--text); }
 .sbar::after { right: 0; border-right-color: var(--text); }
 
-.legend { padding: .5rem 1rem; }
+.legend { padding: .5rem 1rem; background: var(--bg); }
+/* Titre repliable : seulement en plein écran du Gantt (EF-151) ; dans la vue normale, la légende est toujours dépliée. */
+.legend-title { display: none; margin: 0 0 .3rem; font-size: 1rem; }
+body.planner-full .legend-title { display: block; }
+.legend-title button { font-weight: 600; }
+.legend-title button::before { content: "▾ "; }
+.legend-title button[aria-expanded="false"]::before { content: "▸ "; }
 .legend ul { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: 0; padding: 0; list-style: none; color: var(--muted); }
 .legend li { display: inline-flex; align-items: center; gap: .35rem; }
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); vertical-align: middle; }
@@ -258,6 +265,7 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 /* Impression (EX-26, EX-32) : seul #print-area est imprimé ; en couleur, mais lisible sans couleur (contours, motifs, ● et texte).
    Le mode noir et blanc du système d'impression reste possible. */
 @media print {
+  body { display: block !important; height: auto !important; overflow: visible !important; }
   body.printing > *:not(#print-area) { display: none !important; }
   body.printing #print-area { display: block !important; }
   body { background: #fff !important; color: #000 !important; }
@@ -460,10 +468,32 @@ body.dragging { user-select: none; cursor: grabbing; }
 .tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
 .tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
 .tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
-body.planner-full .planner { position: fixed; inset: 0; z-index: 4; grid-template-rows: minmax(0, 1fr); background: var(--bg); border-bottom: 0; }
+/* Écran fixe (EF-151) : sur un écran assez grand, la page tient dans la fenêtre, en colonne : barres en haut, planning
+   sur toute la hauteur restante, légende fixée en bas. Pas de position fixed/sticky, qui recouvrirait les barres de
+   défilement de la liste et du Gantt (EX-29). En dessous de 901 × 560 px (mobile, zoom 200 %), la page garde son flux
+   ordinaire et défile (EX-04, WCAG 1.4.10). Le plein écran du Gantt suit le même modèle quelle que soit la taille. */
+@media screen and (min-width: 901px) and (min-height: 560px) {
+  body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  body > .tabs, body > header, body > .kpis, body > .alerts { flex: none; }
+  body > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  main > .viewbar, main > .selbar { flex: none; }
+  .planner { flex: 1 1 auto; min-height: 12rem; grid-template-rows: minmax(0, 1fr); }
+  .list, .gantt { max-height: none; min-height: 0; }
+  .legend { flex: none; max-height: min(25dvh, 9rem); display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .legend-body { min-height: 0; overflow-y: auto; }
+  /* Une longue liste d'alertes défile dans son bandeau au lieu de pousser le planning. */
+  .alerts ul { max-height: 6.6rem; overflow-y: auto; }
+}
+body.planner-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+body.planner-full > .tabs, body.planner-full > header, body.planner-full > .kpis, body.planner-full > .alerts,
+body.planner-full .viewbar, body.planner-full .selbar { display: none; }
+body.planner-full > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body.planner-full .planner { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); overflow: auto; border-bottom: 0; }
 body.planner-full .list, body.planner-full .gantt { max-height: none; min-height: 0; }
-body.planner-full { overflow: hidden; }
-.full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+@media (max-width: 900px) { body.planner-full .planner { grid-template-rows: none; } } /* une colonne : la zone défile en entier */
+body.planner-full .legend { flex: none; max-height: 40dvh; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+body.planner-full .legend-body { min-height: 0; overflow-y: auto; }
+.full-bar { flex: none; display: flex; justify-content: flex-end; gap: .4rem; padding: .3rem 1rem; border-top: 1px solid var(--line); background: var(--panel); }
 .full-bar[hidden] { display: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 

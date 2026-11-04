@@ -9,6 +9,12 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 
 ## Non publié
 
+### Ergonomie de l'écran principal (branche `claude/ergonomie-ecran-979ec7`)
+- **Légende fixée en bas de la fenêtre** (EF-151, A.9) : toujours visible et dépliée dans la vue normale, la liste et le
+  Gantt prennent la hauteur restante ; défilement interne d'une légende ou d'une liste d'alertes longue ; repliable par son
+  titre en plein écran du Gantt (`aria-expanded`). En CSS seul à partir de 901 × 560 px ; flux ordinaire en dessous (EX-04).
+  `applyPlannerHeight` et `schedulePlannerHeight` retirés de `66-layout.js`. Fichier d'essai `legende-nombreuses-ressources.json`.
+
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec

@@ -18,7 +18,7 @@ GanttPro planifie un projet en jours ouvrés, calcule les dates, le chemin criti
 | Bandeau d'alertes | Conflits de ressources et avertissements de dates ; se masque par ✕ et se rouvre par le badge « n conflits » |
 | Barre de recherche | Recherche, filtres, « Grouper par », étiquettes, tout replier ou déplier, trier, replier la liste |
 | Liste des tâches et grille de Gantt | Une ligne par tâche à gauche, sa barre à droite ; les deux défilent ensemble |
-| Légende | Catégories, symboles, ressources et statuts |
+| Légende | Catégories, symboles, ressources et statuts ; toujours visible en bas de la fenêtre |
 | Édition | Panneau à droite qui s'ouvre quand on choisit une tâche |
 
 ![Écran principal avec le projet d'exemple Atlas : barre du haut, chiffres, alertes, liste et grille](img/02-principal.png)
@@ -207,7 +207,7 @@ L'infobulle d'une barre (au survol, ou au focus clavier) donne dates prévues et
 - **Largeur des colonnes.** Tirez le bord droit d'un en-tête de colonne, ou utilisez les flèches sur la poignée ; chaque colonne peut aller de quelques dizaines de pixels jusqu'à 1 000 px (nom). Un double-clic sur la poignée, ou la touche Début, rétablit la largeur par défaut de cette colonne (les autres gardent la leur) ; **Largeurs par défaut** rétablit toutes les largeurs.
 - **Choisir et ordonner les colonnes.** Le bouton **Colonnes…** ouvre la liste des 12 colonnes : cochez celles à afficher, et déplacez-les avec les boutons ↑ et ↓ (au clavier comme à la souris). L'identifiant et le nom sont obligatoires : ils ne se masquent pas, mais se déplacent. Le choix est **enregistré dans le projet** (et dans son export), s'annule comme une modification, et **Rétablir l'ordre d'origine** le retire. Sans choix, Budget et Coût réel n'apparaissent que si le projet contient un montant.
 - **Figer des colonnes.** Le choix **Figer** de la barre de recherche garde à l'écran la première colonne, ou les deux premières, de la liste telle que vous l'avez ordonnée, quand vous faites défiler la liste vers la droite : pratique avec une liste étroite.
-- **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière et le bouton **Quitter le plein écran** (ou Échap). Le reste de la page est désactivé pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
+- **Plein écran du Gantt.** Le bouton **Plein écran du Gantt** donne toute la fenêtre à la liste et au Gantt ; seuls restent un zoom avant et arrière, le bouton **Quitter le plein écran** (ou Échap) et la légende, repliable par son titre. Le reste de la page est masqué pendant ce temps. Pour utiliser tout l'écran, passez aussi le navigateur en plein écran (F11 sur la plupart des navigateurs).
 - Ces réglages valent pour la session : ils ne sont pas enregistrés dans le projet ni dans le navigateur.
 
 ### Gestes
@@ -226,6 +226,8 @@ Après chaque geste, un message confirme le résultat avec un bouton **Annuler**
 ### Légende
 
 Sous la grille, la légende reprend les catégories, les symboles (critique ●, date imposée 📌, ne pas commencer avant ⏳, échéance 🚩, jalon ◆, conflit ⚠, baseline, aujourd'hui), les ressources et les statuts.
+
+Sur un écran d'ordinateur, la légende est **fixée en bas de la fenêtre** : elle reste visible sans faire défiler la page, et la liste et le Gantt prennent toute la hauteur au-dessus. Si elle est longue (beaucoup de ressources ou de catégories), elle défile dans sa propre zone : à la souris, ou au clavier en y arrivant par Tab puis avec les flèches. En **plein écran du Gantt**, cliquez sur son titre **Légende** pour la replier et gagner de la place, puis de nouveau pour la déplier ; elle est de nouveau dépliée à la sortie du plein écran. Sur un téléphone ou avec un zoom du navigateur de 200 %, la page défile normalement et la légende suit le Gantt.
 
 ## 7. Sélection multiple, modification en masse, copier-coller
 

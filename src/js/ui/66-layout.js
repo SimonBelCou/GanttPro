@@ -1,10 +1,13 @@
-/* Mise en page de la vue principale (EF-108 à EF-111) : séparateur réglable entre la liste et le Gantt,
- * colonnes figées, plein écran du Gantt. Aucune de ces réglages n'est enregistrée : ils valent pour la
- * session (stockage local seulement sur geste explicite, SECURITY.md). Tout se fait aussi au clavier. */
+/* Mise en page de la vue principale (EF-108 à EF-111, EF-151) : séparateur réglable entre la liste et le Gantt,
+ * colonnes figées, plein écran du Gantt, légende repliable en plein écran. La hauteur de la zone de planning et la
+ * légende fixée en bas de la fenêtre sont entièrement en CSS (10-base.css, « Écran fixe »). Aucun de ces réglages
+ * n'est enregistré : ils valent pour la session (stockage local seulement sur geste explicite, SECURITY.md).
+ * Tout se fait aussi au clavier. */
 const LIST_MIN = 200, GANTT_MIN = 200, SPLIT_STEP = 20;
 App.listW = null;   // largeur imposée de la liste en px ; null = automatique
 App.freeze = 0;     // 0, 1 (identifiant) ou 2 (identifiant et nom)
 App.full = false;   // plein écran du Gantt
+App.legendOpen = true; // légende dépliée en plein écran (dans la vue normale, elle l'est toujours)
 
 /**
  * Appelle : $()
@@ -65,37 +68,12 @@ function applyFreeze() {
   $('freeze-cols').value = String(App.freeze);
 }
 
-/** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
 /**
- * Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
- *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page.
- * Appelle : $()
- * Appelée par : initLayout(), schedulePlannerHeight()
- */
-function applyPlannerHeight() {
-  const pl = $('planner');
-  const top = pl.getBoundingClientRect().top + window.scrollY;
-  pl.style.setProperty('--planner-h', Math.max(300, Math.round(window.innerHeight - top - 12)) + 'px');
-}
-
-let plannerHeightPending = false;
-/**
- * Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25).
- * Appelle : applyPlannerHeight()
- * Appelée par : refreshLayout()
- */
-function schedulePlannerHeight() {
-  if (plannerHeightPending) return;
-  plannerHeightPending = true;
-  requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
-}
-
-/**
- * Appelle : applyFreeze(), applyListWidth(), schedulePlannerHeight()
+ * À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles.
+ * Appelle : applyFreeze(), applyListWidth()
  * Appelée par : initLayout(), renderAll(), setFull()
  */
 function refreshLayout() {
-  schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
@@ -111,24 +89,45 @@ action('freezeCols', (arg, el) => { App.freeze = Number(el.value) || 0; applyFre
  */
 action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze(); announce(t('lay.colsResetDone')); });
 
-const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar', 'legend'];
 /**
- * Appelle : $(), announce(), refreshLayout(), t(), updateSplitterValue()
+ * Légende repliée seulement en plein écran et sur demande ; dans la vue normale, elle est toujours dépliée.
+ * Appelle : $()
+ * Appelée par : action « toggleLegend », setFull()
+ */
+function applyLegendState() {
+  const open = !App.full || App.legendOpen;
+  $('legend-body').hidden = !open;
+  $('btn-legend').setAttribute('aria-expanded', String(open));
+}
+/**
+ * Appelle : applyLegendState()
+ * Appelée par : l'événement « toggleLegend » (table ACTIONS)
+ */
+action('toggleLegend', () => { if (!App.full) return; App.legendOpen = !App.legendOpen; applyLegendState(); });
+
+// Masqués en plein écran (10-base.css) et rendus inertes : rien n'y est atteignable au clavier.
+const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar'];
+let fullScrollY = 0; // position de la page avant le plein écran, rendue à la sortie (petits écrans : la page défile)
+/**
+ * Appelle : $(), announce(), applyLegendState(), refreshLayout(), t(), updateSplitterValue()
  * Appelée par : action « toggleFull », initLayout()
  */
 function setFull(on) {
   if (App.full === on) return;
   App.full = on;
+  if (on) fullScrollY = window.scrollY;
   document.body.classList.toggle('planner-full', on);
   for (const id of FULL_LOCKED) $(id).inert = on;
   document.querySelector('header.topbar').inert = on;
   $('full-bar').hidden = !on;
   const btn = $('btn-full');
   btn.setAttribute('aria-pressed', String(on));
+  applyLegendState();
   announce(t(on ? 'lay.fullOn' : 'lay.fullOff'));
   refreshLayout();
   updateSplitterValue();
-  (on ? $('btn-full-exit') : btn).focus();
+  (on ? $('btn-full-exit') : btn).focus({ preventScroll: !on });
+  if (!on) window.scrollTo(0, fullScrollY);
 }
 /**
  * Appelle : setFull()
@@ -137,8 +136,7 @@ function setFull(on) {
 action('toggleFull', () => setFull(!App.full));
 
 /**
- * Appelle : $(), applyPlannerHeight(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(),
- *   updateSplitterValue()
+ * Appelle : $(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(), updateSplitterValue()
  * Appelée par : init()
  */
 function initLayout() {
@@ -169,7 +167,7 @@ function initLayout() {
   const list = $('list'), gantt = $('gantt');
   const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
   mirror(list, gantt); mirror(gantt, list);
-  window.addEventListener('resize', () => { applyPlannerHeight(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);

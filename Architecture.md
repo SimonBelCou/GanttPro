@@ -267,7 +267,7 @@ Chaque fonction de niveau module, et chaque module, porte à la fin de son comme
 | `41-money.js` | Affichage des montants, masquage |
 | `50-render.js` | Barre du haut, chiffres, alertes, liste, grille, légende ; `render()` et `renderAll()` |
 | `52-viewbar.js`, `55-tooltip.js` | Recherche et filtres ; infobulles |
-| `60-editor.js` à `66-layout.js` | Panneau d'édition, raccourcis, sélection, actions groupées, gestes, mise en page |
+| `60-editor.js` à `66-layout.js` | Panneau d'édition, raccourcis, sélection, actions groupées, gestes, mise en page (séparateur, colonnes figées, plein écran, légende repliable en plein écran ; la hauteur de l'écran fixe est en CSS, `10-base.css`) |
 | `70-windows.js` à `74-columns.js` | Fenêtres projet, ressources, catégories, baselines, calendrier, colonnes |
 | `75-dashboard.js`, `76-budget.js`, `76-load.js` | Tableau de bord, onglet Budget et valeur acquise, charge |
 | `77-report.js`, `78-print.js` | Rapport d'état, impression |

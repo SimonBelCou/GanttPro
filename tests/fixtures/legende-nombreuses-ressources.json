@@ -1,0 +1,810 @@
+{
+  "format": 3,
+  "name": "Projet fictif légende chargée",
+  "projectStart": "2026-11-02",
+  "leveling": "off",
+  "resources": [
+    {
+      "name": "Personne Alpha",
+      "capacity": 100,
+      "color": "#4d9fff",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Bravo",
+      "capacity": 100,
+      "color": "#2e9e5b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Charlie",
+      "capacity": 100,
+      "color": "#e07b39",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Delta",
+      "capacity": 100,
+      "color": "#9b59b6",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Echo",
+      "capacity": 100,
+      "color": "#c0392b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Foxtrot",
+      "capacity": 100,
+      "color": "#16a085",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Golf",
+      "capacity": 100,
+      "color": "#d4ac0d",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Hotel",
+      "capacity": 100,
+      "color": "#5d6d7e",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne India",
+      "capacity": 100,
+      "color": "#4d9fff",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Juliett",
+      "capacity": 100,
+      "color": "#2e9e5b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Kilo",
+      "capacity": 100,
+      "color": "#e07b39",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Lima",
+      "capacity": 100,
+      "color": "#9b59b6",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Mike",
+      "capacity": 100,
+      "color": "#c0392b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne November",
+      "capacity": 100,
+      "color": "#16a085",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Oscar",
+      "capacity": 100,
+      "color": "#d4ac0d",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Papa",
+      "capacity": 100,
+      "color": "#5d6d7e",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Quebec",
+      "capacity": 100,
+      "color": "#4d9fff",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Romeo",
+      "capacity": 100,
+      "color": "#2e9e5b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Sierra",
+      "capacity": 100,
+      "color": "#e07b39",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Tango",
+      "capacity": 100,
+      "color": "#9b59b6",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Uniform",
+      "capacity": 100,
+      "color": "#c0392b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Victor",
+      "capacity": 100,
+      "color": "#16a085",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Whiskey",
+      "capacity": 100,
+      "color": "#d4ac0d",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Xray",
+      "capacity": 100,
+      "color": "#5d6d7e",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Yankee",
+      "capacity": 100,
+      "color": "#4d9fff",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Zulu",
+      "capacity": 100,
+      "color": "#2e9e5b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Atlas",
+      "capacity": 100,
+      "color": "#e07b39",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Borée",
+      "capacity": 100,
+      "color": "#9b59b6",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Cyan",
+      "capacity": 100,
+      "color": "#c0392b",
+      "role": "Rôle fictif"
+    },
+    {
+      "name": "Personne Dune",
+      "capacity": 100,
+      "color": "#16a085",
+      "role": "Rôle fictif"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Catégorie 1",
+      "color": "#4d9fff"
+    },
+    {
+      "name": "Catégorie 2",
+      "color": "#2e9e5b"
+    },
+    {
+      "name": "Catégorie 3",
+      "color": "#e07b39"
+    },
+    {
+      "name": "Catégorie 4",
+      "color": "#9b59b6"
+    },
+    {
+      "name": "Catégorie 5",
+      "color": "#c0392b"
+    },
+    {
+      "name": "Catégorie 6",
+      "color": "#16a085"
+    },
+    {
+      "name": "Catégorie 7",
+      "color": "#d4ac0d"
+    },
+    {
+      "name": "Catégorie 8",
+      "color": "#5d6d7e"
+    },
+    {
+      "name": "Catégorie 9",
+      "color": "#4d9fff"
+    },
+    {
+      "name": "Catégorie 10",
+      "color": "#2e9e5b"
+    },
+    {
+      "name": "Catégorie 11",
+      "color": "#e07b39"
+    },
+    {
+      "name": "Catégorie 12",
+      "color": "#9b59b6"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Tâche fictive 1",
+      "dur": 3,
+      "res": "Personne Alpha",
+      "cat": "Catégorie 1"
+    },
+    {
+      "id": "T2",
+      "name": "Tâche fictive 2",
+      "dur": 4,
+      "res": "Personne Bravo",
+      "cat": "Catégorie 2",
+      "deps": [
+        "T1"
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "Tâche fictive 3",
+      "dur": 5,
+      "res": "Personne Charlie",
+      "cat": "Catégorie 3",
+      "deps": [
+        "T2"
+      ]
+    },
+    {
+      "id": "T4",
+      "name": "Tâche fictive 4",
+      "dur": 6,
+      "res": "Personne Delta",
+      "cat": "Catégorie 4",
+      "deps": [
+        "T3"
+      ]
+    },
+    {
+      "id": "T5",
+      "name": "Tâche fictive 5",
+      "dur": 7,
+      "res": "Personne Echo",
+      "cat": "Catégorie 5",
+      "deps": [
+        "T4"
+      ]
+    },
+    {
+      "id": "T6",
+      "name": "Tâche fictive 6",
+      "dur": 3,
+      "res": "Personne Foxtrot",
+      "cat": "Catégorie 6",
+      "deps": [
+        "T5"
+      ]
+    },
+    {
+      "id": "T7",
+      "name": "Tâche fictive 7",
+      "dur": 4,
+      "res": "Personne Golf",
+      "cat": "Catégorie 7"
+    },
+    {
+      "id": "T8",
+      "name": "Tâche fictive 8",
+      "dur": 5,
+      "res": "Personne Hotel",
+      "cat": "Catégorie 8",
+      "deps": [
+        "T7"
+      ]
+    },
+    {
+      "id": "T9",
+      "name": "Tâche fictive 9",
+      "dur": 6,
+      "res": "Personne India",
+      "cat": "Catégorie 9",
+      "deps": [
+        "T8"
+      ]
+    },
+    {
+      "id": "T10",
+      "name": "Tâche fictive 10",
+      "dur": 7,
+      "res": "Personne Juliett",
+      "cat": "Catégorie 10",
+      "deps": [
+        "T9"
+      ]
+    },
+    {
+      "id": "T11",
+      "name": "Tâche fictive 11",
+      "dur": 3,
+      "res": "Personne Kilo",
+      "cat": "Catégorie 11",
+      "deps": [
+        "T10"
+      ]
+    },
+    {
+      "id": "T12",
+      "name": "Tâche fictive 12",
+      "dur": 4,
+      "res": "Personne Lima",
+      "cat": "Catégorie 12",
+      "deps": [
+        "T11"
+      ]
+    },
+    {
+      "id": "T13",
+      "name": "Tâche fictive 13",
+      "dur": 5,
+      "res": "Personne Mike",
+      "cat": "Catégorie 1"
+    },
+    {
+      "id": "T14",
+      "name": "Tâche fictive 14",
+      "dur": 6,
+      "res": "Personne November",
+      "cat": "Catégorie 2",
+      "deps": [
+        "T13"
+      ]
+    },
+    {
+      "id": "T15",
+      "name": "Tâche fictive 15",
+      "dur": 7,
+      "res": "Personne Oscar",
+      "cat": "Catégorie 3",
+      "deps": [
+        "T14"
+      ]
+    },
+    {
+      "id": "T16",
+      "name": "Tâche fictive 16",
+      "dur": 3,
+      "res": "Personne Papa",
+      "cat": "Catégorie 4",
+      "deps": [
+        "T15"
+      ]
+    },
+    {
+      "id": "T17",
+      "name": "Tâche fictive 17",
+      "dur": 4,
+      "res": "Personne Quebec",
+      "cat": "Catégorie 5",
+      "deps": [
+        "T16"
+      ]
+    },
+    {
+      "id": "T18",
+      "name": "Tâche fictive 18",
+      "dur": 5,
+      "res": "Personne Romeo",
+      "cat": "Catégorie 6",
+      "deps": [
+        "T17"
+      ]
+    },
+    {
+      "id": "T19",
+      "name": "Tâche fictive 19",
+      "dur": 6,
+      "res": "Personne Sierra",
+      "cat": "Catégorie 7"
+    },
+    {
+      "id": "T20",
+      "name": "Tâche fictive 20",
+      "dur": 7,
+      "res": "Personne Tango",
+      "cat": "Catégorie 8",
+      "deps": [
+        "T19"
+      ]
+    },
+    {
+      "id": "T21",
+      "name": "Tâche fictive 21",
+      "dur": 3,
+      "res": "Personne Uniform",
+      "cat": "Catégorie 9",
+      "deps": [
+        "T20"
+      ]
+    },
+    {
+      "id": "T22",
+      "name": "Tâche fictive 22",
+      "dur": 4,
+      "res": "Personne Victor",
+      "cat": "Catégorie 10",
+      "deps": [
+        "T21"
+      ]
+    },
+    {
+      "id": "T23",
+      "name": "Tâche fictive 23",
+      "dur": 5,
+      "res": "Personne Whiskey",
+      "cat": "Catégorie 11",
+      "deps": [
+        "T22"
+      ]
+    },
+    {
+      "id": "T24",
+      "name": "Tâche fictive 24",
+      "dur": 6,
+      "res": "Personne Xray",
+      "cat": "Catégorie 12",
+      "deps": [
+        "T23"
+      ]
+    },
+    {
+      "id": "T25",
+      "name": "Tâche fictive 25",
+      "dur": 7,
+      "res": "Personne Yankee",
+      "cat": "Catégorie 1"
+    },
+    {
+      "id": "T26",
+      "name": "Tâche fictive 26",
+      "dur": 3,
+      "res": "Personne Zulu",
+      "cat": "Catégorie 2",
+      "deps": [
+        "T25"
+      ]
+    },
+    {
+      "id": "T27",
+      "name": "Tâche fictive 27",
+      "dur": 4,
+      "res": "Personne Atlas",
+      "cat": "Catégorie 3",
+      "deps": [
+        "T26"
+      ]
+    },
+    {
+      "id": "T28",
+      "name": "Tâche fictive 28",
+      "dur": 5,
+      "res": "Personne Borée",
+      "cat": "Catégorie 4",
+      "deps": [
+        "T27"
+      ]
+    },
+    {
+      "id": "T29",
+      "name": "Tâche fictive 29",
+      "dur": 6,
+      "res": "Personne Cyan",
+      "cat": "Catégorie 5",
+      "deps": [
+        "T28"
+      ]
+    },
+    {
+      "id": "T30",
+      "name": "Tâche fictive 30",
+      "dur": 7,
+      "res": "Personne Dune",
+      "cat": "Catégorie 6",
+      "deps": [
+        "T29"
+      ]
+    },
+    {
+      "id": "T31",
+      "name": "Tâche fictive 31",
+      "dur": 3,
+      "res": "Personne Alpha",
+      "cat": "Catégorie 7"
+    },
+    {
+      "id": "T32",
+      "name": "Tâche fictive 32",
+      "dur": 4,
+      "res": "Personne Bravo",
+      "cat": "Catégorie 8",
+      "deps": [
+        "T31"
+      ]
+    },
+    {
+      "id": "T33",
+      "name": "Tâche fictive 33",
+      "dur": 5,
+      "res": "Personne Charlie",
+      "cat": "Catégorie 9",
+      "deps": [
+        "T32"
+      ]
+    },
+    {
+      "id": "T34",
+      "name": "Tâche fictive 34",
+      "dur": 6,
+      "res": "Personne Delta",
+      "cat": "Catégorie 10",
+      "deps": [
+        "T33"
+      ]
+    },
+    {
+      "id": "T35",
+      "name": "Tâche fictive 35",
+      "dur": 7,
+      "res": "Personne Echo",
+      "cat": "Catégorie 11",
+      "deps": [
+        "T34"
+      ]
+    },
+    {
+      "id": "T36",
+      "name": "Tâche fictive 36",
+      "dur": 3,
+      "res": "Personne Foxtrot",
+      "cat": "Catégorie 12",
+      "deps": [
+        "T35"
+      ]
+    },
+    {
+      "id": "T37",
+      "name": "Tâche fictive 37",
+      "dur": 4,
+      "res": "Personne Golf",
+      "cat": "Catégorie 1"
+    },
+    {
+      "id": "T38",
+      "name": "Tâche fictive 38",
+      "dur": 5,
+      "res": "Personne Hotel",
+      "cat": "Catégorie 2",
+      "deps": [
+        "T37"
+      ]
+    },
+    {
+      "id": "T39",
+      "name": "Tâche fictive 39",
+      "dur": 6,
+      "res": "Personne India",
+      "cat": "Catégorie 3",
+      "deps": [
+        "T38"
+      ]
+    },
+    {
+      "id": "T40",
+      "name": "Tâche fictive 40",
+      "dur": 7,
+      "res": "Personne Juliett",
+      "cat": "Catégorie 4",
+      "deps": [
+        "T39"
+      ]
+    },
+    {
+      "id": "T41",
+      "name": "Tâche fictive 41",
+      "dur": 3,
+      "res": "Personne Kilo",
+      "cat": "Catégorie 5",
+      "deps": [
+        "T40"
+      ]
+    },
+    {
+      "id": "T42",
+      "name": "Tâche fictive 42",
+      "dur": 4,
+      "res": "Personne Lima",
+      "cat": "Catégorie 6",
+      "deps": [
+        "T41"
+      ]
+    },
+    {
+      "id": "T43",
+      "name": "Tâche fictive 43",
+      "dur": 5,
+      "res": "Personne Mike",
+      "cat": "Catégorie 7"
+    },
+    {
+      "id": "T44",
+      "name": "Tâche fictive 44",
+      "dur": 6,
+      "res": "Personne November",
+      "cat": "Catégorie 8",
+      "deps": [
+        "T43"
+      ]
+    },
+    {
+      "id": "T45",
+      "name": "Tâche fictive 45",
+      "dur": 7,
+      "res": "Personne Oscar",
+      "cat": "Catégorie 9",
+      "deps": [
+        "T44"
+      ]
+    },
+    {
+      "id": "T46",
+      "name": "Tâche fictive 46",
+      "dur": 3,
+      "res": "Personne Papa",
+      "cat": "Catégorie 10",
+      "deps": [
+        "T45"
+      ]
+    },
+    {
+      "id": "T47",
+      "name": "Tâche fictive 47",
+      "dur": 4,
+      "res": "Personne Quebec",
+      "cat": "Catégorie 11",
+      "deps": [
+        "T46"
+      ]
+    },
+    {
+      "id": "T48",
+      "name": "Tâche fictive 48",
+      "dur": 5,
+      "res": "Personne Romeo",
+      "cat": "Catégorie 12",
+      "deps": [
+        "T47"
+      ]
+    },
+    {
+      "id": "T49",
+      "name": "Tâche fictive 49",
+      "dur": 6,
+      "res": "Personne Sierra",
+      "cat": "Catégorie 1"
+    },
+    {
+      "id": "T50",
+      "name": "Tâche fictive 50",
+      "dur": 7,
+      "res": "Personne Tango",
+      "cat": "Catégorie 2",
+      "deps": [
+        "T49"
+      ]
+    },
+    {
+      "id": "T51",
+      "name": "Tâche fictive 51",
+      "dur": 3,
+      "res": "Personne Uniform",
+      "cat": "Catégorie 3",
+      "deps": [
+        "T50"
+      ]
+    },
+    {
+      "id": "T52",
+      "name": "Tâche fictive 52",
+      "dur": 4,
+      "res": "Personne Victor",
+      "cat": "Catégorie 4",
+      "deps": [
+        "T51"
+      ]
+    },
+    {
+      "id": "T53",
+      "name": "Tâche fictive 53",
+      "dur": 5,
+      "res": "Personne Whiskey",
+      "cat": "Catégorie 5",
+      "deps": [
+        "T52"
+      ]
+    },
+    {
+      "id": "T54",
+      "name": "Tâche fictive 54",
+      "dur": 6,
+      "res": "Personne Xray",
+      "cat": "Catégorie 6",
+      "deps": [
+        "T53"
+      ]
+    },
+    {
+      "id": "T55",
+      "name": "Tâche fictive 55",
+      "dur": 7,
+      "res": "Personne Yankee",
+      "cat": "Catégorie 7"
+    },
+    {
+      "id": "T56",
+      "name": "Tâche fictive 56",
+      "dur": 3,
+      "res": "Personne Zulu",
+      "cat": "Catégorie 8",
+      "deps": [
+        "T55"
+      ]
+    },
+    {
+      "id": "T57",
+      "name": "Tâche fictive 57",
+      "dur": 4,
+      "res": "Personne Atlas",
+      "cat": "Catégorie 9",
+      "deps": [
+        "T56"
+      ]
+    },
+    {
+      "id": "T58",
+      "name": "Tâche fictive 58",
+      "dur": 5,
+      "res": "Personne Borée",
+      "cat": "Catégorie 10",
+      "deps": [
+        "T57"
+      ]
+    },
+    {
+      "id": "T59",
+      "name": "Tâche fictive 59",
+      "dur": 6,
+      "res": "Personne Cyan",
+      "cat": "Catégorie 11",
+      "deps": [
+        "T58"
+      ]
+    },
+    {
+      "id": "T60",
+      "name": "Tâche fictive 60",
+      "dur": 7,
+      "res": "Personne Dune",
+      "cat": "Catégorie 12",
+      "deps": [
+        "T59"
+      ]
+    }
+  ]
+}

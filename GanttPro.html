@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5V6Or6yjVOQa/3eJETt0j2Qfak+zHV3f4u3YAib1G8k='; style-src 'sha256-Y+h7CW0KlXdY86Tq1VqfZ+ken+f9RQVLXpLOWQkwOOM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/teusj9E2l7IuANIiun7CdpMBM6Pve7ANg4t/bEiHwU='; style-src 'sha256-gPrXFA05aPVQR0CDXc20RytAYQrdNIq3vXi877Q5kLk='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -94,8 +94,9 @@ progress { width: 90px; height: 10px; accent-color: var(--accent); }
 
 .planner { display: grid; grid-template-columns: var(--list-w, minmax(520px, 56%)) 10px 1fr; border-bottom: 1px solid var(--line); }
 /* Chaque colonne défile seule dans les deux sens : sa barre horizontale reste toujours visible au bas de la zone (EX-29) ;
-   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. */
-.list, .gantt { max-height: var(--planner-h, calc(100vh - 210px)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
+   le défilement vertical est recopié de l'une à l'autre par 66-layout.js. Hors écran fixe (voir « Écran fixe » plus bas),
+   la zone tient dans une hauteur de fenêtre : une fois la page défilée jusqu'à elle, ses deux barres sont visibles. */
+.list, .gantt { max-height: max(300px, calc(100dvh - 2rem)); min-height: 300px; overflow-x: scroll; overflow-y: auto; overscroll-behavior: contain; }
 .list { background: var(--panel); }
 table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .tasks th, .tasks td { height: var(--row); padding: 0 .45rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
@@ -158,7 +159,13 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .sbar::before { left: 0; border-left-color: var(--text); }
 .sbar::after { right: 0; border-right-color: var(--text); }
 
-.legend { padding: .5rem 1rem; }
+.legend { padding: .5rem 1rem; background: var(--bg); }
+/* Titre repliable : seulement en plein écran du Gantt (EF-151) ; dans la vue normale, la légende est toujours dépliée. */
+.legend-title { display: none; margin: 0 0 .3rem; font-size: 1rem; }
+body.planner-full .legend-title { display: block; }
+.legend-title button { font-weight: 600; }
+.legend-title button::before { content: "▾ "; }
+.legend-title button[aria-expanded="false"]::before { content: "▸ "; }
 .legend ul { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: 0; padding: 0; list-style: none; color: var(--muted); }
 .legend li { display: inline-flex; align-items: center; gap: .35rem; }
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); vertical-align: middle; }
@@ -273,6 +280,7 @@ button, select, input[type="checkbox"], input[type="radio"] { min-height: 24px; 
 /* Impression (EX-26, EX-32) : seul #print-area est imprimé ; en couleur, mais lisible sans couleur (contours, motifs, ● et texte).
    Le mode noir et blanc du système d'impression reste possible. */
 @media print {
+  body { display: block !important; height: auto !important; overflow: visible !important; }
   body.printing > *:not(#print-area) { display: none !important; }
   body.printing #print-area { display: block !important; }
   body { background: #fff !important; color: #000 !important; }
@@ -475,10 +483,32 @@ body.dragging { user-select: none; cursor: grabbing; }
 .tasks.frz-1 th:nth-child(1), .tasks.frz-2 th:nth-child(-n+2) { background: var(--panel-2); z-index: 3; }
 .tasks.frz-1 tr.selected td:nth-child(1), .tasks.frz-2 tr.selected td:nth-child(-n+2) { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
 .tasks.frz-1 tr.group-row td:nth-child(1), .tasks.frz-2 tr.group-row td:nth-child(-n+2) { background: var(--panel-2); }
-body.planner-full .planner { position: fixed; inset: 0; z-index: 4; grid-template-rows: minmax(0, 1fr); background: var(--bg); border-bottom: 0; }
+/* Écran fixe (EF-151) : sur un écran assez grand, la page tient dans la fenêtre, en colonne : barres en haut, planning
+   sur toute la hauteur restante, légende fixée en bas. Pas de position fixed/sticky, qui recouvrirait les barres de
+   défilement de la liste et du Gantt (EX-29). En dessous de 901 × 560 px (mobile, zoom 200 %), la page garde son flux
+   ordinaire et défile (EX-04, WCAG 1.4.10). Le plein écran du Gantt suit le même modèle quelle que soit la taille. */
+@media screen and (min-width: 901px) and (min-height: 560px) {
+  body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+  body > .tabs, body > header, body > .kpis, body > .alerts { flex: none; }
+  body > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  main > .viewbar, main > .selbar { flex: none; }
+  .planner { flex: 1 1 auto; min-height: 12rem; grid-template-rows: minmax(0, 1fr); }
+  .list, .gantt { max-height: none; min-height: 0; }
+  .legend { flex: none; max-height: min(25dvh, 9rem); display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .legend-body { min-height: 0; overflow-y: auto; }
+  /* Une longue liste d'alertes défile dans son bandeau au lieu de pousser le planning. */
+  .alerts ul { max-height: 6.6rem; overflow-y: auto; }
+}
+body.planner-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+body.planner-full > .tabs, body.planner-full > header, body.planner-full > .kpis, body.planner-full > .alerts,
+body.planner-full .viewbar, body.planner-full .selbar { display: none; }
+body.planner-full > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body.planner-full .planner { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); overflow: auto; border-bottom: 0; }
 body.planner-full .list, body.planner-full .gantt { max-height: none; min-height: 0; }
-body.planner-full { overflow: hidden; }
-.full-bar { position: fixed; right: .8rem; bottom: .8rem; z-index: 6; display: flex; gap: .4rem; padding: .4rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+@media (max-width: 900px) { body.planner-full .planner { grid-template-rows: none; } } /* une colonne : la zone défile en entier */
+body.planner-full .legend { flex: none; max-height: 40dvh; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+body.planner-full .legend-body { min-height: 0; overflow-y: auto; }
+.full-bar { flex: none; display: flex; justify-content: flex-end; gap: .4rem; padding: .3rem 1rem; border-top: 1px solid var(--line); background: var(--panel); }
 .full-bar[hidden] { display: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 
@@ -575,7 +605,7 @@ svg.cpispi { width: 100%; height: auto; display: block; }
 <section class="kpis" id="kpis" data-i18n-label="kpi.label" aria-label="Chiffres du planning"></section>
 
 <section class="alerts" id="alerts" hidden data-i18n-label="alerts.label" aria-label="Alertes">
-  <ul id="alerts-list"></ul>
+  <ul id="alerts-list" tabindex="0"></ul>
   <button type="button" class="icon close" data-click="toggleAlerts" data-i18n-label="alerts.close">✕</button>
 </section>
 
@@ -631,7 +661,10 @@ svg.cpispi { width: 100%; height: auto; display: block; }
     <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
-  <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
+  <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende">
+    <h2 class="legend-title" id="legend-title"><button type="button" id="btn-legend" data-click="toggleLegend" aria-expanded="true" aria-controls="legend-body" data-i18n="legend.label">Légende</button></h2>
+    <div class="legend-body" id="legend-body" role="group" aria-labelledby="legend-title" tabindex="0"></div>
+  </section>
 </main>
 
 <aside class="editor" id="editor" hidden aria-labelledby="editor-title">
@@ -6611,7 +6644,7 @@ function linkArrows(rows, rowOf, x, dayW, count) {
  * Appelée par : renderAll()
  */
 function renderLegend() {
-  const box = clear($('legend'));
+  const box = clear($('legend-body'));
   const swatch = c => { const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(c)); return sw; };
   const items = [
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
@@ -8449,13 +8482,16 @@ function initGestures() {
 }
 
 // ── js/ui/66-layout.js ──
-/* Mise en page de la vue principale (EF-108 à EF-111) : séparateur réglable entre la liste et le Gantt,
- * colonnes figées, plein écran du Gantt. Aucune de ces réglages n'est enregistrée : ils valent pour la
- * session (stockage local seulement sur geste explicite, SECURITY.md). Tout se fait aussi au clavier. */
+/* Mise en page de la vue principale (EF-108 à EF-111, EF-151) : séparateur réglable entre la liste et le Gantt,
+ * colonnes figées, plein écran du Gantt, légende repliable en plein écran. La hauteur de la zone de planning et la
+ * légende fixée en bas de la fenêtre sont entièrement en CSS (10-base.css, « Écran fixe »). Aucun de ces réglages
+ * n'est enregistré : ils valent pour la session (stockage local seulement sur geste explicite, SECURITY.md).
+ * Tout se fait aussi au clavier. */
 const LIST_MIN = 200, GANTT_MIN = 200, SPLIT_STEP = 20;
 App.listW = null;   // largeur imposée de la liste en px ; null = automatique
 App.freeze = 0;     // 0, 1 (identifiant) ou 2 (identifiant et nom)
 App.full = false;   // plein écran du Gantt
+App.legendOpen = true; // légende dépliée en plein écran (dans la vue normale, elle l'est toujours)
 
 /**
  * Appelle : $()
@@ -8516,37 +8552,12 @@ function applyFreeze() {
   $('freeze-cols').value = String(App.freeze);
 }
 
-/** À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles. */
 /**
- * Hauteur de la zone de planning : tout le reste de la fenêtre sous sa position dans la page (au moins 300 px),
- *  pour que le bas des deux colonnes, donc leurs barres de défilement horizontales, soit visible en haut de page.
- * Appelle : $()
- * Appelée par : initLayout(), schedulePlannerHeight()
- */
-function applyPlannerHeight() {
-  const pl = $('planner');
-  const top = pl.getBoundingClientRect().top + window.scrollY;
-  pl.style.setProperty('--planner-h', Math.max(300, Math.round(window.innerHeight - top - 12)) + 'px');
-}
-
-let plannerHeightPending = false;
-/**
- * Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25).
- * Appelle : applyPlannerHeight()
- * Appelée par : refreshLayout()
- */
-function schedulePlannerHeight() {
-  if (plannerHeightPending) return;
-  plannerHeightPending = true;
-  requestAnimationFrame(() => { plannerHeightPending = false; applyPlannerHeight(); });
-}
-
-/**
- * Appelle : applyFreeze(), applyListWidth(), schedulePlannerHeight()
+ * À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles.
+ * Appelle : applyFreeze(), applyListWidth()
  * Appelée par : initLayout(), renderAll(), setFull()
  */
 function refreshLayout() {
-  schedulePlannerHeight();
   applyListWidth();
   applyFreeze();
 }
@@ -8562,24 +8573,45 @@ action('freezeCols', (arg, el) => { App.freeze = Number(el.value) || 0; applyFre
  */
 action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze(); announce(t('lay.colsResetDone')); });
 
-const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar', 'legend'];
 /**
- * Appelle : $(), announce(), refreshLayout(), t(), updateSplitterValue()
+ * Légende repliée seulement en plein écran et sur demande ; dans la vue normale, elle est toujours dépliée.
+ * Appelle : $()
+ * Appelée par : action « toggleLegend », setFull()
+ */
+function applyLegendState() {
+  const open = !App.full || App.legendOpen;
+  $('legend-body').hidden = !open;
+  $('btn-legend').setAttribute('aria-expanded', String(open));
+}
+/**
+ * Appelle : applyLegendState()
+ * Appelée par : l'événement « toggleLegend » (table ACTIONS)
+ */
+action('toggleLegend', () => { if (!App.full) return; App.legendOpen = !App.legendOpen; applyLegendState(); });
+
+// Masqués en plein écran (10-base.css) et rendus inertes : rien n'y est atteignable au clavier.
+const FULL_LOCKED = ['tabs', 'selbar', 'kpis', 'alerts', 'viewbar'];
+let fullScrollY = 0; // position de la page avant le plein écran, rendue à la sortie (petits écrans : la page défile)
+/**
+ * Appelle : $(), announce(), applyLegendState(), refreshLayout(), t(), updateSplitterValue()
  * Appelée par : action « toggleFull », initLayout()
  */
 function setFull(on) {
   if (App.full === on) return;
   App.full = on;
+  if (on) fullScrollY = window.scrollY;
   document.body.classList.toggle('planner-full', on);
   for (const id of FULL_LOCKED) $(id).inert = on;
   document.querySelector('header.topbar').inert = on;
   $('full-bar').hidden = !on;
   const btn = $('btn-full');
   btn.setAttribute('aria-pressed', String(on));
+  applyLegendState();
   announce(t(on ? 'lay.fullOn' : 'lay.fullOff'));
   refreshLayout();
   updateSplitterValue();
-  (on ? $('btn-full-exit') : btn).focus();
+  (on ? $('btn-full-exit') : btn).focus({ preventScroll: !on });
+  if (!on) window.scrollTo(0, fullScrollY);
 }
 /**
  * Appelle : setFull()
@@ -8588,8 +8620,7 @@ function setFull(on) {
 action('toggleFull', () => setFull(!App.full));
 
 /**
- * Appelle : $(), applyPlannerHeight(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(),
- *   updateSplitterValue()
+ * Appelle : $(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(), updateSplitterValue()
  * Appelée par : init()
  */
 function initLayout() {
@@ -8620,7 +8651,7 @@ function initLayout() {
   const list = $('list'), gantt = $('gantt');
   const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
   mirror(list, gantt); mirror(gantt, list);
-  window.addEventListener('resize', () => { applyPlannerHeight(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);

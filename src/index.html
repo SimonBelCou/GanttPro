@@ -87,7 +87,7 @@
 <section class="kpis" id="kpis" data-i18n-label="kpi.label" aria-label="Chiffres du planning"></section>
 
 <section class="alerts" id="alerts" hidden data-i18n-label="alerts.label" aria-label="Alertes">
-  <ul id="alerts-list"></ul>
+  <ul id="alerts-list" tabindex="0"></ul>
   <button type="button" class="icon close" data-click="toggleAlerts" data-i18n-label="alerts.close">✕</button>
 </section>
 
@@ -143,7 +143,10 @@
     <button type="button" data-click="zoom" data-arg="1" data-i18n-label="top.zoomIn" aria-keyshortcuts="+">+</button>
     <button type="button" id="btn-full-exit" data-click="toggleFull" data-i18n="lay.fullExit"></button>
   </div>
-  <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende"></section>
+  <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende">
+    <h2 class="legend-title" id="legend-title"><button type="button" id="btn-legend" data-click="toggleLegend" aria-expanded="true" aria-controls="legend-body" data-i18n="legend.label">Légende</button></h2>
+    <div class="legend-body" id="legend-body" role="group" aria-labelledby="legend-title" tabindex="0"></div>
+  </section>
 </main>
 
 <aside class="editor" id="editor" hidden aria-labelledby="editor-title">

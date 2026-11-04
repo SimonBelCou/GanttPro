@@ -166,10 +166,29 @@ def main():
         pos2 = pg.evaluate("document.querySelector('#task-rows tr[data-id] td:nth-child(1)').getBoundingClientRect().left - document.getElementById('list').getBoundingClientRect().left")
         check('colonnes non figées : l\'identifiant défile', pos2 < -100, pos2)
         pg.dblclick('#splitter')
+        # Légende fixée en bas de la fenêtre (EF-151) : vue normale, toujours dépliée, sans défilement de la page.
+        LEG = """() => { const l = document.getElementById('legend').getBoundingClientRect(), p = document.getElementById('planner').getBoundingClientRect();
+          const b = document.getElementById('btn-legend');
+          return { bottom: Math.round(l.bottom), vh: innerHeight, scroll: document.documentElement.scrollHeight - innerHeight, gap: Math.round(l.top - p.bottom),
+            body: !document.getElementById('legend-body').hidden, btn: b.getClientRects().length > 0, exp: b.getAttribute('aria-expanded'),
+            ptop: Math.round(p.top), pw: Math.round(p.width) }; }"""
+        leg = pg.evaluate(LEG)
+        check('EF-151 : légende en bas de la fenêtre, page sans défilement', abs(leg['bottom'] - leg['vh']) <= 1 and leg['scroll'] <= 1, leg)
+        check("EF-151 : le planning occupe la hauteur jusqu'à la légende", 0 <= leg['gap'] <= 2, leg)
+        check('EF-151 : vue normale, légende dépliée et sans bouton de repli', leg['body'] and not leg['btn'], leg)
         # Plein écran du Gantt
         pg.click('#btn-full')
-        full = pg.evaluate("""() => { const p = document.getElementById('planner').getBoundingClientRect(); return { w: p.width, h: p.height, pos: getComputedStyle(document.getElementById('planner')).position, inert: document.querySelector('header.topbar').inert, focus: document.activeElement.id, pressed: document.getElementById('btn-full').getAttribute('aria-pressed') }; }""")
-        check('plein écran : le planning couvre la fenêtre', full['pos'] == 'fixed' and abs(full['w'] - pg.evaluate('innerWidth')) <= 1 and abs(full['h'] - pg.evaluate('innerHeight')) <= 1, full)
+        full = pg.evaluate("""() => { const p = document.getElementById('planner').getBoundingClientRect(); return { w: p.width, top: p.top, inert: document.querySelector('header.topbar').inert, focus: document.activeElement.id, pressed: document.getElementById('btn-full').getAttribute('aria-pressed') }; }""")
+        check('plein écran : le planning couvre la largeur de la fenêtre depuis le haut', abs(full['top']) <= 1 and abs(full['w'] - pg.evaluate('innerWidth')) <= 1, full)
+        leg = pg.evaluate(LEG)
+        check('EF-151 : plein écran, légende visible en bas, bouton « Légende » déplié', abs(leg['bottom'] - leg['vh']) <= 1 and leg['body'] and leg['btn'] and leg['exp'] == 'true', leg)
+        pg.click('#btn-legend')
+        leg2 = pg.evaluate(LEG)
+        check("EF-151 : plein écran, la légende se replie (aria-expanded=false) et le planning s'agrandit",
+              not leg2['body'] and leg2['exp'] == 'false' and abs(leg2['bottom'] - leg2['vh']) <= 1, leg2)
+        pg.keyboard.press('Enter')
+        check('EF-151 : la légende se déplie au clavier', pg.evaluate("document.getElementById('btn-legend').getAttribute('aria-expanded')") == 'true')
+        pg.click('#btn-legend')
         check('plein écran : reste de la page inerte, focus sur « Quitter », bouton enfoncé', full['inert'] and full['focus'] == 'btn-full-exit' and full['pressed'] == 'true', full)
         axe_check(pg, 'plein écran du Gantt')
         pg.click('#full-bar button[data-arg="1"]')
@@ -177,6 +196,8 @@ def main():
         pg.keyboard.press('Escape')
         back = pg.evaluate("({ cls: document.body.classList.contains('planner-full'), inert: document.querySelector('header.topbar').inert, focus: document.activeElement.id, bar: document.getElementById('full-bar').hidden })")
         check('plein écran : Échap quitte et rend le focus au bouton', not back['cls'] and not back['inert'] and back['focus'] == 'btn-full' and back['bar'], back)
+        leg = pg.evaluate(LEG)
+        check('EF-151 : hors plein écran, la légende repliée redevient dépliée', leg['body'] and leg['exp'] == 'true' and not leg['btn'], leg)
         pg.click('button[data-arg="0"][data-click="zoom"]')
 
         def import_file(name):

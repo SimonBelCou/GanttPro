@@ -822,6 +822,36 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 - [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
 - [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
 
+## Partie B — Ergonomie de l'écran principal
+
+Exigences : EF-46, EF-111, EF-151, 4.1, 4.4 ; décisions A.9. Fichier : `legende-nombreuses-ressources.json` (30 ressources
+et 12 catégories fictives, 60 tâches).
+
+### Écran 1 — La légende reste en bas de la fenêtre (EF-151)
+
+Départ : fenêtre du navigateur d'au moins 1280 × 720 px, zoom du navigateur à 100 % ; ouvrez `legende-nombreuses-ressources.json`.
+
+- [ ] 1. Regardez le bas de la fenêtre. *Attendu :* la légende est visible en bas, dépliée, sans faire défiler la page ; il n'y a pas de bouton « Légende » au-dessus d'elle.
+- [ ] 2. Faites tourner la molette au-dessus de la légende. *Attendu :* la légende défile dans sa zone (ressources « Personne … ») ; la page ne bouge pas.
+- [ ] 3. Appuyez sur Tab jusqu'à la légende (contour de focus visible), puis sur la flèche bas. *Attendu :* la légende défile au clavier.
+- [ ] 4. Faites défiler la liste et le Gantt jusqu'en bas, puis vers la droite. *Attendu :* les deux barres de défilement horizontales sont visibles juste au-dessus de la légende, jamais recouvertes.
+- [ ] 5. Agrandissez puis réduisez la hauteur de la fenêtre. *Attendu :* la zone liste + Gantt s'allonge ou se raccourcit, la légende reste collée en bas.
+
+### Écran 2 — Plein écran : légende repliable (EF-111, EF-151)
+
+Départ : comme Écran 1.
+
+- [ ] 1. Cliquez **Plein écran du Gantt**. *Attendu :* les barres du haut disparaissent ; la liste et le Gantt occupent la fenêtre ; la barre zoom − / + / **Quitter le plein écran** est au-dessus de la légende ; un titre **▾ Légende** apparaît.
+- [ ] 2. Cliquez **▾ Légende**. *Attendu :* la légende se replie (titre **▸ Légende**), le Gantt s'agrandit vers le bas ; un lecteur d'écran annonce « réduit ».
+- [ ] 3. Appuyez sur Entrée sur le titre. *Attendu :* la légende se déplie (« développé »).
+- [ ] 4. Repliez-la, puis appuyez sur Échap. *Attendu :* sortie du plein écran, focus sur **Plein écran du Gantt**, légende de nouveau dépliée et sans titre.
+
+### Écran 3 — Petits écrans et zoom de 200 % (EX-04, 4.4)
+
+- [ ] 1. Zoom du navigateur à 200 % (Ctrl + +) sur un écran de 1280 × 720 ou moins. *Attendu :* la page défile normalement ; la légende est sous le Gantt ; aucun défilement horizontal de la page.
+- [ ] 2. Mode téléphone des outils du navigateur (360 px de large). *Attendu :* même chose ; liste puis Gantt l'un sous l'autre.
+- [ ] 3. Revenez à 100 % puis lancez l'impression du Gantt (**Imprimer le Gantt**). *Attendu :* l'aperçu est le même qu'avant cette mise à jour.
+
 ### Contrôle final de la mise à jour
 
 - [ ] Aucune erreur visible, aucun message inattendu pendant les parcours.

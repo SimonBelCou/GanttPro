@@ -575,7 +575,7 @@ function linkArrows(rows, rowOf, x, dayW, count) {
  * Appelée par : renderAll()
  */
 function renderLegend() {
-  const box = clear($('legend'));
+  const box = clear($('legend-body'));
   const swatch = c => { const sw = h('span', { class: 'swatch', aria: { hidden: 'true' } }); sw.style.setProperty('background', safeColor(c)); return sw; };
   const items = [
     ...App.project.categories.map(c => h('li', {}, swatch(c.color), c.name)),
