@@ -68,6 +68,14 @@ n'est stocké sur le poste.
 l'historique (`git filter-repo`), prévenir le responsable des données personnelles de l'organisation, évaluer la
 notification à la CNIL (72 heures en cas de risque pour les personnes).
 
+**F. Revenir à une release précédente** (une version publiée pose problème) : sur GitHub, page Releases, télécharger
+`GanttPro.html` et `GanttPro.html.sha256` de la release voulue et vérifier l'empreinte (`sha256sum -c GanttPro.html.sha256`,
+README.md). Les projets enregistrés par la version plus récente restent lisibles si leur format est le même ; sinon ils
+sont refusés avec la version requise (`imp.newer`) : les rouvrir avec la version récente et les exporter n'aide pas, il
+faut attendre le correctif. Pour reconstruire depuis les sources : `git checkout vX.Y.Z`, puis `python3 tools/build.py
+--check`. Le correctif suivant est publié comme une nouvelle version (procédure CLAUDE.md §13.6 bis) : une étiquette
+publiée n'est jamais déplacée ni supprimée.
+
 **E. Une faille est signalée** : par le signalement privé de GitHub (adresse dans `SECURITY.md`). Accusé de réception,
 correctif, fusion après recette, mention dans `CHANGELOG.md`.
 
@@ -128,7 +136,7 @@ Codes de validation et de saisie les plus fréquents (extraits du catalogue fran
 | `imp.unreadable` | Ce fichier n'est pas un projet GanttPro lisible. |
 | `imp.tooBig` | Fichier trop volumineux (5 Mo au maximum). |
 | `imp.noTasks` | Le champ "tasks" est manquant ou invalide. |
-| `imp.newer` | Ce fichier vient d'une version plus récente de GanttPro. |
+| `imp.newer` | Ce fichier est au format {format} : GanttPro {version} ou ultérieur est requis pour l'ouvrir. (RG-59 ; revenir à la bonne version, procédure F) |
 | `imp.tooMany` | Trop d'éléments « {what} » ({max} au maximum). |
 | `imp.badId` | Tâche n° {n} : identifiant invalide (A-Z, 0-9, ., _ ou -, 12 caractères au plus). |
 | `imp.dupId` | Identifiant de tâche en double : {id}. |

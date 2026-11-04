@@ -822,6 +822,48 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 - [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
 - [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
 
+## Partie B — Versionnement (version 3.0.0, format 4)
+
+Exigences : EF-151, EF-152, RG-59, EX-42. Scénarios : R-101 à R-103. Fichier : `champs-inconnus-version-recente.json`
+(projet fictif avec deux champs que cette version ne connaît pas, comme s'il venait d'une version plus récente).
+
+### Version 1 — Le numéro de version est visible (EF-151, R-102)
+
+Départ : ouvrez `GanttPro.html`.
+
+- [ ] 1. Regardez le titre de l'onglet du navigateur. *Attendu :* « GanttPro 3.0.0 ».
+- [ ] 2. Ouvrez l'aide (« ? »). *Attendu :* « version 3.0.0 ».
+- [ ] 3. Ouvrez **Rapport**. *Attendu :* sous le dernier bloc, « Rapport établi avec GanttPro 3.0.0. » ; **Copier le texte** le reprend en dernière ligne.
+- [ ] 4. **Exporter**, format Projet GanttPro, ouvrez le fichier dans un éditeur de texte. *Attendu :* `"format": 4` et `"app": "3.0.0"` en tête.
+
+### Version 2 — Fichier trop récent refusé (RG-59, R-101)
+
+- [ ] 1. Copiez le fichier de l'étape 1.4, remplacez `"format": 4` par `"format": 5`, importez-le. *Attendu :* refusé : « Ce fichier est au format 5 : GanttPro 4.0.0 ou ultérieur est requis pour l'ouvrir. » ; le projet ouvert n'a pas changé.
+- [ ] 2. Passez en anglais (bouton de langue) et recommencez. *Attendu :* « This file uses format 5: GanttPro 4.0.0 or later is required to open it. »
+- [ ] 3. Importez `projet-exemple.json` (format 3). *Attendu :* il s'ouvre normalement.
+
+### Version 3 — Champs inconnus : avertissement et confirmation (EF-152, R-103)
+
+Départ : projet initial.
+
+- [ ] 1. Importez `champs-inconnus-version-recente.json`. *Attendu :* l'aperçu affiche en évidence « 2 champs inconnus ont été ignorés : ils viennent probablement d'une version plus récente de GanttPro et seront perdus si vous réenregistrez ce projet. »
+- [ ] 2. **Remplacer le projet ouvert**, puis **Exporter** (format Projet GanttPro), **Exporter**. *Attendu :* une fenêtre « Données ignorées à l'ouverture » rappelle la perte et annonce le nom « projet\_venu\_d\_une\_version\_plus\_recente\_gantt\_v3\_0\_0.json » ; **Annuler** a le focus.
+- [ ] 3. **Annuler**. *Attendu :* rien n'est téléchargé, la fenêtre d'export est toujours ouverte.
+- [ ] 4. **Exporter**, puis **Enregistrer quand même**. *Attendu :* le fichier téléchargé porte le nom distinct ; ouvert dans un éditeur, il ne contient ni `registreRisques` ni `priorite`.
+- [ ] 5. Exportez une seconde fois. *Attendu :* aucune confirmation, nom habituel « …\_gantt.json ».
+- [ ] 6. Réimportez le fichier d'origine, ouvrez-le, puis **Bibliothèque** → enregistrer. *Attendu :* même confirmation, qui dit qu'une nouvelle entrée est créée ; après confirmation, la bibliothèque a une entrée de plus.
+- [ ] 7. Avec la sauvegarde automatique activée (Réglages), rouvrez le fichier d'origine, modifiez une tâche, attendez 5 secondes puis rechargez la page et restaurez la copie ; exportez. *Attendu :* la confirmation apparaît encore (la copie restaurée garde l'avertissement).
+- [ ] 8. Au clavier : la confirmation s'atteint et se ferme par Échap, le focus revient à la fenêtre d'export ; thème sombre lisible.
+
+### Version 4 — Publication (EX-42), par le propriétaire du produit
+
+À faire au moment de publier, pas pendant la recette de la branche (procédure : CLAUDE.md §13.6 bis).
+
+- [ ] 1. Dans une pull request : `VERSION` et la section datée « ## [3.0.0] - AAAA-MM-JJ » de `CHANGELOG.md`. *Attendu :* la CI est verte (`build.py --check` contrôle la concordance).
+- [ ] 2. Après la fusion : Actions → « Étiquette de version » → « Run workflow » sur `main`, numéro 3.0.0. *Attendu :* l'étiquette `v3.0.0` est posée, puis la release « GanttPro 3.0.0 » apparaît avec `GanttPro.html`, `GanttPro.html.sha256` et les notes du CHANGELOG.
+- [ ] 3. Téléchargez les deux fichiers dans un même dossier, `sha256sum -c GanttPro.html.sha256`. *Attendu :* « GanttPro.html: OK ».
+- [ ] 4. Relancez le workflow avec 3.0.0. *Attendu :* il échoue : l'étiquette existe déjà.
+
 ### Contrôle final de la mise à jour
 
 - [ ] Aucune erreur visible, aucun message inattendu pendant les parcours.

@@ -1,13 +1,29 @@
 # Journal des changements
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/). Chaque entrée renvoie à la pull request qui l'a
-livrée. L'application affiche la version `3.0.0` (constante `APP_VERSION` de `src/js/ui/87-settings.js`) ; le dépôt
-n'a pas encore d'étiquette Git de version : le versionnement de l'application et du format de fichier est un chantier
-prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
+livrée. Numérotation [SemVer](https://semver.org/lang/fr/) : majeur = format de fichier incompatible, mineur =
+fonctionnalité, correctif = correction. Le numéro vient du fichier `VERSION` ; une version publiée a une section
+« ## [X.Y.Z] - AAAA-MM-JJ », dont le texte devient les notes de la release GitHub (CLAUDE.md §13.6 bis).
+`python3 tools/build.py --check` vérifie que la première section datée porte le numéro de `VERSION`.
 
 À chaque modification : ajouter une ligne sous « Non publié » dans la même pull request (CLAUDE.md §13.6).
 
 ## Non publié
+
+### Versionnement (premier numéro publié : 3.0.0, format de fichier 4)
+- Fichier `VERSION` (3.0.0), source unique du numéro, injecté par `tools/build.py` : titre de la page, balise
+  `<meta name="generator">`, aide, pied du rapport d'état et champ informatif `app` de tout projet écrit (EF-151).
+- Format de fichier **4** (il réunit les champs du budget A, B et C) ; formats 3 et antérieurs lus ; un format supérieur
+  est refusé avec la version requise (« format 5 : GanttPro 4.0.0 ou ultérieur requis », RG-59). Nouveau texte du code
+  d'erreur `imp.newer`.
+- Garde-fou des champs inconnus (EF-152) : avertissement dans l'aperçu de l'import, confirmation au premier export JSON
+  ou enregistrement, nom de fichier distinct, nouvelle entrée de bibliothèque ; indicateur conservé par la sauvegarde
+  automatique. Fichier d'essai `tests/fixtures/champs-inconnus-version-recente.json`.
+- `tools/version.py` (concordance VERSION / CHANGELOG, notes de publication, contrôle d'étiquette), contrôlé par
+  `build.py --check` et `tests/test_build.py`. Workflows `release.yml` (release par étiquette `v*`, avec
+  `GanttPro.html.sha256`) et `etiquette.yml` (étiquette posée à la main, jamais automatiquement) (EX-42).
+- Décisions V1 à V9 du 3 novembre 2026 au journal C.1 ; A.8 ligne 8 close. Procédure de publication : CLAUDE.md §13.6 bis ;
+  retour à une release précédente : PCA.md, procédure F.
 
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
@@ -37,7 +53,7 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   profil désormais restitué aux lecteurs d'écran (`role="alert"`, RGAA 11.10). Exigences détaillées EF-147 à EF-150
   écrites (Specs_fonctionnelles.md, 5.22). Veille sécurité du jour dans `docs/veille-securite.md`.
 
-## 3.0.0
+## Développement de la version 3 (avant le versionnement, jamais publié)
 
 ### 2026-10-30
 - **Colonnes de la liste** (#13) : choisir les colonnes affichées, les ordonner (boutons Monter / Descendre), choix

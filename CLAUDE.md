@@ -314,7 +314,13 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
   niveau module et de chaque module, et contrôlées en CI ; le graphe est dans `Architecture.md`. Écrire un commentaire de
   rôle au-dessus de la fonction, lancer l'outil, recommiter.
 - Montants en **entiers de centimes** (jamais de nombre à virgule) ; identifiants de tâche en chaînes.
-- Les champs ajoutés au format de fichier 3 sont **facultatifs** (le numéro de format ne change pas).
+- **Versions et format de fichier** (décisions V1 à V9 du 3 novembre 2026, Specs_fonctionnelles.md RG-59, EF-152, EX-42) :
+  SemVer (majeur = format de fichier incompatible, mineur = fonctionnalité, correctif = correction). Le numéro vient du
+  seul fichier `VERSION`, injecté par `tools/build.py` (marqueur `@VERSION@` de `src/index.html`, chaîne `'@VERSION@'` de
+  `Model.APP_VERSION`) : ne jamais écrire un numéro ailleurs dans le code ni dans les tests. Format de fichier **4** ;
+  règle **souple** : un champ ajouté est **facultatif** et ne change pas le numéro de format ; seul un changement de sens
+  (renommage, unité, signification) fait monter le format, et donc la version majeure. Un champ inconnu reste ignoré, avec
+  le garde-fou EF-152 (avertissement, confirmation et nom distinct au premier enregistrement).
 
 ### 13.5 Documents de référence
 | Document | Rôle |
@@ -333,6 +339,8 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`, `python3 tests/test_v3_recette_manuelle.py`
    (`npm install --no-save axe-core@4.14.0 acorn@8.19.0` pour le contrôle d'accessibilité et l'outil de dépendances ; `PERF_FACTOR=2` sur une machine lente).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
+   `python3 tests/test_build.py` contrôle aussi l'injection de la version et `tools/version.py` ; `python3 tools/build.py
+   --check` vérifie que `VERSION` concorde avec la première section datée de `CHANGELOG.md`.
 5. **Documents à jour dans la même modification** (§7) : toute fonction ajoutée ou tout arbitrage est reporté dans
    `Specs_fonctionnelles.md` (exigence + annexe A ou journal C) et, s'il change l'usage, dans
    `docs/guide-utilisateur.md` ; `Architecture.md` si la structure ou une dépendance change ; `PCA.md` si un problème
@@ -345,6 +353,18 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
    par « Importer » ; un fichier par situation utile, nommé pour ce qu'il montre). Une mise à jour n'est livrée qu'avec
    son parcours à jour et ses fichiers d'essai ; le parcours renvoie aux exigences et aux scénarios R-xx de
    `Specs_fonctionnelles.md`.
+
+### 13.6 bis Publier une version (décisions V8 et V9, EX-42)
+La publication est décidée par le propriétaire du produit ; l'assistant ne pose aucune étiquette et ne lance aucune release.
+1. Dans une pull request : choisir le numéro selon SemVer, l'écrire dans `VERSION`, renommer le contenu de « ## Non publié »
+   en « ## [X.Y.Z] - AAAA-MM-JJ » dans `CHANGELOG.md` (garder une section « ## Non publié » vide au-dessus), lancer
+   `python3 tools/build.py` puis tous les contrôles du §13.6. Si le format de fichier change, monter `FORMAT`
+   (`src/js/core/40-model.js`) et la version majeure ensemble.
+2. Après la fusion dans `main` (CI verte) : GitHub, onglet Actions, workflow « Étiquette de version », « Run workflow » sur
+   `main` avec le numéro X.Y.Z. Il contrôle le numéro, `VERSION`, le CHANGELOG et le fichier assemblé, pose l'étiquette
+   `vX.Y.Z`, puis lance « Publication » (`release.yml`) : reconstruction, égalité avec le fichier commité, release avec
+   `GanttPro.html`, `GanttPro.html.sha256` et les notes de la section du CHANGELOG.
+3. Vérifier la release (empreinte, notes) ; revenir à une version précédente : PCA.md, procédure F.
 
 ### 13.7 Règles de code (A03 – Injection)
 - DOM construit avec `h()` : tout texte par `textContent`, **jamais `innerHTML`** ; SVG par `svg()`.

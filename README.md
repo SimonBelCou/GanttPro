@@ -51,6 +51,22 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 ### 🌍 Interface
 - Français et anglais ; thèmes clair (par défaut), sombre ou système ; raccourcis clavier au survol des boutons ; utilisable au clavier, au doigt et sur petit écran
 
+## 📦 Versions et téléchargement
+
+Chaque version publiée (numérotation SemVer : le premier chiffre change quand le format de fichier change) est une
+[release GitHub](https://github.com/SimonBelCou/GanttPro/releases) avec deux fichiers : `GanttPro.html` et son empreinte
+`GanttPro.html.sha256`. Le numéro de version figure dans le titre de l'onglet et dans l'aide (« ? »).
+
+Vérifier qu'un fichier téléchargé n'a pas été altéré (les deux fichiers dans le même dossier) :
+
+```bash
+sha256sum -c GanttPro.html.sha256
+```
+
+Sous Windows (PowerShell), comparer `Get-FileHash GanttPro.html -Algorithm SHA256` à la valeur du fichier `.sha256`.
+Un projet enregistré par une version plus récente peut ne pas s'ouvrir dans une version plus ancienne : un format de
+fichier plus récent est refusé avec la version requise.
+
 ## 🖥 Compatibilité
 
 | Navigateur | Support |

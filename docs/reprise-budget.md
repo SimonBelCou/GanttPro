@@ -24,7 +24,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 - **Étape C (taux de ressource)**, développée sur la branche `budget-etape-c-taux-ressources` (PR en attente de la recette
   manuelle « Taux 1 à 10 ») : voir le § 3 bis. Moteur `src/js/core/46-rates.js`, interface `src/js/ui/71-rates.js`, tests
   `tests/core/taux.test.mjs` (R-92 à R-100) et la fin de `tests/test_v3_budget.py`.
-- Reste à faire : nouvelle tâche « versionnement » ; chantier D (dette, voir la demande du 30 octobre) ; et, en réserve, les
+- Reste à faire : ~~nouvelle tâche « versionnement »~~ (faite le 3 novembre 2026 : EX-42, RG-59, EF-151, EF-152) ; chantier D (dette, voir la demande du 30 octobre) ; et, en réserve, les
   suites de l'étape C listées au § 3 bis.
 - Référence : `Specs_fonctionnelles.md` (source unique depuis le 2 novembre 2026 ; l'ancien cahier des charges en ligne
   est figé) : exigences EF-112 à EF-130 (5.21 ; EF-128 à EF-130 décrites par EX-36 à EX-38), règles
@@ -57,7 +57,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
 |---|---|
 | Taux de ressource | Cas général : taux moyen par rôle ou profil, fixé par la comptabilité. Externes : taux nominatif autorisé (donnée nécessaire). Concerne l'étape C. |
 | Confidentialité | Export « sans montants » obligatoire ; rien ne sort sans export volontaire. |
-| Compatibilité du format | Aucune contrainte tant que l'application est en développement. À prévoir : versionnement de GanttPro (application et format), tâche à ouvrir. Avant cela, ajouter les champs sans changer le numéro de format est acceptable ; à trancher au moment du versionnement. |
+| Compatibilité du format | Aucune contrainte tant que l'application est en développement. Tranché le 3 novembre 2026 : format 4 à la première publication, règle souple avec garde-fou (RG-59, EF-152). |
 | Historique | Le budget est capturé avec la baseline (budgets des tâches, provision, BAC). |
 | Montants | Entiers en centimes, plafonds à fixer. |
 | Surpromesse | Rien à ajouter (mention dans le guide : l'outil ne remplace pas une comptabilité projet). |

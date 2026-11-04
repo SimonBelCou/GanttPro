@@ -43,10 +43,15 @@ Le fichier livré est **généré** : on ne le modifie jamais à la main. `tools
 constructions dangereuses (`eval`, gestionnaires en ligne, appels réseau, `console.*`, accès au stockage hors de
 `src/js/ui/10-storage.js`) et calcule la politique de sécurité du contenu (CSP) avec l'empreinte SHA-256 exacte du script
 et de la feuille de style. Sans `'unsafe-inline'`, un script ou un style injecté est bloqué par le navigateur.
+Il injecte aussi le numéro de version du fichier `VERSION` (titre, `<meta name="generator">`, `Model.APP_VERSION`) ;
+`tools/version.py` contrôle sa concordance avec `CHANGELOG.md` (appelé par `build.py --check`) et sert aux workflows de
+publication : `etiquette.yml` (déclenché à la main) pose l'étiquette `vX.Y.Z` et appelle `release.yml`, qui reconstruit,
+vérifie l'égalité avec le fichier commité et publie la release avec l'empreinte (Specs_fonctionnelles.md, EX-42).
 
 ```mermaid
 flowchart LR
   tpl["src/index.html : gabarit et marqueurs"]
+  ver["VERSION : numéro SemVer (source unique)"]
   css["src/styles/*.css"]
   core["src/js/core/*.js : moteur sans DOM"]
   ui["src/js/ui/*.js : interface"]
@@ -55,12 +60,15 @@ flowchart LR
   tests["tests/core (node --test) et tests/*.py (Playwright, axe-core)"]
   ci["CI GitHub Actions : build --check, syntaxe, tests, gitleaks"]
   tpl --> build
+  ver --> build
   css --> build
   core --> build
   ui --> build
   build --> out
   out --> tests --> ci
   out --> ci
+  rel["etiquette.yml (à la main) puis release.yml : release GitHub, GanttPro.html et .sha256"]
+  ci --> rel
 ```
 
 Ordre de chargement : les fichiers sont concaténés dans l'ordre alphabétique, `core` avant `ui`, dans **une seule
@@ -76,7 +84,7 @@ préfixe inférieur ; un appel vers un module de préfixe supérieur n'a lieu qu
 | Interface (`ui`) | `src/js/ui/` | Rendu, fenêtres, gestes, fichiers, stockage, démarrage | Oui |
 | Styles | `src/styles/` | Polices intégrées (base64) et feuille de style, thèmes clair et sombre | — |
 | Gabarit | `src/index.html` | Squelette de la page, zones, marqueurs de construction | — |
-| Outils | `tools/build.py`, `tools/dependances.mjs` | Assemblage, contrôles, CSP ; dépendances entre fonctions, commentaires et graphe | — |
+| Outils | `tools/build.py`, `tools/version.py`, `tools/dependances.mjs` | Assemblage, contrôles, CSP, injection de la version ; concordance VERSION / CHANGELOG, notes de publication, contrôle d'étiquette ; dépendances entre fonctions, commentaires et graphe | — |
 | Tests | `tests/` | Moteur (`core/`), bout en bout (`test_v3*.py`), fichiers d'essai fictifs (`fixtures/`) | — |
 
 Règle de séparation : le moteur ne lit ni n'écrit rien d'extérieur ; il reçoit un projet et rend un résultat. L'interface
@@ -299,7 +307,7 @@ Dépendance de l'interface vers le moteur : l'interface appelle le moteur, jamai
 | `75-dashboard.js` | `Budget`, `Dates`, `I18n`, `Metrics`, `Rates` |
 | `76-budget.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model`, `Rates` |
 | `76-load.js` | `I18n`, `Metrics` |
-| `77-report.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Metrics` |
+| `77-report.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Metrics`, `Model` |
 | `78-print.js` | `Budget`, `Dates`, `I18n`, `Metrics` |
 | `79-versions.js` | `I18n`, `Model` |
 | `80-files.js` | `Csv`, `Dates`, `Exchange`, `I18n`, `Metrics`, `Model`, `Schedule`, `Secure`, `Xlsx` |

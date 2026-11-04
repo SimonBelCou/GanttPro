@@ -75,4 +75,15 @@ Détail des mesures :
 - Reprise après incident, codes d'erreur et contacts par rôle : [PCA.md](PCA.md).
 - Écarts connus aux règles de développement : Specs_fonctionnelles.md, annexe C.2.
 
-Seule la version courante de `GanttPro.html` est maintenue : les anciennes versions ne reçoivent plus de correctifs.
+## Versions prises en charge
+
+| Version | Prise en charge |
+|---|---|
+| Dernière release publiée (3.x à partir de 3.0.0) | ✅ correctifs de sécurité |
+| Releases antérieures | ❌ mettre à jour vers la dernière release |
+
+Seule la dernière release de `GanttPro.html` reçoit des correctifs (une version corrective X.Y.Z+1). Chaque release joint
+l'empreinte SHA-256 du fichier (`GanttPro.html.sha256`), calculée par la CI après reconstruction et contrôle que le
+fichier est identique à celui du dépôt (`.github/workflows/release.yml`) ; l'étiquette n'est posée que par un workflow
+déclenché à la main (`.github/workflows/etiquette.yml`). Un fichier d'une version plus récente (format supérieur) est
+refusé ; un champ inconnu est ignoré, sans jamais être interprété, et l'utilisateur est prévenu avant de le perdre.
