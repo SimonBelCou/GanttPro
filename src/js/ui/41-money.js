@@ -4,25 +4,27 @@
  * « •••• » (nom accessible « montant masqué »), sans toucher aux données ni aux fichiers (RG-41).
  *
  * Appelle : App, Budget, I18n
- * Appelée par : 50-render.js, 64-bulk.js, 70-windows.js, 72-baselines.js, 76-budget.js, 77-report.js, 78-print.js,
- *   80-files.js, Editor, Tooltip
+ * Appelée par : 50-render.js, 64-bulk.js, 70-windows.js, 71-rates.js, 71-resource-sheet.js, 72-baselines.js,
+ *   76-budget.js, 77-report.js, 78-print.js, 80-files.js, Editor, Tooltip
  */
 const Money = (() => {
   const DOTS = '••••';
   /**
    * Appelle : aucune
-   * Appelée par : bulkWindow(), Editor.budgetEditor(), Editor.validate(), Money.opts(), sheetWizard()
+   * Appelée par : action « rlField », bulkWindow(), Editor.budgetEditor(), Editor.validate(), Money.opts(),
+   *   rateLinesEditor(), sheetWizard()
    */
   const symbol = () => (App.project && App.project.currency) || '€';
   /**
    * Appelle : aucune
-   * Appelée par : bulkWindow(), Editor.budgetEditor(), Editor.validate(), editProjectWindow(), Money.node(),
-   *   Money.spoken(), Money.text()
+   * Appelée par : action « rlAdd », action « rlField », action « rlRemove », action « rsOwnClear », bulkWindow(),
+   *   Editor.budgetEditor(), Editor.validate(), editProjectWindow(), Money.node(), Money.text(), rateLinesEditor(),
+   *   resourceCostSection()
    */
   const masked = () => !!App.maskAmounts;
   /**
    * Appelle : I18n.getLang(), Money.symbol()
-   * Appelée par : Money.node(), Money.plain(), Money.spoken(), Money.text()
+   * Appelée par : Money.node(), Money.plain(), Money.text()
    */
   const opts = () => ({ lang: I18n.getLang(), symbol: symbol() });
 
@@ -43,18 +45,13 @@ const Money = (() => {
   function plain(cents, { compact = false } = {}) {
     return compact ? Budget.formatCompact(cents, opts()) : Budget.format(cents, opts());
   }
-  /**
-   * Texte pour un lecteur d'écran : le montant complet, ou « montant masqué ».
-   * Appelle : Budget.format(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : aucune dans le code (point d'entrée ou appel dynamique)
-   */
-  const spoken = cents => (masked() ? I18n.t('amt.masked') : Budget.format(cents, opts()));
 
   /**
    * Nœud d'un montant. Masqué : « •••• » visible, « montant masqué » pour les lecteurs d'écran. Compact : le texte
    * abrégé est visible et le lecteur d'écran lit ce texte puis le montant complet entre parenthèses (RG-43).
    * Appelle : Budget.format(), Budget.formatCompact(), h(), I18n.t(), Money.masked(), Money.opts()
-   * Appelée par : baselinesWindow(), lineNode(), moneyCell(), paintBudget(), paintEvm(), Tooltip.show()
+   * Appelée par : amountCell(), amountSentence(), baselinesWindow(), lineNode(), moneyCell(), paintBudget(),
+   *   paintEvm(), paintRatesCost(), paintResourceSheet(), rateTodayNode(), resourceCostSection(), Tooltip.show()
    */
   function node(cents, { compact = false, cls = '' } = {}) {
     if (masked()) return h('span', { class: ['money', 'masked', cls] }, h('span', { aria: { hidden: 'true' }, text: DOTS }), h('span', { class: 'sr-only', text: I18n.t('amt.masked') }));
@@ -63,7 +60,7 @@ const Money = (() => {
     return h('span', { class: ['money', 'compact', cls] }, shown, h('span', { class: 'sr-only', text: ` (${Budget.format(cents, opts())})` }));
   }
 
-  return { DOTS, symbol, masked, text, plain, spoken, node };
+  return { DOTS, symbol, masked, text, plain, node };
 })();
 
 /**

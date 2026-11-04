@@ -138,7 +138,7 @@ function protectFields(prefix) {
 /**
  * Enregistre le projet courant dans la bibliothèque (EF-99, Ctrl + S).
  * Appelle : 14 fonctions
- * Appelée par : action « saveLibrary », initKeyboard(), openLibrary()
+ * Appelée par : initKeyboard(), openLibrary()
  */
 async function saveToLibrary() {
   if (!(await storageNotice())) return;
@@ -371,11 +371,6 @@ async function openLibrary(focusSel) {
  * Appelée par : l'événement « openLibrary » (table ACTIONS)
  */
 action('openLibrary', () => openLibrary());
-/**
- * Appelle : saveToLibrary()
- * Appelée par : l'événement « saveLibrary » (table ACTIONS)
- */
-action('saveLibrary', () => saveToLibrary());
 /**
  * Appelle : newFromTemplate()
  * Appelée par : l'événement « newFromTemplate » (table ACTIONS)

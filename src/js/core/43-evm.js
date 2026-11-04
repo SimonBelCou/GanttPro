@@ -16,23 +16,27 @@
  * passent par BigInt. Un indicateur qui ne se calcule pas vaut null et dit pourquoi : jamais 0 ni l'infini (RG-48).
  *
  * Appelle : Budget, Dates, Model
- * Appelée par : 72-baselines.js, 76-budget.js, 77-report.js
+ * Appelée par : 72-baselines.js, 76-budget.js, 77-report.js, Rates
  */
 const Evm = (() => {
-  /**
-   * Appelle : aucune
-   * Appelée par : Evm.compute()
-   */
-  const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0); // même règle que Budget
+  const amt = Budget.amt;
   const LIGHTS = Object.freeze(['green', 'orange', 'red', 'none']);
 
   /**
    * a × k / b arrondi à l'entier, la moitié vers le haut (a, k >= 0, b > 0), sans perte de précision au-delà de 2^53.
    * @returns {number|null} null si le résultat dépasse la limite des entiers exacts.
+   */
+  const FAST = 2 ** 52; // en dessous, numérateur et dénominateur sont des entiers exacts, quotient et reste aussi
+  /**
    * Appelle : aucune
-   * Appelée par : Evm.compute(), Evm.ratio()
+   * Appelée par : Evm.compute(), Evm.ratio(), Rates.costOf()
    */
   function divRound(a, b, k = 1) {
+    const n = 2 * a * k + b, d = 2 * b;
+    if (n <= FAST && d <= FAST) { // cas courant : sans BigInt, même résultat exact (quotient corrigé par le reste)
+      const q = Math.floor(n / d), r = n - q * d;
+      return r < 0 ? q - 1 : r >= d ? q + 1 : q;
+    }
     const A = BigInt(a) * BigInt(k), B = BigInt(b);
     const q = (2n * A + B) / (2n * B);
     return q > BigInt(Number.MAX_SAFE_INTEGER) ? null : Number(q);
@@ -91,8 +95,8 @@ const Evm = (() => {
    *            added:string[], removed:string[]}}
    *   cpi, spi : { value, hundredths, light, reason } ; reason vaut null, 'noBudget', 'noActual' ou 'noPlanned'.
    *   eac.* : { cents, vac, reason } ; reason vaut null, 'noBudget', 'noActual', 'noEarned', 'noEtc' ou 'overflow'.
-   * Appelle : Budget.totals(), Dates.parse(), Evm.amount(), Evm.amt(), Evm.divRound(), Evm.noAmount(), Evm.none(),
-   *   Evm.ratio(), Evm.reference()
+   * Appelle : Budget.totals(), Dates.parse(), Evm.amount(), Evm.divRound(), Evm.noAmount(), Evm.none(), Evm.ratio(),
+   *   Evm.reference()
    * Appelée par : action « evmPointAdd », paintEvm(), reportSections()
    */
   function compute(project, sched, today) {

@@ -3,7 +3,7 @@
  * Rien n'est appliqué avant « Enregistrer » : le formulaire travaille sur un brouillon.
  * Chaque champ refusé affiche un message précis sous lui, annoncé, et reçoit le focus (EX-06).
  *
- * Appelle : App, Budget, Dates, I18n, Model, Money, Schedule
+ * Appelle : App, Budget, Dates, I18n, Model, Money, Rates, Schedule
  * Appelée par : 40-state.js, 62-shortcuts.js, 63-selection.js, 66-layout.js, 79-versions.js, 87-settings.js,
  *   99-main.js, Tabs
  */
@@ -73,7 +73,8 @@ const Editor = (() => {
   }
 
   /**
-   * Appelle : Editor.input(), Editor.select(), h(), resById(), t()
+   * Appelle : amountSentence(), Editor.input(), Editor.select(), h(), pdText(), Rates.inUse(), Rates.ofTask(),
+   *   resById(), t()
    * Appelée par : Editor.build()
    */
   function assignEditor() {
@@ -93,6 +94,13 @@ const Editor = (() => {
       pick.id = 'res-pick';
       pick.setAttribute('aria-label', t('f.resPick'));
       box.append(h('div', { class: 'add-row' }, pick, h('button', { type: 'button', data: { click: 'draftAddAssign' } }, t('f.addAssign'))));
+    }
+    // Étape C : coût des ressources de la tâche enregistrée (le planning enregistré, pas le brouillon en cours de saisie).
+    const saved = draft.id && App.project.tasks.find(x => x.id === draft.id && x.type === 'task');
+    if (saved && saved.assign.length && App.sched && Rates.inUse(App.project)) {
+      const c = Rates.ofTask(App.project, App.sched, saved), pd = pdText(c.pd);
+      box.append(h('p', { class: 'hint', id: 'assign-cost' }, c.unrated && !c.cents ? t('rt.assignNone', { pd })
+        : amountSentence(c.unrated ? 'rt.assignPart' : 'rt.assignCost', { pd }, c.cents)));
     }
     box.append(h('p', { class: 'field-error', id: 'assign-err', hidden: true, role: 'alert' }));
     return box;

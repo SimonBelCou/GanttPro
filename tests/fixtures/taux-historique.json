@@ -1,0 +1,65 @@
+{
+  "format": 3,
+  "name": "Taux – révision de taux et prestataire",
+  "projectStart": "2026-01-05",
+  "currency": "€",
+  "profiles": [
+    {
+      "name": "Analyste",
+      "rates": [
+        {
+          "from": "",
+          "rate": 40000
+        },
+        {
+          "from": "2026-01-08",
+          "rate": 42000
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice",
+      "profile": "Analyste"
+    },
+    {
+      "name": "Dave (externe)",
+      "rates": [
+        {
+          "from": "",
+          "rate": 70000
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "A",
+      "name": "Analyse",
+      "dur": 5,
+      "budget": 300000,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Expertise externe",
+      "dur": 2,
+      "budget": 150000,
+      "deps": [
+        "A"
+      ],
+      "assign": [
+        {
+          "res": "Dave (externe)",
+          "units": 100
+        }
+      ]
+    }
+  ]
+}

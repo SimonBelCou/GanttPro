@@ -1,0 +1,98 @@
+{
+  "format": 3,
+  "name": "Taux – profils et coût des ressources",
+  "projectStart": "2026-01-05",
+  "currency": "€",
+  "provision": 100000,
+  "profiles": [
+    {
+      "name": "Analyste",
+      "rates": [
+        {
+          "from": "",
+          "rate": 40000
+        }
+      ]
+    },
+    {
+      "name": "Développeur",
+      "rates": [
+        {
+          "from": "",
+          "rate": 45000
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "Alice",
+      "role": "Analyse",
+      "profile": "Analyste"
+    },
+    {
+      "name": "Bob",
+      "role": "Développement",
+      "profile": "Développeur"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Étude",
+      "color": "#4d9fff"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "name": "Conception",
+      "dur": 10,
+      "cat": "Étude",
+      "pct": 100,
+      "realEnd": "2026-01-16",
+      "budget": 250000,
+      "actual": 240000,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 50
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "name": "Développement",
+      "dur": 20,
+      "deps": [
+        "T1"
+      ],
+      "cat": "Étude",
+      "pct": 50,
+      "budget": 1000000,
+      "actual": 300000,
+      "assign": [
+        {
+          "res": "Bob",
+          "units": 100
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "Recette",
+      "dur": 5,
+      "deps": [
+        "T2"
+      ],
+      "cat": "Étude",
+      "pct": 0,
+      "budget": 200000,
+      "assign": [
+        {
+          "res": "Alice",
+          "units": 100
+        }
+      ]
+    }
+  ]
+}

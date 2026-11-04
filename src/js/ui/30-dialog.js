@@ -5,7 +5,7 @@
  * annoncée comme un dialogue titré (EX-02). Plusieurs fenêtres peuvent s'empiler.
  *
  * Appelle : App, I18n
- * Appelée par : 21 modules et fichiers (voir Architecture.md)
+ * Appelée par : 22 modules et fichiers (voir Architecture.md)
  */
 const Dialog = (() => {
   let seq = 0;
@@ -21,7 +21,7 @@ const Dialog = (() => {
    * @param {boolean|(() => boolean)} [o.guard] formulaire dont la saisie serait perdue : true = un champ a été modifié ; fonction = état « modifié » calculé par l'appelant. La croix et Échap demandent alors confirmation.
    * @returns {Promise<string>} valeur du bouton choisi, ou 'cancel'
    * Appelle : Dialog.confirm(), h(), I18n.t()
-   * Appelée par : 31 fonctions (usage général)
+   * Appelée par : 32 fonctions (usage général)
    */
   function open({ title, body = [], actions = [], onAction, size, guard, maskTool }) {
     const opener = document.activeElement;
@@ -82,7 +82,7 @@ const Dialog = (() => {
   /**
    * Message simple.
    * Appelle : Dialog.open(), h(), I18n.t()
-   * Appelée par : 26 fonctions (usage général)
+   * Appelée par : 27 fonctions (usage général)
    */
   function message(title, text) {
     return open({ title, body: [h('p', { text })], actions: [{ label: I18n.t('dlg.ok'), value: 'ok', kind: 'primary', focus: true }] });
@@ -91,7 +91,7 @@ const Dialog = (() => {
   /**
    * Confirmation : « Annuler » est l'action par défaut (4.3). Renvoie true si confirmé.
    * Appelle : Dialog.open(), h(), I18n.t()
-   * Appelée par : 14 fonctions (usage général)
+   * Appelée par : 15 fonctions (usage général)
    */
   async function confirm(title, lines, confirmLabel, danger = true, cancelLabel) {
     const v = await open({

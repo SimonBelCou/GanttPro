@@ -40,6 +40,7 @@ GanttPro est un éditeur de diagramme de Gantt complet et autonome, livré en **
 
 ### 💶 Budget et valeur acquise
 - Budget et coût réel par tâche, provision, BAC, courbe en S des coûts, budget par catégorie ; montants facultatifs, masquables à l'écran, exclus à la demande des exports et du rapport
+- Profils de coût et taux des ressources (par jour ouvré, avec lignes datées et taux nominatif des prestataires) : coût des ressources par tâche, par ressource et face au budget saisi, signalement des ressources sans taux ; le budget saisi reste la référence
 - Valeur acquise à la date du jour sur la baseline de référence : PV, EV, AC, CV, SV, CPI, SPI avec voyants, prévisions à terminaison (EAC, VAC), diagramme CPI / SPI, points de situation
 
 ### 💾 Fichiers et projets
@@ -91,7 +92,7 @@ src/                      ← Sources : js/core (moteur), js/ui (interface), sty
 tools/build.py            ← Assemble GanttPro.html, calcule la CSP, refuse les constructions dangereuses
 tools/dependances.mjs     ← Dépendances entre fonctions : commentaires « Appelle / Appelée par » et graphe (contrôlé en CI)
 tests/                    ← core/ (node --test, scénarios de recette) et tests de bout en bout (Chromium)
-docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, veille sécurité, captures d'écran
+docs/                     ← Guide utilisateur, guide « IA » (prompts pour créer ou modifier un projet JSON), recette manuelle, reprise du budget, veille sécurité, captures d'écran
 .github/workflows/ci.yml  ← CI : build à jour, syntaxe, tests, accessibilité, gitleaks
 CLAUDE.md                 ← Règles de développement (texte générique, puis spécificités de GanttPro au §13)
 .claude/                  ← Règles et agents « numérique responsable » de l'INR (eco-check, accessibilite-check), importés par CLAUDE.md §13.10
@@ -107,14 +108,15 @@ THIRD_PARTY_LICENSES.md   ← Licences des polices intégrées (SIL OFL 1.1)
 
 ```bash
 python3 tools/build.py                       # assemble GanttPro.html depuis src/
+python3 tests/test_build.py                  # fichier assemblé identique sous Windows et Linux
 node --test tests/core/*.test.mjs            # moteur et scénarios chiffrés (sans dépendance)
 pip install playwright && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0   # accessibilité et dépendances (une seule commande)
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
-python3 tests/test_v3_budget.py
-python3 tests/test_v3_recette_manuelle.py
+python3 tests/test_v3_budget.py              # budget, valeur acquise, colonnes, taux des ressources
+python3 tests/test_v3_recette_manuelle.py    # projets d'essai de la recette manuelle (tests/fixtures/)
 node tools/dependances.mjs                   # commentaires « Appelle / Appelée par » et graphe d'Architecture.md
 node --test tests/test_dependances.mjs
 ```

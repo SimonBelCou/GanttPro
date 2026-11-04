@@ -3,7 +3,7 @@
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 81 fonctions (usage général)
+ * Appelée par : 89 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -14,7 +14,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 76 fonctions (usage général)
+ * Appelée par : 84 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -53,7 +53,7 @@ function append(el, children) {
  * Vide un élément. Si le focus est dedans, on le retire AVANT : le « change » ou le « blur » qui en
  * découle (et qui peut lui-même repeindre) s'exécute entièrement, puis le vidage a lieu.
  * Appelle : aucune
- * Appelée par : 30 fonctions (usage général)
+ * Appelée par : 31 fonctions (usage général)
  */
 function clear(el) {
   const a = document.activeElement;
@@ -87,7 +87,7 @@ let liveTimer = 0;
 /**
  * Message annoncé aux lecteurs d'écran (EX-02) et affiché brièvement.
  * Appelle : $()
- * Appelée par : 57 fonctions (usage général)
+ * Appelée par : 59 fonctions (usage général)
  */
 function announce(msg) {
   const live = $('live');

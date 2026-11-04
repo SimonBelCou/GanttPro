@@ -5,7 +5,7 @@
  * La date du jour est lue dans le fuseau de l'utilisateur (todayDn).
  *
  * Appelle : aucune
- * Appelée par : 29 modules et fichiers (voir Architecture.md)
+ * Appelée par : 31 modules et fichiers (voir Architecture.md)
  */
 const Dates = (() => {
   const MIN_YEAR = 1970;
@@ -15,7 +15,7 @@ const Dates = (() => {
   /**
    * 'AAAA-MM-JJ' → dn, ou null si la chaîne n'est pas une date existante dans les bornes.
    * Appelle : aucune
-   * Appelée par : 44 fonctions (usage général)
+   * Appelée par : 49 fonctions (usage général)
    */
   function parse(s) {
     if (typeof s !== 'string') return null;
@@ -39,7 +39,7 @@ const Dates = (() => {
 
   /**
    * Appelle : aucune
-   * Appelée par : 17 fonctions (usage général)
+   * Appelée par : 18 fonctions (usage général)
    */
   function toISO(dn) {
     const t = new Date(dn * 86400000);
@@ -68,7 +68,7 @@ const Dates = (() => {
   /**
    * Date du jour dans le fuseau de l'ordinateur de l'utilisateur.
    * Appelle : Dates.fromYMD()
-   * Appelée par : 22 fonctions (usage général)
+   * Appelée par : 24 fonctions (usage général)
    */
   function todayDn(now = new Date()) {
     return fromYMD(now.getFullYear(), now.getMonth() + 1, now.getDate());

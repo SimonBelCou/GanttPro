@@ -8,8 +8,8 @@
  * le fichier entier sans toucher au projet ouvert (EX-14). Les messages sont des clés de
  * traduction avec paramètres : ils ne contiennent jamais de HTML.
  *
- * Appelle : Calendar, Columns, Dates, Schedule
- * Appelée par : 26 modules et fichiers (voir Architecture.md)
+ * Appelle : Calendar, Columns, Dates, Rates, Schedule
+ * Appelée par : 28 modules et fichiers (voir Architecture.md)
  */
 const Model = (() => {
   const FORMAT = 3;
@@ -22,6 +22,9 @@ const Model = (() => {
     // Montant en centimes (RG-35) : 50 000 000 000,00. Avec 1 000 tâches et la provision, un total reste
     // sous 5,01e15, donc sous la limite des entiers exacts (2^53 - 1 ≈ 9,007e15).
     amount: 5000000000000, currency: 5,
+    // Étape C (A.8 ligne 18) : profils de coût, lignes de taux datées, taux en centimes par jour (1 000 000,00 au plus :
+    // 3 650 jours x 10 affectations x 1 000 tâches x 1 000 000,00 reste sous la limite des entiers exacts).
+    profiles: 50, rateLines: 10, rate: 100000000,
   });
   const ID_RE = /^[A-Z0-9._-]{1,12}$/;
   const COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -37,14 +40,15 @@ const Model = (() => {
   }
   /**
    * Appelle : aucune
-   * Appelée par : Model.parseFile(), Model.ranges(), Model.reader(), Model.sanitize(), Model.sanitizeCalendar()
+   * Appelée par : Model.parseFile(), Model.ranges(), Model.rateLines(), Model.reader(), Model.sanitize(),
+   *   Model.sanitizeCalendar()
    */
   const fail = (key, params) => { throw new Invalid(key, params); };
 
   /**
    * Appelle : aucune
-   * Appelée par : Model.parseFile(), Model.ranges(), Model.reader(), Model.sanitize(), Model.sanitizeCalendar(),
-   *   Model.stripAmounts()
+   * Appelée par : Model.parseFile(), Model.ranges(), Model.rateLines(), Model.reader(), Model.sanitize(),
+   *   Model.sanitizeCalendar(), Model.stripAmounts()
    */
   const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   /**
@@ -61,7 +65,7 @@ const Model = (() => {
   /**
    * Lecteur de champs d'un objet du fichier : compte les champs inconnus, contrôle chaque valeur.
    * Appelle : Dates.parse(), Model.fail(), Model.has(), Model.isObj()
-   * Appelée par : Model.ranges(), Model.sanitize(), Model.sanitizeCalendar()
+   * Appelée par : Model.ranges(), Model.rateLines(), Model.sanitize(), Model.sanitizeCalendar()
    */
   function reader(src, where, allowed, stats) {
     for (const k of Object.keys(src)) if (!allowed.includes(k)) stats.unknown++;
@@ -127,6 +131,25 @@ const Model = (() => {
       },
       raw: k => src[k],
     };
+  }
+
+  /**
+   * Lignes de taux datées (étape C, RG-54) : « à partir du » (vide = depuis le début) et taux en centimes par jour ouvré.
+   * Triées par date (la ligne sans date d'abord) ; deux lignes à la même date sont refusées.
+   * Appelle : Model.fail(), Model.isObj(), Model.reader(), Rates.normalize()
+   * Appelée par : Model.sanitize()
+   */
+  function rateLines(list, where, field, stats) {
+    if (list.length > LIMITS.rateLines) fail('imp.field', { ...where, field, rule: 'rule.list', max: LIMITS.rateLines });
+    const lines = list.map(l => {
+      if (!isObj(l)) fail('imp.field', { ...where, field, rule: 'rule.object' });
+      return { from: reader(l, { ...where, field }, ['from', 'rate'], stats).date('from'), rate: l.rate };
+    });
+    // Mêmes règles que la saisie (Rates.normalize). Un taux est un montant : même message qu'un montant, son propre plafond.
+    const n = Rates.normalize(lines);
+    if (n.ok) return n.lines;
+    if (n.reason === 'rate') fail('imp.field', { ...where, field: 'rate', rule: 'rule.amount', min: 0, max: LIMITS.rate });
+    fail('imp.field', { ...where, field, rule: 'rule.rateOrder' }); // 'dup' : la longueur et les dates sont déjà contrôlées
   }
 
   /**
@@ -210,7 +233,7 @@ const Model = (() => {
    * Contrôle complet d'un objet projet (section 8.3).
    * @returns {{project, notices:{unknown:number, createdResources:string[], createdCategories:string[]}}}
    * @throws {Invalid}
-   * Appelle : 14 fonctions
+   * Appelle : 15 fonctions
    * Appelée par : action « verRestore », builtinTemplates(), doExport(), Exchange.mergeRows(), importMsp(),
    *   Model.parseFile(), pasteInternal()
    */
@@ -222,7 +245,7 @@ const Model = (() => {
     if (!Array.isArray(raw.tasks)) fail('imp.noTasks');
     const P = reader(raw, { obj: 'project' }, ['format', 'id', 'createdAt', 'name', 'desc', 'emoji', 'projectStart', 'reportNote', 'calendar', 'leveling',
       'tasks', 'resources', 'categories', 'baselines', 'versions', 'currency', 'provision',
-      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns'], stats);
+      'evmGreen', 'evmRed', 'etc', 'baselineRef', 'statusPoints', 'columns', 'profiles'], stats);
 
     const lim = (list, max, what) => { if (list.length > max) fail('imp.tooMany', { what, max }); return list; };
     const rawTasks = lim(raw.tasks, LIMITS.tasks, 'tasks');
@@ -230,6 +253,7 @@ const Model = (() => {
     const rawCats = lim(P.list('categories', Infinity), LIMITS.categories, 'categories');
     const rawBl = lim(P.list('baselines', Infinity), LIMITS.baselines, 'baselines');
     const rawPts = lim(P.list('statusPoints', Infinity), LIMITS.statusPoints, 'statusPoints');
+    const rawProf = lim(P.list('profiles', Infinity), LIMITS.profiles, 'profiles');
     const rawVer = nested ? [] : lim(P.list('versions', Infinity), LIMITS.versions, 'versions');
     if (nested && P.present('versions')) fail('imp.field', { obj: 'version', field: 'versions', rule: 'rule.absent' });
 
@@ -267,12 +291,25 @@ const Model = (() => {
     if (/[\u0000-\u001f\u007f]/.test(project.currency)) fail('imp.field', { obj: 'project', field: 'currency', rule: 'rule.text', min: 1, max: LIMITS.currency });
     if (project.id && !/^[A-Za-z0-9._-]+$/.test(project.id)) fail('imp.field', { obj: 'project', field: 'id', rule: 'rule.ident' });
 
+    // Profils de coût (étape C) : un nom unique (casse ignorée) et des lignes de taux ; les ressources y renvoient par le nom.
+    const profiles = [], profByName = new Map();
+    rawProf.forEach((pr, i) => {
+      const where = { obj: 'profile', n: i + 1 };
+      if (!isObj(pr)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
+      const f = reader(pr, where, ['id', 'name', 'rates'], stats);
+      const name = f.text('name', { min: 1, max: 100, trim: true });
+      if (profByName.has(lower(name))) fail('imp.dupProfile', { name });
+      if (f.present('id') && (typeof pr.id !== 'string' || pr.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
+      const prof = { id: 'P' + (i + 1), name, rates: rateLines(f.list('rates', Infinity), where, 'rates', stats) };
+      profiles.push(prof); profByName.set(lower(name), prof);
+    });
+
     // Ressources et catégories : identités internes neuves ; les noms doivent être uniques (casse ignorée).
     const resources = [], resByName = new Map();
     rawRes.forEach((r, i) => {
       const where = { obj: 'resource', n: i + 1 };
       if (!isObj(r)) fail('imp.field', { ...where, field: '', rule: 'rule.object' });
-      const f = reader(r, where, ['id', 'name', 'role', 'color', 'capacity', 'absences'], stats);
+      const f = reader(r, where, ['id', 'name', 'role', 'color', 'capacity', 'absences', 'profile', 'rates'], stats);
       const name = f.text('name', { min: 1, max: 100, trim: true });
       if (resByName.has(lower(name))) fail('imp.dupResource', { name });
       const res = {
@@ -280,7 +317,14 @@ const Model = (() => {
         color: f.color('color', PALETTE[i % PALETTE.length]),
         capacity: f.int('capacity', { min: 1, max: 100, def: 100 }),
         absences: ranges(f.list('absences', LIMITS.absences), where, 'absences', stats),
+        profile: '', rates: rateLines(f.list('rates', Infinity), where, 'rates', stats),
       };
+      const profName = f.text('profile', { max: 100, trim: true });
+      if (profName) {
+        const pf = profByName.get(lower(profName));
+        if (!pf) fail('imp.unknownProfile', { n: i + 1, name: profName });
+        res.profile = pf.id;
+      }
       if (f.present('id') && (typeof r.id !== 'string' || r.id.length > 64)) fail('imp.field', { ...where, field: 'id', rule: 'rule.ident' });
       resources.push(res); resByName.set(lower(name), res);
     });
@@ -300,7 +344,7 @@ const Model = (() => {
       let r = resByName.get(lower(name));
       if (!r) {
         if (resources.length >= LIMITS.resources) fail('imp.tooMany', { what: 'resources', max: LIMITS.resources });
-        r = { id: 'R' + (resources.length + 1), name, role: '', color: PALETTE[resources.length % PALETTE.length], capacity: 100, absences: [] };
+        r = { id: 'R' + (resources.length + 1), name, role: '', color: PALETTE[resources.length % PALETTE.length], capacity: 100, absences: [], profile: '', rates: [] };
         resources.push(r); resByName.set(lower(name), r); createdResources.push(name);
       }
       return r;
@@ -493,7 +537,7 @@ const Model = (() => {
       return { id: 'V' + (i + 1), label: f.text('label', { min: 1, max: 100, trim: true }), ts: f.num('ts'), state: serialize(inner.project, { withVersions: false }) };
     });
 
-    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints });
+    Object.assign(project, { tasks, resources, categories, baselines, versions, statusPoints, profiles });
     // Dernier contrôle : le planning doit pouvoir se calculer (dates dans les bornes 1970-2199).
     try { Schedule.compute(project); } catch (e) { if (e instanceof RangeError) fail('imp.horizon'); throw e; }
     return { project, notices: { unknown: stats.unknown, createdResources, createdCategories } };
@@ -519,10 +563,15 @@ const Model = (() => {
    * Appelée par : Model.serialize()
    */
   const resName = (project, id) => (project.resources.find(r => r.id === id) || { name: '' }).name;
+  /**
+   * Appelle : aucune
+   * Appelée par : Model.serialize()
+   */
+  const profName = (project, id) => ((project.profiles || []).find(p => p.id === id) || { name: '' }).name;
 
   /**
    * Écriture au format 3 (8.2). anonymize : « Ressource 1 », sans rôle (EF-51).
-   * Appelle : Model.resName(), Model.stripAmounts()
+   * Appelle : Model.profName(), Model.resName(), Model.stripAmounts()
    * Appelée par : action « verSave », doExport(), Exchange.mergeRows(), homeSave(), Library.put(), Model.sanitize(),
    *   pasteInternal(), Recovery.flushSync(), Recovery.wrap()
    */
@@ -542,6 +591,7 @@ const Model = (() => {
       baselineRef: project.baselineRef || '',
       statusPoints: (project.statusPoints || []).map(s => ({ ...s })),
       ...(Array.isArray(project.columns) ? { columns: project.columns.slice() } : {}),
+      ...((project.profiles || []).length ? { profiles: project.profiles.map(pf => ({ id: pf.id, name: pf.name, rates: pf.rates.map(l => ({ from: l.from, rate: l.rate })) })) } : {}),
       tasks: project.tasks.map(t => ({
         id: t.id, name: t.name, type: t.type, parent: t.parent, dur: t.dur,
         deps: t.deps.map(d => (d.type === 'FS' && !d.lag ? d.id : { id: d.id, type: d.type, lag: d.lag })),
@@ -556,6 +606,10 @@ const Model = (() => {
       resources: project.resources.map((r, i) => ({
         id: r.id, name: anonymize ? `Ressource ${i + 1}` : r.name, role: anonymize ? '' : r.role, color: r.color,
         capacity: r.capacity, absences: anonymize ? [] : r.absences.map(a => ({ ...a })),
+        // Étape C : le profil (un intitulé de coût, pas une personne) reste ; le taux nominatif, lié à une personne, est vidé
+        // dans un fichier anonymisé (A.8 ligne 18).
+        ...(r.profile ? { profile: profName(project, r.profile) } : {}),
+        ...(!anonymize && (r.rates || []).length ? { rates: r.rates.map(l => ({ from: l.from, rate: l.rate })) } : {}),
       })),
       categories: project.categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
       baselines: project.baselines.map(b => ({ ...b, provision: b.provision || 0, tasks: b.tasks.map(bt => ({ ...bt, budget: bt.budget || 0, deps: bt.deps.slice() })) })),
@@ -576,6 +630,9 @@ const Model = (() => {
   function stripAmounts(file) {
     delete file.provision;
     delete file.etc;
+    // Un taux est un montant (A.8 ligne 18) : les profils gardent leur nom, plus aucune ligne de taux.
+    if (file.profiles) file.profiles = file.profiles.map(pf => ({ ...pf, rates: [] }));
+    for (const r of file.resources || []) delete r.rates;
     for (const t of file.tasks) { delete t.budget; delete t.actual; }
     for (const b of file.baselines) { delete b.provision; for (const bt of b.tasks) delete bt.budget; }
     // Un point de situation ne garde que sa date, son libellé et les rapports CPI/SPI, qui ne sont pas des montants.
@@ -610,10 +667,10 @@ const Model = (() => {
     return {
       id: 'P' + now.toString(36), createdAt: now, name: n.project, desc: '', emoji: '📁', projectStart: todayIso, reportNote: '',
       calendar: { workDays: [1, 1, 1, 1, 1, 0, 0], holidays: 'FR', daysOff: [], daysWorked: [] }, leveling: 'smooth',
-      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [], columns: null,
+      currency: '€', provision: 0, evmGreen: 100, evmRed: 90, etc: null, baselineRef: '', statusPoints: [], columns: null, profiles: [],
       tasks: [{ id: 'A', name: n.task, type: 'task', parent: '', dur: 10, deps: [], assign: [], cat: 'C1', pct: 0,
         forcedStart: '', notBefore: '', deadline: '', realStart: '', realEnd: '', tags: [], notes: '', comments: [], collapsed: false, budget: 0, actual: 0 }],
-      resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [] }],
+      resources: [{ id: 'R1', name: n.resource, role: '', color: PALETTE[0], capacity: 100, absences: [], profile: '', rates: [] }],
       categories: [{ id: 'C1', name: n.category, color: PALETTE[0] }],
       baselines: [], versions: [],
     };

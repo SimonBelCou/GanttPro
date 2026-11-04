@@ -75,7 +75,24 @@ def lint(path: Path, code: str) -> list[str]:
             continue
         for m in re.finditer(pattern, stripped):
             line = stripped[:m.start()].count('\n') + 1
-            errors.append(f"{path.relative_to(ROOT)}:{line}: {why}")
+            errors.append(f"{path.relative_to(ROOT).as_posix()}:{line}: {why}")
+    return errors
+
+
+TOP_DECL = re.compile(r'^(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)', re.M)
+
+
+def duplicate_declarations(files: list[Path]) -> list[str]:
+    """Toutes les sources partagent une seule portée une fois assemblées : un même nom déclaré au premier niveau de deux
+    fichiers (ou deux fois dans un fichier) empêcherait l'application de démarrer. On le refuse ici, avec les deux endroits."""
+    seen, errors = {}, []
+    for p in files:
+        for m in TOP_DECL.finditer(p.read_text(encoding='utf-8')):
+            where = f"{p.relative_to(ROOT).as_posix()}:{p.read_text(encoding='utf-8')[:m.start()].count(chr(10)) + 1}"
+            if m.group(1) in seen:
+                errors.append(f"{where}: « {m.group(1)} » est déjà déclaré dans {seen[m.group(1)]}")
+            else:
+                seen[m.group(1)] = where
     return errors
 
 
@@ -90,7 +107,9 @@ def assemble() -> str:
     for p in js_files():
         code = p.read_text(encoding='utf-8')
         errors += lint(p, code)
-        parts.append(f"// ── {p.relative_to(SRC)} ──\n{code.rstrip()}\n")
+        # as_posix : même en-tête « js/core/… » sous Windows que sous Linux, sinon le fichier et la CSP diffèrent.
+        parts.append(f"// ── {p.relative_to(SRC).as_posix()} ──\n{code.rstrip()}\n")
+    errors += duplicate_declarations(js_files())
     if errors:
         raise SystemExit("Build refusé :\n  " + "\n  ".join(errors))
     if re.search(r'\sstyle\s*=|\son[a-z]+\s*=', re.sub(r'<!--.*?-->', '', template, flags=re.S)):
@@ -121,7 +140,8 @@ def main() -> int:
             return 1
         print("GanttPro.html à jour.")
         return 0
-    OUT.write_text(html, encoding='utf-8')
+    # newline='\n' : fins de ligne LF sur tout poste (Windows écrirait des CRLF), même fichier qu'en CI.
+    OUT.write_text(html, encoding='utf-8', newline='\n')
     print(f"GanttPro.html écrit ({len(html.encode('utf-8')) // 1024} Ko).")
     return 0
 

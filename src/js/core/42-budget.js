@@ -6,7 +6,7 @@
  * sous la limite des entiers exacts du moteur. Moteur sans DOM : l'affichage reçoit la langue en paramètre.
  *
  * Appelle : Dates, Metrics, Model
- * Appelée par : 14 modules et fichiers (voir Architecture.md)
+ * Appelée par : 15 modules et fichiers (voir Architecture.md)
  */
 const Budget = (() => {
   const NBSP = ' ', NNBSP = ' ', MINUS = '−';
@@ -15,8 +15,8 @@ const Budget = (() => {
 
   /**
    * Appelle : aucune
-   * Appelée par : Budget.amounts(), Budget.baselineBac(), Budget.byCategory(), Budget.costCurve(),
-   *   Budget.hasAmounts(), Budget.toInput(), Budget.totals()
+   * Appelée par : (initialisation de Evm), Budget.amounts(), Budget.baselineBac(), Budget.byCategory(),
+   *   Budget.costCurve(), Budget.hasAmounts(), Budget.toInput(), Budget.totals(), Evm
    */
   const amt = v => (Number.isSafeInteger(v) && v > 0 ? v : 0);
 
@@ -25,7 +25,7 @@ const Budget = (() => {
    * Les espaces et le symbole de la devise éventuel sont ignorés (RG-42) ; une saisie vide vaut 0.
    * @returns {{ok:true, cents:number}|{ok:false, reason:'format'|'negative'|'decimals'|'max'}}
    * Appelle : aucune
-   * Appelée par : bulkWindow(), Editor.validate(), editProjectWindow(), Exchange.amountCell()
+   * Appelée par : action « rlField », bulkWindow(), Editor.validate(), editProjectWindow(), Exchange.amountCell()
    */
   function parse(text, symbol = '') {
     let s = String(text == null ? '' : text);
@@ -47,7 +47,7 @@ const Budget = (() => {
   /**
    * Texte d'un champ de saisie (sans groupement, avec le séparateur de la langue) : 123450 → « 1234,5 » (fr).
    * Appelle : Budget.amt()
-   * Appelée par : Editor.budgetEditor(), editProjectWindow()
+   * Appelée par : Editor.budgetEditor(), editProjectWindow(), rateLinesEditor()
    */
   function toInput(cents, lang) {
     const c = amt(cents);
@@ -76,8 +76,8 @@ const Budget = (() => {
   /**
    * Montant complet : « 1 234,56 € » (fr) / « €1,234.56 » (en). Accepte une valeur négative (reste, écart).
    * Appelle : Budget.groupInt(), Budget.withSymbol()
-   * Appelée par : Budget.formatCompact(), bulkWindow(), Editor.validate(), editProjectWindow(), Money.node(),
-   *   Money.plain(), Money.spoken(), Money.text()
+   * Appelée par : action « rlField », Budget.formatCompact(), bulkWindow(), Editor.validate(), editProjectWindow(),
+   *   Money.node(), Money.plain(), Money.text()
    */
   function format(cents, { lang = 'fr', symbol = '' } = {}) {
     const neg = cents < 0, c = Math.abs(cents);
@@ -224,5 +224,5 @@ const Budget = (() => {
     return { periods: ps, planned, real, baselines };
   }
 
-  return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
+  return { MAX, amt, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();

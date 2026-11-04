@@ -181,6 +181,7 @@ pour 1 000 tâches). L'interface n'écrit jamais dans `App.project` autrement.
 | `43-evm.js` | `Evm` | Valeur acquise : PV, EV, AC, CV, SV, CPI, SPI, EAC, VAC, points de situation |
 | `44-columns.js` | `Columns` | Colonnes affichées et leur ordre (EF-143 à EF-146) |
 | `45-view.js` | `View` | Recherche, filtres, regroupements : affichage seulement |
+| `46-rates.js` | `Rates` | Taux des ressources : lignes datées, normalisation, coût par jour ouvré (EF-147 à EF-150) |
 | `50-i18n.js` | `I18n` | Catalogues français et anglais, pluriels, messages d'erreur |
 | `60-xml.js` | `Xml` | Lecteur XML minimal sans DOCTYPE ni entités |
 | `61-zip.js` | `Zip` | Écriture sans compression, lecture bornée (200 fichiers, 50 Mo) |
@@ -207,12 +208,16 @@ flowchart LR
   Exchange --> I18n
   Exchange --> Metrics
   Exchange --> Model
+  Exchange --> Rates
   Exchange --> View
   Exchange --> Xlsx
   Exchange --> Xml
   Model --> Calendar
   Model --> Columns
+  Model --> Rates
   Model --> Schedule
+  Rates --> Evm
+  Rates --> Model
   Resolve --> Model
   Resolve --> Schedule
   Schedule --> Calendar
@@ -285,13 +290,14 @@ Dépendance de l'interface vers le moteur : l'interface appelle le moteur, jamai
 | `63-selection.js` | `Columns`, `Model` |
 | `64-bulk.js` | `Budget`, `Dates`, `I18n`, `Model`, `Schedule` |
 | `65-gestures.js` | `Dates`, `I18n`, `Model`, `Schedule` |
-| `70-windows.js` | `Budget`, `Dates`, `I18n`, `Model`, `Resolve` |
-| `71-resource-sheet.js` | `Dates`, `I18n`, `Model`, `Schedule` |
+| `70-windows.js` | `Budget`, `Dates`, `I18n`, `Model`, `Rates`, `Resolve` |
+| `71-rates.js` | `Budget`, `Dates`, `I18n`, `Model`, `Rates` |
+| `71-resource-sheet.js` | `Dates`, `I18n`, `Model`, `Rates`, `Schedule` |
 | `72-baselines.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model` |
 | `73-calendar.js` | `Calendar`, `Dates`, `I18n`, `Model`, `Schedule` |
 | `74-columns.js` | `Columns` |
-| `75-dashboard.js` | `Budget`, `Dates`, `I18n`, `Metrics` |
-| `76-budget.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model` |
+| `75-dashboard.js` | `Budget`, `Dates`, `I18n`, `Metrics`, `Rates` |
+| `76-budget.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Model`, `Rates` |
 | `76-load.js` | `I18n`, `Metrics` |
 | `77-report.js` | `Budget`, `Dates`, `Evm`, `I18n`, `Metrics` |
 | `78-print.js` | `Budget`, `Dates`, `I18n`, `Metrics` |

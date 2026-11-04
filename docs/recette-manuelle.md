@@ -5,8 +5,9 @@ Ce document guide, pas à pas, la validation de **tout l'outil** par le proprié
 - **Partie A — Recette générale** : les parcours G1 à G15 couvrent l'ensemble des fonctions. On les rejoue en entier
   avant une version majeure, et en partie quand une mise à jour touche une zone précise (le tableau « Quand rejouer quoi »
   l'indique).
-- **Partie B — Mises à jour** : un chapitre par évolution (Budget, étapes A et B, pour l'instant), à suivre pour valider cette
-  évolution seule.
+- **Partie B — Mises à jour** : un chapitre par évolution (Budget étapes A et B, Colonnes de la liste, Taux des
+  ressources), à suivre pour valider cette évolution seule. Le « Contrôle final de la mise à jour », en fin de document,
+  vaut pour chacune.
 
 Il est complété à chaque évolution visible (règle 5 de `CLAUDE.md`) : **une mise à jour n'est livrée qu'avec son
 parcours à jour et ses fichiers d'essai**, et les parcours généraux sont adaptés si la mise à jour change un
@@ -40,11 +41,15 @@ comportement existant.
 | `projet-atlas-budget.json` | Projet complet de 49 éléments avec budgets, coûts réels, provision, un montant en millions, une baseline prise avant des dépassements, 4 conflits voulus | B13, et tout parcours sur un grand projet |
 | `projet-noms-pieges.json` | Trois tâches dont le nom ressemble à du code (`<img onerror…>`, `=1+1`, guillemets) | G12 7, G15 6 |
 | `projet-1000-taches.json` | 1 000 tâches fictives liées, pour la fluidité | G15 7 |
-| `budget-*.json`, `refus-*.json`, `tableur-montants.csv` | Budget (partie B) | B |
+| `budget-*.json`, `refus-montant-*.json`, `refus-jalon-avec-montant.json`, `tableur-montants.csv` | Budget (partie B) | B |
 | `valeur-acquise-passe.json` | Projet daté de 2025 : tout est planifié, avancement 55 %, CPI 1,16, SPI 0,55, ETC saisi | B16, B19, B20 |
 | `valeur-acquise-futur.json` | Projet daté de 2035 : rien n'est encore planifié, SPI « non calculable », CPI 0,50 | B17 |
 | `colonnes-personnalisees.json` | Projet de 2025 sans montant, dont la liste affiche six colonnes dans un ordre choisi (Activité, N°, Début, Fin, Statut, Budget) | Colonnes 1 |
 | `valeur-acquise-derive.json` | Projet de 2025 avec deux baselines (initiale et replanifiée), une tâche ajoutée depuis | B15, B18 |
+| `taux-profils-base.json` | Trois tâches, deux profils de coût (Analyste 400,00 € et Développeur 450,00 € par jour), BAC saisi 14 500,00 €, coût des ressources 13 000,00 € | Taux 2 à 4, 7, 9 |
+| `taux-historique.json` | Un profil dont le taux passe de 400,00 € à 420,00 € le 08/01/2026, et un prestataire externe à taux nominatif de 700,00 € | Taux 5, 7 |
+| `taux-sans-taux.json` | Trois ressources dont deux sans taux (un profil sans ligne de taux, une ressource sans profil) | Taux 6 |
+| `refus-taux-negatif.json`, `refus-taux-profil-inconnu.json` | Deux fichiers refusés : taux négatif, profil qui n'existe pas | Taux 8 |
 
 ### Quand rejouer quoi
 
@@ -53,7 +58,8 @@ comportement existant.
 | Le calcul des dates, des liens, du calendrier | G2, G4, G9 |
 | Les ressources, la charge, le nivellement | G5, G6 |
 | La liste, la grille, les gestes | G3, G6, G7, Colonnes 1 |
-| Les fichiers (export, import, chiffrement) | G12, G13 |
+| Les fichiers (export, import, chiffrement) | G12, G13, Taux 7 |
+| Les ressources, leurs taux et le coût | G5, Taux 1 à 10 |
 | Le tableau de bord, le rapport, l'impression | G10, G11 |
 | L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
 
@@ -680,10 +686,8 @@ Départ : ouvrez `colonnes-personnalisees.json` (projet fictif sans montant dont
 - [ ] 12. Clavier : dans la fenêtre, Tab parcourt cases et boutons ; Espace coche ; Entrée active ↑ et ↓ ; Échap ferme
   et rend le focus à **Colonnes…**.
 
-### Contrôle final de la mise à jour
+## Partie B — Taux des ressources (étape C)
 
-- [ ] Aucune erreur visible, aucun message inattendu pendant les parcours.
-- [ ] Navigation au clavier possible dans les nouvelles fenêtres et l'onglet Budget ; thème sombre lisible.
-- [ ] Rien ne part vers l'extérieur (l'application fonctionne hors connexion).
-
-Validé par : ______________________  Date : ____ / ____ / ________
+La recette de l'étape C est désormais en **fiches courtes** dans `docs/recettes/` (10 étapes et 15 minutes au plus chacune) :
+voir `docs/recettes/README.md` (index, ordre conseillé, statut). Fiches « Taux 1 » à « Taux 14 », puis « Taux 15 — Contrôle final de la mise à jour ».
+Exigences : EF-147 à EF-150, RG-54 à RG-58, EX-41. Scénarios : R-92 à R-100. Fichiers d'essai : `tests/fixtures/taux-*.json`, `refus-taux-*.json`.

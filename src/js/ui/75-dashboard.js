@@ -186,12 +186,12 @@ function trackingTable() {
 
 /**
  * Onglets du tableau de bord : « Budget » n'apparaît qu'à partir du premier montant saisi (EF-117), ou dès qu'un point de situation existe : un projet rouvert sans montants garde ainsi ses indices CPI / SPI lisibles (EF-141).
- * Appelle : Budget.hasAmounts()
+ * Appelle : Budget.hasAmounts(), Rates.hasRates()
  * Appelée par : (initialisation de 75-dashboard.js), paintDashboard()
  */
 function dashTabs() {
   const tabs = ['summary', 'load'];
-  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length) tabs.push('budget');
+  if (Budget.hasAmounts(App.project) || App.project.statusPoints.length || Rates.hasRates(App.project)) tabs.push('budget');
   if (!tabs.includes(Dash.tab)) Dash.tab = 'summary';
   return tabs;
 }
@@ -254,7 +254,7 @@ function dashboardWindow() {
 
 /**
  * Appelle : dashboardWindow(), paintDashboard()
- * Appelée par : 13 fonctions (usage général)
+ * Appelée par : 14 fonctions (usage général)
  */
 function repaintDashboard(focusSel) {
   if (!dashboardWindow.body) return;

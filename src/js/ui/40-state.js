@@ -60,7 +60,7 @@ function recompute() {
  * Applique une modification de données en un seul pas d'annulation.
  * @param {(p:object) => void} mutate
  * Appelle : clone(), normalizeOrder(), recompute(), Recovery.touch(), render()
- * Appelée par : 43 fonctions (usage général)
+ * Appelée par : 50 fonctions (usage général)
  */
 function commit(mutate) {
   const before = clone(App.project);
@@ -129,7 +129,7 @@ const RenderIndex = (() => {
 const taskById = id => (RenderIndex.active(App.project.tasks) ? RenderIndex.get(App.project.tasks, id) : App.project.tasks.find(t => t.id === id));
 /**
  * Appelle : aucune
- * Appelée par : 18 fonctions (usage général)
+ * Appelée par : 21 fonctions (usage général)
  */
 const resById = id => App.project.resources.find(r => r.id === id);
 /**
