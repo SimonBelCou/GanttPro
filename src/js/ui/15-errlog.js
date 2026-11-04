@@ -1,5 +1,5 @@
 /*
- * Journal local d'erreurs (EF-151, RG-60 à RG-64) : interface et branchements.
+ * Journal local d'erreurs (EF-151, RG-59 à RG-63) : interface et branchements.
  *
  * - Les lignes sont TOUJOURS tenues en mémoire pendant la session ; elles ne sont écrites sur l'appareil (par Store,
  *   espace « log ») que si l'utilisateur a coché « Conserver le journal sur cet appareil » (décision J1, désactivé par
@@ -18,7 +18,10 @@ const Journal = (() => {
   const BANNER_GAP_MS = 10000;
   /** Erreurs des analyseurs du moteur (xml, zip, csv, xlsx, calendrier) : refus ATTENDUS d'un fichier mal formé. */
   const EXPECTED_RE = /^(xml|zip|csv|xlsx|calendar)(\.|$)/;
-  let lines = [], sid = '00000000', busy = false, lastBanner = -Infinity;
+  /** Une ligne identique à la précédente (code, action, composant, type, origine) dans ce délai n'est pas ajoutée : un
+   * projet au-delà de 2199 ferait sinon un « calc.error » à chaque modification et chasserait les lignes utiles. */
+  const REPEAT_MS = 60000;
+  let lines = [], sid = '00000000', busy = false, lastBanner = -Infinity, box = null, opener = null;
 
   /**
    * Appelle : Settings.get()
@@ -50,12 +53,21 @@ const Journal = (() => {
    * Au lancement : relecture tolérante et purge du journal conservé, puis gestionnaires globaux d'erreurs.
    * Un événement « error » sans objet d'erreur (boucle de ResizeObserver, ressource) n'est pas une exception du
    * programme : il est ignoré.
-   * Appelle : ErrLog.parse(), Journal.keeping(), Journal.newSid(), Journal.save(), Journal.unexpected(), Store.read()
+   * Appelle : ErrLog.parse(), ErrLog.serialize(), h(), Journal.keeping(), Journal.newSid(), Journal.save(),
+   *   Journal.unexpected(), Store.read()
    * Appelée par : init()
    */
   function init() {
     sid = newSid();
-    if (keeping()) { lines = ErrLog.parse(Store.read('log', KEY), Date.now()); save(); }
+    if (keeping()) {
+      const raw = Store.read('log', KEY);
+      lines = ErrLog.parse(raw, Date.now());
+      // Réécrit seulement si la relecture a retiré quelque chose (purge, ligne hostile, texte illisible) : GR491_Backend_4.
+      if (raw === null || ErrLog.serialize(lines) !== raw) save();
+    }
+    // Zone d'alerte créée vide dès le lancement : un lecteur d'écran n'annonce pas toujours une zone insérée déjà pleine (RGAA 7.5).
+    box = h('div', { id: 'errlog-banner', class: 'errlog-banner', role: 'alert', hidden: true });
+    document.body.append(box);
     window.addEventListener('error', ev => { if (ev.error !== null && ev.error !== undefined) unexpected(ev.error, 'app', 'main'); });
     window.addEventListener('unhandledrejection', ev => unexpected(ev.reason, 'app', 'main'));
   }
@@ -78,6 +90,8 @@ const Journal = (() => {
       const now = Date.now();
       const line = ErrLog.make({ code, act, cmp, error }, { now, sid, ver: APP_VERSION });
       if (!line) return null;
+      const last = lines[lines.length - 1];
+      if (last && ['code', 'act', 'cmp', 'err', 'at', 'sid'].every(k => last[k] === line[k]) && now - Date.parse(last.ts) < REPEAT_MS) return last;
       lines = ErrLog.push(lines, line, now);
       save();
       return line;
@@ -93,19 +107,30 @@ const Journal = (() => {
 
   /**
    * Bandeau non bloquant « Erreur inattendue (réf. …) », au plus un toutes les 10 secondes.
-   * Appelle : $(), clear(), h(), Journal.exportFile(), Journal.ref(), t()
+   * Appelle : clear(), h(), Journal.exportFile(), Journal.ref(), t()
    * Appelée par : Journal.unexpected()
    */
   function banner(line) {
     const now = Date.now();
     if (!line || now - lastBanner < BANNER_GAP_MS) return;
     lastBanner = now;
-    let box = $('errlog-banner');
-    if (!box) { box = h('div', { id: 'errlog-banner', class: 'errlog-banner', role: 'alert' }); document.body.append(box); }
+    if (!box) return;
+    // Une fenêtre modale rend le reste de la page inerte : le bandeau va dans la fenêtre ouverte pour rester utilisable
+    // au clavier (RGAA 12.8), puis revient dans la page quand elle se ferme.
+    const dlgs = document.querySelectorAll('dialog[open]');
+    const dlg = dlgs.length ? dlgs[dlgs.length - 1] : null;
+    if (dlg) {
+      if (box.parentNode !== dlg) dlg.append(box);
+      dlg.addEventListener('close', () => document.body.append(box), { once: true });
+    } else if (box.parentNode !== document.body) document.body.append(box);
+    opener = document.activeElement;
     const exp = h('button', { type: 'button', id: 'errlog-export' }, t('log.export'));
     const close = h('button', { type: 'button', class: 'dlg-x', id: 'errlog-close', aria: { label: t('log.dismiss') } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
     exp.addEventListener('click', () => exportFile());
-    close.addEventListener('click', () => { box.hidden = true; });
+    close.addEventListener('click', () => {
+      box.hidden = true;
+      if (opener && opener.isConnected && opener !== document.body) opener.focus(); // focus rendu (RGAA 12.8)
+    });
     clear(box).append(h('span', { text: t('log.banner', { ref: ref(line) }) }), exp, close);
     box.hidden = false;
   }
@@ -212,13 +237,15 @@ const Journal = (() => {
    */
   function view() {
     const cols = ['ts', 'lvl', 'act', 'code', 'msg', 'cmp', 'ref', 'at'];
+    // Niveau, action, code, composant et origine sont des identifiants techniques en anglais : lus comme tels (RGAA 8.7).
+    const TECH = ['lvl', 'act', 'code', 'cmp', 'at'];
     const cell = l => ({ ts: l.ts.replace('T', ' ').slice(0, 19), lvl: l.lvl, act: l.act, code: l.code, msg: t(l.code).replace(/\{\w+\}/g, '…'),
       cmp: l.cmp, ref: ref(l), at: l.at || '—' });
     const body = lines.length
-      ? h('div', { class: 'log-scroll', id: 'log-table', tabindex: '0', role: 'region', aria: { label: t('log.caption') } },
-        h('table', { class: 'manage' }, h('caption', { class: 'sr-only', text: t('log.caption') }),
+      ? h('div', { class: 'log-scroll', id: 'log-table', tabindex: '0', role: 'region', aria: { labelledby: 'log-caption' } },
+        h('table', { class: 'manage' }, h('caption', { class: 'sr-only', id: 'log-caption', text: t('log.caption') }),
           h('thead', {}, h('tr', {}, cols.map(c => h('th', { scope: 'col', text: t('log.c.' + c) })))),
-          h('tbody', {}, lines.slice().reverse().map(l => { const c = cell(l); return h('tr', {}, cols.map(k => h('td', { text: c[k] }))); }))))
+          h('tbody', {}, lines.slice().reverse().map(l => { const c = cell(l); return h('tr', {}, cols.map(k => h('td', { text: c[k], lang: TECH.includes(k) ? 'en' : undefined }))); }))))
       : h('p', { id: 'log-table', text: t('log.empty') });
     return Dialog.open({ title: t('log.title'), size: 'wide', body: [body],
       actions: [{ label: t('log.export'), value: 'export' }, { label: t('dlg.close'), value: 'cancel', focus: true }],

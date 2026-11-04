@@ -54,7 +54,7 @@ async function openSettings() {
         auto ? h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-recprot', checked: Recovery.protectedMode() }), h('label', { for: 'set-recprot', text: t('set.recProtect') })) : null,
         auto && Recovery.paused() ? h('div', {}, h('p', { class: 'warning', text: t('auto.paused') }),
           h('button', { type: 'button', id: 'set-recpwd' }, t('set.recPwdEnter'))) : null),
-      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-61).
+      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-60).
       h('fieldset', { class: 'sub' }, h('legend', { text: t('log.title') }),
         h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-log', checked: Journal.keeping(), aria: { describedby: 'set-log-hint' } }), h('label', { for: 'set-log', text: t('log.keep') })),
         h('p', { class: 'hint', id: 'set-log-hint', text: t('log.keepHint') }),

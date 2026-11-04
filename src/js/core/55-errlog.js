@@ -1,5 +1,5 @@
 /*
- * Journal local d'erreurs (EF-151, RG-60 à RG-64) : moteur sans DOM ni stockage.
+ * Journal local d'erreurs (EF-151, RG-59 à RG-63) : moteur sans DOM ni stockage.
  *
  * Construit, valide, fait tourner et relit les lignes du journal. L'interface (src/js/ui/15-errlog.js) tient les lignes
  * en mémoire pendant la session et ne les écrit sur l'appareil que si l'utilisateur l'a demandé (décision J1).
@@ -169,7 +169,7 @@ const ErrLog = (() => {
   /**
    * Texte stocké : un tableau JSON.
    * Appelle : aucune
-   * Appelée par : Journal.save()
+   * Appelée par : Journal.init(), Journal.save()
    */
   const serialize = lines => JSON.stringify(lines);
 

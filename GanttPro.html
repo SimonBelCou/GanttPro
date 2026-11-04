@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-g6MLau9L07sWo6MfPI7bFke2eWstvIVc8DZIBedsZ0Q='; style-src 'sha256-lpJAIuqDAVcU+tFp88JlTKU1LBZblUxYHvjj/xvGk/Y='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qchvw3441pNFMLsLpHdd14tgHs5fZhT3u3FRRxMFlUc='; style-src 'sha256-lpJAIuqDAVcU+tFp88JlTKU1LBZblUxYHvjj/xvGk/Y='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -4355,7 +4355,7 @@ const I18n = (() => {
 
 // ── js/core/55-errlog.js ──
 /*
- * Journal local d'erreurs (EF-151, RG-60 à RG-64) : moteur sans DOM ni stockage.
+ * Journal local d'erreurs (EF-151, RG-59 à RG-63) : moteur sans DOM ni stockage.
  *
  * Construit, valide, fait tourner et relit les lignes du journal. L'interface (src/js/ui/15-errlog.js) tient les lignes
  * en mémoire pendant la session et ne les écrit sur l'appareil que si l'utilisateur l'a demandé (décision J1).
@@ -4525,7 +4525,7 @@ const ErrLog = (() => {
   /**
    * Texte stocké : un tableau JSON.
    * Appelle : aucune
-   * Appelée par : Journal.save()
+   * Appelée par : Journal.init(), Journal.save()
    */
   const serialize = lines => JSON.stringify(lines);
 
@@ -5545,7 +5545,7 @@ const Secure = (() => {
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 90 fonctions (usage général)
+ * Appelée par : 89 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -5556,7 +5556,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 86 fonctions (usage général)
+ * Appelée par : 87 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -5645,7 +5645,7 @@ function announce(msg) {
  *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
- *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-61) ;
+ *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-60) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
  * Rien n'est jamais envoyé. Toute lecture est une donnée NON FIABLE (une autre page locale peut
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par
@@ -5833,7 +5833,7 @@ const HomeLink = (() => {
 
 // ── js/ui/15-errlog.js ──
 /*
- * Journal local d'erreurs (EF-151, RG-60 à RG-64) : interface et branchements.
+ * Journal local d'erreurs (EF-151, RG-59 à RG-63) : interface et branchements.
  *
  * - Les lignes sont TOUJOURS tenues en mémoire pendant la session ; elles ne sont écrites sur l'appareil (par Store,
  *   espace « log ») que si l'utilisateur a coché « Conserver le journal sur cet appareil » (décision J1, désactivé par
@@ -5852,7 +5852,10 @@ const Journal = (() => {
   const BANNER_GAP_MS = 10000;
   /** Erreurs des analyseurs du moteur (xml, zip, csv, xlsx, calendrier) : refus ATTENDUS d'un fichier mal formé. */
   const EXPECTED_RE = /^(xml|zip|csv|xlsx|calendar)(\.|$)/;
-  let lines = [], sid = '00000000', busy = false, lastBanner = -Infinity;
+  /** Une ligne identique à la précédente (code, action, composant, type, origine) dans ce délai n'est pas ajoutée : un
+   * projet au-delà de 2199 ferait sinon un « calc.error » à chaque modification et chasserait les lignes utiles. */
+  const REPEAT_MS = 60000;
+  let lines = [], sid = '00000000', busy = false, lastBanner = -Infinity, box = null, opener = null;
 
   /**
    * Appelle : Settings.get()
@@ -5884,12 +5887,21 @@ const Journal = (() => {
    * Au lancement : relecture tolérante et purge du journal conservé, puis gestionnaires globaux d'erreurs.
    * Un événement « error » sans objet d'erreur (boucle de ResizeObserver, ressource) n'est pas une exception du
    * programme : il est ignoré.
-   * Appelle : ErrLog.parse(), Journal.keeping(), Journal.newSid(), Journal.save(), Journal.unexpected(), Store.read()
+   * Appelle : ErrLog.parse(), ErrLog.serialize(), h(), Journal.keeping(), Journal.newSid(), Journal.save(),
+   *   Journal.unexpected(), Store.read()
    * Appelée par : init()
    */
   function init() {
     sid = newSid();
-    if (keeping()) { lines = ErrLog.parse(Store.read('log', KEY), Date.now()); save(); }
+    if (keeping()) {
+      const raw = Store.read('log', KEY);
+      lines = ErrLog.parse(raw, Date.now());
+      // Réécrit seulement si la relecture a retiré quelque chose (purge, ligne hostile, texte illisible) : GR491_Backend_4.
+      if (raw === null || ErrLog.serialize(lines) !== raw) save();
+    }
+    // Zone d'alerte créée vide dès le lancement : un lecteur d'écran n'annonce pas toujours une zone insérée déjà pleine (RGAA 7.5).
+    box = h('div', { id: 'errlog-banner', class: 'errlog-banner', role: 'alert', hidden: true });
+    document.body.append(box);
     window.addEventListener('error', ev => { if (ev.error !== null && ev.error !== undefined) unexpected(ev.error, 'app', 'main'); });
     window.addEventListener('unhandledrejection', ev => unexpected(ev.reason, 'app', 'main'));
   }
@@ -5912,6 +5924,8 @@ const Journal = (() => {
       const now = Date.now();
       const line = ErrLog.make({ code, act, cmp, error }, { now, sid, ver: APP_VERSION });
       if (!line) return null;
+      const last = lines[lines.length - 1];
+      if (last && ['code', 'act', 'cmp', 'err', 'at', 'sid'].every(k => last[k] === line[k]) && now - Date.parse(last.ts) < REPEAT_MS) return last;
       lines = ErrLog.push(lines, line, now);
       save();
       return line;
@@ -5927,19 +5941,30 @@ const Journal = (() => {
 
   /**
    * Bandeau non bloquant « Erreur inattendue (réf. …) », au plus un toutes les 10 secondes.
-   * Appelle : $(), clear(), h(), Journal.exportFile(), Journal.ref(), t()
+   * Appelle : clear(), h(), Journal.exportFile(), Journal.ref(), t()
    * Appelée par : Journal.unexpected()
    */
   function banner(line) {
     const now = Date.now();
     if (!line || now - lastBanner < BANNER_GAP_MS) return;
     lastBanner = now;
-    let box = $('errlog-banner');
-    if (!box) { box = h('div', { id: 'errlog-banner', class: 'errlog-banner', role: 'alert' }); document.body.append(box); }
+    if (!box) return;
+    // Une fenêtre modale rend le reste de la page inerte : le bandeau va dans la fenêtre ouverte pour rester utilisable
+    // au clavier (RGAA 12.8), puis revient dans la page quand elle se ferme.
+    const dlgs = document.querySelectorAll('dialog[open]');
+    const dlg = dlgs.length ? dlgs[dlgs.length - 1] : null;
+    if (dlg) {
+      if (box.parentNode !== dlg) dlg.append(box);
+      dlg.addEventListener('close', () => document.body.append(box), { once: true });
+    } else if (box.parentNode !== document.body) document.body.append(box);
+    opener = document.activeElement;
     const exp = h('button', { type: 'button', id: 'errlog-export' }, t('log.export'));
     const close = h('button', { type: 'button', class: 'dlg-x', id: 'errlog-close', aria: { label: t('log.dismiss') } }, h('span', { aria: { hidden: 'true' }, text: '×' }));
     exp.addEventListener('click', () => exportFile());
-    close.addEventListener('click', () => { box.hidden = true; });
+    close.addEventListener('click', () => {
+      box.hidden = true;
+      if (opener && opener.isConnected && opener !== document.body) opener.focus(); // focus rendu (RGAA 12.8)
+    });
     clear(box).append(h('span', { text: t('log.banner', { ref: ref(line) }) }), exp, close);
     box.hidden = false;
   }
@@ -6046,13 +6071,15 @@ const Journal = (() => {
    */
   function view() {
     const cols = ['ts', 'lvl', 'act', 'code', 'msg', 'cmp', 'ref', 'at'];
+    // Niveau, action, code, composant et origine sont des identifiants techniques en anglais : lus comme tels (RGAA 8.7).
+    const TECH = ['lvl', 'act', 'code', 'cmp', 'at'];
     const cell = l => ({ ts: l.ts.replace('T', ' ').slice(0, 19), lvl: l.lvl, act: l.act, code: l.code, msg: t(l.code).replace(/\{\w+\}/g, '…'),
       cmp: l.cmp, ref: ref(l), at: l.at || '—' });
     const body = lines.length
-      ? h('div', { class: 'log-scroll', id: 'log-table', tabindex: '0', role: 'region', aria: { label: t('log.caption') } },
-        h('table', { class: 'manage' }, h('caption', { class: 'sr-only', text: t('log.caption') }),
+      ? h('div', { class: 'log-scroll', id: 'log-table', tabindex: '0', role: 'region', aria: { labelledby: 'log-caption' } },
+        h('table', { class: 'manage' }, h('caption', { class: 'sr-only', id: 'log-caption', text: t('log.caption') }),
           h('thead', {}, h('tr', {}, cols.map(c => h('th', { scope: 'col', text: t('log.c.' + c) })))),
-          h('tbody', {}, lines.slice().reverse().map(l => { const c = cell(l); return h('tr', {}, cols.map(k => h('td', { text: c[k] }))); }))))
+          h('tbody', {}, lines.slice().reverse().map(l => { const c = cell(l); return h('tr', {}, cols.map(k => h('td', { text: c[k], lang: TECH.includes(k) ? 'en' : undefined }))); }))))
       : h('p', { id: 'log-table', text: t('log.empty') });
     return Dialog.open({ title: t('log.title'), size: 'wide', body: [body],
       actions: [{ label: t('log.export'), value: 'export' }, { label: t('dlg.close'), value: 'cancel', focus: true }],
@@ -12918,7 +12945,7 @@ async function openSettings() {
         auto ? h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-recprot', checked: Recovery.protectedMode() }), h('label', { for: 'set-recprot', text: t('set.recProtect') })) : null,
         auto && Recovery.paused() ? h('div', {}, h('p', { class: 'warning', text: t('auto.paused') }),
           h('button', { type: 'button', id: 'set-recpwd' }, t('set.recPwdEnter'))) : null),
-      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-61).
+      // Journal d'erreurs (EF-151) : conservation sur l'appareil désactivée par défaut (RG-60).
       h('fieldset', { class: 'sub' }, h('legend', { text: t('log.title') }),
         h('div', { class: 'field check' }, h('input', { type: 'checkbox', id: 'set-log', checked: Journal.keeping(), aria: { describedby: 'set-log-hint' } }), h('label', { for: 'set-log', text: t('log.keep') })),
         h('p', { class: 'hint', id: 'set-log-hint', text: t('log.keepHint') }),

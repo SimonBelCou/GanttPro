@@ -4,7 +4,7 @@
  *  - les RÉGLAGES (langue, thème, raccourcis au survol, sauvegarde automatique, message de première utilisation vu) ;
  *  - la BIBLIOTHÈQUE (projets et modèles), uniquement sur un geste explicite de l'utilisateur ;
  *  - la RÉCUPÉRATION, uniquement si l'utilisateur a activé la sauvegarde automatique (RG-31) ;
- *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-61) ;
+ *  - le JOURNAL D'ERREURS, uniquement si l'utilisateur a activé sa conservation (EF-151, RG-60) ;
  *  - dans la mémoire de session de l'onglet, les trois clés du contrat de page d'accueil (8.4).
  * Rien n'est jamais envoyé. Toute lecture est une donnée NON FIABLE (une autre page locale peut
  * l'avoir modifiée) : les réglages sont validés ici par liste blanche, les projets sont relus par

@@ -1,4 +1,4 @@
-// Journal local d'erreurs : moteur ErrLog (Specs_fonctionnelles.md, EF-151, RG-60 à RG-64, scénarios R-60 à R-62).
+// Journal local d'erreurs : moteur ErrLog (Specs_fonctionnelles.md, EF-151, RG-59 à RG-63, scénarios R-101 à R-103).
 // Données fictives uniquement (CLAUDE.md §3) : « Camille Exemple » est un nom inventé.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

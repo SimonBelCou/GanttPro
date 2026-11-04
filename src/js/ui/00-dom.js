@@ -3,7 +3,7 @@
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 90 fonctions (usage général)
+ * Appelée par : 89 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -14,7 +14,7 @@ const URL_ATTR = /^(href|src|action|xlink:href)$/i;
  * h('button', {class:'x', data:{click:'save'}, aria:{label:'…'}, css:{left:'4px'}, text:'OK'}, enfants…)
  * Les enfants sont des nœuds ou des chaînes (insérées comme texte).
  * Appelle : append()
- * Appelée par : 86 fonctions (usage général)
+ * Appelée par : 87 fonctions (usage général)
  */
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);

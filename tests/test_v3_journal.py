@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests de bout en bout du journal local d'erreurs (EF-151, RG-60 à RG-64, scénarios R-60 à R-62).
+"""Tests de bout en bout du journal local d'erreurs (EF-151, RG-59 à RG-63, scénarios R-101 à R-103).
 
     python3 tools/build.py && python3 tests/test_v3_journal.py
 
@@ -84,6 +84,7 @@ def main():
         check('option désactivée : aucune clé de journal sur l\'appareil', not pg.evaluate("Object.keys(localStorage).some(k => k.startsWith('ganttpro.log.'))"))
 
         # ── Exception imprévue et promesse rejetée : bandeau non bloquant ─────────────────────
+        pg.focus('#btn-settings')
         throw_in_page(pg, "new TypeError('Ressource Camille Exemple\\n    at piege (file:///C:/Users/camille/x.html:1:1)')")
         pg.wait_for_selector('#errlog-banner:not([hidden])')
         text = pg.inner_text('#errlog-banner')
@@ -96,6 +97,7 @@ def main():
         check('deuxième erreur en moins de 10 s : pas de nouveau bandeau (même référence)', pg.inner_text('#errlog-banner') == text)
         pg.click('#errlog-close')
         check('bandeau fermé par « Fermer le message »', pg.is_hidden('#errlog-banner'))
+        check('bandeau fermé : le focus revient où il était (RGAA 12.8)', pg.evaluate("document.activeElement && document.activeElement.id") == 'btn-settings')
 
         # ── Fenêtre « Journal d'erreurs » ───────────────────────────────────────────────────
         settings(pg)
@@ -166,13 +168,14 @@ def main():
             Storage.prototype.setItem = function () { throw new DOMException('plein', 'QuotaExceededError'); }; }""")
         throw_in_page(pg, "new Error('Camille Exemple')")
         pg.wait_for_selector('#errlog-banner:not([hidden])')
+        throw_in_page(pg, "new Error('Camille Exemple')")
         pg.click('#errlog-close')
         pg.keyboard.press('Control+s')
         pg.wait_for_selector('dialog[open]')
         check('stockage plein : le message de stockage s\'affiche', "n'est pas disponible" in pg.inner_text('dialog[open]') or 'est plein' in pg.inner_text('dialog[open]'), pg.inner_text('dialog[open]'))
         close_all(pg)
         settings(pg)
-        check('stockage plein : 2 lignes en mémoire, aucune ligne sur l\'échec du journal lui-même', '2 lignes' in count(pg), count(pg))
+        check('stockage plein : 2 lignes en mémoire (erreur identique répétée comptée une fois), aucune ligne sur l\'échec du journal lui-même', '2 lignes' in count(pg), count(pg))
         pg.click('#set-log-view')
         pg.wait_for_selector('#log-table')
         check('stockage plein : échec du stockage journalisé (store.*)', 'store.off' in table(pg) or 'store.full' in table(pg), table(pg))
@@ -184,7 +187,15 @@ def main():
         throw_in_page(pg, "new Error('x')")
         pg.wait_for_selector('#errlog-banner:not([hidden])')
         check('option active : la ligne est écrite sur l\'appareil', len(json.loads(stored_log(pg) or '[]')) == 1)
+        pg.click('#errlog-close')
         settings(pg)
+        pg.clock.set_fixed_time('2026-11-03T10:00:15')
+        throw_in_page(pg, "new Error('x')")
+        pg.wait_for_selector('dialog[open] #errlog-banner:not([hidden])')
+        check('fenêtre ouverte : le bandeau est placé dans la fenêtre, donc utilisable (RGAA 12.8)', pg.locator('dialog[open] #errlog-close').is_enabled())
+        axe_check(pg, 'bandeau dans une fenêtre ouverte')
+        check('erreur identique en moins d\'une minute : pas de nouvelle ligne', len(json.loads(stored_log(pg) or '[]')) == 1)
+        pg.click('#errlog-close')
         pg.click('#set-clear')
         pg.locator('dialog[open]').last.locator('button:has-text("Tout effacer")').click()
         pg.wait_for_timeout(150)
