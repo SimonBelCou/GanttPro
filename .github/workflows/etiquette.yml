@@ -1,0 +1,62 @@
+# Pose de l'étiquette d'une version (décision V9 du 3 novembre 2026, procédure : CLAUDE.md §13.6).
+#
+# Jamais automatique : déclenché à la main (onglet Actions, « Run workflow ») depuis la branche main, avec le numéro
+# en entrée. Contrôle : numéro SemVer X.Y.Z, égal au fichier VERSION, première section datée de CHANGELOG.md, étiquette
+# inexistante. Pose ensuite l'étiquette annotée « vX.Y.Z » sur le commit de main, puis appelle release.yml (une
+# étiquette poussée avec GITHUB_TOKEN ne déclenche pas d'elle-même d'autre workflow).
+#
+# Sécurité : le numéro saisi passe par une variable d'environnement, validé par expression régulière avant tout usage.
+name: Étiquette de version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numéro à publier, X.Y.Z (égal au fichier VERSION)"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  etiqueter:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION_SAISIE: ${{ inputs.version }}
+    outputs:
+      tag: ${{ steps.pose.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Numéro SemVer, VERSION et CHANGELOG concordants, fichier assemblé à jour
+        run: |
+          [[ "$VERSION_SAISIE" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "Numéro invalide : $VERSION_SAISIE"; exit 1; }
+          python3 tools/version.py tag-check "$VERSION_SAISIE"
+          python3 tools/build.py --check
+          if git rev-parse -q --verify "refs/tags/v$VERSION_SAISIE" >/dev/null; then echo "L'étiquette v$VERSION_SAISIE existe déjà."; exit 1; fi
+
+      - name: Pose de l'étiquette
+        id: pose
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION_SAISIE" -m "GanttPro $VERSION_SAISIE"
+          git push origin "refs/tags/v$VERSION_SAISIE"
+          echo "tag=v$VERSION_SAISIE" >> "$GITHUB_OUTPUT"
+
+  publier:
+    needs: etiqueter
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.etiqueter.outputs.tag }}
