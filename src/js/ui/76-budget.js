@@ -73,14 +73,13 @@ function paintBudget(panel) {
     ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'sc-unit', id: 'sc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
       h('label', { for: 'sc-' + u, text: ' ' + t('dash.' + u) }))));
   const ongoing = h('span', {}, h('input', { type: 'checkbox', id: 'bud-ongoing', checked: Dash.ongoing, data: { change: 'dashOngoing' } }), h('label', { for: 'bud-ongoing', text: ' ' + t('bud.ongoing') }));
-  const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values' } },
+  const toggle = h('button', { type: 'button', data: { click: 'dashCostValues' }, aria: { expanded: String(Dash.showCostValues), controls: 'bud-values', describedby: 'bud-curve-h' } },
     t(Dash.showCostValues ? 'dash.hideValues' : 'dash.showValues'));
   panel.append(h('section', { class: 'dash-section', aria: { labelledby: 'bud-curve-h' } },
     h('h3', { id: 'bud-curve-h', text: t('bud.curve') }), h('div', { class: 'row' }, unit, ongoing, toggle),
     curveLegend(), sCurveChart(curve, opts), h('p', { class: 'hint', text: t(Dash.ongoing ? 'bud.noteOngoing' : 'bud.note') }),
     Dash.showCostValues ? curveTable(curve, { cell: amountCell, id: 'bud-values', caption: 'bud.valuesCaption' }) : null));
-  paintEvm(panel);
-  paintEvmCurves(panel);
+  paintEvmCurves(panel, paintEvm(panel));
 }
 
 /**
@@ -208,6 +207,7 @@ function paintEvm(panel) {
     h('div', { class: 'field' }, h('label', { for: 'evm-label', text: t('evm.pointLabel') }), h('input', { type: 'text', id: 'evm-label', maxlength: 100 })),
     h('button', { type: 'button', id: 'evm-add', data: { click: 'evmPointAdd' } }, t('evm.pointAdd')));
   panel.append(sec);
+  return res; // réutilisé par paintEvmCurves() : un seul calcul de la valeur acquise par affichage
 }
 
 /**
@@ -219,9 +219,9 @@ function paintEvm(panel) {
  *   Money.text(), moneyAxis(), sCurveChart(), t()
  * Appelée par : paintBudget()
  */
-function paintEvmCurves(panel) {
+function paintEvmCurves(panel, now) {
   const today = Dates.todayDn();
-  const c = Evm.curves(App.project, App.sched, today, Dash.unit);
+  const c = Evm.curves(App.project, App.sched, today, Dash.unit, now);
   const sec = h('section', { class: 'dash-section', id: 'evc', aria: { labelledby: 'evc-h' } },
     h('h3', { id: 'evc-h', text: t('evc.title') }), h('p', { class: 'hint', text: t('evc.intro') }));
   panel.append(sec);
@@ -235,15 +235,15 @@ function paintEvmCurves(panel) {
     { name: t('evm.ev'), vals: c.ev, cls: 'ev', mark: 'circle', legend: t('evc.legEv') },
     { name: t('evm.ac'), vals: c.ac, cls: 'ac', mark: 'square', legend: t('evc.legAc') },
   ];
-  const now = c.marks.findIndex(mk => mk && mk.today); // période d'aujourd'hui : dernière mesure de EV et AC
+  const at = c.marks.findIndex(mk => mk && mk.today); // période d'aujourd'hui : dernière mesure de EV et AC
   const opts = {
     ...moneyAxis(costScale([...c.pv, ...c.ev, ...c.ac])), id: 'evc', series: () => series, title: 'evc.title',
-    desc: () => t('evc.desc', { bac: Money.text(c.pv[c.pv.length - 1]), ev: Money.text(c.ev[now]), ac: Money.text(c.ac[now]) }),
+    desc: () => t('evc.desc', { bac: Money.text(c.pv[c.pv.length - 1]), ev: Money.text(c.ev[at]), ac: Money.text(c.ac[at]) }),
   };
   const unit = h('fieldset', { class: 'inline' }, h('legend', { text: t('dash.unit') }),
     ['week', 'month'].map(u => h('span', {}, h('input', { type: 'radio', name: 'evc-unit', id: 'evc-' + u, value: u, checked: Dash.unit === u, data: { change: 'dashUnit' } }),
       h('label', { for: 'evc-' + u, text: ' ' + t('dash.' + u) }))));
-  const toggle = h('button', { type: 'button', data: { click: 'dashEvcValues' }, aria: { expanded: String(Dash.showEvcValues), controls: 'evc-values' } },
+  const toggle = h('button', { type: 'button', data: { click: 'dashEvcValues' }, aria: { expanded: String(Dash.showEvcValues), controls: 'evc-values', describedby: 'evc-h' } },
     t(Dash.showEvcValues ? 'dash.hideValues' : 'dash.showValues'));
   const measure = k => {
     const mk = c.marks[k];

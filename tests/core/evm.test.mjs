@@ -151,6 +151,9 @@ test('R-101 par mois, sans point, et période sans mesure', () => {
   assert.deepEqual(plain(late.pv), [eur(100), eur(200), eur(200), eur(200)]);
   assert.deepEqual(plain(late.ev), [eur(50), null, null, eur(140)], 'aucune valeur inventée hors mesure');
   assert.equal(late.marks[1], null);
+  // Un point daté avant le début du projet n'allonge pas la grille (revue écoconception) : il est compté non tracé.
+  const old = curvesOf(withRef([{ id: 'S9', date: '1990-01-01', label: 'Ancien', ev: eur(1), ac: eur(1) }, pts[0]]));
+  assert.deepEqual(plain([old.periods.length, old.skipped, old.ev]), [2, 1, [eur(50), eur(140)]]);
 });
 
 test('R-101 sans baseline de référence ou sans budget : la raison, jamais une courbe à 0', () => {

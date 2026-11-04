@@ -169,17 +169,19 @@ const Evm = (() => {
    * points de situation qui ont leurs montants (un point relu d'un export « sans montants » n'en a plus) et la date du
    * jour (calcul de compute()). Aucune valeur passée n'est reconstituée ni enregistrée automatiquement (A.8 ligne 15).
    * Dans une période, la mesure la plus récente l'emporte ; celle du jour passe devant un point du même jour. Un point
-   * daté après aujourd'hui (horloge de l'appareil reculée) n'est pas tracé. L'AC est le coût réel TOTAL du projet
+   * daté après aujourd'hui (horloge de l'appareil reculée) ou avant le début de la grille n'est pas tracé : la
+   * grille reste à la taille du projet (un point ancien ne l'allonge pas, GR491_Backend_4). L'AC est le coût réel TOTAL du projet
    * (RG-47), et non la courbe réelle des coûts de RG-38, qui ne compte que les tâches terminées.
    *
    * @returns {{reason:'noBaseline'|'noBudget'}|{reason:null, ref, bac, periods:{start,end}[], pv:number[],
    *            ev:(number|null)[], ac:(number|null)[], marks:({dn,label,today:boolean}|null)[], skipped:number}}
    *   Sans baseline de référence, ou si elle n'a aucun budget, rien n'est tracé et la raison est donnée (jamais 0).
-   *   skipped : points de situation non tracés (sans montants ou datés après aujourd'hui).
+   *   skipped : points de situation non tracés (sans montants, datés après aujourd'hui ou avant la grille).
+   *   now : résultat de compute() pour aujourd'hui s'il est déjà calculé (sinon calculé ici).
    * Appelle : Dates.parse(), Evm.compute(), Evm.reference(), Metrics.periods()
    * Appelée par : paintEvmCurves()
    */
-  function curves(project, sched, today, unit = 'week') {
+  function curves(project, sched, today, unit = 'week', now = null) {
     const ref = reference(project);
     if (!ref) return { reason: 'noBaseline' };
     const ends = ref.tasks.map(bt => ({ budget: amt(bt.budget), endDn: Dates.parse(bt.end) }))
@@ -187,22 +189,22 @@ const Evm = (() => {
     const bac = ends.reduce((a, e) => a + e.budget, 0);
     if (bac === 0) return { reason: 'noBudget', ref };
 
-    const now = compute(project, sched, today);
+    if (!now) now = compute(project, sched, today);
+    // Grille : du début du projet (ou d'une fin prévue plus ancienne) à la fin la plus tardive, aujourd'hui compris.
+    const first = Math.min(Dates.parse(project.projectStart), ends[0].endDn, today);
+    const last = Math.max(sched.projectEndDn, ends[ends.length - 1].endDn, today);
+    const periods = Metrics.periods(first, last, unit);
+    const n = periods.length;
     const marks = [];
     let skipped = 0;
     for (const p of project.statusPoints || []) {
       const dn = Dates.parse(p.date);
-      if (dn == null || dn > today || p.ev == null || p.ac == null) { skipped++; continue; }
+      if (dn == null || dn > today || dn < periods[0].start || p.ev == null || p.ac == null) { skipped++; continue; }
       marks.push({ dn, ev: p.ev, ac: p.ac, label: p.label, today: false });
     }
     marks.sort((a, b) => a.dn - b.dn); // tri stable : à date égale, l'ordre d'enregistrement
     marks.push({ dn: today, ev: now.ev, ac: now.ac, label: '', today: true });
 
-    // Grille : du début du projet (ou d'une fin prévue, d'une mesure plus ancienne) à la fin la plus tardive, aujourd'hui compris.
-    const first = Math.min(Dates.parse(project.projectStart), ends[0].endDn, marks[0].dn);
-    const last = Math.max(sched.projectEndDn, ends[ends.length - 1].endDn, today);
-    const periods = Metrics.periods(first, last, unit);
-    const n = periods.length;
     const pv = new Array(n), ev = new Array(n).fill(null), ac = new Array(n).fill(null), at = new Array(n).fill(null);
     // Parcours fusionné (fins triées, périodes croissantes) : O(tâches + périodes).
     let k = 0, acc = 0;

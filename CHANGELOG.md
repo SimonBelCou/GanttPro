@@ -31,6 +31,9 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 - Corrigé : le bloc « Valeur acquise » du rapport d'état disparaissait pour un projet qui n'a que des points de situation
   (après un export sans montants) ; il reste et liste les CPI et SPI des points (décision X2, A.8 ligne 16).
 - Recette « Budget 21 », fichier d'essai `tests/fixtures/valeur-acquise-courbes.json`.
+- Revues `eco-check` et `accessibilite-check` : grille bornée au projet (un point ancien ne l'allonge plus), calcul de la
+  valeur acquise partagé, vert de l'EV assombri à #148f68 (3:1, RGAA 3.3), cadres et boutons « Afficher les valeurs »
+  nommés par leur courbe, formes de la légende visibles en couleurs forcées.
 
 ### Budget, étape C (PR #14, en attente de la recette « Taux 1 à 10 »)
 - Profils de coût et taux datés des ressources (par jour ouvré), coût des ressources par tâche, par ressource et face au

@@ -110,7 +110,7 @@ function sCurveChart(curve, o = PCT_CHART) {
     showAt(Math.round(((xv - m.l) * (n - 1)) / (W - m.l - m.r)));
   });
   // Exploration au clavier : le cadre du graphique reçoit le focus, les flèches parcourent les périodes.
-  const box = h('div', { class: 'chart-box', tabindex: '0', role: 'group', aria: { label: t('dash.explore') } }, chart, tip);
+  const box = h('div', { class: 'chart-box', tabindex: '0', role: 'group', aria: { label: t(o.title) + ' : ' + t('dash.explore') } }, chart, tip);
   zone.addEventListener('mouseleave', () => { if (document.activeElement !== box) { cross.setAttribute('visibility', 'hidden'); tip.hidden = true; } });
   box.addEventListener('focus', () => showAt(idx < 0 ? (ti >= 0 ? ti : n - 1) : idx));
   box.addEventListener('blur', () => { cross.setAttribute('visibility', 'hidden'); tip.hidden = true; });
