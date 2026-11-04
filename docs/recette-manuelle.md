@@ -680,6 +680,14 @@ Départ : ouvrez `colonnes-personnalisees.json` (projet fictif sans montant dont
 - [ ] 12. Clavier : dans la fenêtre, Tab parcourt cases et boutons ; Espace coche ; Entrée active ↑ et ↓ ; Échap ferme
   et rend le focus à **Colonnes…**.
 
+### Clic juste après une saisie (correctif du 4 novembre 2026, PCA §6) — à faire dans Safari ou sur iPad
+*Exigences : EX-16 ; journal C du 4 novembre 2026.*
+
+- [ ] 1. *État de départ :* GanttPro ouvert dans Safari (ou sur iPad), projet quelconque, thème clair.
+- [ ] 2. Cliquez dans la **date de début** du projet et changez-la.
+- [ ] 3. Sans rien faire d'autre, cliquez **une seule fois** sur le bouton **Thème**. *Attendu :* le thème change au premier clic.
+- [ ] 4. Même essai avec **Langue**, **Liens** et le bouton de la liste. *Attendu :* chacun réagit au premier clic.
+
 ### Contrôle final de la mise à jour
 
 - [ ] Aucune erreur visible, aucun message inattendu pendant les parcours.

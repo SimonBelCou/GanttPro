@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7o3h7/SjUet1waJsWNRZk+uyQpC+jvxBVuCWI/52rVs='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TF1APrLt4moR8Z31JLV4nunhDjxakKAS/4njPs262jw='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -657,7 +657,7 @@ svg.cpispi { width: 100%; height: auto; display: block; }
 <script>
 (() => {
 'use strict';
-// ── js/core/00-dates.js ──
+// ── js\core\00-dates.js ──
 /*
  * Dates « civiles » sans fuseau : un jour est un entier (dn), nombre de jours depuis le
  * 01/01/1970. Tous les calculs se font sur ces entiers, jamais sur des Date locales, ce qui
@@ -756,7 +756,7 @@ const Dates = (() => {
   return { parse, fromYMD, toISO, ymd, weekday, todayDn, mondayOf, monthStart, monthEnd, MIN_DN, MAX_DN, MIN_YEAR, MAX_YEAR };
 })();
 
-// ── js/core/10-calendar.js ──
+// ── js\core\10-calendar.js ──
 /*
  * Calendrier du projet (RG-01 à RG-03, 3.9).
  *
@@ -1010,7 +1010,7 @@ const Calendar = (() => {
   return { create, easter, holidaysOf, HOLIDAY_SETS, DEFAULT };
 })();
 
-// ── js/core/20-schedule.js ──
+// ── js\core\20-schedule.js ──
 /*
  * Ordonnancement (RG-04 à RG-12, RG-23 à RG-25, RG-33).
  *
@@ -1298,7 +1298,7 @@ const Schedule = (() => {
   return { compute, durOf, isMilestone, isSummary, MODES };
 })();
 
-// ── js/core/30-metrics.js ──
+// ── js\core\30-metrics.js ──
 /*
  * Suivi et indicateurs (RG-13 à RG-20, RG-26, RG-28).
  * Un seul calcul de statut pour toute l'application (défaut A-06 de la version 2.3).
@@ -1527,7 +1527,7 @@ const Metrics = (() => {
   return { plannedToDate, report, STATUS, status, deviation, globalProgress, counters, periods, sCurve, occupation, statusLight, pctOf };
 })();
 
-// ── js/core/35-resolve.js ──
+// ── js\core\35-resolve.js ──
 /*
  * Résolution des conflits de ressource (EF-31, RG-34).
  *
@@ -1678,7 +1678,7 @@ const Resolve = (() => {
   return { suggest, firstFreeStart };
 })();
 
-// ── js/core/40-model.js ──
+// ── js\core\40-model.js ──
 /*
  * Données du projet : limites (3.7), projet initial (3.8), contrôle complet d'un fichier (8.3)
  * et écriture au format 3 (8.2).
@@ -2310,7 +2310,7 @@ const Model = (() => {
   return { checkCalendar, FORMAT, MAX_BYTES, LIMITS, ID_RE, COLOR_RE, EMOJIS, PALETTE, BASELINE_COLORS, LINK_TYPES, Invalid, sanitize, parseFile, serialize, nextTaskId, newProject, findCycle, stripAmounts };
 })();
 
-// ── js/core/42-budget.js ──
+// ── js\core\42-budget.js ──
 /*
  * Budget, étape A (EF-112 à EF-127, RG-35 à RG-43).
  *
@@ -2540,7 +2540,7 @@ const Budget = (() => {
   return { MAX, parse, toInput, format, formatCompact, amounts, totals, hasAmounts, byCategory, baselineBac, bacVariation, costCurve };
 })();
 
-// ── js/core/43-evm.js ──
+// ── js\core\43-evm.js ──
 /*
  * Valeur acquise (étape B, EF-131 et suivantes, RG-44 et suivantes) : moteur sans DOM, en centimes entiers.
  *
@@ -2703,7 +2703,7 @@ const Evm = (() => {
   return { LIGHTS, divRound, reference, lightOf, compute, point };
 })();
 
-// ── js/core/44-columns.js ──
+// ── js\core\44-columns.js ──
 /*
  * Colonnes de la liste des tâches (EF-143 à EF-146, RG-52, RG-53) : moteur sans DOM.
  * Le projet peut enregistrer la liste ORDONNÉE des colonnes affichées ; sans elle, l'ordre d'origine s'applique et
@@ -2781,7 +2781,7 @@ const Columns = (() => {
   return { ALL, MANDATORY, AMOUNTS, effective, layout, valid, toggle, move };
 })();
 
-// ── js/core/45-view.js ──
+// ── js\core\45-view.js ──
 /*
  * Recherche, filtres et regroupements (RG-27, EF-84 à EF-86).
  * Affichage seulement : ces fonctions ne modifient jamais le projet ni le planning.
@@ -2920,7 +2920,7 @@ const View = (() => {
   return { EMPTY, fold, matches, isActive, select, group };
 })();
 
-// ── js/core/50-i18n.js ──
+// ── js\core\50-i18n.js ──
 /*
  * Traductions (EF-103, EX-24, RG-32) : un catalogue par langue, repli sur le français,
  * pluriels (« 1 conflit », « 2 conflits »). Les paramètres sont insérés comme TEXTE : l'interface
@@ -4007,7 +4007,7 @@ const I18n = (() => {
   return { dateTime, dayName, monthName, t, error, setLang, getLang, date, shortDate, numDate, monthLabel, monthLabelFit, number, group, CATALOGS };
 })();
 
-// ── js/core/60-xml.js ──
+// ── js\core\60-xml.js ──
 /*
  * Lecteur XML minimal, sans DOM, pour les classeurs Excel et les fichiers MS Project (EX-27).
  * Sûreté : toute déclaration DOCTYPE ou ENTITY est refusée (pas d'entité externe, pas d'expansion
@@ -4117,7 +4117,7 @@ const Xml = (() => {
   return { parse, escape, child, children, textOf, deepText };
 })();
 
-// ── js/core/61-zip.js ──
+// ── js\core\61-zip.js ──
 /*
  * Archives ZIP : écriture sans compression (classeurs Excel) et lecture prudente (EX-27).
  * Lecture : au plus 200 fichiers et 50 Mo décompressés au total, vérifiés sur les tailles déclarées
@@ -4244,7 +4244,7 @@ const Zip = (() => {
   return { write, read, crc32, MAX_ENTRIES, MAX_TOTAL };
 })();
 
-// ── js/core/62-csv.js ──
+// ── js\core\62-csv.js ──
 /*
  * CSV et texte tabulé (EF-93, RG-30, EX-21).
  *
@@ -4326,7 +4326,7 @@ const Csv = (() => {
   return { neutralize, write, parse, detect };
 })();
 
-// ── js/core/63-xlsx.js ──
+// ── js\core\63-xlsx.js ──
 /*
  * Classeurs Excel (.xlsx) : écriture (EF-94) et lecture des valeurs (EF-96, EX-27).
  * Écriture : chaînes en ligne, jamais de formule ; en-tête en gras, figée, avec filtre automatique.
@@ -4463,7 +4463,7 @@ const Xlsx = (() => {
   return { build, read, colName };
 })();
 
-// ── js/core/64-exchange.js ──
+// ── js\core\64-exchange.js ──
 /*
  * Échanges de fichiers (EF-93 à EF-96, 8.6) : tableur (CSV, Excel), MS Project (XML), import de
  * tâches depuis un tableau. Tout ce qui entre repasse par Model.sanitize (section 8.3).
@@ -4905,7 +4905,7 @@ const Exchange = (() => {
   return { taskRows, csv, xlsx, mspXml, fromMspXml, guessMapping, rowsToTasks, mergeRows, FIELDS, outline };
 })();
 
-// ── js/core/65-crypto.js ──
+// ── js\core\65-crypto.js ──
 /*
  * Protection par mot de passe (EF-102, section 8.5) avec l'API Web Crypto du navigateur, sans
  * bibliothèque : clé dérivée par PBKDF2-SHA256 (600 000 itérations, sel aléatoire de 16 octets),
@@ -4981,7 +4981,7 @@ const Secure = (() => {
   return { encrypt, decrypt, passwordOk, MIN_PASSWORD, ITER };
 })();
 
-// ── js/ui/00-dom.js ──
+// ── js\ui\00-dom.js ──
 /*
  * Construction du DOM SANS innerHTML (A03 – injection) : tout texte passe par textContent,
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
@@ -4990,6 +4990,19 @@ const Secure = (() => {
  * Appelée par : 81 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
+
+/**
+ * Écrit le texte d'un élément SEULEMENT s'il change.
+ * Pourquoi : `el.textContent = …` remplace le nœud texte même à valeur identique. Le « change » d'un champ part
+ * au blur, pendant le mousedown d'un bouton ; si render() réécrit alors le texte de ce bouton, WebKit (Safari)
+ * supprime le « click » et le premier clic est perdu. Ne pas réécrire un texte inchangé le préserve (voir PCA.md §6).
+ * Entrées : el (élément), text (chaîne). Sortie : aucune.
+ * Appelle : aucune
+ * Appelée par : renderListToggle(), renderTopbar()
+ */
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
 
 const FORBIDDEN_ATTR = /^(on|style$|srcdoc$|formaction$)/i;
 const URL_ATTR = /^(href|src|action|xlink:href)$/i;
@@ -5080,7 +5093,7 @@ function announce(msg) {
   liveTimer = setTimeout(() => { live.textContent = msg; }, 30);
 }
 
-// ── js/ui/10-storage.js ──
+// ── js\ui\10-storage.js ──
 /* Seul module autorisé à toucher au stockage du navigateur (contrôlé par tools/build.py).
  *
  * Vie privée (EX-10, EX-22) : sont conservés sur l'appareil, sans cookie,
@@ -5270,7 +5283,7 @@ const HomeLink = (() => {
   return { takeProject, saveProject, homeUrl };
 })();
 
-// ── js/ui/20-actions.js ──
+// ── js\ui\20-actions.js ──
 /* Aucune action n'est attachée par un attribut onclick= (interdit, et bloqué par la CSP).
  * Les éléments portent data-click / data-change / data-input / data-submit (+ data-arg) ;
  * un seul écouteur par type d'événement les relie à la table ACTIONS ci-dessous.
@@ -5315,7 +5328,7 @@ function initActions() {
   });
 }
 
-// ── js/ui/30-dialog.js ──
+// ── js\ui\30-dialog.js ──
 /*
  * Fenêtres de l'application (4.3) : jamais alert/confirm/prompt du navigateur.
  * Élément <dialog> natif ouvert en modal : l'arrière-plan est inerte, Tab reste dans la fenêtre,
@@ -5422,7 +5435,7 @@ const Dialog = (() => {
   return { open, message, confirm };
 })();
 
-// ── js/ui/40-state.js ──
+// ── js\ui\40-state.js ──
 /* État de l'application : le projet, son planning calculé, l'historique d'annulation et
  * l'indicateur de modifications non exportées (EF-53, EF-55). */
 const App = {
@@ -5607,7 +5620,7 @@ function visibleTasks() {
  */
 function projectTagCount(tasks) { return new Set(tasks.flatMap(x => x.tags.map(g => g.toLowerCase()))).size; }
 
-// ── js/ui/41-money.js ──
+// ── js\ui\41-money.js ──
 /*
  * Affichage des montants à l'écran (EF-112, EF-125, EF-127, RG-41, RG-43).
  * Un montant est affiché en entier ou en forme compacte selon l'endroit ; le masquage remplace tout montant par
@@ -5694,7 +5707,7 @@ action('toggleMask', (arg, el) => {
   const b = el && el.classList && el.classList.contains('dlg-mask') ? el : $('btn-mask'); if (b) b.focus();
 });
 
-// ── js/ui/50-render.js ──
+// ── js\ui\50-render.js ──
 /*
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
@@ -5761,36 +5774,36 @@ function flags() {
 }
 
 /**
- * Appelle : $(), I18n.getLang(), Settings.get(), t()
+ * Appelle : $(), I18n.getLang(), setText(), Settings.get(), t()
  * Appelée par : renderAll()
  */
 function renderTopbar() {
   const p = App.project;
   const label = $('project-label');
-  label.textContent = `${p.emoji} ${p.name}`;
+  setText(label, `${p.emoji} ${p.name}`);
   label.setAttribute('aria-label', t('top.project', { name: p.name }));
   const start = $('project-start');
   if (document.activeElement !== start) start.value = p.projectStart;
-  $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
+  setText($('zoom-level'), t('top.zoom', { pct: App.zoom }));
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
   const theme = Settings.get('theme') || DEFAULT_THEME;
-  $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
+  setText($('btn-theme'), t('top.theme', { theme: t('theme.' + theme) }));
   const lang = $('btn-lang');
-  lang.textContent = t('top.lang');
+  setText(lang, t('top.lang'));
   lang.setAttribute('lang', I18n.getLang() === 'fr' ? 'en' : 'fr');
   lang.setAttribute('aria-label', t('top.langLabel'));
   const n = App.sched ? App.sched.conflicts.length + App.sched.warnings.length : 0;
   const badge = $('btn-alerts');
   badge.hidden = n === 0;
-  badge.textContent = App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n });
+  setText(badge, App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n }));
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
   const mask = $('btn-mask');
   mask.setAttribute('aria-pressed', String(!!App.maskAmounts));
   const links = $('btn-links');
-  links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
+  setText(links, t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') }));
   links.setAttribute('aria-pressed', String(App.showLinks));
   // Réordonner et changer de niveau sont indisponibles en vue regroupée (EF-86).
   for (const id of ['btn-up', 'btn-down', 'btn-indent', 'btn-outdent']) { const b = $(id); if (b) b.disabled = !!App.view.groupBy; }
@@ -6325,7 +6338,7 @@ function renderAll() {
   if (focusId && document.activeElement !== $(focusId) && $(focusId) && !document.querySelector('dialog[open]')) $(focusId).focus();
 }
 
-// ── js/ui/52-viewbar.js ──
+// ── js\ui\52-viewbar.js ──
 /*
  * Barre de recherche, filtres et regroupement (EF-84 à EF-86, RG-27). Affichage seulement :
  * rien n'est enregistré dans le projet, rien ne compte comme une modification (EF-53).
@@ -6551,7 +6564,7 @@ function initViewbar() {
   });
 }
 
-// ── js/ui/55-tooltip.js ──
+// ── js\ui\55-tooltip.js ──
 /*
  * Infobulle des barres (EF-23) : au survol ET au focus clavier ; Échap la ferme.
  * Contenu en texte seul (textContent) ; position par le CSSOM. Les mêmes informations sont dans
@@ -6679,7 +6692,7 @@ function applyShortcutTips() {
   }
 }
 
-// ── js/ui/60-editor.js ──
+// ── js\ui\60-editor.js ──
 /*
  * Panneau d'édition d'une tâche (EF-04 à EF-08, EF-19, EF-20, EF-60, EF-65 à EF-68).
  * Rien n'est appliqué avant « Enregistrer » : le formulaire travaille sur un brouillon.
@@ -7151,7 +7164,7 @@ const Editor = (() => {
   return { open, close, syncParent, isOpen: () => !!draft };
 })();
 
-// ── js/ui/62-shortcuts.js ──
+// ── js\ui\62-shortcuts.js ──
 /* Dupliquer (EF-80) et équivalents clavier des gestes (EF-78). Chaque action = un pas d'annulation. */
 
 /**
@@ -7243,7 +7256,7 @@ function initShortcuts() {
   });
 }
 
-// ── js/ui/63-selection.js ──
+// ── js\ui\63-selection.js ──
 /* Sélection simple et multiple (EF-03, EF-81), actions groupées (EF-82), hiérarchie (EF-59, EF-60,
  * EF-61, EF-63), suppression (EF-06), tri (EF-09), réordonnancement par glisser-déposer (EF-10),
  * repli de la liste (EF-43), largeur des colonnes (EF-44), raccourcis de liste (EF-58). */
@@ -7548,12 +7561,12 @@ action('toggleList', () => {
   $('btn-list').focus();
 });
 /**
- * Appelle : $(), t()
+ * Appelle : $(), setText(), t()
  * Appelée par : action « toggleList », renderAll()
  */
 function renderListToggle() {
   const b = $('btn-list');
-  b.textContent = t(App.listCollapsed ? 'view.listShow' : 'view.listHide');
+  setText(b, t(App.listCollapsed ? 'view.listShow' : 'view.listHide'));
   b.setAttribute('aria-expanded', String(!App.listCollapsed));
 }
 /**
@@ -7739,7 +7752,7 @@ function initListKeys() {
   });
 }
 
-// ── js/ui/64-bulk.js ──
+// ── js\ui\64-bulk.js ──
 /* Actions groupées : dupliquer la sélection et modifier en masse (EF-82). Tout ou rien :
  * si une tâche refuse une valeur, rien n'est appliqué et le message liste les tâches en cause. */
 
@@ -7861,7 +7874,7 @@ function bulkWindow() {
  */
 action('bulkEdit', () => bulkWindow());
 
-// ── js/ui/65-gestures.js ──
+// ── js\ui\65-gestures.js ──
 /* Gestes sur la grille (EF-74 à EF-77, EF-79, RG-29) : déplacer une barre (date imposée), tirer son
  * bord droit (durée), tirer d'une poignée de lien à une autre (lien typé), tirer l'avancement.
  * Souris : le geste démarre après 3 px ; doigt : appui long de 0,3 s. Échap annule. Un geste = un
@@ -8101,7 +8114,7 @@ function initGestures() {
   document.addEventListener('click', ev => { if (Gesture.suppressClick) { ev.stopPropagation(); ev.preventDefault(); } }, true);
 }
 
-// ── js/ui/66-layout.js ──
+// ── js\ui\66-layout.js ──
 /* Mise en page de la vue principale (EF-108 à EF-111) : séparateur réglable entre la liste et le Gantt,
  * colonnes figées, plein écran du Gantt. Aucune de ces réglages n'est enregistrée : ils valent pour la
  * session (stockage local seulement sur geste explicite, SECURITY.md). Tout se fait aussi au clavier. */
@@ -8283,7 +8296,7 @@ function initLayout() {
   updateSplitterValue();
 }
 
-// ── js/ui/70-windows.js ──
+// ── js\ui\70-windows.js ──
 /* Fenêtres de gestion : projet (EF-48), ressources (EF-24, EF-25), catégories (EF-27, EF-28). */
 
 /**
@@ -8715,7 +8728,7 @@ action('tagDelete', async name => {
   tagsWindow.paint && tagsWindow.paint();
 });
 
-// ── js/ui/71-resource-sheet.js ──
+// ── js\ui\71-resource-sheet.js ──
 /* Fiche de ressource (EF-26, EF-71) : avatar, rôle, capacité, absences, tâches et charge. */
 
 /**
@@ -8836,7 +8849,7 @@ action('rsAbsRemove', arg => {
   paintResourceSheet(resourceSheet.body, id, '#rs-from');
 });
 
-// ── js/ui/72-baselines.js ──
+// ── js\ui\72-baselines.js ──
 /* Baselines (EF-33 à EF-36, RG-22, EF-131 à EF-133) : copies figées des dates calculées, dix au plus, dont trois au
  * plus affichées sur chaque vue (Gantt, courbe en S) ; la première capturée est la baseline « initiale », protégée à
  * la suppression ; une baseline est la référence de la valeur acquise (RG-44). */
@@ -9002,7 +9015,7 @@ action('blDelete', async id => {
   if (baselinesWindow.paint) baselinesWindow.paint();
 });
 
-// ── js/ui/73-calendar.js ──
+// ── js\ui\73-calendar.js ──
 /* Calendrier du projet (EF-69, 3.9, RG-01, RG-02).
  * La fenêtre travaille sur un brouillon ; « Enregistrer » le contrôle avec les mêmes règles
  * qu'un import (Model.checkCalendar) puis l'applique en un seul pas d'annulation. */
@@ -9169,7 +9182,7 @@ action('calAdd', kind => {
   repaintCal(`#cal-${p}-from`);
 });
 
-// ── js/ui/74-columns.js ──
+// ── js\ui\74-columns.js ──
 /* Fenêtre « Colonnes » (EF-143 à EF-146, RG-52, RG-53) : affiche, masque et ordonne les colonnes de la liste.
  * Le choix est enregistré dans le projet, annulable comme une modification ; l'identifiant et le nom sont obligatoires. */
 
@@ -9259,7 +9272,7 @@ action('colReset', () => {
   if (columnsWindow.paint) columnsWindow.paint('#col-reset');
 });
 
-// ── js/ui/75-dashboard.js ──
+// ── js\ui\75-dashboard.js ──
 /* Tableau de bord (EF-37 à EF-40) : indicateurs, courbe en S, tableau de suivi.
  * Courbe : une seule échelle (0-100 %), traits de 2 px, prévu et réel en couleurs validées pour le
  * daltonisme (outil dataviz), baselines en pointillé, étiquettes directes, survol et focus avec
@@ -9570,7 +9583,7 @@ action('dashSort', k => {
   repaintDashboard(`[data-click="dashSort"][data-arg="${CSS.escape(k)}"]`);
 });
 
-// ── js/ui/76-budget.js ──
+// ── js\ui\76-budget.js ──
 /* Onglet « Budget » du tableau de bord (EF-117 à EF-119, RG-37 à RG-40) : indicateurs, tableau par catégorie,
  * courbe en S des coûts séparée de la courbe d'avancement, et son équivalent texte. */
 
@@ -9760,7 +9773,7 @@ action('evmPointDelete', id => {
   repaintDashboard('#evm-add');
 });
 
-// ── js/ui/76-load.js ──
+// ── js\ui\76-load.js ──
 /* Charge des ressources (EF-87, RG-26) : une petite courbe en barres par ressource, avec un trait à
  * 100 %. Une surcharge est rouge ET marquée ▲ ; une absence est hachurée ET nommée dans l'infobulle
  * et le tableau ; jamais la couleur seule. Tableau des valeurs pour qui ne lit pas un graphique. */
@@ -9887,7 +9900,7 @@ action('loadRes', (id, el) => { if (el.checked) Load.res.add(id); else Load.res.
  */
 action('loadValues', () => { Load.showValues = !Load.showValues; repaintDashboard('[data-click="loadValues"]'); });
 
-// ── js/ui/77-report.js ──
+// ── js\ui\77-report.js ──
 /* Rapport d'état (EF-88, RG-28) : aperçu, choix des blocs, note, impression ou PDF, texte brut.
  * Le voyant est toujours écrit en toutes lettres (jamais la couleur seule, EX-03). */
 const Report = { amounts: false, blocks: { kpis: true, curve: true, budget: true, late: true, soon: true, milestones: true, critical: true, alerts: true, baseline: true, note: true }, baseline: '' };
@@ -10136,7 +10149,7 @@ action('repPrint', () => printNode(reportArticle(true), 'print-report', 'A4 port
  */
 action('repCopy', async () => { const ok = await copyText(reportText()); announce(t(ok ? 'rep.copied' : 'rep.copyFail')); toast(t(ok ? 'rep.copied' : 'rep.copyFail')); });
 
-// ── js/ui/78-print.js ──
+// ── js\ui\78-print.js ──
 /* Impression du Gantt (EF-89, EX-26) : période, échelle, orientation, légende, colonnes.
  * Mise en page par un tableau dont l'en-tête (colonnes et échelle de temps) se répète sur chaque
  * page ; en couleur, mais lisible sans couleur (contours, motifs, ● et colonne Catégorie). */
@@ -10273,7 +10286,7 @@ action('printOpt', (arg, el) => {
   else if (arg.startsWith('col:')) PrintOpt.cols[arg.slice(4)] = el.checked;
 });
 
-// ── js/ui/79-versions.js ──
+// ── js\ui\79-versions.js ──
 /*
  * Versions (EF-54) : copies nommées et datées de l'état complet, dix au plus, enregistrées dans le
  * fichier exporté. Restaurer est confirmé et s'annule avec « Annuler » (un pas d'historique).
@@ -10354,7 +10367,7 @@ action('verDelete', async id => {
   versionsWindow.paint && versionsWindow.paint();
 });
 
-// ── js/ui/80-files.js ──
+// ── js\ui\80-files.js ──
 /* Fichiers : nouveau projet (EF-49), import (EF-52, EF-95, EF-96), export (EF-50, EF-51, EF-92 à
  * EF-97), fichiers protégés par mot de passe (EF-102). Tout fichier est contrôlé en entier AVANT
  * tout changement : en cas de refus, le projet ouvert reste intact (EX-14). */
@@ -10783,7 +10796,7 @@ async function newProjectAction() {
   Tabs.open(Model.newProject(Dates.toISO(Dates.todayDn()), Date.now(), initialNames()));
 }
 
-// ── js/ui/82-clipboard.js ──
+// ── js\ui\82-clipboard.js ──
 /* Copier-coller (EF-83) : Ctrl + C copie la sélection en mémoire (avec ses liens internes) ET en
  * texte tabulé ; Ctrl + V colle après la sélection, soit la copie mémoire, soit un texte tabulé
  * venant d'un tableur (RG-30, même compte rendu d'erreurs qu'EF-96). */
@@ -10892,7 +10905,7 @@ function initClipboard() {
   });
 }
 
-// ── js/ui/84-tabs.js ──
+// ── js\ui\84-tabs.js ──
 /*
  * Onglets de projets (EF-98) : jusqu'à dix projets ouverts. Chaque onglet garde son projet, son
  * zoom, sa vue (recherche, filtres, regroupement), sa sélection, son historique d'annulation, son
@@ -11106,7 +11119,7 @@ action('tabPlus', async () => {
   else if (v === 'lib') ACTIONS.openLibrary();
 });
 
-// ── js/ui/85-library.js ──
+// ── js\ui\85-library.js ──
 /*
  * Bibliothèque locale (EF-99) et modèles (EF-100), éventuellement protégés par mot de passe (EF-102).
  * Un enregistrement est toujours un geste explicite de l'utilisateur. Le sommaire (« index ») et
@@ -11491,7 +11504,7 @@ action('saveLibrary', () => saveToLibrary());
  */
 action('newFromTemplate', () => newFromTemplate());
 
-// ── js/ui/86-recovery.js ──
+// ── js\ui\86-recovery.js ──
 /*
  * Sauvegarde automatique (EF-101, RG-31) — DÉSACTIVÉE par défaut (EX-10).
  * Quand elle est activée, l'état de chaque onglet modifié est écrit 5 secondes après la dernière
@@ -11693,7 +11706,7 @@ const Recovery = (() => {
   return { touch, drop, clearCurrent, clearAllCopies, offer, paint, flushSync, setPassword, stop, enabled, paused, protectedMode, saveNow: saveAll };
 })();
 
-// ── js/ui/87-settings.js ──
+// ── js\ui\87-settings.js ──
 /* Réglages (EF-104), aide et à propos (EF-57, EF-58) et page d'accueil facultative (EF-56). */
 const APP_VERSION = '3.0.0';
 
@@ -11904,12 +11917,12 @@ action('openSettings', () => openSettings());
  */
 action('openHelp', () => openHelp());
 
-// ── js/ui/88-ofl.js ──
+// ── js\ui\88-ofl.js ──
 /* Avis de licence des polices intégrées (EX-20) : texte de la SIL Open Font License 1.1, reproduit
  * tel quel (texte juridique, non traduit) dans la fenêtre d'aide. Généré depuis THIRD_PARTY_LICENSES.md. */
 const OFL_TEXT = "Copyright 2019 The Sora Project Authors (https://github.com/sora-xor/sora-font)\nCopyright 2014-2020 The Fira Code Project Authors (https://github.com/tonsky/FiraCode)\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\nThis license is copied below, and is also available with a FAQ at:\nhttp://scripts.sil.org/OFL\n\n\n-----------------------------------------------------------\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n-----------------------------------------------------------\n\nPREAMBLE\nThe goals of the Open Font License (OFL) are to stimulate worldwide\ndevelopment of collaborative font projects, to support the font creation\nefforts of academic and linguistic communities, and to provide a free and\nopen framework in which fonts may be shared and improved in partnership\nwith others.\n\nThe OFL allows the licensed fonts to be used, studied, modified and\nredistributed freely as long as they are not sold by themselves. The\nfonts, including any derivative works, can be bundled, embedded,\nredistributed and/or sold with any software provided that any reserved\nnames are not used by derivative works. The fonts and derivatives,\nhowever, cannot be released under any other type of license. The\nrequirement for fonts to remain under this license does not apply\nto any document created using the fonts or their derivatives.\n\nDEFINITIONS\n\"Font Software\" refers to the set of files released by the Copyright\nHolder(s) under this license and clearly marked as such. This may\ninclude source files, build scripts and documentation.\n\n\"Reserved Font Name\" refers to any names specified as such after the\ncopyright statement(s).\n\n\"Original Version\" refers to the collection of Font Software components as\ndistributed by the Copyright Holder(s).\n\n\"Modified Version\" refers to any derivative made by adding to, deleting,\nor substituting -- in part or in whole -- any of the components of the\nOriginal Version, by changing formats or by porting the Font Software to a\nnew environment.\n\n\"Author\" refers to any designer, engineer, programmer, technical\nwriter or other person who contributed to the Font Software.\n\nPERMISSION & CONDITIONS\nPermission is hereby granted, free of charge, to any person obtaining\na copy of the Font Software, to use, study, copy, merge, embed, modify,\nredistribute, and sell modified and unmodified copies of the Font\nSoftware, subject to the following conditions:\n\n1) Neither the Font Software nor any of its individual components,\nin Original or Modified Versions, may be sold by itself.\n\n2) Original or Modified Versions of the Font Software may be bundled,\nredistributed and/or sold with any software, provided that each copy\ncontains the above copyright notice and this license. These can be\nincluded either as stand-alone text files, human-readable headers or\nin the appropriate machine-readable metadata fields within text or\nbinary files as long as those fields can be easily viewed by the user.\n\n3) No Modified Version of the Font Software may use the Reserved Font\nName(s) unless explicit written permission is granted by the corresponding\nCopyright Holder. This restriction only applies to the primary font name as\npresented to the users.\n\n4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font\nSoftware shall not be used to promote, endorse or advertise any\nModified Version, except to acknowledge the contribution(s) of the\nCopyright Holder(s) and the Author(s) or with their explicit written\npermission.\n\n5) The Font Software, modified or unmodified, in part or in whole,\nmust be distributed entirely under this license, and must not be\ndistributed under any other license. The requirement for fonts to\nremain under this license does not apply to any document created\nusing the Font Software.\n\nTERMINATION\nThis license becomes null and void if any of the above conditions are\nnot met.\n\nDISCLAIMER\nTHE FONT SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT\nOF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE\nCOPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\nINCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL\nDAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM\nOTHER DEALINGS IN THE FONT SOFTWARE.";
 
-// ── js/ui/99-main.js ──
+// ── js\ui\99-main.js ──
 /* Actions de l'écran principal et démarrage. */
 
 

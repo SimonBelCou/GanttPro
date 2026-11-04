@@ -7,6 +7,19 @@
  */
 const $ = id => document.getElementById(id);
 
+/**
+ * Écrit le texte d'un élément SEULEMENT s'il change.
+ * Pourquoi : `el.textContent = …` remplace le nœud texte même à valeur identique. Le « change » d'un champ part
+ * au blur, pendant le mousedown d'un bouton ; si render() réécrit alors le texte de ce bouton, WebKit (Safari)
+ * supprime le « click » et le premier clic est perdu. Ne pas réécrire un texte inchangé le préserve (voir PCA.md §6).
+ * Entrées : el (élément), text (chaîne). Sortie : aucune.
+ * Appelle : aucune
+ * Appelée par : renderListToggle(), renderTopbar()
+ */
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
+
 const FORBIDDEN_ATTR = /^(on|style$|srcdoc$|formaction$)/i;
 const URL_ATTR = /^(href|src|action|xlink:href)$/i;
 

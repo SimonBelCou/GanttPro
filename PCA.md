@@ -105,6 +105,7 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |
 | Un fichier protégé ne s'ouvre pas | Mot de passe faux, ou fichier altéré (le message est volontairement le même) | Aucun moyen de récupération : GanttPro ne conserve jamais le mot de passe |
+| Sous Safari / WebKit, le premier clic sur un bouton de la barre d'outils est perdu juste après la saisie d'un champ (constaté le 4 novembre 2026 sous WebKit de Playwright) | Le « change » du champ part au blur, pendant le mousedown du bouton ; `render()` réécrivait alors son texte (`textContent`), et WebKit supprime le « click » quand le contenu du bouton est remplacé entre l'appui et le relâchement | `setText()` (`src/js/ui/00-dom.js`) n'écrit un texte que s'il change : à employer pour tout bouton réécrit par `render()`. Test : `tests/test_v3_clic_change.py` |
 
 Toute nouvelle erreur récurrente est ajoutée à ce tableau avec sa cause et son correctif (CLAUDE.md §4).
 
