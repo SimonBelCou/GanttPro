@@ -535,7 +535,7 @@ Profils de coût, taux datés et coût calculé des ressources : étape C du cad
 et 19). Tant que le projet n'a ni profil, ni taux, ni ressource rattachée à un profil, rien de nouveau n'apparaît, sauf le
 bouton « Profils de coût… » de la fenêtre Ressources. Le budget saisi de chaque tâche reste la référence du BAC, de la
 valeur acquise et des baselines (RG-56) ; le coût calculé sert à le contrôler. Règles : RG-54 à RG-58 ; recette : R-92 à
-R-100 et parcours « Taux 1 à 10 » de `docs/recette-manuelle.md`.
+R-100 et fiches « Taux 1 à 15 » de `docs/recettes/`.
 
 | ID | Exigence | Prio |
 | --- | --- | --- |

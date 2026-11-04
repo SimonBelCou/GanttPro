@@ -22,7 +22,7 @@ Aucune donnée réelle : tous les montants ci-dessous sont des exemples.
   Budget 14 ; thème clair par défaut, raccourcis au survol, icône d'onglet intégrée. Cahier des charges : EX-29 à EX-38.
   Reste à valider par l'utilisateur : G15 (mobile).
 - **Étape C (taux de ressource)**, développée sur la branche `budget-etape-c-taux-ressources` (PR en attente de la recette
-  manuelle « Taux 1 à 10 ») : voir le § 3 bis. Moteur `src/js/core/46-rates.js`, interface `src/js/ui/71-rates.js`, tests
+  par fiches « Taux 1 à 15 », `docs/recettes/`) : voir le § 3 bis. Moteur `src/js/core/46-rates.js`, interface `src/js/ui/71-rates.js`, tests
   `tests/core/taux.test.mjs` (R-92 à R-100) et la fin de `tests/test_v3_budget.py`.
 - Reste à faire : nouvelle tâche « versionnement » ; chantier D (dette, voir la demande du 30 octobre) ; et, en réserve, les
   suites de l'étape C listées au § 3 bis.
@@ -147,7 +147,7 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 ## 7. Autres restes à faire (hors budget)
 
 - Guide de recette manuelle `docs/recette-manuelle.md` + faux projets JSON dans `tests/fixtures/` (règle 5 de `CLAUDE.md`) :
-  fait (parties A et B, jusqu'à Taux 10) ; il absorbe la fiche EX-16 (Firefox, Safari, tablette).
+  fait (parties A et B, jusqu'aux fiches Taux, dans `docs/recettes/`) ; il absorbe la fiche EX-16 (Firefox, Safari, tablette).
 - Plan d'audit RGAA EX-05 dans `docs/`.
 - Mémorisation facultative de la mise en page et hauteur réglable de la zone (le choix et l'ordre des colonnes sont faits, PR #13).
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.

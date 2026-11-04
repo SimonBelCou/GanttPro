@@ -23,7 +23,7 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   dans `.claude/regles-nr/` et importées par `CLAUDE.md` §13.10 ; sous-agents de revue `eco-check` et
   `accessibilite-check` dans `.claude/agents/`. Aucun changement de code.
 
-### Budget, étape C (PR #14, en attente de la recette « Taux 1 à 10 »)
+### Budget, étape C (PR #14, en attente de la recette par fiches `docs/recettes/` (Taux 1 à 15))
 - Profils de coût et taux datés des ressources (par jour ouvré), coût des ressources par tâche, par ressource et face au
   budget saisi, signalement des ressources sans taux, exports avec ou sans taux (EF-147 à EF-150, RG-54 à RG-58, R-92 à R-100).
   Nouveau module `src/js/core/46-rates.js`, fenêtre `src/js/ui/71-rates.js`. Nouveaux codes d'erreur : `imp.dupProfile`,
