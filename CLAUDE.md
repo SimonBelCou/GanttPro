@@ -345,6 +345,18 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
    par « Importer » ; un fichier par situation utile, nommé pour ce qu'il montre). Une mise à jour n'est livrée qu'avec
    son parcours à jour et ses fichiers d'essai ; le parcours renvoie aux exigences et aux scénarios R-xx de
    `Specs_fonctionnelles.md`.
+7. **Recette par petits paquets, facile à lire** (demande du propriétaire du produit, 4 novembre 2026 ;
+   `Specs_fonctionnelles.md`, journal C) :
+   - **Le plus petit paquet possible** : une fiche de recette par pull request, **10 étapes et 15 minutes au plus**. Une
+     évolution plus grosse est découpée en plusieurs fiches (par lot, par écran ou par fonction), chacune validable seule
+     et dans l'ordre de fusion des pull requests.
+   - **Un fichier par fiche** dans `docs/recettes/`, nommé pour ce qu'il valide (par exemple `taux-profils.md`). En tête,
+     en trois lignes : ce qui change pour l'utilisateur, le fichier d'essai à ouvrir, la durée estimée. Puis des étapes
+     numérotées en langage courant : **une action et un résultat attendu par étape**, avec la valeur exacte à voir, une
+     case à cocher, et ce qu'il faut noter en cas d'écart. Les renvois EF, RG et R-xx sont regroupés en fin de fiche,
+     jamais dans les étapes.
+   - `docs/recette-manuelle.md` garde le mode d'emploi, la recette générale (partie A) et un **index des fiches** :
+     fiche, pull request, durée, statut (à faire, validée le …, écart noté).
 
 ### 13.7 Règles de code (A03 – Injection)
 - DOM construit avec `h()` : tout texte par `textContent`, **jamais `innerHTML`** ; SVG par `svg()`.

@@ -127,3 +127,8 @@ Scénario chiffré à reprendre comme test de recette (cours) : BAC 200, PV 100,
 - Mémorisation facultative de la mise en page, **choix et ordre des colonnes** (à proposer après l'étape A : il
   rendra la colonne « Budget » facultative), hauteur réglable de la zone.
 - Mesurer EX-15 (1000 tâches) sans `PERF_FACTOR`.
+- **Recette par petits paquets** (demande du 4 novembre 2026, règle `CLAUDE.md` §13.6 point 7) : découper la partie B
+  de `docs/recette-manuelle.md` (Budget, Colonnes, Taux) en fiches courtes de `docs/recettes/`, une par pull request,
+  et créer l'index des fiches avec leur statut. À faire **après la fusion des branches en attente** (chacune ajoute son
+  parcours à ce document) pour éviter les conflits ; ces branches réécrivent d'abord leur propre parcours au nouveau
+  format.
