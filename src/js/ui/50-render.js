@@ -248,14 +248,21 @@ function renderListHead() {
 }
 
 /**
+ * Mémoïsation bornée à un affichage : une Map par appel, jetée avec le rendu (EX-25).
+ * @param {(k:any) => any} f  @returns {(k:any) => any} f mémorisée
+ * Appelle : aucune
+ * Appelée par : listContext(), renderGantt()
+ */
+function memoOf(f) { const m = new Map(); return k => { let v = m.get(k); if (v === undefined) { v = f(k); m.set(k, v); } return v; }; }
+
+/**
  * Valeurs communes à toutes les lignes d'un affichage de la liste, calculées une fois (EX-15, EX-25) :
  * date du jour, libellés fixes, tâches dont l'échéance est dépassée, textes de durée et de statut déjà traduits.
  * @returns {object} contexte passé à listRow()
- * Appelle : t(), today()
+ * Appelle : memoOf(), t(), today()
  * Appelée par : renderList()
  */
 function listContext(fl, amts, noRes) {
-  const memo = f => { const m = new Map(); return k => { let v = m.get(k); if (v === undefined) { v = f(k); m.set(k, v); } return v; }; };
   return {
     fl, amts, noRes,
     today: today(),
@@ -264,8 +271,8 @@ function listContext(fl, amts, noRes) {
     lbl: { critical: t('list.critical'), conflict: t('list.conflict'), warning: t('list.warning'), late: t('list.deadlineLate'), notes: t('list.notes'), mark: t('sel.mark') + ' ' },
     // Un ensemble plutôt qu'un parcours des avertissements à chaque ligne (motif quadratique évité).
     deadlineLate: new Set(App.sched ? App.sched.warnings.filter(w => w.kind === 'deadline').map(w => w.task) : []),
-    statusText: memo(st => t('status.' + st)),
-    daysText: memo(d => t('dur.days', { count: d })),
+    statusText: memoOf(st => t('status.' + st)),
+    daysText: memoOf(d => t('dur.days', { count: d })),
     msText: t('dur.milestone'),
   };
 }
@@ -321,8 +328,11 @@ function listRow(it, cols, ctx) {
   if (App.multi.has(id)) sel.append(elt('span', 'sr-only', lbl.mark));
   sel.append((task.type === 'milestone' ? '◆ ' : '') + task.name + (task.forcedStart ? ' 📌' : '') + (task.notBefore && !task.forcedStart ? ' ⏳' : ''));
   nameCell.append(sel);
-  if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
-    '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
+  if (task.deadline) {
+    const dl = Dates.parse(task.deadline);
+    nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(dl) }) },
+      '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(dl) }) })));
+  }
   if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: lbl.notes }, '📝', h('span', { class: 'sr-only', text: ' ' + lbl.notes })));
   if (ctx.showTags && task.tags.length) { nameCell.append(' '); for (const tg of task.tags) nameCell.append(elt('span', 'tag-pill', tg), ' '); }
   if (marks.length) nameCell.append(' ', elt('span', 'marks' + (!crit && !conflict && !warn ? ' info' : ''), (conflict || warn ? '⚠ ' : '') + marks.join(', ')));
@@ -420,7 +430,7 @@ function baselineTexts(taskId) {
 }
 
 /**
- * Appelle : 26 fonctions
+ * Appelle : 27 fonctions
  * Appelée par : renderAll()
  */
 function renderGantt(items, fl) {
@@ -502,10 +512,9 @@ function renderGantt(items, fl) {
     return g;
   };
   // Textes répétés d'une barre à l'autre, calculés une fois par affichage (EX-25).
-  const memo = f => { const m = new Map(); return k => { let v = m.get(k); if (v === undefined) { v = f(k); m.set(k, v); } return v; }; };
-  const dateText = memo(dn => I18n.date(dn));
-  const statusText = memo(st => t('status.' + st));
-  const inkOf = memo(c => inkOn(c));
+  const dateText = memoOf(dn => I18n.date(dn));
+  const statusText = memoOf(st => t('status.' + st));
+  const inkOf = memoOf(c => inkOn(c));
   const lbl = { critical: t('list.critical'), conflict: t('list.conflict'), forced: t('gantt.forced') };
   const rowOf = new Map(); // id → index de ligne visible, pour les flèches
   items.forEach((it, i) => { if (it.task && !rowOf.has(it.task.id)) rowOf.set(it.task.id, i + 1); });
