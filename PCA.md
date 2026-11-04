@@ -81,6 +81,7 @@ node tools/dependances.mjs --check && node --test tests/test_dependances.mjs
 python3 tests/test_v3.py && python3 tests/test_v3_espace.py && python3 tests/test_v3_recette.py
 python3 tests/test_v3_budget.py && python3 tests/test_v3_recette_manuelle.py
 ```
+Contrôle complémentaire des fuseaux (CLAUDE.md §13.2) : `TZ=Pacific/Kiritimati node --test tests/core/*.test.mjs`, puis `Pacific/Pago_Pago` et `America/New_York`.
 Ces commandes réussissent sur un clone neuf : c'est le test de restauration.
 
 ### Test périodique
@@ -101,6 +102,7 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | Les tests de bout en bout échouent par dépassement de délai sur une machine lente | Seuils de performance trop stricts | `PERF_FACTOR=2` (ou `3`) devant la commande |
 | Le contrôle d'accessibilité ne s'exécute pas | `axe-core` absent. Installer `acorn` seul avec `--no-save` **retire** `axe-core` (npm supprime ce qui n'est pas déclaré) | Toujours une seule commande : `npm install --no-save axe-core@4.14.0 acorn@8.19.0` |
 | La CI échoue : « Dépendances périmées dans … » | Une fonction ou un appel a changé sans régénérer les commentaires « Appelle / Appelée par » ni le graphe | `node tools/dependances.mjs`, puis recommiter |
+| Les tests du moteur sautent des cas « TZ non pris en compte » ou échouent dans un seul fuseau | Sous Windows, Node ignore parfois `TZ` ; ailleurs, un calcul de date lit l'heure locale au lieu des numéros de jour (seul `Dates.todayDn` le doit) | Relancer sous Linux/WSL ou en CI ; corriger le calcul fautif (jamais le test) : Specs_fonctionnelles.md, annexe C.1 du 4 novembre 2026 |
 | Les tests automatiques ne couvrent pas Firefox ni Safari | La CI n'exécute que Chromium | Recette manuelle (`docs/recette-manuelle.md`) |
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |

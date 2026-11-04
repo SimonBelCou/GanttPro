@@ -9,6 +9,11 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 
 ## Non publié
 
+### Tests
+- **Fuseaux horaires et changements d'heure** : `tests/core/fuseaux.test.mjs` (6 tests) et une étape de CI qui lance toute la suite
+  du moteur sous 5 fuseaux (UTC, Europe/Paris, America/New_York, Pacific/Kiritimati, Pacific/Pago_Pago). Aucun défaut du
+  moteur trouvé ; aucun changement de code livré.
+
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec
