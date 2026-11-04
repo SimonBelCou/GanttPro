@@ -456,21 +456,18 @@ Départ : ouvrez `budget-montants-geants.json` (cinq tâches, du petit montant a
 - [ ] 5. (Facultatif, lecteur d'écran) Sur une ligne abrégée, le lecteur annonce le montant abrégé puis le
   montant complet entre parenthèses.
 
-### Budget 6 — Masquer les montants à l'écran (EF-125, EF-126, RG-41, R-78)
+### Budget 6 — Masquer les montants à l'écran (EF-126, RG-41, R-78)
 
 Départ : `budget-base.json` ouvert.
 
 - [ ] 1. Cliquez **Masquer les montants** (barre du haut). *Attendu :* le bouton paraît enfoncé ; la colonne
   affiche `••••` partout ; aucun chiffre de montant n'est visible.
-- [ ] 2. Ouvrez la fiche d'Etude. *Attendu :* sous les étiquettes « Budget (€) » et « Coût réel cumulé (€) », plus de champ de
-  saisie mais le texte `••••` ; un lecteur d'écran lit l'étiquette puis « montant masqué » ; la touche Tab ne s'arrête pas
-  sur ces textes. Fermez la fiche par Échap.
-- [ ] 3. Ouvrez la fenêtre du projet (clic sur son nom). *Attendu :* « Provision globale (€) » et « Reste à faire estimé, ETC (€) »
-  affichent `••••` en texte, lu « montant masqué », avec une phrase qui dit de désactiver le masquage pour les modifier. Échap.
-- [ ] 4. Ouvrez le tableau de bord, onglet Budget. *Attendu :* tuiles, tableau des catégories et valeurs de la
+- [ ] 2. Ouvrez la fiche d'Etude. *Attendu :* budget et coût réel affichent `••••` et ne se modifient pas. Le détail (texte lu
+  « montant masqué », fenêtre du projet, taux) est validé par la fiche [`recettes/montants-masques-texte.md`](recettes/montants-masques-texte.md).
+- [ ] 3. Ouvrez le tableau de bord, onglet Budget. *Attendu :* tuiles, tableau des catégories et valeurs de la
   courbe sont masqués.
-- [ ] 5. Rechargez la page (F5). *Attendu :* le masquage est conservé (réglage mémorisé sur votre poste).
-- [ ] 6. Cliquez de nouveau sur le bouton. *Attendu :* les montants reviennent. Le masquage n'a modifié aucune
+- [ ] 4. Rechargez la page (F5). *Attendu :* le masquage est conservé (réglage mémorisé sur votre poste).
+- [ ] 5. Cliquez de nouveau sur le bouton. *Attendu :* les montants reviennent. Le masquage n'a modifié aucune
   donnée (le bouton **Annuler** reste grisé).
 
 ### Budget 7 — Baselines et BAC (EF-121, RG-39, R-75)
@@ -645,7 +642,7 @@ Départ : `valeur-acquise-passe.json`, **Projet** (clic sur le nom du projet).
 
 - [ ] 1. Dans le groupe **Valeur acquise**, mettez le seuil vert à `80` et le seuil rouge à `90`, **Enregistrer**. *Attendu :* refus avec un message (le seuil rouge ne dépasse pas le vert), le champ fautif reçoit le focus.
 - [ ] 2. Mettez vert `120`, rouge `110`, vide l'ETC, **Enregistrer**. *Attendu :* onglet Budget : CPI `1,16` passe à « ▲ à surveiller » ; la ligne AC + ETC devient « non calculable ».
-- [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, l'ETC s'affiche en texte `••••` (lu « montant masqué »), non modifiable.
+- [ ] 3. Saisissez un ETC de `50`, enregistrez. *Attendu :* AC + ETC = `240,00 €`. Avec **Masquer les montants**, l'ETC affiche `••••` et ne se modifie pas (détail : fiche `recettes/montants-masques-texte.md`).
 - [ ] 4. Barre du haut, **Annuler**. *Attendu :* les seuils reviennent à leur valeur précédente.
 
 ### Budget 20 — Points de situation (EF-141, RG-51, R-88)
@@ -790,19 +787,19 @@ Départ : ouvrez `taux-sans-taux.json`.
 Départ : `taux-historique.json`.
 
 - [ ] 1. Cliquez **Masquer les montants**. *Attendu :* dans **Ressources**, les taux du jour sont `••••` ; dans **Profils de coût…**,
-  chaque taux est le texte `••••` (lu « Taux par jour (€) … montant masqué »), les dates et boutons des lignes sont grisés et un message explique qu'il faut désactiver le masquage ; l'onglet Budget montre `••••` pour tous
+  les taux affichent `••••` et ne se modifient pas, un message explique qu'il faut désactiver le masquage (détail : fiche
+  `recettes/montants-masques-texte.md`) ; l'onglet Budget montre `••••` pour tous
   les montants mais garde les jours-personne. Réactivez les montants.
 - [ ] 2. **Exporter** (JSON), **sans** « Inclure les montants ». Ouvrez le fichier dans un éditeur de texte. *Attendu :* aucune
   valeur de taux ; les profils gardent leur nom avec `"rates": []`.
 - [ ] 3. Exportez **avec** « Inclure les montants ». *Attendu :* `profiles` avec leurs lignes (`"rate": 40000`, en centimes) et le taux
   nominatif de Dave dans sa ressource. Réimportez ce fichier : le coût `3 440,00 €` est identique.
 - [ ] 4. Exportez avec les montants **et** « Exporter sans noms de personnes ». *Attendu :* aucun nom, **aucun taux nominatif**
-  (le `70000` de Dave n'apparaît pas) ; le profil « Analyste » devient `"name": "Profil 1"`, la ressource 1 garde
-  `"profile": "Profil 1"` et le taux du profil (`40000`) reste ; le mot « Analyste » n'apparaît nulle part (RG-58, décision du
-  3 novembre 2026). Réimportez ce fichier : le coût d'Alice est identique.
+  (le `70000` de Dave n'apparaît pas), le taux du profil reste. Le renommage des profils (« Profil 1 ») est validé par la
+  fiche [`recettes/taux-export-anonyme-profils.md`](recettes/taux-export-anonyme-profils.md).
 - [ ] 5. **Excel** avec les montants. *Attendu :* feuille **Tâches** avec une dernière colonne « Coût des ressources » ; feuille
   **Ressources** avec Profil de coût, Taux par jour, Coût prévu, Coût réel estimé ; une feuille **Taux** (profil ou ressource, nature, à partir du, taux).
-  Sans les montants : ni la feuille Taux ni ces colonnes (seul le profil reste). Anonymisé : pas de taux nominatif ni de coût par ressource ; le profil s'appelle « Profil 1 » dans la colonne Profil de coût et la feuille Taux.
+  Sans les montants : ni la feuille Taux ni ces colonnes (seul le profil reste). Anonymisé : pas de taux nominatif ni de coût par ressource.
 - [ ] 6. **CSV** avec les montants : dernière colonne « Coût des ressources ». Sans : absente.
 - [ ] 7. **MS Project** : ouvrez le fichier `.xml` dans un éditeur de texte. *Attendu :* aucun taux ni coût (les montants ne partent jamais vers MS Project).
 
@@ -828,24 +825,13 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 - [ ] 3. Montants masqués : les valeurs sont annoncées « montant masqué ».
 - [ ] 4. Thème sombre : la fenêtre des profils, la rubrique de coût et la section du tableau de bord restent lisibles.
 
-### Taux 11 — Corrections des revues d'accessibilité et d'écoconception (RGAA 9.1, 11.2, 11.10 ; RG-57)
+### Taux 11 — Corrections des revues et décisions du 3 novembre 2026 : fiches courtes
 
-Départ : ouvrez `taux-sans-taux.json`.
-
-- [ ] 1. **Ressources**, **Profils de coût…**. *Attendu :* chaque profil a un titre à son nom (« Analyste », « Sans taux encore »)
-  au-dessus de son champ Nom ; un lecteur d'écran annonce chaque carte par ce titre et le propose dans la liste des titres.
-  Sous chaque champ Nom, l'aide « Intitulé de fonction (ex. Chef de projet), jamais le nom d'une personne », lue avec le champ.
-- [ ] 2. Profil « Sans taux encore » : **Ajouter une ligne**. *Attendu :* devant le champ de taux, l'étiquette visible
-  « Taux par jour (€) » ; un clic sur l'étiquette place le curseur dans le champ.
-- [ ] 3. Fermez la fenêtre des profils. Dans **Ressources**, effacez le nom de Bob et quittez le champ. *Attendu :* le message
-  d'erreur s'affiche sous le nom et le lecteur d'écran le lit. Remettez « Bob ».
-- [ ] 4. **Profils de coût…** : supprimez la ligne ajoutée à l'étape 2, fermez, puis ouvrez la fiche de Bob. *Attendu :* colonne
-  « Coût prévu » de la tâche B : « sans taux » seul, sans `0,00 €`.
-- [ ] 5. **Profils de coût…**, profil « Sans taux encore » : ajoutez une ligne, saisissez `500`, ajoutez une deuxième ligne, mettez
-  sa date au `07/01/2026`, puis supprimez la ligne « Depuis le début ». Fiche de Bob. *Attendu :* « 1 000,00 € (sans taux) »
-  (2 jours sur 4 ont un taux) et, sous la rubrique de coût, la mention du total partiel.
-- [ ] 6. **Excel** avec les montants. *Attendu :* le même classeur qu'avant la correction (colonne « Coût des ressources » de la
-  feuille Tâches et coûts de la feuille Ressources inchangés).
+Ces vérifications sont dans des fiches courtes (index : [`recettes/README.md`](recettes/README.md)) :
+[`taux-profils-accessibilite.md`](recettes/taux-profils-accessibilite.md),
+[`taux-fiche-ressource-sans-taux.md`](recettes/taux-fiche-ressource-sans-taux.md),
+[`taux-export-anonyme-profils.md`](recettes/taux-export-anonyme-profils.md),
+[`montants-masques-texte.md`](recettes/montants-masques-texte.md).
 
 ### Contrôle final de la mise à jour
 

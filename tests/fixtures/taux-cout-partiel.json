@@ -1,0 +1,21 @@
+{
+  "format": 3,
+  "name": "Taux – coût sans taux et coût partiel",
+  "projectStart": "2026-01-05",
+  "currency": "€",
+  "profiles": [
+    { "name": "Analyste", "rates": [{ "from": "", "rate": 40000 }] },
+    { "name": "Sans taux encore", "rates": [] },
+    { "name": "Taux à partir du 7 janvier", "rates": [{ "from": "2026-01-07", "rate": 50000 }] }
+  ],
+  "resources": [
+    { "name": "Alice", "profile": "Analyste" },
+    { "name": "Bob", "profile": "Sans taux encore" },
+    { "name": "Camille", "profile": "Taux à partir du 7 janvier" }
+  ],
+  "tasks": [
+    { "id": "A", "name": "Analyse", "dur": 10, "budget": 200000, "assign": [{ "res": "Alice", "units": 50 }] },
+    { "id": "B", "name": "Développement", "dur": 4, "budget": 150000, "assign": [{ "res": "Bob", "units": 100 }] },
+    { "id": "C", "name": "Documentation", "dur": 4, "assign": [{ "res": "Camille", "units": 100 }] }
+  ]
+}
