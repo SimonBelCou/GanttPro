@@ -654,23 +654,10 @@ Départ : `valeur-acquise-passe.json`, onglet **Budget**, section **Points de si
 - [ ] 4. **Rapport d'état** : *Attendu :* le bloc Budget affiche CPI et SPI avec leur voyant, sans aucun montant ; en cochant « Inclure les montants », PV, EV, AC, CV, SV et l'EAC (BAC / CPI) s'ajoutent.
 - [ ] 5. Aucun point ne se crée tout seul : rouvrez le projet, la liste est telle que vous l'avez laissée.
 
-### Budget 21 — Courbes PV / EV / AC dans le temps, rapport avec des points seuls (EF-151, RG-59, R-101, A.8 ligne 16)
+### Budget 21 — Courbes PV / EV / AC et rapport avec des points seuls (EF-151, RG-59, R-101)
 
-Départ : `valeur-acquise-courbes.json` (baseline initiale de référence : Etude 100,00 € fin 09/01/2026, Realisation
-100,00 € fin 16/01/2026 ; trois points de situation, dont un relu sans montants). Tableau de bord, onglet **Budget**,
-section **Courbes PV / EV / AC** (sous la valeur acquise), période **Semaines**. La date du jour est celle de votre appareil.
-
-- [ ] 1. Lisez la section. *Attendu :* « Référence : baseline « Baseline initiale » » ; une légende de trois lignes, chacune avec sa forme et son texte : « PV, valeur planifiée (trait continu) », « EV, valeur acquise (ronds aux mesures) », « AC, coût réel (carrés aux mesures) » ; la PV monte à 100,00 € la semaine du 05/01 puis à 200,00 € et reste à ce niveau.
-- [ ] 2. Regardez les marques. *Attendu :* un rond et un carré la semaine du 05/01 (point du 09/01, le plus récent de la semaine) et un rond et un carré à la semaine d'aujourd'hui, reliés par un trait ; rien entre les deux.
-- [ ] 3. Lisez la note sous la courbe. *Attendu :* « Points de situation non tracés : 1 (sans montants…) » ; l'aide explique que l'AC est le coût réel total, différent du réel de la courbe des coûts.
-- [ ] 4. **Afficher les valeurs**. *Attendu :* le bouton devient « Masquer les valeurs » et garde le focus ; semaine du 05/01 : PV 100,00 €, EV 80,00 €, AC 140,00 €, mesure « 09/01/2026 — Revue etude » ; semaines sans mesure : « — » pour EV, AC et la mesure ; dernière ligne avec une mesure : PV 200,00 €, EV 140,00 €, AC 150,00 €, « Aujourd'hui ».
-- [ ] 5. Choisissez **Mois** dans cette section. *Attendu :* le tableau passe en mois (janvier 2026 : PV 200,00 €, EV 80,00 €, AC 140,00 €, mesure du 09/01) ; la courbe des coûts et la courbe d'avancement passent aussi en mois (même réglage) ; le focus reste sur « Mois ». Revenez à **Semaines**.
-- [ ] 6. **Masquer les montants** (bouton de la fenêtre). *Attendu :* axe, étiquettes et tableau affichent « •••• » ; la légende et la note restent lisibles. Réaffichez les montants.
-- [ ] 7. Survolez la courbe, puis donnez-lui le focus au clavier (Tab) et parcourez-la avec les flèches. *Attendu :* le texte sous la courbe donne la période puis PV, et EV et AC seulement aux périodes mesurées.
-- [ ] 8. Ouvrez `valeur-acquise-passe.json` (sans baseline), onglet Budget. *Attendu :* la section dit « Aucune courbe : la valeur planifiée se calcule sur une baseline de référence… Capturez une baseline… » et ne trace rien (aucune courbe à 0).
-- [ ] 9. Rouvrez `valeur-acquise-courbes.json`, **Exporter** en JSON sans « Inclure les montants », puis **Importer** ce fichier. *Attendu :* l'onglet Budget reste là ; la section Courbes dit qu'aucune courbe ne se trace (la baseline n'a plus de budget).
-- [ ] 10. **Rapport d'état** sur ce projet réimporté. *Attendu :* le bloc **Valeur acquise** est présent : référence, CPI et SPI du jour « non calculable (aucun budget de tâche saisi) », puis « Points de situation : » et une ligne par point, par exemple « 09/01/2026 — Revue etude : CPI 0,57, SPI 0,80 » (« — » quand l'indice n'a pas été enregistré). Avant la correction, ce bloc disparaissait.
-- [ ] 11. Ouvrez `budget-sans-montant.json`, **Rapport d'état**. *Attendu :* aucun bloc Valeur acquise (ni montant ni point).
+Parcours remplacé par deux fiches courtes (règle du 4 novembre 2026) : `docs/recettes/courbes-pv-ev-ac.md` et
+`docs/recettes/rapport-valeur-acquise-points-seuls.md` (index : `docs/recettes/README.md`).
 
 ## Partie B — Colonnes de la liste
 
