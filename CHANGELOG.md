@@ -9,6 +9,12 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 
 ## Non publié
 
+### Corrections
+- **Clic perdu sous Safari / WebKit** : après la saisie d'un champ (date de début du projet), le premier clic sur un
+  bouton de la barre d'outils (thème, langue, liens, liste) n'était pas pris en compte, car `render()` réécrivait le
+  texte du bouton entre l'appui et le relâchement. `setText()` n'écrit un texte que s'il change. Test :
+  `tests/test_v3_clic_change.py` (échouait sous WebKit avant la correction). Révélé par le job WebKit.
+
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec

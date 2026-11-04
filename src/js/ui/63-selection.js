@@ -302,12 +302,12 @@ action('toggleList', () => {
   $('btn-list').focus();
 });
 /**
- * Appelle : $(), t()
+ * Appelle : $(), setText(), t()
  * Appelée par : action « toggleList », renderAll()
  */
 function renderListToggle() {
   const b = $('btn-list');
-  b.textContent = t(App.listCollapsed ? 'view.listShow' : 'view.listHide');
+  setText(b, t(App.listCollapsed ? 'view.listShow' : 'view.listHide'));
   b.setAttribute('aria-expanded', String(!App.listCollapsed));
 }
 /**

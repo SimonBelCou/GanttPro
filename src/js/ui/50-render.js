@@ -64,36 +64,36 @@ function flags() {
 }
 
 /**
- * Appelle : $(), I18n.getLang(), Settings.get(), t()
+ * Appelle : $(), I18n.getLang(), setText(), Settings.get(), t()
  * Appelée par : renderAll()
  */
 function renderTopbar() {
   const p = App.project;
   const label = $('project-label');
-  label.textContent = `${p.emoji} ${p.name}`;
+  setText(label, `${p.emoji} ${p.name}`);
   label.setAttribute('aria-label', t('top.project', { name: p.name }));
   const start = $('project-start');
   if (document.activeElement !== start) start.value = p.projectStart;
-  $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
+  setText($('zoom-level'), t('top.zoom', { pct: App.zoom }));
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
   const theme = Settings.get('theme') || DEFAULT_THEME;
-  $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
+  setText($('btn-theme'), t('top.theme', { theme: t('theme.' + theme) }));
   const lang = $('btn-lang');
-  lang.textContent = t('top.lang');
+  setText(lang, t('top.lang'));
   lang.setAttribute('lang', I18n.getLang() === 'fr' ? 'en' : 'fr');
   lang.setAttribute('aria-label', t('top.langLabel'));
   const n = App.sched ? App.sched.conflicts.length + App.sched.warnings.length : 0;
   const badge = $('btn-alerts');
   badge.hidden = n === 0;
-  badge.textContent = App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n });
+  setText(badge, App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n }));
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
   const mask = $('btn-mask');
   mask.setAttribute('aria-pressed', String(!!App.maskAmounts));
   const links = $('btn-links');
-  links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
+  setText(links, t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') }));
   links.setAttribute('aria-pressed', String(App.showLinks));
   // Réordonner et changer de niveau sont indisponibles en vue regroupée (EF-86).
   for (const id of ['btn-up', 'btn-down', 'btn-indent', 'btn-outdent']) { const b = $(id); if (b) b.disabled = !!App.view.groupBy; }

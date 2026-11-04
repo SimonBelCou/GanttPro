@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7o3h7/SjUet1waJsWNRZk+uyQpC+jvxBVuCWI/52rVs='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7znKAmLGjQrLEScbxvf0rUVcmZImCqo7mWhwbrTN0DU='; style-src 'sha256-3/n7JjTW4ronpxt33BxlBty7Mf61xsbnMG7vAKUZzdc='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -4991,6 +4991,19 @@ const Secure = (() => {
  */
 const $ = id => document.getElementById(id);
 
+/**
+ * Écrit le texte d'un élément SEULEMENT s'il change.
+ * Pourquoi : `el.textContent = …` remplace le nœud texte même à valeur identique. Le « change » d'un champ part
+ * au blur, pendant le mousedown d'un bouton ; si render() réécrit alors le texte de ce bouton, WebKit (Safari)
+ * supprime le « click » et le premier clic est perdu. Ne pas réécrire un texte inchangé le préserve (voir PCA.md §6).
+ * Entrées : el (élément), text (chaîne). Sortie : aucune.
+ * Appelle : aucune
+ * Appelée par : renderListToggle(), renderTopbar()
+ */
+function setText(el, text) {
+  if (el.textContent !== text) el.textContent = text;
+}
+
 const FORBIDDEN_ATTR = /^(on|style$|srcdoc$|formaction$)/i;
 const URL_ATTR = /^(href|src|action|xlink:href)$/i;
 
@@ -5761,36 +5774,36 @@ function flags() {
 }
 
 /**
- * Appelle : $(), I18n.getLang(), Settings.get(), t()
+ * Appelle : $(), I18n.getLang(), setText(), Settings.get(), t()
  * Appelée par : renderAll()
  */
 function renderTopbar() {
   const p = App.project;
   const label = $('project-label');
-  label.textContent = `${p.emoji} ${p.name}`;
+  setText(label, `${p.emoji} ${p.name}`);
   label.setAttribute('aria-label', t('top.project', { name: p.name }));
   const start = $('project-start');
   if (document.activeElement !== start) start.value = p.projectStart;
-  $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
+  setText($('zoom-level'), t('top.zoom', { pct: App.zoom }));
   $('btn-undo').disabled = !App.undo.length;
   $('btn-redo').disabled = !App.redo.length;
   const theme = Settings.get('theme') || DEFAULT_THEME;
-  $('btn-theme').textContent = t('top.theme', { theme: t('theme.' + theme) });
+  setText($('btn-theme'), t('top.theme', { theme: t('theme.' + theme) }));
   const lang = $('btn-lang');
-  lang.textContent = t('top.lang');
+  setText(lang, t('top.lang'));
   lang.setAttribute('lang', I18n.getLang() === 'fr' ? 'en' : 'fr');
   lang.setAttribute('aria-label', t('top.langLabel'));
   const n = App.sched ? App.sched.conflicts.length + App.sched.warnings.length : 0;
   const badge = $('btn-alerts');
   badge.hidden = n === 0;
-  badge.textContent = App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n });
+  setText(badge, App.sched && App.sched.conflicts.length ? t('top.conflicts', { count: App.sched.conflicts.length }) : t('top.alerts', { count: n }));
   badge.setAttribute('aria-expanded', String(App.showAlerts && n > 0));
   badge.setAttribute('aria-controls', 'alerts');
   $('btn-resolve').hidden = !(App.sched && App.sched.conflicts.length);
   const mask = $('btn-mask');
   mask.setAttribute('aria-pressed', String(!!App.maskAmounts));
   const links = $('btn-links');
-  links.textContent = t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') });
+  setText(links, t('top.links', { state: t(App.showLinks ? 'state.on' : 'state.off') }));
   links.setAttribute('aria-pressed', String(App.showLinks));
   // Réordonner et changer de niveau sont indisponibles en vue regroupée (EF-86).
   for (const id of ['btn-up', 'btn-down', 'btn-indent', 'btn-outdent']) { const b = $(id); if (b) b.disabled = !!App.view.groupBy; }
@@ -7548,12 +7561,12 @@ action('toggleList', () => {
   $('btn-list').focus();
 });
 /**
- * Appelle : $(), t()
+ * Appelle : $(), setText(), t()
  * Appelée par : action « toggleList », renderAll()
  */
 function renderListToggle() {
   const b = $('btn-list');
-  b.textContent = t(App.listCollapsed ? 'view.listShow' : 'view.listHide');
+  setText(b, t(App.listCollapsed ? 'view.listShow' : 'view.listHide'));
   b.setAttribute('aria-expanded', String(!App.listCollapsed));
 }
 /**
