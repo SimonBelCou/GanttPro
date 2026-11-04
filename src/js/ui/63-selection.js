@@ -30,7 +30,7 @@ function topSelected() {
 const visibleOrder = () => [...document.querySelectorAll('#task-rows tr[data-id]')].map(tr => tr.dataset.id).filter((v, i, a) => a.indexOf(v) === i);
 /**
  * Appelle : aucune
- * Appelée par : renderGantt(), renderList()
+ * Appelée par : listRow(), renderGantt()
  */
 const isSelected = id => App.multi.has(id) || App.selected === id;
 

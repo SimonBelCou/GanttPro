@@ -115,13 +115,16 @@ const View = (() => {
       if (t.type === 'task') { g.dur += t.dur; g.n++; g.w += t.pct; }
     };
     const STATUS_ORDER = ['late', 'ongoing', 'notStarted', 'upcoming', 'done'];
+    // Index par identifiant plutôt qu'une recherche linéaire par tâche (EX-25).
+    const resById = new Map(project.resources.map(r => [r.id, r]));
+    const catById = new Map(project.categories.map(c => [c.id, c]));
     for (const t of project.tasks) {
       if (t.type === 'summary' || !ids.has(t.id)) continue;
       if (by === 'res') {
         if (!t.assign.length) add('', '', true, t);
-        for (const a of t.assign) { const r = project.resources.find(x => x.id === a.res); if (r) add(r.id, r.name, false, t); }
+        for (const a of t.assign) { const r = resById.get(a.res); if (r) add(r.id, r.name, false, t); }
       } else if (by === 'cat') {
-        const c = project.categories.find(x => x.id === t.cat);
+        const c = catById.get(t.cat);
         if (c) add(c.id, c.name, false, t); else add('', '', true, t);
       } else {
         const st = Metrics.status(t, sched, today) || 'upcoming';

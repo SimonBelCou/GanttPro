@@ -155,7 +155,7 @@ function descendants(id, tasks = App.project.tasks) {
 /**
  * Appelle : RenderIndex.active(), RenderIndex.get()
  * Appelée par : action « addTask », depthOk(), Editor.eligiblePreds(), Editor.validate(), ganttPng(),
- *   hierarchyChange(), linkError(), renderList(), topSelected(), visibleTasks()
+ *   hierarchyChange(), linkError(), listRow(), topSelected(), visibleTasks()
  */
 function ancestorsOf(id, tasks = App.project.tasks) {
   const out = [];

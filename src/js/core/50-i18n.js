@@ -1042,7 +1042,7 @@ const I18n = (() => {
   /**
    * Date longue : « lun. 05 janv. 2026 » / « Mon 05 Jan 2026 » (RG-32).
    * Appelle : Dates.weekday(), Dates.ymd()
-   * Appelée par : 21 fonctions (usage général)
+   * Appelée par : 22 fonctions (usage général)
    */
   function date(dn) {
     if (dn == null) return '';
@@ -1063,7 +1063,7 @@ const I18n = (() => {
   const numDateCache = new Map(); // un grand projet affiche des milliers de fois les mêmes jours (EX-25)
   /**
    * Appelle : Dates.ymd()
-   * Appelée par : buildPrintGantt(), renderList()
+   * Appelée par : buildPrintGantt(), listRow()
    */
   function numDate(dn, short = false) {
     if (dn == null) return '';

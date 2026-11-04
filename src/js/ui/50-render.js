@@ -2,12 +2,12 @@
  * Affichage : barre du haut, chiffres, alertes, liste, grille, légende.
  * Tout est reconstruit à chaque modification (déterministe, < 100 ms pour 1 000 tâches).
  * Appelle : I18n.t()
- * Appelée par : 176 fonctions (usage général)
+ * Appelée par : 178 fonctions (usage général)
  */
 const t = (k, p) => I18n.t(k, p);
 /**
  * Appelle : Dates.todayDn()
- * Appelée par : renderGantt(), statusOf()
+ * Appelée par : listContext(), renderGantt(), statusOf()
  */
 const today = () => Dates.todayDn();
 
@@ -27,7 +27,7 @@ function applyStaticTexts() {
 
 /**
  * Appelle : t()
- * Appelée par : buildPrintGantt(), renderGantt(), renderList(), Tooltip.lines()
+ * Appelée par : buildPrintGantt(), renderGantt(), Tooltip.lines()
  */
 function durText(task, r) {
   if (task.type === 'milestone') return t('dur.milestone');
@@ -36,14 +36,14 @@ function durText(task, r) {
 }
 /**
  * Appelle : t()
- * Appelée par : buildPrintGantt(), clipboardTsv(), renderList(), Tooltip.lines()
+ * Appelée par : buildPrintGantt(), clipboardTsv(), listRow(), Tooltip.lines()
  */
 function depsText(task) {
   return task.deps.map(d => d.id + (d.type !== 'FS' || d.lag ? ' ' + t('link.short.' + d.type) + (d.lag ? (d.lag > 0 ? '+' : '') + d.lag : '') : '')).join(', ');
 }
 /**
  * Appelle : resById()
- * Appelée par : buildPrintGantt(), renderList(), Tooltip.lines()
+ * Appelée par : buildPrintGantt(), listRow(), Tooltip.lines()
  */
 function resText(task) {
   return task.assign.map(a => { const r = resById(a.res); return r ? r.name + (a.units !== 100 ? ' ' + a.units + ' %' : '') : ''; }).filter(Boolean).join(', ');
@@ -104,7 +104,7 @@ function renderTopbar() {
 /**
  * « 3 j de décalage (Alice : surcharge) » pour une tâche décalée par le nivellement (EF-106).
  * Appelle : resById(), t()
- * Appelée par : renderGantt(), renderList(), Tooltip.lines()
+ * Appelée par : listRow(), renderGantt(), Tooltip.lines()
  */
 function shiftText(r) {
   if (!r || !r.shift) return '';
@@ -186,7 +186,7 @@ function renderAlerts() {
 
 /**
  * Appelle : Metrics.status(), today()
- * Appelée par : buildPrintGantt(), renderGantt(), renderList()
+ * Appelée par : buildPrintGantt()
  */
 function statusOf(task) {
   if (!App.sched) return null;
@@ -206,7 +206,7 @@ function groupLabel(g) {
 /**
  * Cellule de tableau en texte seul (textContent, jamais innerHTML).
  * Appelle : aucune
- * Appelée par : renderList()
+ * Appelée par : listRow()
  */
 function textCell(text, cls) {
   const td = document.createElement('td');
@@ -218,7 +218,7 @@ function textCell(text, cls) {
 /**
  * Cellule « Budget » ou « Coût réel » (EF-115, EF-127, EF-128) : forme compacte ; vide pour un jalon.
  * Appelle : Money.node()
- * Appelée par : renderList()
+ * Appelée par : listRow()
  */
 function moneyCell(task, amts, key) {
   const td = document.createElement('td');
@@ -248,7 +248,116 @@ function renderListHead() {
 }
 
 /**
- * Appelle : 20 fonctions
+ * Valeurs communes à toutes les lignes d'un affichage de la liste, calculées une fois (EX-15, EX-25) :
+ * date du jour, libellés fixes, tâches dont l'échéance est dépassée, textes de durée et de statut déjà traduits.
+ * @returns {object} contexte passé à listRow()
+ * Appelle : t(), today()
+ * Appelée par : renderList()
+ */
+function listContext(fl, amts, noRes) {
+  const memo = f => { const m = new Map(); return k => { let v = m.get(k); if (v === undefined) { v = f(k); m.set(k, v); } return v; }; };
+  return {
+    fl, amts, noRes,
+    today: today(),
+    draggable: !App.view.groupBy,
+    showTags: !!App.view.showTags,
+    lbl: { critical: t('list.critical'), conflict: t('list.conflict'), warning: t('list.warning'), late: t('list.deadlineLate'), notes: t('list.notes'), mark: t('sel.mark') + ' ' },
+    // Un ensemble plutôt qu'un parcours des avertissements à chaque ligne (motif quadratique évité).
+    deadlineLate: new Set(App.sched ? App.sched.warnings.filter(w => w.kind === 'deadline').map(w => w.task) : []),
+    statusText: memo(st => t('status.' + st)),
+    daysText: memo(d => t('dur.days', { count: d })),
+    msText: t('dur.milestone'),
+  };
+}
+
+/**
+ * Élément simple créé directement (createElement, textContent) : même sûreté que h(), sans son coût générique,
+ * pour les milliers de nœuds d'un grand projet (EX-25).
+ * Appelle : aucune
+ * Appelée par : listRow()
+ */
+function elt(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+/**
+ * Ligne de tâche de la liste. Même DOM qu'auparavant (classes, attributs, textes, ordre des cellules) ;
+ * les nœuds fréquents sont créés directement et les textes répétés viennent du contexte (EX-25).
+ * @param {{task, flat?, dim?, hit?}} it  @param {string[]} cols colonnes affichées  @param {object} ctx listContext()
+ * @returns {HTMLTableRowElement}
+ * Appelle : 15 fonctions
+ * Appelée par : renderList()
+ */
+function listRow(it, cols, ctx) {
+  const { fl, lbl } = ctx;
+  const task = it.task, id = task.id;
+  const r = App.sched && App.sched.tasks.get(id);
+  const depth = it.flat ? 0 : ancestorsOf(id).length;
+  const crit = r && r.critical && task.type !== 'summary';
+  const st = App.sched ? Metrics.status(task, App.sched, ctx.today) : null;
+  const conflict = fl.conflict.has(id), warn = fl.warn.has(id);
+  const marks = [];
+  if (crit) marks.push(lbl.critical);
+  if (conflict) marks.push(lbl.conflict);
+  if (warn) marks.push(lbl.warning);
+  if (r && r.shift) marks.push(shiftText(r));
+  const late = task.deadline && warn && ctx.deadlineLate.has(id);
+  if (late) marks.push(lbl.late);
+  const nameCell = elt('td', 'name');
+  nameCell.style.setProperty('--depth', String(depth));
+  if (task.type === 'summary' && !it.flat) {
+    nameCell.append(h('button', { type: 'button', class: 'toggle icon', data: { click: 'toggleCollapse', arg: id },
+      aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
+  }
+  const sel = document.createElement('button');
+  sel.type = 'button';
+  sel.className = 'select';
+  sel.dataset.click = 'selectTask';
+  sel.dataset.arg = id;
+  if (App.selected === id) sel.setAttribute('aria-current', 'true');
+  if (App.multi.has(id)) sel.append(elt('span', 'sr-only', lbl.mark));
+  sel.append((task.type === 'milestone' ? '◆ ' : '') + task.name + (task.forcedStart ? ' 📌' : '') + (task.notBefore && !task.forcedStart ? ' ⏳' : ''));
+  nameCell.append(sel);
+  if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
+    '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
+  if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: lbl.notes }, '📝', h('span', { class: 'sr-only', text: ' ' + lbl.notes })));
+  if (ctx.showTags && task.tags.length) { nameCell.append(' '); for (const tg of task.tags) nameCell.append(elt('span', 'tag-pill', tg), ' '); }
+  if (marks.length) nameCell.append(' ', elt('span', 'marks' + (!crit && !conflict && !warn ? ' info' : ''), (conflict || warn ? '⚠ ' : '') + marks.join(', ')));
+  const tr = document.createElement('tr');
+  if (ctx.draggable) tr.setAttribute('draggable', 'true');
+  tr.className = [task.type, crit && 'critical', isSelected(id) && 'selected', conflict && 'conflict', it.dim && 'dim', it.hit && 'hit'].filter(Boolean).join(' ');
+  tr.dataset.id = id;
+  // Une cellule par colonne affichée, dans l'ordre choisi ; chaque cellule n'est construite que si sa colonne l'est.
+  for (const k of cols) {
+    let c;
+    switch (k) {
+      case 'id':
+        c = textCell(id, 'id');
+        if (crit) { const dot = elt('span', 'crit-dot', '● '); dot.setAttribute('aria-hidden', 'true'); c.prepend(dot); }
+        break;
+      case 'name': c = nameCell; break;
+      case 'dur': c = textCell(task.type === 'milestone' ? ctx.msText : ctx.daysText(task.type === 'summary' ? (r && !r.empty ? r.d : 0) : task.dur)); break;
+      case 'start': c = textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'); break;
+      case 'end': c = textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'); break;
+      case 'rstart': { const d = Dates.parse(task.realStart); c = textCell(d != null ? I18n.numDate(d) : '', 'date'); break; }
+      case 'rend': { const d = Dates.parse(task.realEnd); c = textCell(d != null ? I18n.numDate(d) : '', 'date'); break; }
+      case 'deps': c = textCell(depsText(task)); break;
+      case 'res': c = textCell(task.type === 'task' ? (resText(task) || ctx.noRes) : ''); break;
+      case 'status': c = textCell(st ? ctx.statusText(st) : '', 'status ' + (st || '')); break;
+      case 'budget': case 'actual': c = moneyCell(task, ctx.amts, k); break;
+      default: continue;
+    }
+    tr.append(c);
+  }
+  return tr;
+}
+
+/**
+ * Appelle : $(), Budget.amounts(), clear(), groupLabel(), h(), I18n.date(), listContext(), listRow(),
+ *   renderListHead(), t()
  * Appelée par : renderAll()
  */
 function renderList(items, fl) {
@@ -258,6 +367,7 @@ function renderList(items, fl) {
   const frag = document.createDocumentFragment();
   const amts = Budget.amounts(App.project); // budget et coût réel de chaque ligne (RG-36)
   const cols = renderListHead(); // colonnes affichées, dans l'ordre du projet (EF-143)
+  const ctx = listContext(fl, amts, noRes);
   const auto = (key, dn) => h('tr', { class: 'auto-ms' },
     h('td', { text: '◆' }), h('td', { text: `${t(key)} — ${dn != null ? I18n.date(dn) : ''}` }), cols.slice(2).map(() => h('td')));
   frag.append(auto('list.msStart', s ? s.cal.dnOf(0) : null));
@@ -270,51 +380,7 @@ function renderList(items, fl) {
           open ? '▾ ' : '▸ ', h('strong', { text: name }), ` — ${totals}`))));
       continue;
     }
-    const task = it.task;
-    const r = s && s.tasks.get(task.id);
-    const depth = it.flat ? 0 : ancestorsOf(task.id).length;
-    const crit = r && r.critical && task.type !== 'summary';
-    const st = statusOf(task);
-    const marks = [];
-    if (crit) marks.push(t('list.critical'));
-    if (fl.conflict.has(task.id)) marks.push(t('list.conflict'));
-    if (fl.warn.has(task.id)) marks.push(t('list.warning'));
-    if (r && r.shift) marks.push(shiftText(r));
-    const late = task.deadline && fl.warn.has(task.id) && App.sched && App.sched.warnings.some(w => w.kind === 'deadline' && w.task === task.id);
-    if (late) marks.push(t('list.deadlineLate'));
-    const nameCell = h('td', { class: 'name' });
-    nameCell.style.setProperty('--depth', String(depth));
-    if (task.type === 'summary' && !it.flat) {
-      nameCell.append(h('button', { type: 'button', class: 'toggle icon', data: { click: 'toggleCollapse', arg: task.id },
-        aria: { expanded: String(!task.collapsed), label: task.name } }, task.collapsed ? '▸' : '▾'));
-    }
-    nameCell.append(h('button', { type: 'button', class: 'select', data: { click: 'selectTask', arg: task.id },
-      aria: { current: App.selected === task.id ? 'true' : undefined } }, App.multi.has(task.id) ? h('span', { class: 'sr-only', text: t('sel.mark') + ' ' }) : null,
-      task.type === 'milestone' ? '◆ ' : '', task.name, task.forcedStart ? ' 📌' : '', task.notBefore && !task.forcedStart ? ' ⏳' : ''));
-    if (task.deadline) nameCell.append(' ', h('span', { class: ['flag', late && 'late'], title: t('list.deadline', { date: I18n.shortDate(Dates.parse(task.deadline)) }) },
-      '🚩', h('span', { class: 'sr-only', text: ' ' + t('list.deadline', { date: I18n.date(Dates.parse(task.deadline)) }) })));
-    if (task.notes || task.comments.length) nameCell.append(' ', h('span', { title: t('list.notes') }, '📝', h('span', { class: 'sr-only', text: ' ' + t('list.notes') })));
-    if (App.view.showTags && task.tags.length) nameCell.append(' ', ...task.tags.flatMap(tg => [h('span', { class: 'tag-pill', text: tg }), ' ']));
-    if (marks.length) nameCell.append(' ', h('span', { class: ['marks', !crit && !fl.conflict.has(task.id) && !fl.warn.has(task.id) && 'info'], text: (fl.conflict.has(task.id) || fl.warn.has(task.id) ? '⚠ ' : '') + marks.join(', ') }));
-    // Cellules de texte créées directement (textContent) : même sûreté que h(), plus rapide sur 1 000 lignes (EX-25).
-    const tr = document.createElement('tr');
-    if (!App.view.groupBy) tr.setAttribute('draggable', 'true');
-    tr.className = [task.type, crit && 'critical', isSelected(task.id) && 'selected', fl.conflict.has(task.id) && 'conflict', it.dim && 'dim', it.hit && 'hit'].filter(Boolean).join(' ');
-    tr.dataset.id = task.id;
-    const idCell = textCell(task.id, 'id');
-    if (crit) idCell.prepend(h('span', { class: 'crit-dot', aria: { hidden: 'true' }, text: '● ' }));
-    const rs = Dates.parse(task.realStart), re = Dates.parse(task.realEnd);
-    // Une cellule par colonne affichée, dans l'ordre choisi ; chaque cellule n'est construite que si sa colonne l'est.
-    const cell = {
-      id: () => idCell, name: () => nameCell, dur: () => textCell(durText(task, r)),
-      start: () => textCell(r && !r.empty ? I18n.numDate(r.startDn) : '', 'date'), end: () => textCell(r && !r.empty ? I18n.numDate(r.endDn) : '', 'date'),
-      rstart: () => textCell(rs != null ? I18n.numDate(rs) : '', 'date'), rend: () => textCell(re != null ? I18n.numDate(re) : '', 'date'),
-      deps: () => textCell(depsText(task)), res: () => textCell(task.type === 'task' ? (resText(task) || noRes) : ''),
-      status: () => textCell(st ? t('status.' + st) : '', 'status ' + (st || '')),
-      budget: () => moneyCell(task, amts, 'budget'), actual: () => moneyCell(task, amts, 'actual'),
-    };
-    tr.append(...cols.map(k => cell[k]()));
-    frag.append(tr);
+    frag.append(listRow(it, cols, ctx));
   }
   frag.append(auto('list.msEnd', s ? s.projectEndDn : null));
   body.append(frag);
@@ -428,7 +494,19 @@ function renderGantt(items, fl) {
 
   const bls = shownBaselines();
   body.classList.toggle('with-bl', bls.length > 0);
-  const row = (...children) => h('div', { class: 'g-row' }, children);
+  // Ligne de la grille créée directement (enfants : nœuds, tableaux de nœuds ou null), même DOM que h() (EX-25).
+  const row = (...children) => {
+    const g = document.createElement('div');
+    g.className = 'g-row';
+    for (const c of children.flat()) if (c) g.append(c);
+    return g;
+  };
+  // Textes répétés d'une barre à l'autre, calculés une fois par affichage (EX-25).
+  const memo = f => { const m = new Map(); return k => { let v = m.get(k); if (v === undefined) { v = f(k); m.set(k, v); } return v; }; };
+  const dateText = memo(dn => I18n.date(dn));
+  const statusText = memo(st => t('status.' + st));
+  const inkOf = memo(c => inkOn(c));
+  const lbl = { critical: t('list.critical'), conflict: t('list.conflict'), forced: t('gantt.forced') };
   const rowOf = new Map(); // id → index de ligne visible, pour les flèches
   items.forEach((it, i) => { if (it.task && !rowOf.has(it.task.id)) rowOf.set(it.task.id, i + 1); });
   const msAuto = (dn, cls) => { const m = h('div', { class: 'ms auto ' + cls, aria: { hidden: 'true' } }); m.style.setProperty('left', x(dn + 0.5) + 'px'); return row(m); };
@@ -450,7 +528,7 @@ function renderGantt(items, fl) {
     const task = it.task;
     const r = s.tasks.get(task.id);
     if (!r || r.empty) { body.append(row()); continue; }
-    const st = statusOf(task);
+    const st = Metrics.status(task, s, td);
     const cat = catById(task.cat);
     const color = safeColor(cat && cat.color);
     const pct = Metrics.pctOf(task, s);
@@ -467,15 +545,28 @@ function renderGantt(items, fl) {
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
     } else {
-      const extra = [r.critical && t('list.critical'), fl.conflict.has(task.id) && t('list.conflict'), task.forcedStart && t('gantt.forced'), shiftText(r)].filter(Boolean);
-      el = h('div', { ...common, class: ['bar', r.critical && 'critical', fl.conflict.has(task.id) && 'conflict', isSelected(task.id) && 'selected'],
-        aria: { label: t('gantt.bar', { id: task.id, name: task.name, start: I18n.date(r.startDn), end: I18n.date(r.endDn), dur: durText(task, r), pct, status: t('status.' + st) }) + (extra.length ? ', ' + extra.join(', ') : '') } },
-        h('span', { class: 'done', aria: { hidden: 'true' } }),
-        h('span', { class: 'bar-label', aria: { hidden: 'true' }, text: (fl.conflict.has(task.id) ? '⚠ ' : '') + task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '') }));
+      const conflict = fl.conflict.has(task.id);
+      const extra = [r.critical && lbl.critical, conflict && lbl.conflict, task.forcedStart && lbl.forced, shiftText(r)].filter(Boolean);
+      // Barre créée directement (createElement) : même DOM que h(), plus rapide sur 1 000 tâches (EX-25).
+      el = document.createElement('div');
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.dataset.click = 'selectTask';
+      el.dataset.arg = task.id;
+      el.className = ['bar', r.critical && 'critical', conflict && 'conflict', isSelected(task.id) && 'selected'].filter(Boolean).join(' ');
+      el.setAttribute('aria-label', t('gantt.bar', { id: task.id, name: task.name, start: dateText(r.startDn), end: dateText(r.endDn), dur: durText(task, r), pct, status: statusText(st) }) + (extra.length ? ', ' + extra.join(', ') : ''));
+      const done = document.createElement('span');
+      done.className = 'done';
+      done.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span');
+      label.className = 'bar-label';
+      label.setAttribute('aria-hidden', 'true');
+      label.textContent = (conflict ? '⚠ ' : '') + task.id + (task.forcedStart ? ' 📌' : task.notBefore ? ' ⏳' : '');
+      el.append(done, label);
       el.style.setProperty('left', x(r.startDn) + 'px');
       el.style.setProperty('width', Math.max(4, (r.endDn - r.startDn + 1) * dayW) + 'px');
       el.style.setProperty('--c', color);
-      el.style.setProperty('--ink', inkOn(color));
+      el.style.setProperty('--ink', inkOf(color));
       el.firstChild.style.setProperty('width', pct + '%');
       // Poignées des gestes (EF-74 à EF-77) : créées au survol, au toucher ou au focus (ensureHandles), pour
       // garder un affichage rapide sur 1 000 tâches (EX-15) ; le clavier a ses équivalents (EF-78).
@@ -494,7 +585,7 @@ function renderGantt(items, fl) {
         realBand.style.setProperty('background', safeColor(res0 && res0.color, '#8a94a6'));
       }
     }
-    const blText = baselineTexts(task.id);
+    const blText = bls.length ? baselineTexts(task.id) : [];
     if (blText.length) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', ' + blText.join(', '));
     // Fines barres de baseline, empilées sous la barre (EF-34).
     const minis = bls.map((b, k) => {

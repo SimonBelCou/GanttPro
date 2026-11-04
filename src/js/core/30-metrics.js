@@ -20,8 +20,8 @@ const Metrics = (() => {
   /**
    * RG-14. today : dn. Renvoie null pour une récapitulative sans enfant.
    * Appelle : Metrics.pctOf()
-   * Appelée par : Exchange.taskRows(), Metrics.counters(), Metrics.report(), Metrics.statusLight(), statusOf(),
-   *   Tooltip.lines(), trackingRows(), View.group(), View.passes()
+   * Appelée par : Exchange.taskRows(), listRow(), Metrics.counters(), Metrics.report(), Metrics.statusLight(),
+   *   renderGantt(), statusOf(), Tooltip.lines(), trackingRows(), View.group(), View.passes()
    */
   function status(t, sched, today) {
     const r = sched.tasks.get(t.id);

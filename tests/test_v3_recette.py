@@ -368,6 +368,21 @@ def main():
         grp = pg.evaluate("""() => { const s = document.getElementById('group-by'); s.value = 'cat';
             const t0 = performance.now(); s.dispatchEvent(new Event('change', {bubbles: true})); return performance.now() - t0; }""")
         check(f'EX-25 : regroupement de 1 000 tâches en moins de 100 ms ({grp:.0f} ms)', grp < 100 * PERF, grp)
+        # Optimisation du regroupement (décision X1 du 3 novembre 2026) : le résultat reste exactement celui de RG-27,
+        # recalculé ici indépendamment sur les 1 000 tâches fictives (ordre des lignes, groupes, totaux).
+        for by, key_of, labels in (('cat', lambda t: t['cat'], ['Dev', 'Etudes']),
+                                   ('res', lambda t: t['res'] or None, ['Alice', 'Bob', None])):
+            pg.select_option('#group-by', by)
+            shown = pg.evaluate("""() => [...document.querySelectorAll('#task-rows tr.group-row, #task-rows tr[data-id]')]
+                .map(r => r.dataset.id ? r.dataset.id : r.querySelector('button').textContent)""")
+            expected = []
+            for lab in labels:
+                ts = [t for t in big_project(1000)['tasks'] if key_of(t) == lab]
+                pct = int(sum(t['pct'] for t in ts) / len(ts) + 0.5)  # Math.round
+                expected.append(f"▾ {lab or 'Sans ressource'} — {len(ts)} élément(s), {sum(t['dur'] for t in ts)} j, {pct} %")
+                expected += [t['id'] for t in ts]
+            check(f'RG-27 / EX-25 : regroupement par « {by} » de 1 000 tâches identique à la règle (ordre, groupes, totaux)',
+                  shown == expected, next(((i, a, b) for i, (a, b) in enumerate(zip(shown, expected)) if a != b), (len(shown), len(expected))))
         pg.select_option('#group-by', '')
         pg.click('button[data-click="exportFile"]'); pg.check('#exp-f-xlsx')
         t0 = pg.evaluate('performance.now()')
