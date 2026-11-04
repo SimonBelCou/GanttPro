@@ -292,6 +292,7 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 | Outils de test (une fois) | `pip install playwright` · `python3 -m playwright install chromium` · `npm install --no-save axe-core@4.14.0 acorn@8.19.0` (**une seule commande** : npm retire sinon l'outil installé avant) |
 | Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) |
 | Tester le moteur | `node --test tests/core/*.test.mjs` |
+| Tester les fuseaux horaires | `TZ=Pacific/Kiritimati node --test tests/core/*.test.mjs` (la CI boucle sur UTC, Europe/Paris, America/New_York, Pacific/Kiritimati, Pacific/Pago_Pago). Sous Windows, `TZ` n'est pas toujours pris en compte par Node : `tests/core/fuseaux.test.mjs` change lui-même `process.env.TZ` et se **saute avec un message** si le changement est sans effet |
 | Dépendances entre fonctions | `node tools/dependances.mjs` (écrit les commentaires et le graphe) · `--check` (CI) · test : `node --test tests/test_dependances.mjs` |
 | Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
 | Veille sécurité | voir §0 ; résultat dans `docs/veille-securite.md` |

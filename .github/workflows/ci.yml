@@ -41,6 +41,14 @@ jobs:
       - name: Moteur et scénarios chiffrés de la recette (node --test, sans dépendance)
         run: node --test tests/core/*.test.mjs
 
+      - name: Moteur dans plusieurs fuseaux horaires (UTC, Paris, New York, UTC+14, UTC-11)
+        run: |
+          for tz in UTC Europe/Paris America/New_York Pacific/Kiritimati Pacific/Pago_Pago; do
+            echo "::group::TZ=$tz"
+            TZ="$tz" node --test tests/core/*.test.mjs
+            echo "::endgroup::"
+          done
+
       - name: Dépendances entre fonctions à jour (commentaires « Appelle / Appelée par » et graphe d'Architecture.md)
         run: |
           npm install --no-save acorn@8.19.0 axe-core@4.14.0
