@@ -114,6 +114,7 @@ pip install playwright && python3 -m playwright install chromium
 npm install --no-save axe-core@4.14.0 acorn@8.19.0   # accessibilité et dépendances (une seule commande)
 python3 tests/test_v3.py
 python3 tests/test_v3_espace.py
+python3 tests/test_v3_journal.py
 python3 tests/test_v3_recette.py             # PERF_FACTOR=2 sur une machine lente
 python3 tests/test_v3_budget.py              # budget, valeur acquise, colonnes, taux des ressources
 python3 tests/test_v3_recette_manuelle.py    # projets d'essai de la recette manuelle (tests/fixtures/)

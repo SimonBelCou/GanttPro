@@ -110,15 +110,37 @@ délai ; une affectation porte un taux de 1 à 100 % de la capacité de la resso
 Champs facultatifs du format 3, ajoutés sans changer son numéro : montants (`budget`, `actual`, provision), `evmGreen`,
 `evmRed`, `etc`, `baselineRef`, `statusPoints`, `columns`.
 
-Trois lieux de conservation, tous contrôlés par `src/js/ui/10-storage.js` (le seul module autorisé à y toucher) :
+Quatre lieux de conservation, tous contrôlés par `src/js/ui/10-storage.js` (le seul module autorisé à y toucher) :
 
 | Lieu | Contenu | Quand |
 |---|---|---|
 | `localStorage`, préfixe `ganttpro.settings.` | Réglages : langue, thème, raccourcis, masquage des montants, sauvegarde automatique, message de première utilisation | Réglage modifié |
 | `localStorage`, préfixes `ganttpro.lib.` et `ganttpro.rec.` | Bibliothèque (projets et modèles) ; emplacements de récupération | Geste explicite ; sauvegarde automatique, désactivée par défaut |
+| `localStorage`, clé `ganttpro.log.journal` | Journal local d'erreurs (tableau JSON, 200 lignes et 30 jours au plus) | Seulement si « Conserver le journal sur cet appareil » est coché (désactivé par défaut) ; sinon le journal n'existe qu'en mémoire |
 | `sessionStorage` (`gantt_project`, `gantt_saved_project`, `gantt_home_url`) | Contrat avec une page d'accueil (section 8.4 des spécifications) | Lu au démarrage ; le projet transmis est supprimé après lecture |
 
 « Réglages > Effacer toutes les données » supprime tout ce qui porte le préfixe `ganttpro.`.
+
+### Journal local d'erreurs (EF-151)
+
+```mermaid
+sequenceDiagram
+    participant C as catch d'une fonction (import, export, calcul…)
+    participant J as Journal (ui/15-errlog.js)
+    participant E as ErrLog (core/55-errlog.js)
+    participant S as Store (ui/10-storage.js)
+    C->>J: failure(e, act, cmp, repli) / calc(e, cmp) / store(r, cmp)
+    J->>E: make({code, act, cmp, error}, {now, sid, ver})
+    E-->>J: ligne contrôlée (ou null si hors liste)
+    J->>E: push(lignes, ligne) : rotation, purge
+    alt option « Conserver » cochée
+        J->>S: write('log', 'journal', …) (échec ignoré, J2)
+    end
+    opt app.unexpected
+        J->>J: bandeau (au plus un toutes les 10 s)
+    end
+    J-->>C: message à afficher (inchangé)
+```
 
 ## 5. Flux : d'un fichier importé à l'écran
 
@@ -183,6 +205,7 @@ pour 1 000 tâches). L'interface n'écrit jamais dans `App.project` autrement.
 | `45-view.js` | `View` | Recherche, filtres, regroupements : affichage seulement |
 | `46-rates.js` | `Rates` | Taux des ressources : lignes datées, normalisation, coût par jour ouvré (EF-147 à EF-150) |
 | `50-i18n.js` | `I18n` | Catalogues français et anglais, pluriels, messages d'erreur |
+| `55-errlog.js` | `ErrLog` | Journal d'erreurs sans DOM : construction et contrôle des lignes par liste blanche, pile réduite à « fonction:ligne », rotation et purge, relecture tolérante, export JSON Lines (EF-151) |
 | `60-xml.js` | `Xml` | Lecteur XML minimal sans DOCTYPE ni entités |
 | `61-zip.js` | `Zip` | Écriture sans compression, lecture bornée (200 fichiers, 50 Mo) |
 | `62-csv.js` | `Csv` | CSV et texte tabulé, neutralisation des formules |
@@ -263,6 +286,7 @@ Chaque fonction de niveau module, et chaque module, porte à la fin de son comme
 |---|---|
 | `00-dom.js` | `h()` et `svg()` : construction du DOM sans `innerHTML` |
 | `10-storage.js` | `Settings`, `Store`, mémoire de session : seul accès au stockage |
+| `15-errlog.js` | `Journal` : journal en mémoire, écriture par `Store` sur option, gestionnaires globaux `error` et `unhandledrejection`, `failure()` / `calc()` / `store()` (refus attendu ou erreur imprévue), bandeau, fenêtre et export du journal |
 | `20-actions.js` | Table `ACTIONS` : un écouteur par type d'événement relie `data-click`, `data-change`, `data-input`, `data-submit` aux actions |
 | `30-dialog.js` | `Dialog.open`, `message`, `confirm` : fenêtres natives titrées, focus piégé |
 | `40-state.js` | `App` (état), `commit()`, `recompute()`, annulation (50 pas) |
@@ -324,6 +348,7 @@ Défense en profondeur : aucune mesure n'est le seul rempart.
 | Affichage | `textContent` seul, jamais `innerHTML`, couleurs filtrées | `00-dom.js` |
 | Repos | Chiffrement facultatif par mot de passe | `Secure` |
 | Stockage | Un seul module, clés validées, effaçable | `10-storage.js` |
+| Journal | Lignes de listes fermées, ni message ni nom ni chemin ; relu par liste blanche ; pas de récursion | `ErrLog`, `Journal` |
 | Livraison | Détection de secrets, fichier à jour, revue avant fusion | CI et protection de `main` |
 
 ## 9. Tenir ce document à jour

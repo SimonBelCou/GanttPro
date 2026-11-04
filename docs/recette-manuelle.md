@@ -50,6 +50,7 @@ comportement existant.
 | `taux-historique.json` | Un profil dont le taux passe de 400,00 € à 420,00 € le 08/01/2026, et un prestataire externe à taux nominatif de 700,00 € | Taux 5, 7 |
 | `taux-sans-taux.json` | Trois ressources dont deux sans taux (un profil sans ligne de taux, une ressource sans profil) | Taux 6 |
 | `refus-taux-negatif.json`, `refus-taux-profil-inconnu.json` | Deux fichiers refusés : taux négatif, profil qui n'existe pas | Taux 8 |
+| `journal-import-refuse.json` | Fichier refusé : deux ressources portent le même nom fictif (« Camille Exemple ») ; le refus est journalisé sans le nom | Journal 1 |
 
 ### Quand rejouer quoi
 
@@ -58,7 +59,8 @@ comportement existant.
 | Le calcul des dates, des liens, du calendrier | G2, G4, G9 |
 | Les ressources, la charge, le nivellement | G5, G6 |
 | La liste, la grille, les gestes | G3, G6, G7, Colonnes 1 |
-| Les fichiers (export, import, chiffrement) | G12, G13, Taux 7 |
+| Les fichiers (export, import, chiffrement) | G12, G13, Taux 7, Journal 1 |
+| Les messages d'erreur, le stockage, les réglages | Journal 1 à 3 |
 | Les ressources, leurs taux et le coût | G5, Taux 1 à 10 |
 | Le tableau de bord, le rapport, l'impression | G10, G11 |
 | L'interface en général (thème, langue, clavier, accessibilité) | G14, G15 |
@@ -827,5 +829,51 @@ Départ : `taux-profils-base.json`, **Profils de coût…**.
 - [ ] Aucune erreur visible, aucun message inattendu pendant les parcours.
 - [ ] Navigation au clavier possible dans les nouvelles fenêtres et l'onglet Budget ; thème sombre lisible.
 - [ ] Rien ne part vers l'extérieur (l'application fonctionne hors connexion).
+
+Validé par : ______________________  Date : ____ / ____ / ________
+
+## Partie B — Journal local d'erreurs
+
+Exigences : EF-151, RG-59 à RG-63, EF-104. Scénarios : R-101 à R-103. Fichier : `journal-import-refuse.json` (nom fictif
+« Camille Exemple » en double). Décisions J1 à J6 : `Specs_fonctionnelles.md`, annexe C.1.
+
+À savoir avant de commencer : le journal ne contient **que des codes** (jamais de nom, de contenu de projet, de message
+d'exception ni de chemin). Il est tenu en mémoire ; il n'est écrit sur l'appareil que si l'option est cochée. Pour
+provoquer une « erreur inattendue » sans défaut réel, on utilise la console du navigateur (touche F12, onglet Console).
+
+### Journal 1 — Refus de fichier et erreur inattendue, option désactivée (R-101)
+
+Départ : GanttPro ouvert, Réglages ⚙ → « Effacer toutes les données » fait au préalable.
+
+- [ ] 1. Ouvrez Réglages ⚙. *Attendu :* une section **Journal d'erreurs** : case « Conserver le journal sur cet appareil »
+  **décochée**, « 0 ligne dans le journal. », « Exporter le journal » et « Effacer le journal » inactifs. Fermez.
+- [ ] 2. Importez `journal-import-refuse.json`. *Attendu :* refus « Deux ressources portent le nom Camille Exemple. » ; le projet
+  ouvert n'est pas modifié. Fermez le message.
+- [ ] 3. Dans la console (F12), tapez `setTimeout(() => { throw new Error('Camille Exemple') })` puis Entrée. *Attendu :* en haut
+  de l'écran, le bandeau « Erreur inattendue (réf. xxxxxxxx-hhmmss). Exportez votre projet. » avec **Exporter le journal** et
+  une croix ; ni message technique ni pile. On peut continuer à travailler.
+- [ ] 4. Recommencez l'étape 3 aussitôt. *Attendu :* pas de nouveau bandeau (au plus un toutes les 10 secondes). Fermez le bandeau par la croix.
+- [ ] 5. Réglages ⚙ → **Voir le journal**. *Attendu :* un tableau de 3 lignes, la plus récente en premier : deux `app.unexpected`
+  (ERROR) et un `imp.dupResource` (WARN), avec date UTC, action, composant, référence (celle du bandeau) et origine
+  « fonction:ligne » ; **aucun** « Camille », aucun chemin `file:` ni `Users`.
+- [ ] 6. **Exporter le journal**. *Attendu :* un fichier `ganttpro_journal_AAAAMMJJ.jsonl` ; ouvert dans un éditeur de texte :
+  une première ligne avec `"app":"GanttPro"`, la version et la langue, puis une ligne par entrée ; aucun nom, rien sur le navigateur.
+- [ ] 7. Rechargez la page (F5) puis ouvrez Réglages ⚙. *Attendu :* « 0 ligne dans le journal. » (le journal n'était qu'en mémoire).
+
+### Journal 2 — Conserver, effacer (R-102, R-103)
+
+- [ ] 1. Cochez **Conserver le journal sur cet appareil**. *Attendu :* annonce « Le journal est conservé sur cet appareil. »
+- [ ] 2. Provoquez une erreur comme à l'étape 3 du parcours Journal 1, rechargez la page, ouvrez Réglages ⚙. *Attendu :* « 1 ligne dans le journal. »
+- [ ] 3. Décochez la case. *Attendu :* « Le journal n'est plus conservé sur cet appareil. » ; la ligne reste visible jusqu'au rechargement.
+- [ ] 4. **Effacer le journal**. *Attendu :* une confirmation ; « Effacer » vide le journal (« 0 ligne »), « Annuler » ne change rien.
+- [ ] 5. Cochez la case, provoquez une erreur, puis **Effacer toutes les données de l'application sur cet appareil** → « Tout effacer ».
+  *Attendu :* « 0 ligne dans le journal. » et la case est décochée.
+
+### Journal 3 — Clavier, lecteur d'écran, thème sombre, anglais
+
+- [ ] 1. Au clavier seul : Réglages, case, « Voir le journal », défilement du tableau (flèches après Tab), « Exporter le journal »,
+  Échap. *Attendu :* tout s'atteint par Tab, Échap ferme la fenêtre et rend le focus à « Voir le journal ».
+- [ ] 2. Lecteur d'écran : le bandeau est annoncé dès son apparition ; la croix s'annonce « Fermer le message ».
+- [ ] 3. Thème sombre : bandeau et tableau lisibles. Passez en anglais : « Error log », « Unexpected error (ref. …). Export your project. ».
 
 Validé par : ______________________  Date : ____ / ____ / ________

@@ -25,7 +25,7 @@ Mesures en place :
 | A08 – Intégrité des données | Tout fichier, toute version restaurée, tout projet relu du stockage passe par le même contrôle par liste blanche : types, longueurs, identifiants `[A-Z0-9._-]`, dates 1970-2199, boucles de dépendances, limites (5 Mo, 1 000 tâches) ; un fichier invalide est refusé en entier |
 | A02 – Données au repos | Chiffrement facultatif par mot de passe (PBKDF2-SHA256 600 000 itérations, AES-256-GCM, Web Crypto) |
 | A06 – Composants vulnérables | Aucune dépendance d'exécution ; polices intégrées (pas de CDN) ; Dependabot pour les actions de la CI |
-| A09 – Journalisation | Aucune journalisation à ce jour (le build refuse `console.*`) : aucune donnée personnelle ni secret ne peut fuiter par la console. L'absence de journal local est un **écart documenté** au CLAUDE.md §4 (Specs_fonctionnelles.md, annexe C.2, n° 1) ; un journal local d'erreurs pseudonymisé est prévu |
+| A09 – Journalisation | Journal local d'erreurs **pseudonymisé** (EF-151, RG-59 à RG-63) : champs de listes fermées seulement (code du catalogue, action, composant, type d'erreur, « fonction:ligne »), jamais de message d'exception, de nom, de contenu de projet ni de chemin ; en mémoire, conservé sur l'appareil seulement sur option (30 jours, 200 lignes), exporté par l'utilisateur, jamais envoyé. Le build refuse toujours `console.*` |
 | Données personnelles (RGPD) | Aucun cookie, aucun traceur, aucun envoi ; stockage local seulement à la demande ; effacement complet depuis les réglages ; montants et taux exclus des exports par défaut, taux nominatifs retirés d'un export « sans noms de personnes » |
 
 Détail des mesures :
@@ -44,13 +44,18 @@ Détail des mesures :
   moins) n'est jamais écrit ; pour la sauvegarde automatique, il reste en mémoire le temps de la session.
 - Effacement (RGPD) : « Réglages > Effacer toutes les données » supprime bibliothèque, sauvegardes et réglages ;
   désactiver la sauvegarde automatique supprime ses copies.
+- Journal d'erreurs (A09) : chaque ligne est construite et relue par liste blanche (`ErrLog.check`) ; un journal relu
+  illisible ou de plus de 200 000 caractères est remis à zéro, une ligne hostile écartée ; l'export JSON Lines échappe
+  les retours à la ligne (pas d'injection de lignes) ; l'en-tête « Type: message » d'une pile est retiré avant d'y lire
+  « fonction:ligne », pour qu'un message sur plusieurs lignes ne puisse pas imiter un cadre ; l'échec d'écriture du
+  journal n'est pas journalisé (pas de récursion quand le stockage est plein).
 - Page d'accueil (8.4) : seules trois clés de la mémoire de session sont lues ; le projet transmis est contrôlé
   comme un import puis supprimé ; l'adresse de retour n'est suivie que si elle est de même origine (http(s)/file).
 - Import de classeurs : ZIP borné (200 entrées, 50 Mo décompressés), XML sans DOCTYPE ni entités ; cellules
   commençant par `= + - @` neutralisées à l'export (injection de formules).
 - Le build refuse les motifs dangereux (`eval`, gestionnaires inline, appels réseau, journalisation).
 - Sans objet pour une application locale sans serveur ni compte : contrôle d'accès (A01), authentification
-  (A07), SSRF (A10), journalisation centralisée (A09) ; aucune donnée ne quitte le poste.
+  (A07), SSRF (A10), journalisation centralisée et alertes (A09) ; aucune donnée ne quitte le poste.
 
 ## Bonnes pratiques de développement
 

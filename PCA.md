@@ -106,13 +106,15 @@ Un test de restauration (procédure A sur un dépôt de test, puis contrôle ci-
 | `gh pr create` échoue depuis l'environnement de l'assistant | L'interface GraphQL de GitHub n'est pas joignable | `gh api repos/SimonBelCou/GanttPro/pulls` (interface REST) |
 | « Le stockage du navigateur n'est pas disponible » | Navigation privée ou réglage du navigateur | Exporter le projet ; voir `store.off` |
 | Un fichier protégé ne s'ouvre pas | Mot de passe faux, ou fichier altéré (le message est volontairement le même) | Aucun moyen de récupération : GanttPro ne conserve jamais le mot de passe |
+| Bandeau « Erreur inattendue (réf. …) » | Exception imprévue du programme (`app.unexpected`) | Exporter le projet, puis le journal, et le signaler (§7) |
+| Journal d'erreurs vide après un rechargement | Option « Conserver le journal sur cet appareil » désactivée (par défaut) : le journal n'existe qu'en mémoire | Activer l'option dans Réglages ⚙ avant de reproduire le défaut |
+| Les tests du journal ne voient pas le bandeau (environnement de test) | L'horloge simulée de Playwright intercepte les exceptions levées dans un minuteur | Lever l'exception dans un gestionnaire d'événement (`tests/test_v3_journal.py`, `throw_in_page`) |
 
 Toute nouvelle erreur récurrente est ajoutée à ce tableau avec sa cause et son correctif (CLAUDE.md §4).
 
 ## 7. Codes d'erreur
 
-GanttPro n'a pas de journal (écart documenté, Specs_fonctionnelles.md annexe C.2, n° 1). Les erreurs sont **montrées à
-l'utilisateur** par un message précis, identifié par un **code stable** : la clé du catalogue de traductions
+Les erreurs sont **montrées à l'utilisateur** par un message précis, identifié par un **code stable** : la clé du catalogue de traductions
 (`src/js/core/50-i18n.js`, français et anglais). **Règle : une clé publiée n'est jamais renommée ni réutilisée pour un
 autre sens.** Aucun message n'affiche de trace d'appel ; les messages ne contiennent que ce qui permet de corriger le
 fichier.
@@ -120,6 +122,26 @@ fichier.
 Familles d'erreurs : `imp.*` (import et validation de fichier), `pwd.*` (mot de passe), `store.*` (stockage du
 navigateur), `err.*` (saisie et planification : champ obligatoire, boucle de dépendances, profondeur) et `rule.*` (règle de
 champ citée par `imp.field`). Les clés `lib.*` sont les libellés de la bibliothèque, pas des erreurs.
+
+**Journal local d'erreurs** (EF-151, RG-59 à RG-63) : les codes `imp.*`, `pwd.*`, `store.*`, `calc.error` et
+`app.unexpected` sont aussi tracés dans un journal pseudonymisé (ni message d'exception, ni nom, ni contenu de projet, ni
+chemin), tenu en mémoire et conservé sur l'appareil seulement si l'utilisateur l'a demandé. Les refus de saisie `err.*`
+ne sont pas journalisés. `app.unexpected` (« Erreur inattendue. ») signale une exception **imprévue** : c'est un défaut à
+corriger, accompagné d'un bandeau « Erreur inattendue (réf. …) ».
+
+**Exporter le journal pour un signalement** :
+1. Exporter d'abord le projet ouvert (Exporter → JSON), pour ne rien perdre.
+2. Cliquer « Exporter le journal » dans le bandeau, ou Réglages ⚙ → « Journal d'erreurs » → « Exporter le journal » :
+   un fichier `ganttpro_journal_AAAAMMJJ.jsonl` est téléchargé.
+3. Joindre ce fichier au signalement (adresse en §8) en citant la référence du bandeau (`sid-HHMMSS`) et ce qui était en
+   cours. Le fichier ne contient que des codes, la version et la langue ; ne jamais joindre un projet contenant des
+   données réelles.
+4. Pour le développeur : la colonne `at` (« fonction:ligne ») désigne une ligne de `GanttPro.html` de la version `ver`.
+
+| Code | Message affiché (français) |
+|---|---|
+| `app.unexpected` | Erreur inattendue. (journal seulement ; l'écran garde le message de repli et le bandeau) |
+| `calc.error` | Le planning ne peut pas être calculé : une date dépasse 2199. |
 
 Codes de validation et de saisie les plus fréquents (extraits du catalogue français ; `{…}` marque une valeur insérée) :
 

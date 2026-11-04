@@ -9,6 +9,23 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
 
 ## Non publié
 
+### Journal local d'erreurs (branche `claude/journal-erreurs-3894a0`, PR à ouvrir après la PR #14)
+- **EF-151, RG-59 à RG-63** : journal d'erreurs pseudonymisé (refus `imp.*`, `pwd.*`, `store.*`, `calc.error`, erreur
+  imprévue `app.unexpected`), tenu en mémoire et conservé sur l'appareil seulement sur option (désactivée par défaut,
+  30 jours et 200 lignes). Bandeau non bloquant « Erreur inattendue (réf. …) » avec « Exporter le journal » ; section
+  « Journal d'erreurs » des Réglages (voir, exporter en `.jsonl`, effacer) ; « Effacer toutes les données » l'efface aussi.
+  Décisions J1 à J6 du 3 novembre 2026 (annexe C.1) ; écart C.2 n° 1 clos.
+- Les `catch` qui transformaient toute exception en `imp.unreadable`, `exp.failed` ou `calc.error` distinguent le refus
+  attendu de l'erreur imprévue (`Journal.failure`, `Journal.calc`) ; le message affiché ne change pas.
+- Nouveaux modules `src/js/core/55-errlog.js` et `src/js/ui/15-errlog.js` ; tests `tests/core/journal.test.mjs` (10) et
+  `tests/test_v3_journal.py` (40, ajouté à la CI) ; fichier d'essai `tests/fixtures/journal-import-refuse.json` ;
+  recette manuelle « Journal 1 à 3 ».
+- Revues `accessibilite-check` et `eco-check` appliquées : zone d'alerte créée vide au lancement (RGAA 7.5), bandeau placé
+  dans la fenêtre ouverte et focus rendu à sa fermeture (RGAA 12.8), identifiants techniques du tableau en `lang="en"`
+  (RGAA 8.7), région nommée par sa légende ; pas de réécriture du journal au lancement s'il n'a pas changé, erreur
+  identique répétée dans la minute non dupliquée (GR491_Backend_4). Non retenus : écritures regroupées par minuterie (200
+  lignes au plus ; une ligne perdue à la fermeture serait pire) et pagination du tableau (fenêtre ouverte à la demande).
+
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.
 - Nouveaux documents : `Specs_fonctionnelles.md` (source unique des spécifications, copie du cahier des charges avec

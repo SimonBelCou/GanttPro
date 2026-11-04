@@ -277,10 +277,12 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
   sauvegarde automatique) et la mémoire de session d'une page d'accueil. Données sensibles : noms et rôles des
   ressources (données personnelles potentielles) et montants du budget. Détail et mesures : `SECURITY.md`.
 - **Contexte et journalisation** (décision du 2 novembre 2026, détail dans `Specs_fonctionnelles.md`, annexe C) :
-  l'application n'a aujourd'hui **aucun journal** ; le build interdit `console.*`. Le caractère professionnel de
-  l'usage et le choix d'une journalisation nominative ne sont **pas tranchés** : en attendant, toute future
-  journalisation est **pseudonymisée** (jamais de nom de ressource ni de contenu de projet), locale, consultable et
-  effaçable par l'utilisateur, sans envoi réseau. Le journal local d'erreurs est un chantier à venir.
+  le build interdit `console.*`. Le caractère professionnel de l'usage et le choix d'une journalisation nominative ne
+  sont **pas tranchés** : la journalisation est donc **pseudonymisée** (jamais de nom de ressource, de contenu de
+  projet, de message d'exception ni de chemin), locale, consultable et effaçable par l'utilisateur, sans envoi réseau.
+  Le **journal local d'erreurs** existe depuis le 3 novembre 2026 (EF-151, RG-59 à RG-63, décisions J1 à J6 en annexe
+  C.1) : moteur `src/js/core/55-errlog.js`, interface `src/js/ui/15-errlog.js` ; tout `catch` qui affiche un message de
+  repli passe par `Journal.failure()` / `Journal.calc()` pour distinguer un refus attendu d'une erreur imprévue.
 - **Emplacements (noms, pas de valeurs)** : dépôt GitHub `SimonBelCou/GanttPro` ; copie de secours : clone local du
   propriétaire du produit ; **aucun secret** (pas de clé, pas de `.env` : un `.env.example` n'aurait pas de contenu) ;
   la CI n'utilise que le jeton `GITHUB_TOKEN` fourni par GitHub Actions. Détail : `PCA.md`.
@@ -293,7 +295,7 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 | Construire | `python3 tools/build.py` (`--check` en CI : échoue si le fichier n'est pas à jour) · test de l'outil : `python3 tests/test_build.py` |
 | Tester le moteur | `node --test tests/core/*.test.mjs` |
 | Dépendances entre fonctions | `node tools/dependances.mjs` (écrit les commentaires et le graphe) · `--check` (CI) · test : `node --test tests/test_dependances.mjs` |
-| Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
+| Tester l'interface | `python3 tests/test_v3.py`, `tests/test_v3_espace.py`, `tests/test_v3_journal.py`, `tests/test_v3_recette.py`, `tests/test_v3_budget.py`, `tests/test_v3_recette_manuelle.py` (`PERF_FACTOR=2` ou `3` sur une machine lente) |
 | Veille sécurité | voir §0 ; résultat dans `docs/veille-securite.md` |
 
 ### 13.3 Structure du code
@@ -330,7 +332,7 @@ Document qui permet de présenter le projet et de le reprendre en cas d'incident
 1. `python3 tools/build.py`
 2. `node --test tests/core/*.test.mjs` (moteur, scénarios chiffrés de la recette)
    puis `node tools/dependances.mjs` (commentaires « Appelle / Appelée par » et graphe) et `node --test tests/test_dependances.mjs`.
-3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`, `python3 tests/test_v3_recette_manuelle.py`
+3. `python3 tests/test_v3.py`, `python3 tests/test_v3_espace.py`, `python3 tests/test_v3_journal.py`, `python3 tests/test_v3_recette.py`, `python3 tests/test_v3_budget.py`, `python3 tests/test_v3_recette_manuelle.py`
    (`npm install --no-save axe-core@4.14.0 acorn@8.19.0` pour le contrôle d'accessibilité et l'outil de dépendances ; `PERF_FACTOR=2` sur une machine lente).
 4. Une nouvelle exigence ou un défaut corrigé = un test de plus.
 5. **Documents à jour dans la même modification** (§7) : toute fonction ajoutée ou tout arbitrage est reporté dans
