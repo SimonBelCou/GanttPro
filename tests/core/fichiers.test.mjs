@@ -53,6 +53,10 @@ test('versionnement (V3, V5, V6) : formats 3 et 2.3 lus, format 5 refusé avec l
   assert.equal(out.format, 4);
   assert.equal(out.app, Model.APP_VERSION);
   assert.equal(imp(out).notices.unknown, 0);
+  // Fichiers d'essai des fiches de recette (docs/recettes/) : format 5 refusé, champs inconnus comptés.
+  const fx = name => readFileSync(new URL('../fixtures/' + name, import.meta.url), 'utf8');
+  assert.equal(errorKey(() => Model.parseFile(fx('refus-format-trop-recent.json'))), 'imp.newer');
+  assert.equal(Model.parseFile(fx('champs-inconnus-version-recente.json')).notices.unknown, 2);
 });
 
 test('R-27 refus : identifiant dangereux, fichier trop gros, trop de tâches, boucle', () => {

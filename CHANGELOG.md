@@ -24,6 +24,8 @@ fonctionnalité, correctif = correction. Le numéro vient du fichier `VERSION` ;
   `GanttPro.html.sha256`) et `etiquette.yml` (étiquette posée à la main, jamais automatiquement) (EX-42).
 - Décisions V1 à V9 du 3 novembre 2026 au journal C.1 ; A.8 ligne 8 close. Procédure de publication : CLAUDE.md §13.6 bis ;
   retour à une release précédente : PCA.md, procédure F.
+- Recette : quatre fiches courtes dans `docs/recettes/` (version affichée, fichier trop récent, garde-fou des champs
+  inconnus, publication), à la place du parcours de `docs/recette-manuelle.md` ; fichier d'essai `refus-format-trop-recent.json`.
 
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.

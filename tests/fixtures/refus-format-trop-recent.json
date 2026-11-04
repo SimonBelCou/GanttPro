@@ -1,0 +1,8 @@
+{
+  "format": 5,
+  "app": "4.0.0",
+  "name": "Projet fictif d'une version future",
+  "desc": "Projet d'essai : format 5, que GanttPro 3 doit refuser.",
+  "projectStart": "2026-01-05",
+  "tasks": [{ "id": "A", "name": "Tâche fictive", "dur": 5 }]
+}
