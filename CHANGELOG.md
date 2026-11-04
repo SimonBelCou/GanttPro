@@ -18,6 +18,8 @@ prévu (Specs_fonctionnelles.md, annexe A.8, ligne 8).
   commandes (Créer, Projet, Suivi, Charge), barre « Affichage » (recherche, liens, montants, zoom, liste et « Colonnes ▾ »,
   plein écran). Groupes `role="group"` nommés (FR/EN), plus de `nav` de commandes ; listes dépliantes au motif
   « disclosure » (nouveau module `src/js/ui/51-disclosure.js`). Libellés de création raccourcis (« + Tâche »).
+- Corrections des revues accessibilité et écoconception : légende et alertes ne sont un arrêt de tabulation que si elles
+  débordent, liste d'alertes nommée, panneaux dépliants dans le flux sur écran étroit, nom du projet abrégé (complet au survol).
 
 ### Documentation et organisation
 - `CLAUDE.md` remplacé par le texte générique de développement (§0 à §12), avec les spécificités de GanttPro au §13.

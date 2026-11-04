@@ -55,6 +55,7 @@ function initDisclosures() {
     });
   }
   document.addEventListener('pointerdown', ev => {
-    if (!ev.target.closest('.disclosure')) closeDisclosures(false);
+    // Rien à faire le plus souvent : on ne cherche les panneaux que si l'un d'eux est ouvert.
+    if (!ev.target.closest('.disclosure') && document.querySelector('.disc-btn[aria-expanded="true"]')) closeDisclosures(false);
   });
 }

@@ -3,7 +3,7 @@
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 91 fonctions (usage général)
+ * Appelée par : 92 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 

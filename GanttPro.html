@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HepsoxEFrAA64r558lCeksF4XMkbk4/IHo4EbjSAJo8='; style-src 'sha256-I1oF9dIgSy+nyLsZ8Jj+dyRnJky6uhXR8yAfQ7h5Tec='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Xllb7WyvFWXYKcKBiIy6Jf81BHpDPm6cc7Bi87yAaFU='; style-src 'sha256-9kOX6FmstnwlxefpE53BmOmSwl5mStgzRG0ANqGJLFM='; font-src data:; img-src data: blob:; connect-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f4e79%27/%3E%3Crect x=%274%27 y=%277%27 width=%2712%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%279%27 y=%2714%27 width=%2715%27 height=%275%27 fill=%27%23fff%27/%3E%3Crect x=%2714%27 y=%2721%27 width=%2714%27 height=%275%27 fill=%27%23fff%27/%3E%3C/svg%3E">
@@ -76,9 +76,11 @@ input.upper { text-transform: uppercase; font-family: 'Fira Code', monospace; }
 .disc-btn[aria-expanded="true"] { border-color: var(--accent); }
 .disc-panel { position: absolute; left: 0; top: calc(100% + 4px); z-index: 8; display: flex; flex-direction: column; align-items: stretch; gap: .25rem; min-width: 14rem; max-width: calc(100vw - 2rem); padding: .4rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
 .disc-panel button { text-align: left; }
+/* Écran étroit : le panneau s'insère dans le flux sous son bouton au lieu de déborder de la fenêtre (WCAG 1.4.10). */
+@media (max-width: 900px) { .disclosure { flex-wrap: wrap; } .disc-panel { position: static; flex-basis: 100%; min-width: 0; box-shadow: none; } }
 .disc-panel .field-inline { justify-content: space-between; color: var(--text); }
 .brand { font-size: 1.15rem; letter-spacing: .02em; }
-.project-label { font-weight: 600; background: transparent; }
+.project-label { font-weight: 600; background: transparent; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* nom complet dans le nom accessible */
 .field-inline { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); }
 .field-inline { flex-wrap: wrap; max-width: 100%; }
 .zoom-level { min-width: 6.5em; text-align: center; color: var(--muted); }
@@ -173,8 +175,8 @@ table.tasks { border-collapse: collapse; width: 100%; min-width: max-content; }
 .legend-title { display: none; margin: 0 0 .3rem; font-size: 1rem; }
 body.planner-full .legend-title { display: block; }
 .legend-title button { font-weight: 600; }
-.legend-title button::before { content: "▾ "; }
-.legend-title button[aria-expanded="false"]::before { content: "▸ "; }
+.legend-title button::before { content: "▾ " / ""; } /* état donné par aria-expanded */
+.legend-title button[aria-expanded="false"]::before { content: "▸ " / ""; }
 .legend ul { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: 0; padding: 0; list-style: none; color: var(--muted); }
 .legend li { display: inline-flex; align-items: center; gap: .35rem; }
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); vertical-align: middle; }
@@ -506,7 +508,7 @@ body.dragging { user-select: none; cursor: grabbing; }
   .legend { flex: none; max-height: min(25dvh, 9rem); display: flex; flex-direction: column; border-top: 1px solid var(--line); }
   .legend-body { min-height: 0; overflow-y: auto; }
   /* Une longue liste d'alertes défile dans son bandeau au lieu de pousser le planning. */
-  .alerts ul { max-height: 4.4rem; overflow-y: auto; }
+  .alerts ul { max-height: 4.35em; overflow-y: auto; } /* trois lignes entières */
 }
 body.planner-full { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 body.planner-full > .tabs, body.planner-full > header, body.planner-full > .kpis, body.planner-full > .alerts,
@@ -617,7 +619,7 @@ svg.cpispi { width: 100%; height: auto; display: block; }
 <section class="kpis" id="kpis" data-i18n-label="kpi.label" aria-label="Chiffres du planning"></section>
 
 <section class="alerts" id="alerts" hidden data-i18n-label="alerts.label" aria-label="Alertes">
-  <ul id="alerts-list" tabindex="0"></ul>
+  <ul id="alerts-list" data-i18n-label="alerts.label" aria-label="Alertes"></ul>
   <button type="button" class="icon close" data-click="toggleAlerts" data-i18n-label="alerts.close">✕</button>
 </section>
 
@@ -696,7 +698,7 @@ svg.cpispi { width: 100%; height: auto; display: block; }
   </div>
   <section class="legend" id="legend" data-i18n-label="legend.label" aria-label="Légende">
     <h2 class="legend-title" id="legend-title"><button type="button" id="btn-legend" data-click="toggleLegend" aria-expanded="true" aria-controls="legend-body" data-i18n="legend.label">Légende</button></h2>
-    <div class="legend-body" id="legend-body" role="group" aria-labelledby="legend-title" tabindex="0"></div>
+    <div class="legend-body" id="legend-body"></div>
   </section>
 </main>
 
@@ -5405,7 +5407,7 @@ const Secure = (() => {
  * tout attribut par setAttribute après contrôle du nom, tout style par le CSSOM.
  * Un texte venant d'un fichier ne peut donc jamais devenir du code (EX-13).
  * Appelle : aucune
- * Appelée par : 91 fonctions (usage général)
+ * Appelée par : 92 fonctions (usage général)
  */
 const $ = id => document.getElementById(id);
 
@@ -6184,6 +6186,7 @@ function renderTopbar() {
   const label = $('project-label');
   label.textContent = `${p.emoji} ${p.name}`;
   label.setAttribute('aria-label', t('top.project', { name: p.name }));
+  label.title = p.name; // nom complet visible au survol : l'étiquette peut être tronquée (10-base.css)
   const start = $('project-start');
   if (document.activeElement !== start) start.value = p.projectStart;
   $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });
@@ -6798,7 +6801,8 @@ function initDisclosures() {
     });
   }
   document.addEventListener('pointerdown', ev => {
-    if (!ev.target.closest('.disclosure')) closeDisclosures(false);
+    // Rien à faire le plus souvent : on ne cherche les panneaux que si l'un d'eux est ouvert.
+    if (!ev.target.closest('.disclosure') && document.querySelector('.disc-btn[aria-expanded="true"]')) closeDisclosures(false);
   });
 }
 
@@ -8657,12 +8661,33 @@ function applyFreeze() {
   $('freeze-cols').value = String(App.freeze);
 }
 
+let scrollStopsPending = false;
+/**
+ * La légende et la liste d'alertes défilent dans leur zone quand elles sont longues (EF-151) : elles ne sont un arrêt
+ * de tabulation (défilement au clavier, axe « scrollable-region-focusable ») que si elles débordent vraiment.
+ * Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25).
+ * Appelle : $()
+ * Appelée par : applyLegendState(), initLayout(), refreshLayout()
+ */
+function scheduleScrollStops() {
+  if (scrollStopsPending) return;
+  scrollStopsPending = true;
+  requestAnimationFrame(() => {
+    scrollStopsPending = false;
+    for (const id of ['legend-body', 'alerts-list']) {
+      const el = $(id);
+      if (el.scrollHeight > el.clientHeight + 1) el.setAttribute('tabindex', '0'); else el.removeAttribute('tabindex');
+    }
+  });
+}
+
 /**
  * À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles.
- * Appelle : applyFreeze(), applyListWidth()
+ * Appelle : applyFreeze(), applyListWidth(), scheduleScrollStops()
  * Appelée par : initLayout(), renderAll(), setFull()
  */
 function refreshLayout() {
+  scheduleScrollStops();
   applyListWidth();
   applyFreeze();
 }
@@ -8680,13 +8705,14 @@ action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze
 
 /**
  * Légende repliée seulement en plein écran et sur demande ; dans la vue normale, elle est toujours dépliée.
- * Appelle : $()
+ * Appelle : $(), scheduleScrollStops()
  * Appelée par : action « toggleLegend », setFull()
  */
 function applyLegendState() {
   const open = !App.full || App.legendOpen;
   $('legend-body').hidden = !open;
   $('btn-legend').setAttribute('aria-expanded', String(open));
+  scheduleScrollStops();
 }
 /**
  * Appelle : applyLegendState()
@@ -8725,7 +8751,8 @@ function setFull(on) {
 action('toggleFull', () => setFull(!App.full));
 
 /**
- * Appelle : $(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(), updateSplitterValue()
+ * Appelle : $(), Editor.isOpen(), refreshLayout(), scheduleScrollStops(), setFull(), setListWidth(),
+ *   updateSplitterValue()
  * Appelée par : init()
  */
 function initLayout() {
@@ -8756,7 +8783,7 @@ function initLayout() {
   const list = $('list'), gantt = $('gantt');
   const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
   mirror(list, gantt); mirror(gantt, list);
-  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  window.addEventListener('resize', () => { scheduleScrollStops(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);

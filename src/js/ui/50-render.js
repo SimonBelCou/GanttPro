@@ -72,6 +72,7 @@ function renderTopbar() {
   const label = $('project-label');
   label.textContent = `${p.emoji} ${p.name}`;
   label.setAttribute('aria-label', t('top.project', { name: p.name }));
+  label.title = p.name; // nom complet visible au survol : l'étiquette peut être tronquée (10-base.css)
   const start = $('project-start');
   if (document.activeElement !== start) start.value = p.projectStart;
   $('zoom-level').textContent = t('top.zoom', { pct: App.zoom });

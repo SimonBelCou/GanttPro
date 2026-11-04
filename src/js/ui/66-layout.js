@@ -68,12 +68,33 @@ function applyFreeze() {
   $('freeze-cols').value = String(App.freeze);
 }
 
+let scrollStopsPending = false;
+/**
+ * La légende et la liste d'alertes défilent dans leur zone quand elles sont longues (EF-151) : elles ne sont un arrêt
+ * de tabulation (défilement au clavier, axe « scrollable-region-focusable ») que si elles débordent vraiment.
+ * Différé à l'image suivante : la mesure force une mise en page, trop coûteuse à chaque rendu d'un grand projet (EX-25).
+ * Appelle : $()
+ * Appelée par : applyLegendState(), initLayout(), refreshLayout()
+ */
+function scheduleScrollStops() {
+  if (scrollStopsPending) return;
+  scrollStopsPending = true;
+  requestAnimationFrame(() => {
+    scrollStopsPending = false;
+    for (const id of ['legend-body', 'alerts-list']) {
+      const el = $(id);
+      if (el.scrollHeight > el.clientHeight + 1) el.setAttribute('tabindex', '0'); else el.removeAttribute('tabindex');
+    }
+  });
+}
+
 /**
  * À rappeler après chaque rendu ou changement de largeur : recalcule ce qui dépend des tailles réelles.
- * Appelle : applyFreeze(), applyListWidth()
+ * Appelle : applyFreeze(), applyListWidth(), scheduleScrollStops()
  * Appelée par : initLayout(), renderAll(), setFull()
  */
 function refreshLayout() {
+  scheduleScrollStops();
   applyListWidth();
   applyFreeze();
 }
@@ -91,13 +112,14 @@ action('resetColumns', () => { App.colWidths = {}; applyColWidths(); applyFreeze
 
 /**
  * Légende repliée seulement en plein écran et sur demande ; dans la vue normale, elle est toujours dépliée.
- * Appelle : $()
+ * Appelle : $(), scheduleScrollStops()
  * Appelée par : action « toggleLegend », setFull()
  */
 function applyLegendState() {
   const open = !App.full || App.legendOpen;
   $('legend-body').hidden = !open;
   $('btn-legend').setAttribute('aria-expanded', String(open));
+  scheduleScrollStops();
 }
 /**
  * Appelle : applyLegendState()
@@ -136,7 +158,8 @@ function setFull(on) {
 action('toggleFull', () => setFull(!App.full));
 
 /**
- * Appelle : $(), Editor.isOpen(), refreshLayout(), setFull(), setListWidth(), updateSplitterValue()
+ * Appelle : $(), Editor.isOpen(), refreshLayout(), scheduleScrollStops(), setFull(), setListWidth(),
+ *   updateSplitterValue()
  * Appelée par : init()
  */
 function initLayout() {
@@ -167,7 +190,7 @@ function initLayout() {
   const list = $('list'), gantt = $('gantt');
   const mirror = (from, to) => from.addEventListener('scroll', () => { if (to.scrollTop !== from.scrollTop) to.scrollTop = from.scrollTop; }, { passive: true });
   mirror(list, gantt); mirror(gantt, list);
-  window.addEventListener('resize', () => { if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
+  window.addEventListener('resize', () => { scheduleScrollStops(); if (App.listW != null) setListWidth(App.listW); else updateSplitterValue(); });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && App.full && !ev.defaultPrevented && !document.querySelector('dialog[open]') && !(typeof Editor !== 'undefined' && Editor.isOpen())) {
       ev.preventDefault(); setFull(false);

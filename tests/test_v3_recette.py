@@ -398,6 +398,8 @@ def main():
             check(f'EX-04 : {width} px, édition entièrement visible', ed)
             flow = p2.evaluate("({ disp: getComputedStyle(document.body).display, scroll: document.documentElement.scrollHeight > innerHeight + 1 })")
             check(f'EF-151 / EX-04 : {width} px, la page garde son flux ordinaire (légende sous le planning)', flow['disp'] != 'flex' and flow['scroll'], flow)
+            p2.wait_for_timeout(100)
+            check(f"EF-151 : {width} px, la légende qui ne défile pas n'est pas un arrêt de tabulation", p2.evaluate("document.getElementById('legend-body').hasAttribute('tabindex')") is False)
             c2.close()
 
         # ── EF-151 / EF-152 : légende fixée en bas à 1280 × 720 (barres par thème), avec 30 ressources et 12 catégories fictives ───
